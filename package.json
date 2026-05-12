@@ -1,0 +1,29 @@
+{
+  "name": "diagnostico-irl",
+  "version": "1.0.0",
+  "private": true,
+  "description": "IRL Diagnostic System for INNLAB — Universidad Icesi",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter=./apps/* dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "test:unit": "pnpm -r test:unit",
+    "test:integration": "pnpm -r test:integration",
+    "test:e2e": "pnpm -r test:e2e",
+    "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint:fix",
+    "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "db:up": "docker compose -f docker-compose.dev.yml up -d postgres",
+    "db:down": "docker compose -f docker-compose.dev.yml down",
+    "keycloak:up": "docker compose -f docker-compose.dev.yml up -d keycloak",
+    "prepare": "husky"
+  },
+  "workspaces": []
+}
