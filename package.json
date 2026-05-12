@@ -25,5 +25,26 @@
     "keycloak:up": "docker compose -f docker-compose.dev.yml up -d keycloak",
     "prepare": "husky"
   },
-  "workspaces": []
+  "workspaces": [],
+  "devDependencies": {
+    "@commitlint/cli": "^19",
+    "@commitlint/config-conventional": "^19",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^9",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9",
+    "lint-staged": "^15",
+    "prettier": "^3",
+    "typescript": "~5.6",
+    "typescript-eslint": "^8.59.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
 }
