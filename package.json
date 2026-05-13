@@ -46,5 +46,14 @@
     "*.{json,md,yml,yaml}": [
       "prettier --write"
     ]
+  },
+  "pnpm": {
+    "allowedDeprecatedVersions": {
+      "glob": "7",
+      "inflight": "1"
+    },
+    "neverBuiltDependencies": [
+      "@nestjs/core"
+    ]
   }
 }

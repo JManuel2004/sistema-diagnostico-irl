@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: irl-postgres
+    environment:
+      POSTGRES_USER: irl_user
+      POSTGRES_PASSWORD: irl_dev_password
+      POSTGRES_DB: irl_diagnostic
+    ports:
+      - '5432:5432'
+    volumes:
+      - irl-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U irl_user']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: irl-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./.docker/keycloak:/opt/keycloak/data/import
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: irl-mailpit
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # web UI
+
+volumes:
+  irl-postgres-data:
