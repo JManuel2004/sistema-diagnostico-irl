@@ -48,7 +48,10 @@ export default [
     },
   },
   {
-    files: ['src/modules/*/domain/**/*.ts', 'src/modules/*/application/**/*.ts'],
+    files: [
+      'src/modules/*/domain/**/*.ts',
+      'src/modules/*/application/**/*.ts',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',
