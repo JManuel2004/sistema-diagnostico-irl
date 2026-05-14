@@ -107,7 +107,6 @@ after the subject line, separated by blank lines:
     replaced without touching call sites.
 
     refs: IRL-11
-    docs: docs/architecture/domain-model.md
 
 Footer conventions:
 
