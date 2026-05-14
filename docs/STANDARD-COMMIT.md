@@ -40,10 +40,10 @@ Used when adding a new feature, endpoint, component, or capability.
 
 Examples:
 
-    feat: add + [questionnaire] - [render dimension tabs with progress indicator]
-    feat: add + [maturity-profile] - [compute irl levels from likert answers]
-    feat: add + [auth] - [validate jwt against keycloak jwks]
-    feat: add + [contracts] - [export submit-questionnaire zod schema]
+    feat: add questionnaire render dimension tabs with progress indicator
+    feat: add maturity-profile compute irl levels from likert answers
+    feat: add auth validate jwt against keycloak jwks
+    feat: add contracts export submit-questionnaire zod schema
 
 ### `fix: correct` — bug fix
 
@@ -53,9 +53,9 @@ Used when correcting an error in existing behavior.
 
 Examples:
 
-    fix: correct + [likert-scale] - [keyboard arrow navigation skipping value 3]
-    fix: correct + [irl-calculator] - [boundary value 4.40 mapped to level 8 instead of 9]
-    fix: correct + [diagnostic-guard] - [redirect loop when profile already exists]
+    fix: correct likert-scale keyboard arrow navigation skipping value 3
+    fix: correct irl-calculator boundary value 4.40 mapped to level 8 instead of 9
+    fix: correct diagnostic-guard redirect loop when profile already exists
 
 ### `enhance: improve` — improvement to existing feature
 
@@ -65,9 +65,9 @@ Used when refining or improving something that already works.
 
 Examples:
 
-    enhance: improve + [radar-chart] - [increase tick density for better readability]
-    enhance: improve + [questionnaire-store] - [debounce session-storage writes by 300ms]
-    enhance: improve + [error-filter] - [add correlation id to all problem responses]
+    enhance: improve radar-chart increase tick density for better readability
+    enhance: improve questionnaire-store debounce session-storage writes by 300ms
+    enhance: improve error-filter add correlation id to all problem responses
 
 ### `doc: add` / `doc: update` — documentation
 
@@ -78,9 +78,9 @@ Used for documentation changes only. No code changes in the same commit.
 
 Examples:
 
-    doc: add + [error-codes.md] - [catalog backend error codes with http mapping]
-    doc: update + [local-setup.md] - [add windows-specific keycloak docker note]
-    doc: update + [domain-model.md] - [clarify bottleneck rule for tied minimum levels]
+    doc: add error-codes.md catalog backend error codes with http mapping
+    doc: update local-setup.md add windows-specific keycloak docker note
+    doc: update domain-model.md clarify bottleneck rule for tied minimum levels
 
 ### `test: add` — tests
 
@@ -91,16 +91,16 @@ commit; this prefix is for net-new test coverage.
 
 Examples:
 
-    test: add + [irl-calculator] - [property-based test for full likert range]
-    test: add + [submit-questionnaire-e2e] - [verify incomplete payload returns 422]
-    test: add + [radar-chart] - [snapshot test for six-axis rendering]
+    test: add irl-calculator property-based test for full likert range
+    test: add submit-questionnaire-e2e verify incomplete payload returns 422
+    test: add radar-chart snapshot test for six-axis rendering
 
 ## Optional commit body and footers
 
 For commits that need more context, you may add a body and footers
 after the subject line, separated by blank lines:
 
-    feat: add + [maturity-profile] - [compute irl levels from likert answers]
+    feat: add maturity-profile compute irl levels from likert answers
 
     implements rf-07. the calculator is a pure function over the
     conversion table from the marco kth irl, so the table can be
