@@ -16,24 +16,24 @@ services:
       timeout: 5s
       retries: 5
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:25.0
-    container_name: irl-keycloak
-    command: start-dev --import-realm
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-    ports:
-      - '8080:8080'
-    volumes:
-      - ./.docker/keycloak:/opt/keycloak/data/import
+  # keycloak:
+  #   image: quay.io/keycloak/keycloak:25.0
+  #   container_name: irl-keycloak
+  #   command: start-dev --import-realm
+  #   environment:
+  #     KEYCLOAK_ADMIN: admin
+  #     KEYCLOAK_ADMIN_PASSWORD: admin
+  #   ports:
+  #     - '8080:8080'
+  #   volumes:
+  #     - ./.docker/keycloak:/opt/keycloak/data/import
 
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: irl-mailpit
-    ports:
-      - '1025:1025' # SMTP
-      - '8025:8025' # web UI
+  # mailpit:
+  #   image: axllent/mailpit:latest
+  #   container_name: irl-mailpit
+  #   ports:
+  #     - '1025:1025' # SMTP
+  #     - '8025:8025' # web UI
 
 volumes:
   irl-postgres-data:
