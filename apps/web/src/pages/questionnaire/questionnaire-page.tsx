@@ -277,7 +277,8 @@ export function QuestionnairePage() {
                 dimension={dim}
                 meta={DIMENSION_META[dim]}
                 control={control}
-                isIncomplete={submitAttempted && incompleteDimensions.includes(dim)}
+                showStatus={submitAttempted || countAnsweredInDimension(values[dim]) === QUESTION_KEYS.length}
+                isIncomplete={incompleteDimensions.includes(dim)}
               />
             </Tabs.Content>
           ))}

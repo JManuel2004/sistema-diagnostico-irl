@@ -9,32 +9,35 @@ interface DimensionSectionProps {
   meta: DimensionMeta;
   control: Control<PartialQuestionnaireAnswers>;
   isIncomplete: boolean;
+  showStatus: boolean;
 }
 
-export function DimensionSection({ dimension, meta, control, isIncomplete }: DimensionSectionProps) {
+export function DimensionSection({ dimension, meta, control, isIncomplete, showStatus }: DimensionSectionProps) {
   const questions = QUESTIONS[dimension];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div
-        style={{
-          padding: '1rem 1.25rem',
-          borderRadius: 'var(--radius-md)',
-          background: isIncomplete ? 'var(--color-critical-bg)' : 'var(--color-success-bg)',
-          border: `1px solid ${isIncomplete ? 'var(--color-critical)' : 'var(--color-success)'}`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontSize: 'var(--text-sm)',
-          color: isIncomplete ? 'var(--color-critical)' : 'var(--color-success)',
-          fontWeight: 'var(--font-medium)',
-        }}
-      >
-        <span aria-hidden="true">{isIncomplete ? '⚠' : '✓'}</span>
-        {isIncomplete
-          ? 'Hay afirmaciones sin responder en esta sección.'
-          : 'Sección completada correctamente.'}
-      </div>
+      {showStatus && (
+        <div
+          style={{
+            padding: '1rem 1.25rem',
+            borderRadius: 'var(--radius-md)',
+            background: isIncomplete ? 'var(--color-critical-bg)' : 'var(--color-success-bg)',
+            border: `1px solid ${isIncomplete ? 'var(--color-critical)' : 'var(--color-success)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontSize: 'var(--text-sm)',
+            color: isIncomplete ? 'var(--color-critical)' : 'var(--color-success)',
+            fontWeight: 'var(--font-medium)',
+          }}
+        >
+          <span aria-hidden="true">{isIncomplete ? '⚠' : '✓'}</span>
+          {isIncomplete
+            ? 'Hay afirmaciones sin responder en esta sección.'
+            : 'Sección completada correctamente.'}
+        </div>
+      )}
 
       {QUESTION_KEYS.map((key, index) => (
         <div
