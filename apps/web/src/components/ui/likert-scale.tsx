@@ -1,13 +1,7 @@
 import * as RadioGroup from '@radix-ui/react-radio-group';
 import type { LikertValue } from '@innlab/contracts';
 
-const OPTIONS: { value: LikertValue; label: string }[] = [
-  { value: 1, label: 'Totalmente en desacuerdo' },
-  { value: 2, label: 'En desacuerdo' },
-  { value: 3, label: 'Neutral' },
-  { value: 4, label: 'De acuerdo' },
-  { value: 5, label: 'Totalmente de acuerdo' },
-];
+const VALUES: LikertValue[] = [1, 2, 3, 4, 5];
 
 interface LikertScaleProps {
   value: number | null | undefined;
@@ -17,55 +11,76 @@ interface LikertScaleProps {
 
 export function LikertScale({ value, onChange, name }: LikertScaleProps) {
   return (
-    <RadioGroup.Root
-      name={name}
-      value={value != null ? String(value) : ''}
-      onValueChange={(v) => onChange(parseInt(v, 10) as LikertValue)}
-      style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}
-    >
-      {OPTIONS.map((opt) => {
-        const selected = value === opt.value;
-        return (
-          <RadioGroup.Item
-            key={opt.value}
-            value={String(opt.value)}
-            aria-label={opt.label}
-            title={opt.label}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '0.25rem',
-              padding: '0.5rem 0.75rem',
-              border: `2px solid ${selected ? 'var(--color-primary)' : 'var(--color-gray-200)'}`,
-              borderRadius: 'var(--radius-md)',
-              background: selected ? 'var(--color-primary-50)' : 'var(--color-white)',
-              color: selected ? 'var(--color-primary-dark)' : 'var(--color-gray-600)',
-              fontFamily: 'var(--font-sans)',
-              fontWeight: selected ? 'var(--font-semibold)' : 'var(--font-normal)',
-              fontSize: 'var(--text-sm)',
-              cursor: 'pointer',
-              transition: 'border-color 0.15s, background 0.15s',
-              minWidth: '4.5rem',
-              outline: 'none',
-            }}
-          >
-            <RadioGroup.Indicator
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <RadioGroup.Root
+        name={name}
+        value={value != null ? String(value) : ''}
+        onValueChange={(v) => onChange(parseInt(v, 10) as LikertValue)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+        }}
+      >
+        <span
+          style={{
+            fontSize: 'var(--text-xs)',
+            color: 'var(--color-gray-600)',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            maxWidth: '7rem',
+            lineHeight: 1.2,
+          }}
+        >
+          Totalmente en desacuerdo
+        </span>
+
+        {VALUES.map((val) => {
+          const selected = value === val;
+          return (
+            <RadioGroup.Item
+              key={val}
+              value={String(val)}
+              aria-label={`${val} de 5`}
               style={{
-                width: '10px',
-                height: '10px',
+                width: '2.5rem',
+                height: '2.5rem',
                 borderRadius: '50%',
-                background: selected ? 'var(--color-primary)' : 'transparent',
-                border: `2px solid ${selected ? 'var(--color-primary)' : 'var(--color-gray-400)'}`,
+                border: `2px solid ${selected ? 'var(--color-primary)' : 'var(--color-gray-300)'}`,
+                background: selected ? 'var(--color-primary)' : 'var(--color-white)',
+                color: selected ? 'var(--color-white)' : 'var(--color-gray-600)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 'var(--text-base)',
+                fontWeight: 'var(--font-semibold)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 flexShrink: 0,
+                transition: 'border-color 0.15s, background 0.15s, color 0.15s',
+                outline: 'none',
+                boxShadow: selected ? 'var(--shadow-md)' : 'none',
               }}
-            />
-            <span style={{ fontSize: 'var(--text-xs)', textAlign: 'center', lineHeight: 1.2 }}>
-              {opt.label}
-            </span>
-          </RadioGroup.Item>
-        );
-      })}
-    </RadioGroup.Root>
+            >
+              <RadioGroup.Indicator style={{ display: 'none' }} />
+              {val}
+            </RadioGroup.Item>
+          );
+        })}
+
+        <span
+          style={{
+            fontSize: 'var(--text-xs)',
+            color: 'var(--color-gray-600)',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            maxWidth: '7rem',
+            lineHeight: 1.2,
+          }}
+        >
+          Totalmente de acuerdo
+        </span>
+      </RadioGroup.Root>
+    </div>
   );
 }
