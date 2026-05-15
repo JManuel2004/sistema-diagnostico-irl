@@ -20,7 +20,10 @@
     "noUnusedParameters": true,
     "strictNullChecks": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@innlab/contracts": ["../../packages/contracts/src/index.ts"]
+    }
   },
   "include": ["src"]
 }
