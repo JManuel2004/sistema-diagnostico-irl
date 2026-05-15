@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation.js';
+import { QuestionnaireModule } from './modules/questionnaire/questionnaire.module.js';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { envValidationSchema } from './config/env.validation.js';
       validationOptions: { abortEarly: false },
       envFilePath: ['.env.local', '.env'],
     }),
+    QuestionnaireModule,
   ],
   controllers: [AppController],
   providers: [AppService],
