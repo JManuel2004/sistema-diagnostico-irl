@@ -6,6 +6,7 @@ export default {
       testMatch: ['<rootDir>/test/unit/**/*.spec.ts'],
       preset: 'ts-jest/presets/default-esm',
       testEnvironment: 'node',
+      setupFilesAfterEnv: ['<rootDir>/test/unit/setup.ts'],
       moduleNameMapper: { '^(\\.{1,2}/.*)\\.js$': '$1' },
     },
     {

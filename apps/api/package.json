@@ -1,10 +1,11 @@
 {
   "name": "@innlab/api",
   "version": "0.0.1",
-  "description": "",
+  "description": "IRL Diagnostic backend — NestJS + Fastify + TypeORM",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "type": "module",
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",
@@ -14,18 +15,18 @@
     "lint:fix": "eslint \"{src,test}/**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "test": "jest",
-    "test:unit": "jest --selectProjects unit",
-    "test:integration": "jest --selectProjects integration",
-    "test:e2e": "jest --selectProjects e2e --runInBand",
-    "test:cov": "jest --coverage",
-    "test:watch": "jest --watch",
+    "test": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js",
+    "test:unit": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --selectProjects unit",
+    "test:integration": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --selectProjects integration",
+    "test:e2e": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --selectProjects e2e --runInBand",
+    "test:cov": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --coverage",
+    "test:watch": "node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --watch",
     "db:migration:generate": "pnpm typeorm migration:generate -d src/infrastructure/database/data-source.ts",
     "db:migration:create": "pnpm typeorm migration:create",
     "db:migration:run": "pnpm typeorm migration:run -d src/infrastructure/database/data-source.ts",
     "db:migration:revert": "pnpm typeorm migration:revert -d src/infrastructure/database/data-source.ts",
-    "db:seed": "ts-node -r tsconfig-paths/register src/infrastructure/database/seeds/index.ts",
-    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js"
+    "db:seed": "tsx src/infrastructure/database/seeds/index.ts",
+    "typeorm": "tsx ./node_modules/typeorm/cli.js"
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
@@ -45,6 +46,7 @@
     "cache-manager": "^7.2.8",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "fastify": "^5.8.4",
     "joi": "^18.2.1",
     "jwks-rsa": "^4.0.1",
     "nestjs-cls": "^6.2.0",
@@ -94,25 +96,9 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.19.0",
     "typeorm-extension": "^3.9.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
   }
 }
