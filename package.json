@@ -25,11 +25,10 @@
     "keycloak:up": "docker compose -f docker-compose.yml up -d keycloak",
     "prepare": "husky"
   },
-  "workspaces": [],
   "devDependencies": {
     "@commitlint/cli": "^19",
     "@commitlint/config-conventional": "^19",
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9",
     "eslint": "^9",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9",
@@ -53,7 +52,8 @@
       "inflight": "1"
     },
     "neverBuiltDependencies": [
-      "@nestjs/core"
+      "opencollective",
+      "opencollective-postinstall"
     ]
   }
 }
