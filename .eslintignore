@@ -1,0 +1,9 @@
+# Ignore build and config files for the web app
+apps/web/postcss.config.js
+apps/web/tailwind.config.ts
+apps/web/index.html
+
+# Node modules and build artifacts
+node_modules/
+dist/
+build/
