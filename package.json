@@ -20,9 +20,9 @@
     "typecheck": "pnpm -r typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
-    "db:up": "docker compose -f docker-compose.dev.yml up -d postgres",
-    "db:down": "docker compose -f docker-compose.dev.yml down",
-    "keycloak:up": "docker compose -f docker-compose.dev.yml up -d keycloak",
+    "db:up": "docker compose -f docker-compose.yml up -d postgres",
+    "db:down": "docker compose -f docker-compose.yml down",
+    "keycloak:up": "docker compose -f docker-compose.yml up -d keycloak",
     "prepare": "husky"
   },
   "devDependencies": {

@@ -1,43 +1,24 @@
 import { z } from 'zod';
+import { uuidSchema } from '../common/uuid.schema.js';
 import { likertValueSchema } from './likert.schema.js';
 
 /**
- * A single answer to a statement in the questionnaire.
- * Used both when saving drafts and when submitting final answers.
+ * Una respuesta individual del cuestionario.
+ *
+ * El shape se usa tanto al cargar un draft del backend (cada respuesta
+ * trae su `id`) como al enviarlo (el cliente sólo aporta `statementId`
+ * + `value`; el servidor asigna o reutiliza el `id`).
+ *
+ * El `id` es opcional porque el frontend nunca necesita conocerlo —
+ * la unicidad útil es `(diagnosticId, statementId)` y eso está
+ * garantizado por el constraint UNIQUE de la tabla `respuesta`.
  */
 export const answerItemSchema = z
   .object({
-    statementId: z.string().uuid().describe('ID of the statement being answered'),
+    id: uuidSchema.optional().describe('ID del registro persistido (solo al leer)'),
+    statementId: uuidSchema.describe('ID de la afirmación que se responde'),
     value: likertValueSchema,
   })
-  .describe('A single answer to a questionnaire statement');
+  .describe('Una respuesta a una afirmación del cuestionario');
 
 export type AnswerItem = z.infer<typeof answerItemSchema>;
-
-/**
- * Request payload for submitting the complete 48-answer questionnaire.
- * RF-06 enforces that exactly 48 answers with each value 1–5 must be present.
- */
-export const submitQuestionnaireRequestSchema = z
-  .object({
-    diagnosticId: z.string().uuid().describe('The diagnostic being completed'),
-    answers: z.array(answerItemSchema).length(48).describe('Exactly 48 answers, one per statement'),
-  })
-  .describe('Questionnaire submission request (HU-10)');
-
-export type SubmitQuestionnaireRequest = z.infer<typeof submitQuestionnaireRequestSchema>;
-
-/**
- * Response after questionnaire submission.
- * The backend triggers the maturity profile calculation synchronously.
- * This response confirms the submission and provides a summary.
- */
-export const submitQuestionnaireResponseSchema = z
-  .object({
-    diagnosticId: z.string().uuid(),
-    answersRecorded: z.number().int().min(48).max(48),
-    state: z.enum(['CUESTIONARIO_COMPLETO']).describe('New state of the diagnostic'),
-  })
-  .describe('Questionnaire submission response');
-
-export type SubmitQuestionnaireResponse = z.infer<typeof submitQuestionnaireResponseSchema>;
