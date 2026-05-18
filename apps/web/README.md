@@ -2,7 +2,7 @@
 
 The IRL Diagnostic System SPA. **React 18 + Vite 5 + TypeScript**, with **TanStack Query** for server state, **Zustand** for the questionnaire draft, **React Hook Form + Zod** for forms, **Recharts** for the radar chart, and **Radix UI** for accessible primitives.
 
-This README is for frontend developers. For the system overview, see the [root README](../../README.md).
+This README is for frontend developers. For the system overview, see the [root README](../../README.md). For architectural intent, see [`docs/architecture/overview.md`](../../docs/architecture/overview.md).
 
 ## Stack
 
@@ -78,14 +78,14 @@ apps/web/
 │   ├── shared/                     # cross-feature primitives only
 │   │   ├── ui/                     # Button, TextField, Dialog, ...
 │   │   ├── api/                    # http.ts, query-keys.ts, problem-details.ts
-│   │   ├── lib/                    # invariants, result types
+│   │   ├── lib/                    # invariants, result types, cn() utility
 │   │   ├── hooks/                  # generic hooks (useDebouncedValue, ...)
 │   │   ├── types/                  # cross-feature TS types
+│   │   ├── ui/                     # shadcn/ui primitives (Button, Card, Tabs, ...)
 │   │   └── config/                 # typed env access
 │   │
 │   ├── styles/
-│   │   ├── globals.css
-│   │   └── tokens.css              # design tokens
+│   │   └── globals.css             # Tailwind directives + global resets + CSS custom properties for theme
 │   │
 │   └── test/
 │       ├── setup.ts                # Vitest setup
@@ -186,9 +186,24 @@ Zod schemas for cross-tier shapes live in `@innlab/contracts`; the frontend impo
 
 ## UI primitives
 
-`shared/ui/` holds stateless, domain-agnostic primitives only: `Button`, `TextField`, `Select`, `Dialog`, `Spinner`, `Toast`, `EmptyState`, `ErrorState`. Each is built on a Radix primitive when accessibility matters (radio groups, dialogs, tabs). Styling uses CSS Modules + design tokens — no Tailwind.
+`shared/ui/` holds stateless, domain-agnostic primitives from **shadcn/ui** — `Button`, `Card`, `Tabs`, `RadioGroup`, `Dialog`, `Spinner`, `Toast`, `Input`, etc. shadcn copies component source into `src/shared/ui/`; you own the code. Each primitive composes a Radix UI primitive (when accessibility matters) with Tailwind classes organized via **class-variance-authority** (CVA), so component variants are type-safe.
 
-Domain-specific components (`LikertScale`, `RadarChart`, `DimensionTabs`) stay in their owning feature. Promotion to `shared/ui/` requires a **second** feature legitimately needing the component.
+To add a new primitive:
+
+```bash
+pnpm dlx shadcn@latest add <component-name>
+```
+
+shadcn places the file under `src/shared/ui/`. After copying, the component is yours — modify freely; don't treat shadcn as an upstream dependency. ESLint's `boundaries` plugin still treats `shared/ui/` as `shared`, so feature isolation rules apply unchanged.
+
+Domain-specific components (`LikertScale`, `RadarChart`, `DimensionTabs`, `StatementCard`) stay in their owning feature and compose `shared/ui/` primitives. Promotion to `shared/ui/` requires a **second** feature legitimately needing the component.
+
+**Styling rules:**
+
+- Tailwind utility classes are the styling language. No CSS-in-JS, no styled-components, no `*.module.css` for new components (the existing Vite-template `index.css` gets replaced by `styles/globals.css` during Stage 1 stabilization).
+- Use the `cn()` helper from `@/shared/lib/utils` to merge classes — never raw string concatenation. `cn()` wraps `clsx` + `tailwind-merge`, which resolves conflicting utilities correctly (e.g. `cn('p-2', isLarge && 'p-4')` → `p-4` wins).
+- Design tokens (color palette, spacing scale, radii) live in `tailwind.config.ts` under `theme.extend`, mapped to CSS custom properties in `styles/globals.css` so the same tokens are accessible from both Tailwind classes and any direct CSS.
+- Prettier with `prettier-plugin-tailwindcss` enforces deterministic class ordering. Don't fight it.
 
 ## Testing
 

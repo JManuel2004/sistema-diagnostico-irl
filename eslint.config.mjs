@@ -13,6 +13,8 @@ export default tseslint.config(
       'apps/api/jest.config.js',
       'apps/web/vitest.config.js',
       'apps/web/eslint.config.js',
+      'apps/web/postcss.config.js',
+      'apps/web/tailwind.config.ts',
       'apps/web/playwright.config.ts',
     ],
   },

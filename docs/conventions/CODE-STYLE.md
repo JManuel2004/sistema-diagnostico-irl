@@ -177,16 +177,17 @@ ESLint's `no-floating-promises` rule catches forgotten awaits. Don't suppress it
 
 ## File naming
 
-| Kind                 | Pattern                                   | Example                                |
-| -------------------- | ----------------------------------------- | -------------------------------------- |
-| TypeScript files     | kebab-case                                | `submit-questionnaire.use-case.ts`     |
-| React components     | PascalCase                                | `StatementCard.tsx`, `LikertScale.tsx` |
-| React hooks          | camelCase, `use` prefix                   | `useQuestionnaireDraft.ts`             |
-| Test files           | `<source>.spec.ts` or `<source>.test.tsx` | `irl-calculator.service.spec.ts`       |
-| E2E test files       | `<scenario>.e2e-spec.ts`                  | `submit-questionnaire.e2e-spec.ts`     |
-| TypeORM entity files | `<name>.orm-entity.ts`                    | `respuesta.orm-entity.ts`              |
-| Zod schema files     | `<name>.schema.ts`                        | `submission.schema.ts`                 |
-| CSS Modules          | `<Component>.module.css`                  | `StatementCard.module.css`             |
+| Kind                    | Pattern                                                   | Example                                |
+| ----------------------- | --------------------------------------------------------- | -------------------------------------- |
+| TypeScript files        | kebab-case                                                | `submit-questionnaire.use-case.ts`     |
+| React components        | PascalCase                                                | `StatementCard.tsx`, `LikertScale.tsx` |
+| React hooks             | camelCase, `use` prefix                                   | `useQuestionnaireDraft.ts`             |
+| Test files              | `<source>.spec.ts` or `<source>.test.tsx`                 | `irl-calculator.service.spec.ts`       |
+| E2E test files          | `<scenario>.e2e-spec.ts`                                  | `submit-questionnaire.e2e-spec.ts`     |
+| TypeORM entity files    | `<name>.orm-entity.ts`                                    | `respuesta.orm-entity.ts`              |
+| Zod schema files        | `<name>.schema.ts`                                        | `submission.schema.ts`                 |
+| Tailwind config         | `tailwind.config.ts`                                      | —                                      |
+| CVA variant definitions | `<component>.variants.ts` (co-located with the component) | `button.variants.ts`                   |
 
 ## Naming patterns
 

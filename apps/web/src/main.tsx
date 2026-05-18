@@ -1,9 +1,16 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import './index.css';
-import App from './App.tsx';
+import { App } from '@app/App';
+import './styles/globals.css';
 
-createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root');
+if (rootElement === null) {
+  throw new Error(
+    "Root mount node #root is missing from index.html. Don't move this without updating index.html.",
+  );
+}
+
+createRoot(rootElement).render(
   <StrictMode>
     <App />
   </StrictMode>,
