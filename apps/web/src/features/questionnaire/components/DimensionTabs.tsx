@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import type { QuestionnaireStructure } from '@innlab/contracts';
 import { DimensionPanel } from './DimensionPanel';
+import { useQuestionnaireDraftStore, selectAnswers } from '../store/questionnaire-draft.store';
 
 /**
  * Tabs de dimensiones IRL.
@@ -22,6 +23,7 @@ interface Props {
 
 export function DimensionTabs({ dimensions }: Props) {
   const firstCode = dimensions[0]?.code ?? 'TRL';
+  const answers = useQuestionnaireDraftStore(selectAnswers);
 
   return (
     <Tabs defaultValue={firstCode} className="w-full">
@@ -30,22 +32,26 @@ export function DimensionTabs({ dimensions }: Props) {
           aria-label="Dimensiones IRL"
           className="grid h-auto w-full min-w-max grid-cols-6 gap-1 p-1"
         >
-          {dimensions.map((d) => (
-            <TabsTrigger
-              key={d.code}
-              value={d.code}
-              className="flex h-12 flex-col items-center justify-center gap-0.5 px-3 py-2"
-              title={d.name}
-            >
-              <span className="text-overline">{d.code}</span>
-              <span
-                aria-hidden="true"
-                className="text-muted-foreground text-[0.6875rem] font-normal tracking-normal"
+          {dimensions.map((d) => {
+            const answered = d.statements.filter((st) => answers[st.id] !== undefined).length;
+
+            return (
+              <TabsTrigger
+                key={d.code}
+                value={d.code}
+                className="flex h-12 flex-col items-center justify-center gap-0.5 px-3 py-2"
+                title={d.name}
               >
-                8 ítems
-              </span>
-            </TabsTrigger>
-          ))}
+                <span className="text-overline">{d.code}</span>
+                <span
+                  aria-hidden="true"
+                  className="text-muted-foreground text-[0.6875rem] font-normal tracking-normal"
+                >
+                  {answered}/8
+                </span>
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
       </div>
 

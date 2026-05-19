@@ -1,5 +1,7 @@
 import type { Statement } from '@innlab/contracts';
 import { Card } from '@/shared/ui/card';
+import { LikertScale } from './LikertScale';
+import { useAnswerForStatement } from '../hooks/useAnswerForStatement';
 
 /**
  * `StatementCard` — el componente central del cuestionario IRL.
@@ -23,6 +25,7 @@ interface Props {
 }
 
 export function StatementCard({ statement }: Props) {
+  const { value, setAnswer } = useAnswerForStatement(statement.id);
   return (
     <Card className="p-5 transition-shadow hover:shadow-sm">
       <div className="flex items-baseline justify-between gap-3">
@@ -31,7 +34,14 @@ export function StatementCard({ statement }: Props) {
           {statement.dimensionCode}
         </span>
       </div>
-      <p className="text-body-lg text-foreground mt-3 leading-relaxed">{statement.text}</p>
+      <p
+        id={`statement-text-${statement.id}`}
+        className="text-body-lg text-foreground mt-3 leading-relaxed"
+      >
+        {statement.text}
+      </p>
+
+      <LikertScale id={`statement-text-${statement.id}`} value={value} onChange={setAnswer} />
     </Card>
   );
 }
