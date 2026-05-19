@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
@@ -123,5 +123,38 @@ describe('QuestionnaireView', () => {
     await user.click(screen.getByRole('button', { name: 'Reintentar' }));
 
     await waitFor(() => expect(callCount).toBeGreaterThan(before));
+  });
+
+  it('persists answers when switching dimension tabs and after remount', async () => {
+    withSuccessHandler();
+    const user = userEvent.setup();
+    const utils = renderWithClient(<QuestionnaireView />);
+
+    await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
+
+    // In the first (default) panel, select "De acuerdo" for the first statement
+    const rg = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });
+    const radio = within(rg).getByRole('radio', { name: 'De acuerdo' });
+
+    await user.click(radio);
+    expect(radio).toBeChecked();
+
+    // Switch to another dimension and back
+    await user.click(screen.getByRole('tab', { name: 'CRL' }));
+    await waitFor(() => screen.getByRole('tabpanel'));
+    await user.click(screen.getByRole('tab', { name: 'TRL' }));
+    await waitFor(() => screen.getByRole('tabpanel'));
+
+    // After returning, the previously selected radio should still be checked
+    const rg2 = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });
+    expect(within(rg2).getByRole('radio', { name: 'De acuerdo' })).toBeChecked();
+
+    // Unmount and remount the view (simulating navigation away and back)
+    utils.unmount();
+    renderWithClient(<QuestionnaireView />);
+    await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
+
+    const remountedRg = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });
+    expect(within(remountedRg).getByRole('radio', { name: 'De acuerdo' })).toBeChecked();
   });
 });

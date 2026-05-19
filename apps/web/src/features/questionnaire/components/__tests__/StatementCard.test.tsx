@@ -43,12 +43,12 @@ describe('StatementCard', () => {
 
     await user.click(screen.getByRole('radio', { name: 'De acuerdo' }));
 
-    expect(useQuestionnaireDraftStore.getState().getAnswer(statement.id)).toBe(4);
+    expect(useQuestionnaireDraftStore.getState().answers[statement.id]).toBe(4);
     expect(screen.getByRole('radio', { name: 'De acuerdo' })).toBeChecked();
 
     await user.click(screen.getByRole('radio', { name: 'De acuerdo' }));
 
-    expect(useQuestionnaireDraftStore.getState().getAnswer(statement.id)).toBe(4);
+    expect(useQuestionnaireDraftStore.getState().answers[statement.id]).toBe(4);
     expect(screen.getByRole('radio', { name: 'De acuerdo' })).toBeChecked();
   });
 });
