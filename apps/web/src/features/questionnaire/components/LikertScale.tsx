@@ -17,12 +17,15 @@ const OPTIONS: { value: LikertValue; label: string }[] = [
 ];
 
 export function LikertScale({ id, value, onChange }: Props) {
+  // Keep Radix RadioGroup controlled for the component lifetime.
+  const controlledValue = value === null ? '' : String(value);
+
   return (
     <RadioGroup
       aria-labelledby={id}
       aria-label="Escala Likert"
       className="mt-4 grid grid-cols-5 gap-3"
-      value={value ? String(value) : undefined}
+      value={controlledValue}
       onValueChange={(v) => onChange(Number(v))}
     >
       {OPTIONS.map((opt) => (

@@ -3,34 +3,50 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { LikertValue } from '@innlab/contracts';
 
 interface DraftState {
+  diagnosticId: string | null;
   answers: Record<string, LikertValue>;
+  dirty: boolean;
+  initialize: (diagnosticId?: string | null) => void;
   setAnswer: (statementId: string, value: LikertValue) => void;
-  getAnswer: (statementId: string) => LikertValue | null;
-  countAnsweredInDimension: (statementIds: string[]) => number;
+  reset: () => void;
   clear: () => void;
 }
+
+const DRAFT_STORAGE_KEY = 'innlab.questionnaire-draft.v1';
 
 export const useQuestionnaireDraftStore = create<DraftState>()(
   persist(
     (set, get) => ({
+      diagnosticId: null,
       answers: {},
+      dirty: false,
+      initialize(diagnosticId?: string | null) {
+        const current = get().diagnosticId;
+        // If no diagnosticId provided and none set, keep current (global draft)
+        if (!diagnosticId && current === null) return;
+        // If same diagnostic, do nothing
+        if (diagnosticId === current) return;
+        // New diagnostic: reset answers and set id
+        set({ diagnosticId: diagnosticId ?? null, answers: {}, dirty: false });
+      },
       setAnswer(statementId: string, value: LikertValue) {
-        set((s) => ({ answers: { ...s.answers, [statementId]: value } }));
+        set((s) => ({ answers: { ...s.answers, [statementId]: value }, dirty: true }));
       },
-      getAnswer(statementId: string) {
-        return get().answers[statementId] ?? null;
-      },
-      countAnsweredInDimension(statementIds: string[]) {
-        const answers = get().answers;
-        return statementIds.filter((id) => answers[id] !== undefined).length;
+      reset() {
+        set({ answers: {}, dirty: false });
       },
       clear() {
-        set({ answers: {} });
+        set({ diagnosticId: null, answers: {}, dirty: false });
       },
     }),
     {
-      name: 'questionnaire-draft',
+      name: DRAFT_STORAGE_KEY,
       storage: createJSONStorage(() => sessionStorage),
+      version: 1,
+      partialize: (s) => ({
+        diagnosticId: s.diagnosticId,
+        answers: s.answers,
+      }),
     },
   ),
 );
