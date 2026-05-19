@@ -1,7 +1,7 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
-import { InitialSchema1700000000000 } from '../../../src/infrastructure/database/migrations/1700000000000-InitialSchema.js';
+import { InitialSchema20260518001 } from '../../../src/infrastructure/database/migrations/20260518001-InitialSchema.js';
 import { DIMENSIONS } from '../../../src/infrastructure/database/seeds/data/dimensions.js';
 import { STATEMENTS } from '../../../src/infrastructure/database/seeds/data/statements.js';
 
@@ -29,13 +29,13 @@ describe('Catalog seed (integration)', () => {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
-      migrations: [InitialSchema1700000000000],
+      migrations: [InitialSchema20260518001],
       migrationsTableName: 'typeorm_migrations',
     });
 
     await dataSource.initialize();
     await dataSource.runMigrations();
-  });
+  }, 60_000);
 
   afterAll(async () => {
     if (dataSource?.isInitialized) await dataSource.destroy();
@@ -46,22 +46,34 @@ describe('Catalog seed (integration)', () => {
     await dataSource.transaction(async (manager) => {
       for (const d of DIMENSIONS) {
         await manager.query(
-          `INSERT INTO irl_catalog.dimension (id_dimension, codigo, nombre, descripcion, orden)
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (codigo, version_marco) DO UPDATE
-               SET nombre = EXCLUDED.nombre,
-                   descripcion = EXCLUDED.descripcion,
-                   orden = EXCLUDED.orden`,
-          [d.id, d.codigo, d.nombre, d.descripcion, d.orden],
+          `INSERT INTO irl_catalog.dimension
+             (codigo, nombre_es, nombre_en, descripcion, es_dimension_critica, orden)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (codigo) DO UPDATE
+             SET nombre_es            = EXCLUDED.nombre_es,
+                 nombre_en            = EXCLUDED.nombre_en,
+                 descripcion          = EXCLUDED.descripcion,
+                 es_dimension_critica = EXCLUDED.es_dimension_critica,
+                 orden                = EXCLUDED.orden`,
+          [
+            d.codigo,
+            d.nombreEs,
+            d.nombreEn,
+            d.descripcion,
+            d.esDimensionCritica,
+            d.orden,
+          ],
         );
       }
       for (const s of STATEMENTS) {
         await manager.query(
-          `INSERT INTO irl_catalog.afirmacion (id_afirmacion, id_dimension, orden, texto)
-             VALUES ($1, $2, $3, $4)
-             ON CONFLICT (id_dimension, orden, version_marco) DO UPDATE
-               SET texto = EXCLUDED.texto`,
-          [s.id, s.dimensionId, s.orden, s.texto],
+          `INSERT INTO irl_catalog.afirmacion (id_dimension, numero_en_dimension, texto_es)
+           SELECT d.id_dimension, $2, $3
+             FROM irl_catalog.dimension d
+            WHERE d.codigo = $1
+           ON CONFLICT (id_dimension, numero_en_dimension) DO UPDATE
+             SET texto_es = EXCLUDED.texto_es`,
+          [s.dimensionCodigo, s.numeroenDimension, s.textoEs],
         );
       }
     });

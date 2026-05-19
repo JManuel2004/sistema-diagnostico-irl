@@ -4,28 +4,22 @@ import { DIMENSIONS } from './dimensions.js';
  * Forty-eight statements (afirmaciones) of the IRL questionnaire — 8 per
  * dimension, 6 dimensions, total 48 (RF-05).
  *
- * IMPORTANT: the Spanish text below is **placeholder** representative of
+ * IMPORTANT: the Spanish text below is placeholder representative of
  * the KTH Innovation Readiness Level framework. Before going to
  * production, replace it with the project-stakeholder-approved wording
  * referenced in `sistema-diagnostico-irl-docs/01-requirements/backlog.md`.
- * Replace the text only — never change the `orden`, the dimension
+ * Replace the text only — never change `numeroenDimension`, the dimension
  * mapping, or the count of 8 per dimension.
  *
- * The deterministic UUIDs (`22222222-XX-YY-...`) make integration tests
- * reproducible: XX is the dimension index (01-06) and YY is the
- * statement index within the dimension (01-08).
+ * `id_afirmacion` is GENERATED ALWAYS AS IDENTITY — statements are inserted
+ * without an explicit PK; the DB assigns it. Statements are linked to
+ * dimensions by `dimensionCodigo` (looked up in a subquery during seed).
  */
 export interface StatementSeed {
-  readonly id: string;
-  readonly dimensionId: string;
-  readonly orden: number;
-  readonly texto: string;
+  readonly dimensionCodigo: string;
+  readonly numeroenDimension: number;
+  readonly textoEs: string;
 }
-
-const DIM = Object.fromEntries(DIMENSIONS.map((d) => [d.codigo, d.id]));
-
-const statementId = (dimensionIndex: number, orden: number): string =>
-  `22222222-2222-2222-${String(dimensionIndex).padStart(4, '0')}-${String(orden).padStart(12, '0')}`;
 
 const TRL_TEXTS: readonly string[] = [
   'Hemos identificado y descrito los principios tecnológicos básicos sobre los que se apoya la iniciativa.',
@@ -109,11 +103,10 @@ export const STATEMENTS: readonly StatementSeed[] = DIMENSIONS.flatMap((d) => {
       `Dimension ${d.codigo} must have exactly 8 statement texts`,
     );
   }
-  return texts.map((texto, index) => ({
-    id: statementId(d.orden, index + 1),
-    dimensionId: DIM[d.codigo],
-    orden: index + 1,
-    texto,
+  return texts.map((textoEs, index) => ({
+    dimensionCodigo: d.codigo,
+    numeroenDimension: index + 1,
+    textoEs,
   }));
 });
 
