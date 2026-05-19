@@ -3,75 +3,68 @@
 @tailwind utilities;
 
 /*
- * Tokens del sistema de diseño shadcn/ui.
+ * Tokens del sistema de diseño — Icesi institutional brand
+ * (Manual de identidad de marca Icesi, Febrero 2026).
  *
  * Cada variable es un HSL en formato sin comas (`H S% L%`) — Tailwind las
- * envuelve con `hsl(var(--token))` desde `tailwind.config.ts`. Para el
- * modo claro y el modo oscuro se cambia el set de variables, no el
- * markup. La paleta base es la `slate` de shadcn, ajustada hacia el
- * acento institucional Icesi (indigo profundo).
+ * envuelve con `hsl(var(--token))` desde `tailwind.config.ts`.
+ *
+ *   --primary    232 77% 62%  =  #5454E9  Azul Icesi
+ *   --accent     16 76% 36%   =  #A24317  Darkened Naranja Icesi (AA)
+ *   --border     228  9% 82%  =  #CECFD4  Gris 2
+ *   --border-strong  225  2% 54%  =  #88898C  Gris 1
+ *
+ * Modo oscuro intencionalmente omitido en fase 1: el manual mandata
+ * fondo blanco (positive logo lockup) y el sistema es flat-ish.
  */
 @layer base {
   :root {
+    /* Surfaces — pure white per Icesi positive logo lockup rules */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 240 16% 12%;
+
+    --surface: 0 0% 100%;
+    --surface-muted: 240 33% 97%;
+    --surface-emphasis: 240 75% 96%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 240 16% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 240 16% 12%;
 
-    --primary: 232 51% 47%;
+    /* Primary — Azul Icesi #5454E9 (Pantone 2131 C, identity anchor) */
+    --primary: 240 77% 62%;
+    --primary-hover: 240 53% 52%;
+    --primary-pressed: 240 58% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Accent — CTA — darkened Naranja Icesi for AA compliance */
+    --accent: 16 76% 36%;
+    --accent-hover: 16 78% 31%;
+    --accent-pressed: 16 82% 26%;
+    --accent-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Secondary surfaces */
+    --secondary: 240 33% 97%;
+    --secondary-foreground: 240 16% 16%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --muted: 240 33% 97%;
+    --muted-foreground: 232 9% 35%;
 
-    --destructive: 0 72% 51%;
+    /* Destructive (system warnings, not used in phase 1) */
+    --destructive: 9 65% 39%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 232 51% 47%;
+    /* Borders — Gris 1 (strong) and Gris 2 (default hairline) */
+    --border: 228 9% 82%;
+    --border-strong: 225 2% 54%;
+    --input: 225 2% 54%;
+
+    /* Focus ring — Azul Icesi */
+    --ring: 240 77% 62%;
 
     --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 232 65% 70%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 232 65% 70%;
   }
 }
 
@@ -79,13 +72,99 @@
   * {
     @apply border-border;
   }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
+    font-family:
+      'Plus Jakarta Sans',
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
+      sans-serif;
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
+    color: hsl(240 16% 12%);
   }
+
+  /* Headings — Plus Jakarta Sans, tighter tracking per scale */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Arial, sans-serif;
+    color: hsl(240 16% 12%);
+  }
+
+  /*
+   * Icesi institutional iconography: corners angulares, terminaciones
+   * rectas, grosor uniforme. Lucide-react uses round joins/caps by
+   * default, which contradicts the manual — override globally.
+   */
+  .lucide,
+  [data-lucide],
+  svg[stroke] {
+    stroke-linejoin: miter;
+    stroke-linecap: butt;
+  }
+
+  /* Focus ring — Azul Icesi at 2px offset, visible on every interactive */
   :focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2;
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Selection — soft Azul Icesi wash so text stays readable */
+  ::selection {
+    background-color: hsl(240 75% 92%);
+    color: hsl(240 16% 12%);
+  }
+}
+
+@layer utilities {
+  /* Typography helpers — direct mappings to DESIGN.md type scale */
+  .text-overline {
+    font-size: 0.6875rem;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .text-display {
+    font-size: 3rem;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .text-body-lg {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  /* Subtle wash for institutional surfaces (callouts, hero panels) */
+  .bg-azul-wash {
+    background-color: hsl(240 75% 96%);
+  }
+
+  /*
+   * Brand descriptor separator — 1px Gris 1 vertical line whose
+   * height tracks ~30% of the logotype height per the manual's
+   * "Centros y observatorios — Construcción del descriptor".
+   */
+  .descriptor-separator {
+    width: 1px;
+    background-color: #88898c;
+    align-self: stretch;
   }
 }

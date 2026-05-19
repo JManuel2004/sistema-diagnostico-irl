@@ -16,8 +16,8 @@ describe('QuestionnaireSkeleton', () => {
   });
 
   it('renders 8 placeholder rows (one per statement)', () => {
-    const { container } = render(<QuestionnaireSkeleton />);
-    const rows = container.querySelectorAll('.h-24');
+    render(<QuestionnaireSkeleton />);
+    const rows = screen.getAllByTestId('statement-placeholder');
     expect(rows).toHaveLength(8);
   });
 });
