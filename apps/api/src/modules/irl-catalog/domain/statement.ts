@@ -1,4 +1,3 @@
-import { Uuid } from '../../../shared-kernel/domain/value-objects/uuid.vo.js';
 import { DimensionCode } from '../../../shared-kernel/domain/value-objects/dimension-code.js';
 import { InvariantViolationError } from '../../../shared-kernel/domain/errors/invariant-violation.error.js';
 
@@ -17,8 +16,8 @@ import { InvariantViolationError } from '../../../shared-kernel/domain/errors/in
  * persistence-layer ORM class is `AfirmacionOrm`.
  */
 export interface StatementPersistence {
-  readonly id: string;
-  readonly dimensionId: string;
+  readonly id: string; // bigint PK; TypeORM returns bigint columns as string
+  readonly dimensionId: number; // integer FK to irl_catalog.dimension
   readonly dimensionCode: string;
   readonly sequence: number;
   readonly text: string;
@@ -26,8 +25,8 @@ export interface StatementPersistence {
 
 export class Statement {
   private constructor(
-    public readonly id: Uuid,
-    public readonly dimensionId: Uuid,
+    public readonly id: string,
+    public readonly dimensionId: number,
     public readonly dimensionCode: DimensionCode,
     public readonly sequence: number,
     public readonly text: string,
@@ -47,8 +46,8 @@ export class Statement {
       throw new InvariantViolationError('Statement text must be non-empty');
     }
     return new Statement(
-      Uuid.create(row.id),
-      Uuid.create(row.dimensionId),
+      row.id,
+      row.dimensionId,
       DimensionCode.create(row.dimensionCode),
       row.sequence,
       row.text,

@@ -1,5 +1,4 @@
 import { DimensionCode } from '../../../shared-kernel/domain/value-objects/dimension-code.js';
-import { Uuid } from '../../../shared-kernel/domain/value-objects/uuid.vo.js';
 import { InvariantViolationError } from '../../../shared-kernel/domain/errors/invariant-violation.error.js';
 
 /**
@@ -13,14 +12,14 @@ import { InvariantViolationError } from '../../../shared-kernel/domain/errors/in
  * them to classify the gap as critical / moderate / acceptable.
  */
 export interface DimensionPairPersistence {
-  readonly id: string;
+  readonly id: number;
   readonly leftCode: string;
   readonly rightCode: string;
 }
 
 export class DimensionPair {
   private constructor(
-    public readonly id: Uuid,
+    public readonly id: number,
     public readonly left: DimensionCode,
     public readonly right: DimensionCode,
   ) {}
@@ -32,7 +31,7 @@ export class DimensionPair {
       );
     }
     return new DimensionPair(
-      Uuid.create(row.id),
+      row.id,
       DimensionCode.create(row.leftCode),
       DimensionCode.create(row.rightCode),
     );

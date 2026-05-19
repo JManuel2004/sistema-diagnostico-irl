@@ -41,7 +41,7 @@ export class TypeOrmIrlCatalogRepository implements IrlCatalogRepositoryPort {
       Dimension.fromPersistence({
         id: r.idDimension,
         code: r.codigo,
-        name: r.nombre,
+        name: r.nombreEs,
         description: r.descripcion,
         sequence: r.orden,
       }),
@@ -51,15 +51,15 @@ export class TypeOrmIrlCatalogRepository implements IrlCatalogRepositoryPort {
   async findAllStatements(): Promise<Statement[]> {
     const rows = await this.afirmaciones.find({
       relations: { dimension: true },
-      order: { dimension: { orden: 'ASC' }, orden: 'ASC' },
+      order: { dimension: { orden: 'ASC' }, numeroEnDimension: 'ASC' },
     });
     return rows.map((r) =>
       Statement.fromPersistence({
         id: r.idAfirmacion,
         dimensionId: r.idDimension,
         dimensionCode: r.dimension.codigo,
-        sequence: r.orden,
-        text: r.texto,
+        sequence: r.numeroEnDimension,
+        text: r.textoEs,
       }),
     );
   }
@@ -68,15 +68,15 @@ export class TypeOrmIrlCatalogRepository implements IrlCatalogRepositoryPort {
     const rows = await this.afirmaciones.find({
       where: { dimension: { codigo: code } },
       relations: { dimension: true },
-      order: { orden: 'ASC' },
+      order: { numeroEnDimension: 'ASC' },
     });
     return rows.map((r) =>
       Statement.fromPersistence({
         id: r.idAfirmacion,
         dimensionId: r.idDimension,
         dimensionCode: r.dimension.codigo,
-        sequence: r.orden,
-        text: r.texto,
+        sequence: r.numeroEnDimension,
+        text: r.textoEs,
       }),
     );
   }
@@ -94,12 +94,13 @@ export class TypeOrmIrlCatalogRepository implements IrlCatalogRepositoryPort {
 
   async findAllDimensionPairs(): Promise<DimensionPair[]> {
     const rows = await this.pares.find();
-    return rows.map((r) =>
-      DimensionPair.fromPersistence({
+    return rows.map((r) => {
+      const [leftCode = '', rightCode = ''] = r.codigoPar.split('-');
+      return DimensionPair.fromPersistence({
         id: r.idPar,
-        leftCode: r.codigoIzq,
-        rightCode: r.codigoDer,
-      }),
-    );
+        leftCode,
+        rightCode,
+      });
+    });
   }
 }

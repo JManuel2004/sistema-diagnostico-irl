@@ -1,5 +1,4 @@
 import { DimensionCode } from '../../../shared-kernel/domain/value-objects/dimension-code.js';
-import { Uuid } from '../../../shared-kernel/domain/value-objects/uuid.vo.js';
 import { InvariantViolationError } from '../../../shared-kernel/domain/errors/invariant-violation.error.js';
 
 /**
@@ -16,7 +15,7 @@ import { InvariantViolationError } from '../../../shared-kernel/domain/errors/in
  * per the project's bilingual rule (CLAUDE.md → CODE-STYLE).
  */
 export interface DimensionPersistence {
-  readonly id: string;
+  readonly id: number;
   readonly code: string;
   readonly name: string;
   readonly description: string;
@@ -25,7 +24,7 @@ export interface DimensionPersistence {
 
 export class Dimension {
   private constructor(
-    public readonly id: Uuid,
+    public readonly id: number,
     public readonly code: DimensionCode,
     public readonly name: string,
     public readonly description: string,
@@ -43,7 +42,7 @@ export class Dimension {
       );
     }
     return new Dimension(
-      Uuid.create(row.id),
+      row.id,
       DimensionCode.create(row.code),
       row.name,
       row.description,

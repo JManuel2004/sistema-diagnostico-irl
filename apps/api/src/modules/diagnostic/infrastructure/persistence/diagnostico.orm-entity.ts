@@ -1,36 +1,31 @@
 import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 
-/**
- * ORM entity for `irl_diagnostic.diagnostico`.
- *
- * The `estado` CHECK constraint (initial migration) lists the same
- * state names as `DiagnosticState`. Both layers enforce the invariant
- * — the DB rejects unknown values on write, the domain refuses to
- * construct them on read.
- *
- * `id_usuario` is `text` (not a FK into a local table) because the
- * authoritative user identity lives in Keycloak / InnLab Core, not in
- * this database.
- */
 @Entity({ schema: 'irl_diagnostic', name: 'diagnostico' })
 export class DiagnosticoOrm {
   @PrimaryColumn({ name: 'id_diagnostico', type: 'uuid' })
   idDiagnostico!: string;
 
-  @Index('ix_diagnostico_usuario')
-  @Column({ name: 'id_usuario', type: 'text' })
-  idUsuario!: string;
+  @Index('ix_diagnostico_keycloak')
+  @Column({ name: 'keycloak_user_id', type: 'varchar', length: 64 })
+  keycloakUserId!: string;
 
-  @Column({ name: 'estado', type: 'text' })
+  @Column({ name: 'fecha_inicio', type: 'timestamptz', default: () => 'now()' })
+  fechaInicio!: Date;
+
+  @Column({ name: 'fecha_fin_fase_1', type: 'timestamptz', nullable: true })
+  fechaFinFase1!: Date | null;
+
+  @Column({ name: 'fecha_fin_fase_2', type: 'timestamptz', nullable: true })
+  fechaFinFase2!: Date | null;
+
+  @Column({ name: 'estado', type: 'varchar', length: 24 })
   estado!: string;
 
-  @Column({ name: 'creado_en', type: 'timestamptz', default: () => 'now()' })
-  creadoEn!: Date;
-
   @Column({
-    name: 'actualizado_en',
-    type: 'timestamptz',
-    default: () => 'now()',
+    name: 'version_marco_irl',
+    type: 'varchar',
+    length: 16,
+    default: 'KTH-IRL-1.0',
   })
-  actualizadoEn!: Date;
+  versionMarcoIrl!: string;
 }

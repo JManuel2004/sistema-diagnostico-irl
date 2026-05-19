@@ -2,46 +2,34 @@ import {
   Column,
   Entity,
   OneToMany,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   type Relation,
 } from 'typeorm';
 import { AfirmacionOrm } from './afirmacion.orm-entity.js';
 
-/**
- * ORM entity for `irl_catalog.dimension`.
- *
- * Column names use Spanish snake_case (bilingual rule). The TypeScript
- * property names use camelCase mapped to those columns; the application
- * layer reads domain objects via `Dimension.fromPersistence(orm)` and
- * never touches the ORM type directly.
- */
 @Entity({ schema: 'irl_catalog', name: 'dimension' })
 export class DimensionOrm {
-  @PrimaryColumn({ name: 'id_dimension', type: 'uuid' })
-  idDimension!: string;
+  @PrimaryGeneratedColumn({ type: 'integer', name: 'id_dimension' })
+  idDimension!: number;
 
-  @Column({ name: 'codigo', type: 'text' })
+  @Column({ name: 'codigo', type: 'varchar', length: 8 })
   codigo!: string;
 
-  @Column({ name: 'nombre', type: 'text' })
-  nombre!: string;
+  @Column({ name: 'nombre_es', type: 'varchar', length: 80 })
+  nombreEs!: string;
 
-  @Column({ name: 'descripcion', type: 'text' })
+  @Column({ name: 'nombre_en', type: 'varchar', length: 80 })
+  nombreEn!: string;
+
+  @Column({ name: 'descripcion', type: 'varchar', length: 500 })
   descripcion!: string;
 
-  @Column({ name: 'orden', type: 'smallint' })
+  @Column({ name: 'es_dimension_critica', type: 'boolean', default: false })
+  esDimensionCritica!: boolean;
+
+  @Column({ name: 'orden', type: 'integer' })
   orden!: number;
 
-  @Column({ name: 'version_marco', type: 'text', default: 'KTH-IRL-1.0' })
-  versionMarco!: string;
-
-  @Column({
-    name: 'creado_en',
-    type: 'timestamptz',
-    default: () => 'now()',
-  })
-  creadoEn!: Date;
-
-  @OneToMany(() => AfirmacionOrm, (afirmacion) => afirmacion.dimension)
+  @OneToMany(() => AfirmacionOrm, (a) => a.dimension)
   afirmaciones!: Relation<AfirmacionOrm[]>;
 }

@@ -1,7 +1,7 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
- * Initial schema migration — Stage 1 minimum.
+ * Initial schema migration.
  *
  * Creates the two-schema database layout:
  *
@@ -11,18 +11,12 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  *
  *   - `irl_diagnostic`: transactional data created at runtime
  *       - diagnostico    — root aggregate per user-initiated diagnostic
- *       - respuesta      — 48 Likert answers linked to a diagnostico
+ *       - respuesta      — Likert answers linked to a diagnostico
  *
- * Source of truth: PROJECT-SUMMARY.md §1.8 and CLAUDE.api.md naming rules.
- * Constraints replicate the anteproyecto invariants for defense in depth.
- *
- * Tables outside the three target stories (consentimiento, iniciativa,
- * resultado_dimension, analisis_desequilibrio, recomendacion_portafolio,
- * notificacion, evento_auditoria) are intentionally NOT created here —
- * each will arrive with the story that needs it.
+ * Column names, types, and constraints match the MR diagram exactly.
  */
-export class InitialSchema1700000000000 implements MigrationInterface {
-  name = 'InitialSchema1700000000000';
+export class InitialSchema20260518001 implements MigrationInterface {
+  name = 'InitialSchema20260518001';
 
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS irl_catalog`);
@@ -31,30 +25,31 @@ export class InitialSchema1700000000000 implements MigrationInterface {
     // ── irl_catalog.dimension ────────────────────────────────────────────
     await queryRunner.query(`
       CREATE TABLE irl_catalog.dimension (
-        id_dimension      uuid        PRIMARY KEY,
-        codigo            text        NOT NULL,
-        nombre            text        NOT NULL,
-        descripcion       text        NOT NULL,
-        orden             smallint    NOT NULL,
-        version_marco     text        NOT NULL DEFAULT 'KTH-IRL-1.0',
-        creado_en         timestamptz NOT NULL DEFAULT now(),
-        CONSTRAINT uq_dimension_codigo_version UNIQUE (codigo, version_marco),
+        id_dimension          integer       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        codigo                varchar(8)    NOT NULL,
+        nombre_es             varchar(80)   NOT NULL,
+        nombre_en             varchar(80)   NOT NULL,
+        descripcion           varchar(500)  NOT NULL,
+        es_dimension_critica  boolean       NOT NULL DEFAULT false,
+        orden                 integer       NOT NULL,
+        CONSTRAINT uq_dimension_codigo UNIQUE (codigo),
+        CONSTRAINT uq_dimension_orden  UNIQUE (orden),
         CONSTRAINT ck_dimension_codigo CHECK (codigo IN ('TRL','CRL','BRL','IPRL','TmRL','FRL')),
-        CONSTRAINT ck_dimension_orden CHECK (orden BETWEEN 1 AND 6)
+        CONSTRAINT ck_dimension_orden  CHECK (orden BETWEEN 1 AND 6)
       )
     `);
 
     // ── irl_catalog.afirmacion ───────────────────────────────────────────
     await queryRunner.query(`
       CREATE TABLE irl_catalog.afirmacion (
-        id_afirmacion     uuid        PRIMARY KEY,
-        id_dimension      uuid        NOT NULL REFERENCES irl_catalog.dimension(id_dimension),
-        orden             smallint    NOT NULL,
-        texto             text        NOT NULL,
-        version_marco     text        NOT NULL DEFAULT 'KTH-IRL-1.0',
-        creado_en         timestamptz NOT NULL DEFAULT now(),
-        CONSTRAINT uq_afirmacion_dimension_orden UNIQUE (id_dimension, orden, version_marco),
-        CONSTRAINT ck_afirmacion_orden CHECK (orden BETWEEN 1 AND 8)
+        id_afirmacion         bigint        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        id_dimension          integer       NOT NULL,
+        numero_en_dimension   integer       NOT NULL,
+        texto_es              varchar(500)  NOT NULL,
+        CONSTRAINT uq_afirmacion_dim_numero UNIQUE (id_dimension, numero_en_dimension),
+        CONSTRAINT ck_afirmacion_numero CHECK (numero_en_dimension BETWEEN 1 AND 8),
+        CONSTRAINT fk_afirmacion_dimension FOREIGN KEY (id_dimension)
+          REFERENCES irl_catalog.dimension (id_dimension)
       )
     `);
     await queryRunner.query(
@@ -64,11 +59,13 @@ export class InitialSchema1700000000000 implements MigrationInterface {
     // ── irl_diagnostic.diagnostico ───────────────────────────────────────
     await queryRunner.query(`
       CREATE TABLE irl_diagnostic.diagnostico (
-        id_diagnostico    uuid        PRIMARY KEY,
-        id_usuario        text        NOT NULL,
-        estado            text        NOT NULL,
-        creado_en         timestamptz NOT NULL DEFAULT now(),
-        actualizado_en    timestamptz NOT NULL DEFAULT now(),
+        id_diagnostico        uuid          PRIMARY KEY,
+        keycloak_user_id      varchar(64)   NOT NULL,
+        fecha_inicio          timestamptz   NOT NULL DEFAULT now(),
+        fecha_fin_fase_1      timestamptz,
+        fecha_fin_fase_2      timestamptz,
+        estado                varchar(24)   NOT NULL,
+        version_marco_irl     varchar(16)   NOT NULL DEFAULT 'KTH-IRL-1.0',
         CONSTRAINT ck_diagnostico_estado CHECK (estado IN (
           'INICIADO',
           'CON_CONSENTIMIENTO',
@@ -80,20 +77,23 @@ export class InitialSchema1700000000000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(
-      `CREATE INDEX ix_diagnostico_usuario ON irl_diagnostic.diagnostico (id_usuario)`,
+      `CREATE INDEX ix_diagnostico_keycloak ON irl_diagnostic.diagnostico (keycloak_user_id)`,
     );
 
     // ── irl_diagnostic.respuesta ─────────────────────────────────────────
     await queryRunner.query(`
       CREATE TABLE irl_diagnostic.respuesta (
-        id_respuesta      uuid        PRIMARY KEY,
-        id_diagnostico    uuid        NOT NULL REFERENCES irl_diagnostic.diagnostico(id_diagnostico) ON DELETE CASCADE,
-        id_afirmacion     uuid        NOT NULL REFERENCES irl_catalog.afirmacion(id_afirmacion),
-        valor_likert      smallint    NOT NULL,
-        creado_en         timestamptz NOT NULL DEFAULT now(),
-        actualizado_en    timestamptz NOT NULL DEFAULT now(),
+        id_respuesta          bigint        GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        id_diagnostico        uuid          NOT NULL,
+        id_afirmacion         bigint        NOT NULL,
+        valor_likert          integer       NOT NULL,
+        fecha_respuesta       timestamptz   NOT NULL DEFAULT now(),
+        CONSTRAINT uq_respuesta_diag_afirmacion UNIQUE (id_diagnostico, id_afirmacion),
         CONSTRAINT ck_respuesta_valor_likert CHECK (valor_likert BETWEEN 1 AND 5),
-        CONSTRAINT uq_respuesta_diagnostico_afirmacion UNIQUE (id_diagnostico, id_afirmacion)
+        CONSTRAINT fk_respuesta_diagnostico FOREIGN KEY (id_diagnostico)
+          REFERENCES irl_diagnostic.diagnostico (id_diagnostico) ON DELETE CASCADE,
+        CONSTRAINT fk_respuesta_afirmacion FOREIGN KEY (id_afirmacion)
+          REFERENCES irl_catalog.afirmacion (id_afirmacion)
       )
     `);
     await queryRunner.query(
