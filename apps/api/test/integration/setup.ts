@@ -6,7 +6,5 @@ import 'reflect-metadata';
  * tear them down per `beforeAll` / `afterAll` blocks. Truncate-and-seed
  * happens in `beforeEach` so cases are isolated.
  *
- * Jest's default timeout (5s) is too tight for container startup on
- * Windows/macOS — bump it here once for every integration suite.
+ * Jest timeout is configured in jest.config.js (testTimeout: 120_000).
  */
-jest.setTimeout(120_000);

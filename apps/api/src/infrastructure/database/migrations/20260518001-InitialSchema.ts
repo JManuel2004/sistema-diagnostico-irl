@@ -15,8 +15,8 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * Column names, types, and constraints match the MR diagram exactly.
  */
-export class InitialSchema20260518001 implements MigrationInterface {
-  name = 'InitialSchema20260518001';
+export class InitialSchema1747526400001 implements MigrationInterface {
+  name = 'InitialSchema1747526400001';
 
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS irl_catalog`);

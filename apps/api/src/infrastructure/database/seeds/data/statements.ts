@@ -4,93 +4,87 @@ import { DIMENSIONS } from './dimensions.js';
  * Forty-eight statements (afirmaciones) of the IRL questionnaire — 8 per
  * dimension, 6 dimensions, total 48 (RF-05).
  *
- * IMPORTANT: the Spanish text below is **placeholder** representative of
+ * IMPORTANT: the Spanish text below is placeholder representative of
  * the KTH Innovation Readiness Level framework. Before going to
  * production, replace it with the project-stakeholder-approved wording
  * referenced in `sistema-diagnostico-irl-docs/01-requirements/backlog.md`.
- * Replace the text only — never change the `orden`, the dimension
+ * Replace the text only — never change `numeroenDimension`, the dimension
  * mapping, or the count of 8 per dimension.
  *
- * The deterministic UUIDs (`22222222-XX-YY-...`) make integration tests
- * reproducible: XX is the dimension index (01-06) and YY is the
- * statement index within the dimension (01-08).
+ * `id_afirmacion` is GENERATED ALWAYS AS IDENTITY — statements are inserted
+ * without an explicit PK; the DB assigns it. Statements are linked to
+ * dimensions by `dimensionCodigo` (looked up in a subquery during seed).
  */
 export interface StatementSeed {
-  readonly id: string;
-  readonly dimensionId: string;
-  readonly orden: number;
-  readonly texto: string;
+  readonly dimensionCodigo: string;
+  readonly numeroenDimension: number;
+  readonly textoEs: string;
 }
 
-const DIM = Object.fromEntries(DIMENSIONS.map((d) => [d.codigo, d.id]));
-
-const statementId = (dimensionIndex: number, orden: number): string =>
-  `22222222-2222-2222-${String(dimensionIndex).padStart(4, '0')}-${String(orden).padStart(12, '0')}`;
-
 const TRL_TEXTS: readonly string[] = [
-  'Hemos identificado y descrito los principios tecnológicos básicos sobre los que se apoya la iniciativa.',
-  'Hemos formulado el concepto tecnológico y posibles aplicaciones de la solución.',
-  'Hemos validado experimentalmente componentes individuales de la tecnología en condiciones de laboratorio.',
-  'Hemos integrado los componentes en un prototipo funcional probado en entorno controlado.',
-  'Hemos validado el prototipo en un entorno representativo del uso real.',
-  'Hemos demostrado la tecnología en un entorno operativo con un piloto representativo.',
-  'Hemos completado pruebas en condiciones reales con usuarios o clientes seleccionados.',
-  'La tecnología está madura y desplegada en producción para uso continuo de clientes.',
+  'Existe una descripción documentada del concepto técnico o producto digital que se desea desarrollar (especificación, prototipo o documentación técnica inicial).',
+  'Se ha construido un prototipo funcional del producto/servicio digital y ha sido probado en condiciones de laboratorio o entorno controlado (sandbox).',
+  'El producto/servicio digital ha sido probado con usuarios reales en un entorno relevante y los resultados demuestran que cumple con los requisitos de desempeño esperados.',
+  'Existe un prototipo completo o versión beta que ha sido validado en un entorno operativo real (producción) por usuarios finales que lo utilizan de forma autónoma.',
+  'El producto/servicio digital es escalable, seguro, compatible con la infraestructura del cliente y está en operación comercial continua con mejoras y optimizaciones en curso.',
+  'La arquitectura de software está definida, documentada y ha sido revisada por un especialista técnico independiente.',
+  'El sistema cuenta con controles de ciberseguridad implementados (basados en estándares como OWASP) y ha pasado al menos auditoría o prueba de penetración.',
+  'Existen procesos de CI/CD (integración y despliegue continuo), documentación técnica completa y métricas de desempeño del sistema en producción.',
 ];
 
 const CRL_TEXTS: readonly string[] = [
-  'Hemos identificado un problema concreto que afecta a un grupo de personas o empresas.',
-  'Hemos caracterizado al cliente potencial y la situación en la que enfrenta el problema.',
-  'Hemos validado la existencia del problema con entrevistas o evidencia cuantitativa.',
-  'Hemos confirmado que la propuesta de valor resuelve un problema importante para el cliente.',
-  'Hemos validado disposición a usar o adquirir la solución con clientes representativos.',
-  'Tenemos clientes piloto que utilizan la solución y proporcionan retroalimentación periódica.',
-  'Tenemos clientes que pagan por la solución bajo condiciones cercanas a las del mercado objetivo.',
-  'Tenemos una base de clientes sostenida y procesos repetibles de adquisición.',
+  'Hemos identificado una necesidad o problema específico en el mercado y contamos con una primera hipótesis sobre quiénes podrían ser nuestros clientes o usuarios.',
+  'Hemos realizado investigación de mercado primaria (entrevistas, encuestas o contacto directo) con al menos 5 clientes o usuarios potenciales y hemos recibido retroalimentación directa.',
+  'Múltiples clientes/usuarios han confirmado que el problema/necesidad identificado es real e importante para ellos, y hemos definido los segmentos de cliente prioritarios.',
+  'Hemos validado que nuestra solución resuelve el problema del cliente (problem-solution fit) y usuarios/clientes han expresado interés explícito en usarla o comprarla.',
+  'Clientes reales han probado el producto/servicio y han confirmado su valor. Tenemos métricas de satisfacción (NPS u otras) y una propuesta de valor actualizada.',
+  'Hemos realizado primeras ventas o acuerdos comerciales formales con clientes reales, y contamos con un número inicial de usuarios activos del producto/servicio.',
+  'Contamos con un proceso de ventas/adquisición de usuarios implementado con herramientas de soporte (CRM, automatización) y personal dedicado a ventas.',
+  'Tenemos una base sustancial y creciente de usuarios/clientes activos con indicadores de retención positivos y un proceso de expansión de mercado en curso.',
 ];
 
 const BRL_TEXTS: readonly string[] = [
-  'Hemos identificado posibles vías para crear y capturar valor con la iniciativa.',
-  'Hemos esbozado una propuesta de valor diferenciada frente a alternativas existentes.',
-  'Hemos diseñado un modelo de negocio inicial con sus componentes principales.',
-  'Hemos validado los supuestos críticos del modelo con datos de campo.',
-  'Hemos puesto a prueba el modelo en una operación piloto y aprendido de los resultados.',
-  'Hemos refinado el modelo con base en la operación piloto y datos económicos reales.',
-  'El modelo de negocio opera con métricas estables que demuestran sostenibilidad.',
-  'El modelo de negocio es escalable y replicable en nuevos segmentos o geografías.',
+  'Tenemos una descripción del modelo de negocio propuesto (propuesta de valor, segmentos de cliente, fuentes de ingreso, estructura de costos y canales de distribución).',
+  'Hemos definido el mercado objetivo con estimaciones de tamaño (TAM/SAM) e identificado los principales competidores y sus modelos de negocio.',
+  'Contamos con proyecciones financieras simplificadas (P&L) que muestren viabilidad económica potencial, incluyendo los principales costos e ingresos esperados.',
+  'Hemos recibido retroalimentación de clientes, socios o expertos de mercado sobre la viabilidad del modelo de negocio (pricing, canales, propuesta de valor).',
+  'Hemos realizado una primera evaluación de la contribución positiva y negativa de nuestro modelo de negocio al medio ambiente y la sociedad.',
+  'El modelo de negocio ha sido probado en escenarios comerciales reales (venta de prueba, piloto, preventa) y los resultados muestran viabilidad económica.',
+  'Las primeras ventas o ingresos comerciales demuestran disposición a pagar de clientes, y las proyecciones financieras han sido validadas con datos reales.',
+  'El modelo de negocio opera de forma estable (1–3 años), cumple expectativas de rentabilidad, sostenibilidad ambiental/social y tiene sistemas de métricas implementados.',
 ];
 
 const IPRL_TEXTS: readonly string[] = [
-  'Hemos identificado los activos de propiedad intelectual relevantes para la iniciativa.',
-  'Conocemos el estado del arte y las patentes/registros vigentes en el área.',
-  'Hemos definido una estrategia inicial de protección y manejo del know-how.',
-  'Tenemos acuerdos de confidencialidad y cesión de derechos con el equipo y aliados.',
-  'Tenemos solicitudes formales de protección presentadas (patente, software, marca u otra).',
-  'Hemos obtenido al menos un registro o concesión formal de protección de PI.',
-  'Tenemos una cartera de PI defensiva alineada con la estrategia comercial.',
-  'La cartera de PI genera valor económico (licenciamiento, ventaja competitiva sostenida).',
+  'Hemos identificado y listado los posibles activos de propiedad intelectual generados o utilizados en nuestro proyecto (código, marca, diseño, datos, procesos).',
+  'Hemos clarificado la titularidad de la propiedad intelectual del proyecto (quiénes son los creadores/inventores, acuerdos de asignación firmados) y podemos usar la IPR relevante.',
+  'Hemos evaluado las posibilidades de protección de nuestra IPR clave, ya sea mediante búsquedas propias o con asesoría de un profesional en PI.',
+  'Hemos elaborado un borrador de estrategia de PI que define qué activos proteger, cómo y por qué (relevancia para el negocio), idealmente validado por un asesor profesional.',
+  'Hemos presentado al menos una solicitud formal de registro o protección de PI clave (marca, patente, derechos de autor, etc.) en al menos un país o región relevante.',
+  'Contamos con una estrategia de PI completa y validada por un profesional. Se han recibido respuestas positivas de las autoridades competentes sobre solicitudes presentadas.',
+  'La IPR clave ha sido concedida y registrada en los países/regiones más relevantes para nuestro negocio y se gestiona activamente (renovaciones, vigilancia).',
+  'Nuestra estrategia de PI está plenamente implementada, la IPR crea valor demostrable para el negocio y contamos con acuerdos de acceso a toda PI externa necesaria.',
 ];
 
 const TmRL_TEXTS: readonly string[] = [
-  'Existe un líder identificable comprometido con el avance de la iniciativa.',
-  'El equipo cubre las competencias técnicas básicas necesarias para la fase actual.',
-  'El equipo combina perfiles complementarios (técnico, comercial, operativo).',
-  'Los roles están definidos y hay claridad sobre responsabilidades.',
-  'El equipo tiene dedicación suficiente para sostener el ritmo de la iniciativa.',
-  'El equipo cuenta con mentores o asesores externos vinculados de forma activa.',
-  'El equipo demuestra capacidad para ejecutar bajo presión y adaptarse a cambios.',
-  'El equipo opera de forma autónoma con procesos definidos y resultados sostenidos.',
+  "Existe al menos un responsable claro ('champion') con idea concreta de cómo llevar el proyecto adelante y comprometido a dedicar tiempo significativo.",
+  'El equipo actual (1 o más personas) cuenta con algunas de las competencias necesarias para verificar/desarrollar la idea, aunque no todas las capacidades clave están cubiertas.',
+  'Hemos identificado las brechas de competencias y capacidad del equipo actual y tenemos un plan para incorporar los perfiles faltantes en el corto plazo (< 1 año).',
+  'El equipo fundador inicial tiene las competencias principales necesarias, ha acordado formalmente roles, metas, compromiso de tiempo y estructura de participación (equity).',
+  'El equipo fundador es complementario, diverso (género, background, experiencia) y cuenta con todas las competencias clave para la etapa actual. Existe un CEO definido.',
+  'El equipo tiene un plan de crecimiento organizacional a 2 años, ha iniciado incorporación de asesores o miembros de junta directiva, y tiene procesos de conocimiento compartido.',
+  'Existe una organización con liderazgo claro, junta directiva funcional, políticas de RRHH implementadas y programas de capacitación y desarrollo del personal.',
+  'La organización es de alto desempeño, con cultura documentada, incentivos alineados a metas, aprendizaje continuo y el equipo directivo se mantiene y desarrolla con el tiempo.',
 ];
 
 const FRL_TEXTS: readonly string[] = [
-  'Hemos estimado los costos iniciales para validar la propuesta.',
-  'Tenemos un plan financiero con los hitos de inversión necesarios para la fase actual.',
-  'Hemos identificado fuentes de financiación pertinentes a la fase de la iniciativa.',
-  'Hemos asegurado financiación inicial (propia, capital semilla, convocatoria u otra).',
-  'Disponemos de runway suficiente para alcanzar los siguientes hitos críticos.',
-  'Hemos cerrado una ronda de financiación dimensionada para escalar.',
-  'Generamos ingresos operativos que cubren una parte significativa de los costos.',
-  'La iniciativa es financieramente sostenible y/o ha alcanzado eventos de liquidez.',
+  'Tenemos claridad sobre las actividades y costos necesarios para verificar el potencial de la idea en los próximos 1–6 meses, y conocemos las principales opciones de financiamiento disponibles.',
+  'Contamos con un plan básico de actividades de verificación con cronograma, necesidad de financiamiento estimada y fuentes identificadas para los hitos iniciales.',
+  'Hemos asegurado financiamiento suficiente para ejecutar las actividades de verificación/validación iniciales (1–6 meses), ya sea mediante fondos propios, institucionales o de terceros.',
+  'Contamos con un plan elaborado de verificación del potencial comercial (3–12 meses) con hipótesis, actividades, cronograma y necesidad de financiamiento, y hemos asegurado fondos para ejecutarlo.',
+  'Hemos elaborado un pitch de financiamiento para inversores, definido una estrategia de funding y contamos con un presupuesto de P&L inicial para los próximos 12 meses.',
+  'El pitch de financiamiento ha sido probado y mejorado con audiencias relevantes. Hemos iniciado contactos formales con fuentes de financiamiento externas (inversores, fondos, banca).',
+  'Tenemos conversaciones concretas con fuentes de financiamiento externas interesadas y contamos con toda la documentación de due diligence lista para revisión externa.',
+  'Contamos con financiamiento asegurado para al menos 6–12 meses de operación, con sistema de monitoreo financiero implementado e ingresos recurrentes en crecimiento.',
 ];
 
 const TEXTS_BY_CODE: Record<string, readonly string[]> = {
@@ -109,11 +103,10 @@ export const STATEMENTS: readonly StatementSeed[] = DIMENSIONS.flatMap((d) => {
       `Dimension ${d.codigo} must have exactly 8 statement texts`,
     );
   }
-  return texts.map((texto, index) => ({
-    id: statementId(d.orden, index + 1),
-    dimensionId: DIM[d.codigo],
-    orden: index + 1,
-    texto,
+  return texts.map((textoEs, index) => ({
+    dimensionCodigo: d.codigo,
+    numeroenDimension: index + 1,
+    textoEs,
   }));
 });
 

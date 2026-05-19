@@ -13,10 +13,14 @@ loadEnv({ path: '.env' });
  *
  * Idempotency strategy: UPSERT using `ON CONFLICT` on the natural unique
  * keys declared in the migration:
- *   - `dimension (codigo, version_marco)`
- *   - `afirmacion (id_dimension, orden, version_marco)`
+ *   - `dimension`: UNIQUE (codigo)
+ *   - `afirmacion`: UNIQUE (id_dimension, numero_en_dimension)
  *
- * Re-running the seed updates text content but never duplicates rows.
+ * Both tables use GENERATED ALWAYS AS IDENTITY PKs — never include
+ * id_dimension or id_afirmacion in INSERT statements.
+ *
+ * Statements are linked to dimensions by a subquery on codigo so the
+ * seed is order-independent and does not hard-code integer FKs.
  */
 async function run(): Promise<void> {
   await dataSource.initialize();
@@ -24,23 +28,35 @@ async function run(): Promise<void> {
     await dataSource.transaction(async (manager) => {
       for (const d of DIMENSIONS) {
         await manager.query(
-          `INSERT INTO irl_catalog.dimension (id_dimension, codigo, nombre, descripcion, orden)
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (codigo, version_marco) DO UPDATE
-               SET nombre = EXCLUDED.nombre,
-                   descripcion = EXCLUDED.descripcion,
-                   orden = EXCLUDED.orden`,
-          [d.id, d.codigo, d.nombre, d.descripcion, d.orden],
+          `INSERT INTO irl_catalog.dimension
+             (codigo, nombre_es, nombre_en, descripcion, es_dimension_critica, orden)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (codigo) DO UPDATE
+             SET nombre_es            = EXCLUDED.nombre_es,
+                 nombre_en            = EXCLUDED.nombre_en,
+                 descripcion          = EXCLUDED.descripcion,
+                 es_dimension_critica = EXCLUDED.es_dimension_critica,
+                 orden                = EXCLUDED.orden`,
+          [
+            d.codigo,
+            d.nombreEs,
+            d.nombreEn,
+            d.descripcion,
+            d.esDimensionCritica,
+            d.orden,
+          ],
         );
       }
 
       for (const s of STATEMENTS) {
         await manager.query(
-          `INSERT INTO irl_catalog.afirmacion (id_afirmacion, id_dimension, orden, texto)
-             VALUES ($1, $2, $3, $4)
-             ON CONFLICT (id_dimension, orden, version_marco) DO UPDATE
-               SET texto = EXCLUDED.texto`,
-          [s.id, s.dimensionId, s.orden, s.texto],
+          `INSERT INTO irl_catalog.afirmacion (id_dimension, numero_en_dimension, texto_es)
+           SELECT d.id_dimension, $2, $3
+             FROM irl_catalog.dimension d
+            WHERE d.codigo = $1
+           ON CONFLICT (id_dimension, numero_en_dimension) DO UPDATE
+             SET texto_es = EXCLUDED.texto_es`,
+          [s.dimensionCodigo, s.numeroenDimension, s.textoEs],
         );
       }
     });

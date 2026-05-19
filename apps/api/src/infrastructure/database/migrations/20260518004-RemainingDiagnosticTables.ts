@@ -13,8 +13,8 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  *   descarga_reporte             — depends on diagnostico
  *   evento_auditoria             — depends on diagnostico
  */
-export class RemainingDiagnosticTables20260518004 implements MigrationInterface {
-  name = 'RemainingDiagnosticTables20260518004';
+export class RemainingDiagnosticTables1747526400004 implements MigrationInterface {
+  name = 'RemainingDiagnosticTables1747526400004';
 
   async up(queryRunner: QueryRunner): Promise<void> {
     // ── irl_diagnostic.consentimiento ────────────────────────────────────

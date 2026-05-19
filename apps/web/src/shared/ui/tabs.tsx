@@ -3,11 +3,14 @@ import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * `Tabs` siguiendo el patrón shadcn/ui sobre `@radix-ui/react-tabs`.
+ * `Tabs` alineado con `DESIGN.md` — segmented control institucional.
  *
- * Radix maneja la navegación por teclado (flechas, Home/End) y los
- * roles ARIA (`tablist`, `tab`, `tabpanel`) — no se reimplementan.
- * Las clases de Tailwind aplican los estilos shadcn "new-york".
+ * - Lista en superficie `surface-muted` con hairline Gris 2.
+ * - Trigger activo: superficie blanca, texto Azul Icesi, sombra
+ *   ligera (`elevation.md`). Inactivos: transparente, texto
+ *   secundario.
+ * - Radix maneja navegación por teclado (flechas, Home/End) y los
+ *   roles ARIA (`tablist`, `tab`, `tabpanel`); no se reimplementan.
  */
 export const Tabs = TabsPrimitive.Root;
 
@@ -19,7 +22,7 @@ export const TabsList = forwardRef<
     <TabsPrimitive.List
       ref={ref}
       className={cn(
-        'bg-muted text-muted-foreground inline-flex h-10 items-center justify-center rounded-md p-1',
+        'border-border bg-surface-muted text-muted-foreground inline-flex h-12 items-center justify-center gap-1 rounded-md border p-1',
         className,
       )}
       {...props}
@@ -35,7 +38,11 @@ export const TabsTrigger = forwardRef<
     <TabsPrimitive.Trigger
       ref={ref}
       className={cn(
-        'ring-offset-background focus-visible:ring-ring data-[state=active]:bg-background data-[state=active]:text-foreground inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm',
+        'inline-flex h-9 items-center justify-center whitespace-nowrap rounded-sm px-3 text-sm font-semibold leading-none tracking-wider transition-all',
+        'text-muted-foreground hover:text-foreground',
+        'focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+        'disabled:pointer-events-none disabled:opacity-50',
+        'data-[state=active]:bg-surface data-[state=active]:text-primary data-[state=active]:shadow-md',
         className,
       )}
       {...props}
@@ -51,7 +58,7 @@ export const TabsContent = forwardRef<
     <TabsPrimitive.Content
       ref={ref}
       className={cn(
-        'ring-offset-background focus-visible:ring-ring mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+        'focus-visible:ring-ring mt-6 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
         className,
       )}
       {...props}

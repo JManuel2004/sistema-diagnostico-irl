@@ -5,8 +5,12 @@ import { AfirmacionOrm } from './infrastructure/persistence/entities/afirmacion.
 import { RangoConversionOrm } from './infrastructure/persistence/entities/rango-conversion.orm-entity.js';
 import { ParDimensionOrm } from './infrastructure/persistence/entities/par-dimension.orm-entity.js';
 import { TypeOrmIrlCatalogRepository } from './infrastructure/persistence/typeorm-irl-catalog.repository.js';
-import { IRL_CATALOG_REPOSITORY } from './domain/ports/irl-catalog.repository.port.js';
+import {
+  IRL_CATALOG_REPOSITORY,
+  type IrlCatalogRepositoryPort,
+} from './domain/ports/irl-catalog.repository.port.js';
 import { IrlCatalogController } from './interfaces/http/irl-catalog.controller.js';
+import { GetQuestionnaireStructureQuery } from './application/queries/get-questionnaire-structure.query.js';
 
 /**
  * `IrlCatalogModule` — bounded context for the read-only KTH IRL
@@ -30,6 +34,12 @@ import { IrlCatalogController } from './interfaces/http/irl-catalog.controller.j
   ],
   providers: [
     { provide: IRL_CATALOG_REPOSITORY, useClass: TypeOrmIrlCatalogRepository },
+    {
+      provide: GetQuestionnaireStructureQuery,
+      useFactory: (repo: IrlCatalogRepositoryPort) =>
+        new GetQuestionnaireStructureQuery(repo),
+      inject: [IRL_CATALOG_REPOSITORY],
+    },
   ],
   controllers: [IrlCatalogController],
   exports: [IRL_CATALOG_REPOSITORY],

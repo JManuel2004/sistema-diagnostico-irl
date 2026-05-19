@@ -39,9 +39,9 @@ export function buildOrmModuleOptions(config: AppConfig): TypeOrmModuleOptions {
 }
 
 /**
- * Variant used by the CLI `DataSource` — accepts both `src/*.ts` and
- * `dist/*.js` paths so migrations work both via `tsx` (source) and via
- * compiled JS in CI.
+ * Variant used by the CLI `DataSource` — uses TypeScript source directly
+ * since the CLI always runs via `tsx`. Including both src and dist globs
+ * causes duplicate-migration errors when a dist build is present.
  */
 export function buildOrmDataSourceOptions(
   config: AppConfig,
@@ -51,7 +51,7 @@ export function buildOrmDataSourceOptions(
     url: config.database.url,
     synchronize: false,
     entities: [ENTITIES_GLOB_SRC, ENTITIES_GLOB_DIST],
-    migrations: [MIGRATIONS_GLOB_SRC, MIGRATIONS_GLOB_DIST],
+    migrations: [MIGRATIONS_GLOB_SRC],
     migrationsTableName: 'typeorm_migrations',
   };
 }

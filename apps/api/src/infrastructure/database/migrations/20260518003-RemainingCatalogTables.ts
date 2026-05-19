@@ -10,8 +10,8 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  * All tables live in `irl_catalog` (read-only at runtime; populated by seeds).
  * `regla_enrutamiento` depends on `servicio_portafolio`, so it is created last.
  */
-export class RemainingCatalogTables20260518003 implements MigrationInterface {
-  name = 'RemainingCatalogTables20260518003';
+export class RemainingCatalogTables1747526400003 implements MigrationInterface {
+  name = 'RemainingCatalogTables1747526400003';
 
   async up(queryRunner: QueryRunner): Promise<void> {
     // ── irl_catalog.texto_roadmap ────────────────────────────────────────

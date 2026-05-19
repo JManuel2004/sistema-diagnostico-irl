@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { uuidSchema } from '../common/uuid.schema.js';
 import { dimensionCodeSchema } from '../catalog/dimension.schema.js';
 
 /**
@@ -11,11 +10,14 @@ import { dimensionCodeSchema } from '../catalog/dimension.schema.js';
  *   - `sequence` es la posición dentro de la dimensión (1–8), no
  *     un índice global.
  *
- * El texto viene en español (campo `texto` en la tabla `afirmacion`).
+ * El texto viene en español (campo `texto_es` en la tabla `afirmacion`).
+ *
+ * `id` es el bigint de la PK (`id_afirmacion`) serializado como string.
+ * No es un UUID — la tabla usa GENERATED ALWAYS AS IDENTITY.
  */
 export const statementSchema = z
   .object({
-    id: uuidSchema.describe('Identificador único de la afirmación'),
+    id: z.string().min(1).describe('Identificador único de la afirmación (bigint como string)'),
     dimensionCode: dimensionCodeSchema,
     sequence: z.number().int().min(1).max(8).describe('Posición dentro de la dimensión: 1–8'),
     text: z.string().min(1).describe('Texto de la afirmación en español'),

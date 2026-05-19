@@ -8,6 +8,5 @@ import 'reflect-metadata';
  * services with `nock` (Keycloak JWKS, InnLab Core), and exercising one
  * full HTTP round trip per Gherkin scenario from the target story.
  *
- * Long startup time → generous default timeout.
+ * Jest timeout is configured in jest.config.js (testTimeout: 180_000).
  */
-jest.setTimeout(180_000);
