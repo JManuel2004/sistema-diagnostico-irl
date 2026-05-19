@@ -1,20 +1,20 @@
 import type { JSX } from 'react';
+import { QuestionnaireView } from '@features/questionnaire';
 
 /**
- * Shell de la página `/diagnosticos/:id/cuestionario`.
+ * Shell de la página `/diagnosticos/:id/cuestionario` (HU-07).
  *
- * Stage 1 renderiza un placeholder. Stage 2 reemplaza el cuerpo con
- * `<QuestionnaireForm />` desde `features/questionnaire` — el folder
- * del feature ya existe pero no exporta nada todavía (HU-07/08/09).
+ * Renderiza la estructura del cuestionario IRL: 6 dimensiones × 8
+ * afirmaciones en tabs navegables. El estado de respuestas (Story 2)
+ * y la lógica de envío (Story 3) se añaden en etapas posteriores.
  */
 export default function QuestionnairePage(): JSX.Element {
   return (
     <main className="mx-auto my-12 max-w-4xl px-8">
       <h1 className="text-2xl font-semibold tracking-tight">Cuestionario IRL</h1>
-      <p className="text-muted-foreground mt-4">
-        El cuestionario se implementará en la etapa 2 a partir de las historias HU-07, HU-08 y
-        HU-09.
-      </p>
+      <div className="mt-6">
+        <QuestionnaireView />
+      </div>
     </main>
   );
 }
