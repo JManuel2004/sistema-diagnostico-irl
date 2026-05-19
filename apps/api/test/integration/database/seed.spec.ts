@@ -1,7 +1,7 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
-import { InitialSchema20260518001 } from '../../../src/infrastructure/database/migrations/20260518001-InitialSchema.js';
+import { InitialSchema1747526400001 } from '../../../src/infrastructure/database/migrations/20260518001-InitialSchema.js';
 import { DIMENSIONS } from '../../../src/infrastructure/database/seeds/data/dimensions.js';
 import { STATEMENTS } from '../../../src/infrastructure/database/seeds/data/statements.js';
 
@@ -29,7 +29,7 @@ describe('Catalog seed (integration)', () => {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
-      migrations: [InitialSchema20260518001],
+      migrations: [InitialSchema1747526400001],
       migrationsTableName: 'typeorm_migrations',
     });
 

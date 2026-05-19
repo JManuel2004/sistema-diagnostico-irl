@@ -10,8 +10,8 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  * `par_dimension` links two `dimension` rows via integer FKs and stores
  * a human-readable `codigo_par` (e.g. 'TRL-CRL'), matching the MR diagram.
  */
-export class CatalogConversionAndPairs20260518002 implements MigrationInterface {
-  name = 'CatalogConversionAndPairs20260518002';
+export class CatalogConversionAndPairs1747526400002 implements MigrationInterface {
+  name = 'CatalogConversionAndPairs1747526400002';
 
   async up(queryRunner: QueryRunner): Promise<void> {
     // ── irl_catalog.rango_conversion ─────────────────────────────────────
