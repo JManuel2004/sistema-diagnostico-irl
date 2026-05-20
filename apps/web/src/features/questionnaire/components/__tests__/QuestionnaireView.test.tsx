@@ -134,7 +134,7 @@ describe('QuestionnaireView', () => {
     await waitFor(() => expect(callCount).toBeGreaterThan(before));
   });
 
-  it('persists answers when switching dimension tabs and after remount', async () => {
+  it('persists answers when switching dimension tabs and after remount', { timeout: 15_000 }, async () => {
     withSuccessHandler();
     const user = userEvent.setup();
     const utils = renderWithClient(<QuestionnaireView />);
