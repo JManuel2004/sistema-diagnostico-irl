@@ -104,7 +104,7 @@ export default function HomePage(): JSX.Element {
             <div className="border-border bg-azul-wash border-b px-6 py-4">
               <p className="text-overline text-azul-icesi">Perfil IRL</p>
               <p className="text-foreground mt-1 text-sm">
-                Escala 1 → 9 por dimensión · 5 niveles Likert por afirmación.
+                Escala 1 a 9 por dimensión · 5 niveles Likert por afirmación.
               </p>
             </div>
             <CardContent className="space-y-3 p-6">
