@@ -30,20 +30,20 @@ describe('LikertScale', () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole('radio')).toHaveLength(5);
-    expect(screen.getByRole('radio', { name: 'Totalmente en desacuerdo' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Totalmente de acuerdo' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '1 — Totalmente en desacuerdo' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '5 — Totalmente de acuerdo' })).toBeInTheDocument();
   });
 
   it('updates the highlighted option when a different value is selected', async () => {
     const user = userEvent.setup();
     renderHarness();
 
-    await user.click(screen.getByRole('radio', { name: 'En desacuerdo' }));
-    expect(screen.getByRole('radio', { name: 'En desacuerdo' })).toBeChecked();
+    await user.click(screen.getByRole('radio', { name: '2 — En desacuerdo' }));
+    expect(screen.getByRole('radio', { name: '2 — En desacuerdo' })).toBeChecked();
 
-    await user.click(screen.getByRole('radio', { name: 'De acuerdo' }));
-    expect(screen.getByRole('radio', { name: 'De acuerdo' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: 'En desacuerdo' })).not.toBeChecked();
+    await user.click(screen.getByRole('radio', { name: '4 — De acuerdo' }));
+    expect(screen.getByRole('radio', { name: '4 — De acuerdo' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: '2 — En desacuerdo' })).not.toBeChecked();
   });
 
   it('supports keyboard navigation with tab and arrow keys', async () => {
@@ -51,9 +51,9 @@ describe('LikertScale', () => {
     renderHarness();
 
     await user.tab();
-    expect(screen.getByRole('radio', { name: 'Totalmente en desacuerdo' })).toHaveFocus();
+    expect(screen.getByRole('radio', { name: '1 — Totalmente en desacuerdo' })).toHaveFocus();
 
     await user.keyboard('{ArrowRight}');
-    expect(screen.getByRole('radio', { name: 'En desacuerdo' })).toHaveFocus();
+    expect(screen.getByRole('radio', { name: '2 — En desacuerdo' })).toHaveFocus();
   });
 });

@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -6,6 +6,7 @@ import { setupServer } from 'msw/node';
 import type { QuestionnaireStructure } from '@innlab/contracts';
 import { renderWithClient } from '../../../../test/render-with-client';
 import { QuestionnaireView } from '../QuestionnaireView';
+import { useQuestionnaireDraftStore } from '../../store/questionnaire-draft.store';
 
 const DIMENSION_CODES = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;
 
@@ -50,6 +51,14 @@ function withErrorHandler(): void {
 }
 
 describe('QuestionnaireView', () => {
+  beforeEach(() => {
+    // Reset the draft store so cross-test residue (active tab, answers
+    // persisted by an earlier case via the persist middleware) doesn't
+    // leak between scenarios.
+    useQuestionnaireDraftStore.getState().clear();
+    sessionStorage.clear();
+  });
+
   it('renders the skeleton while the request is in flight', () => {
     server.use(
       http.get('http://localhost/api/v1/catalogo/cuestionario', () => new Promise(() => undefined)),
@@ -134,7 +143,7 @@ describe('QuestionnaireView', () => {
 
     // In the first (default) panel, select "De acuerdo" for the first statement
     const rg = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });
-    const radio = within(rg).getByRole('radio', { name: 'De acuerdo' });
+    const radio = within(rg).getByRole('radio', { name: '4 — De acuerdo' });
 
     await user.click(radio);
     expect(radio).toBeChecked();
@@ -147,7 +156,7 @@ describe('QuestionnaireView', () => {
 
     // After returning, the previously selected radio should still be checked
     const rg2 = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });
-    expect(within(rg2).getByRole('radio', { name: 'De acuerdo' })).toBeChecked();
+    expect(within(rg2).getByRole('radio', { name: '4 — De acuerdo' })).toBeChecked();
 
     // Unmount and remount the view (simulating navigation away and back)
     utils.unmount();
@@ -155,6 +164,6 @@ describe('QuestionnaireView', () => {
     await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
     const remountedRg = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });
-    expect(within(remountedRg).getByRole('radio', { name: 'De acuerdo' })).toBeChecked();
+    expect(within(remountedRg).getByRole('radio', { name: '4 — De acuerdo' })).toBeChecked();
   });
 });

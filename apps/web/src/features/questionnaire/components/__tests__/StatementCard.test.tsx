@@ -41,14 +41,14 @@ describe('StatementCard', () => {
 
     render(<StatementCard statement={statement} />);
 
-    await user.click(screen.getByRole('radio', { name: 'De acuerdo' }));
+    await user.click(screen.getByRole('radio', { name: '4 — De acuerdo' }));
 
     expect(useQuestionnaireDraftStore.getState().answers[statement.id]).toBe(4);
-    expect(screen.getByRole('radio', { name: 'De acuerdo' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: '4 — De acuerdo' })).toBeChecked();
 
-    await user.click(screen.getByRole('radio', { name: 'De acuerdo' }));
+    await user.click(screen.getByRole('radio', { name: '4 — De acuerdo' }));
 
     expect(useQuestionnaireDraftStore.getState().answers[statement.id]).toBe(4);
-    expect(screen.getByRole('radio', { name: 'De acuerdo' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: '4 — De acuerdo' })).toBeChecked();
   });
 });
