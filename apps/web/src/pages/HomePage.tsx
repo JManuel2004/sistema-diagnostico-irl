@@ -1,8 +1,10 @@
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
+import type { DimensionCode } from '@innlab/contracts';
 import { buttonVariants } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
 import { PageShell } from '@/shared/ui/page-shell';
+import { DIMENSION_ORDER, getDimensionVisual } from '@/shared/lib/dimensions';
 
 /**
  * Landing institucional.
@@ -13,53 +15,52 @@ import { PageShell } from '@/shared/ui/page-shell';
  *    sistema, párrafo introductorio y CTA filled `accent`.
  *  - Tarjeta de "Cómo funciona" con los tres pasos del proceso
  *    SEMI / diagnóstico, separados por hairlines Gris 2.
- *  - Mosaico de las 6 dimensiones IRL con sus colores de marca —
- *    los códigos se muestran como chips overline, no como inputs.
+ *  - Mosaico de las 6 dimensiones IRL — los colores y el orden
+ *    canónico se resuelven a través de `getDimensionVisual` /
+ *    `DIMENSION_ORDER` (shared/lib/dimensions). Lo único que vive
+ *    en esta página es el copy editorial (nombre+descripción corta);
+ *    el nombre oficial completo viene del catálogo en las páginas
+ *    que sí lo consumen.
  */
 
-const DIMENSIONS: readonly {
-  code: string;
-  name: string;
-  shortDescription: string;
-  swatch: string;
-}[] = [
-  {
-    code: 'TRL',
+interface LandingDimensionCopy {
+  readonly code: DimensionCode;
+  readonly name: string;
+  readonly shortDescription: string;
+}
+
+/**
+ * Copy editorial específico de la landing. Es marketing copy, no
+ * metadata del marco — por eso vive aquí y no en `shared/lib`. Los
+ * nombres oficiales completos (`Madurez Tecnológica`, etc.) se
+ * sirven desde la API en las páginas que consumen el catálogo.
+ */
+const LANDING_COPY: Record<DimensionCode, Omit<LandingDimensionCopy, 'code'>> = {
+  TRL: {
     name: 'Madurez Tecnológica',
     shortDescription: 'Qué tan probada y lista para producción está la solución.',
-    swatch: 'bg-dimension-trl',
   },
-  {
-    code: 'CRL',
+  CRL: {
     name: 'Madurez de Cliente',
     shortDescription: 'Validación de necesidad, segmentación y disposición a adoptar.',
-    swatch: 'bg-dimension-crl',
   },
-  {
-    code: 'BRL',
+  BRL: {
     name: 'Madurez de Negocio',
     shortDescription: 'Propuesta de valor, fuentes de ingresos y viabilidad económica.',
-    swatch: 'bg-dimension-brl',
   },
-  {
-    code: 'IPRL',
+  IPRL: {
     name: 'Propiedad Intelectual',
     shortDescription: 'Identificación, protección y libertad de operación de PI.',
-    swatch: 'bg-dimension-iprl',
   },
-  {
-    code: 'TmRL',
+  TmRL: {
     name: 'Madurez de Equipo',
     shortDescription: 'Composición, competencias y dedicación de miembros clave.',
-    swatch: 'bg-dimension-tmrl',
   },
-  {
-    code: 'FRL',
+  FRL: {
     name: 'Madurez de Financiación',
     shortDescription: 'Fuentes de capital, runway y plan financiero por hitos.',
-    swatch: 'bg-dimension-frl',
   },
-];
+};
 
 export default function HomePage(): JSX.Element {
   return (
@@ -103,20 +104,24 @@ export default function HomePage(): JSX.Element {
             <div className="border-border bg-azul-wash border-b px-6 py-4">
               <p className="text-overline text-azul-icesi">Perfil IRL</p>
               <p className="text-foreground mt-1 text-sm">
-                Escala 1 → 9 por dimensión · 5 niveles Likert por afirmación.
+                Escala 1 a 9 por dimensión · 5 niveles Likert por afirmación.
               </p>
             </div>
             <CardContent className="space-y-3 p-6">
-              {DIMENSIONS.map((d) => (
-                <div key={d.code} className="flex items-center gap-3">
-                  <span
-                    aria-hidden="true"
-                    className={`h-2.5 w-2.5 shrink-0 rounded-full ${d.swatch}`}
-                  />
-                  <span className="text-overline text-foreground w-12">{d.code}</span>
-                  <span className="text-muted-foreground flex-1 text-sm">{d.name}</span>
-                </div>
-              ))}
+              {DIMENSION_ORDER.map((code) => {
+                const visual = getDimensionVisual(code);
+                const copy = LANDING_COPY[code];
+                return (
+                  <div key={code} className="flex items-center gap-3">
+                    <span
+                      aria-hidden="true"
+                      className={`h-2.5 w-2.5 shrink-0 rounded-full ${visual.bg}`}
+                    />
+                    <span className="text-overline text-foreground w-12">{code}</span>
+                    <span className="text-muted-foreground flex-1 text-sm">{copy.name}</span>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </div>
@@ -173,23 +178,27 @@ export default function HomePage(): JSX.Element {
           </p>
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {DIMENSIONS.map((d) => (
-            <Card key={d.code} className="group p-5">
-              <div className="flex items-start gap-3">
-                <span
-                  aria-hidden="true"
-                  className={`mt-1 h-10 w-1 shrink-0 rounded-full ${d.swatch}`}
-                />
-                <div className="flex-1">
-                  <p className="text-overline text-muted-foreground">{d.code}</p>
-                  <h3 className="text-foreground mt-1 text-base font-semibold">{d.name}</h3>
-                  <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                    {d.shortDescription}
-                  </p>
+          {DIMENSION_ORDER.map((code) => {
+            const visual = getDimensionVisual(code);
+            const copy = LANDING_COPY[code];
+            return (
+              <Card key={code} className="group p-5">
+                <div className="flex items-start gap-3">
+                  <span
+                    aria-hidden="true"
+                    className={`mt-1 h-10 w-1 shrink-0 rounded-full ${visual.bg}`}
+                  />
+                  <div className="flex-1">
+                    <p className={`text-overline ${visual.textInk}`}>{code}</p>
+                    <h3 className="text-foreground mt-1 text-base font-semibold">{copy.name}</h3>
+                    <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                      {copy.shortDescription}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       </section>
     </PageShell>

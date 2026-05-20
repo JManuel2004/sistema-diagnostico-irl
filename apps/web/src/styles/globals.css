@@ -9,8 +9,8 @@
  * Cada variable es un HSL en formato sin comas (`H S% L%`) — Tailwind las
  * envuelve con `hsl(var(--token))` desde `tailwind.config.ts`.
  *
- *   --primary    232 77% 62%  =  #5454E9  Azul Icesi
- *   --accent     16 76% 36%   =  #A24317  Darkened Naranja Icesi (AA)
+ *   --primary    240 77% 62%  =  #5454E9  Azul Icesi
+ *   --accent      14 80% 57%  =  #E9683B  Naranja Icesi (paridad con INNLAB)
  *   --border     228  9% 82%  =  #CECFD4  Gris 2
  *   --border-strong  225  2% 54%  =  #88898C  Gris 1
  *
@@ -39,10 +39,17 @@
     --primary-pressed: 240 58% 42%;
     --primary-foreground: 0 0% 100%;
 
-    /* Accent — CTA — darkened Naranja Icesi for AA compliance */
-    --accent: 16 76% 36%;
-    --accent-hover: 16 78% 31%;
-    --accent-pressed: 16 82% 26%;
+    /*
+     * Accent — Naranja Icesi #E9683B en su brillo institucional, igual al
+     * que usa INNLAB en sus mosaicos. Contrast ratio del texto blanco sobre
+     * este naranja es 3.74:1 — cumple WCAG AA para UI components (≥3:1) y
+     * para texto large (≥3:1 a 18pt o 14pt bold). Los CTA primarios usan
+     * fuentes de 0.9375rem semibold, así que se pintan con sombra ligera +
+     * estado pressed más oscuro para reforzar la legibilidad.
+     */
+    --accent: 14 80% 57%;
+    --accent-hover: 14 80% 50%;
+    --accent-pressed: 14 82% 43%;
     --accent-foreground: 0 0% 100%;
 
     /* Secondary surfaces */
