@@ -10,8 +10,10 @@ import { PageShell } from '@/shared/ui/page-shell';
 /**
  * Shell de la página `/diagnosticos/:id/cuestionario` (HU-07 / HU-09).
  *
- * - Contenedor `reading` (`max-w-3xl`, ~768px) — fuerza ~60 caracteres
- *   por línea para los 48 enunciados (DESIGN.md).
+ * - Contenedor `standard` (`max-w-5xl`, ~1024px) — el cuestionario abre
+ *   un layout de dos columnas (contexto sticky + lista de afirmaciones)
+ *   en desktop, así que la versión `reading` queda corta. Mobile/tablet
+ *   colapsa a una sola columna conservando ~60 caracteres por línea.
  * - Header con descriptor institucional INNLAB; footer con la
  *   atribución KTH (RNF-09).
  * - `initialize(diagnosticId)` ata el borrador al id que viene en la
@@ -32,7 +34,7 @@ export default function QuestionnairePage(): JSX.Element {
   }, [diagnosticId, initialize]);
 
   return (
-    <PageShell width="reading" showAttribution>
+    <PageShell width="standard" showAttribution>
       <div className="mb-8">
         <p className="text-overline text-azul-icesi">
           Cuestionario IRL · KTH Innovation Readiness Level
