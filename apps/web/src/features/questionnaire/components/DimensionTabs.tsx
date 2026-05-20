@@ -1,7 +1,12 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
-import type { QuestionnaireStructure } from '@innlab/contracts';
+import type { DimensionCode, QuestionnaireStructure } from '@innlab/contracts';
 import { DimensionPanel } from './DimensionPanel';
-import { useQuestionnaireDraftStore, selectAnswers } from '../store/questionnaire-draft.store';
+import {
+  selectActiveTab,
+  selectAnswers,
+  selectSetActiveTab,
+  useQuestionnaireDraftStore,
+} from '../store/questionnaire-draft.store';
 
 /**
  * Tabs de dimensiones IRL.
@@ -15,18 +20,26 @@ import { useQuestionnaireDraftStore, selectAnswers } from '../store/questionnair
  * Códigos de dimensión (TRL, CRL, BRL, IPRL, TmRL, FRL) siempre en
  * `overline` (uppercase, 8% letter-spacing), nunca traducidos ni
  * abreviados según `DESIGN.md`.
+ *
+ * La pestaña activa vive en el store (`activeTab`) en lugar de
+ * `useState` o `defaultValue`, de modo que el F5 la conserva
+ * (SPEC-STORY3 §5.6).
  */
-
 interface Props {
   dimensions: QuestionnaireStructure['dimensions'];
 }
 
 export function DimensionTabs({ dimensions }: Props) {
-  const firstCode = dimensions[0]?.code ?? 'TRL';
+  const activeTab = useQuestionnaireDraftStore(selectActiveTab);
+  const setActiveTab = useQuestionnaireDraftStore(selectSetActiveTab);
   const answers = useQuestionnaireDraftStore(selectAnswers);
 
   return (
-    <Tabs defaultValue={firstCode} className="w-full">
+    <Tabs
+      value={activeTab}
+      onValueChange={(v) => setActiveTab(v as DimensionCode)}
+      className="w-full"
+    >
       <div className="overflow-x-auto">
         <TabsList
           aria-label="Dimensiones IRL"
