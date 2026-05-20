@@ -98,15 +98,39 @@ const config: Config = {
           bg: '#EFEFFB',
         },
 
-        // IRL dimension hues — used in radar axes, per-dimension result
-        // cards, and dimension chips/overlines only. Never in form inputs.
+        /*
+         * IRL dimension hues — usados en barras de acento, dots,
+         * chips y overlines. Nunca en inputs de respuesta.
+         *
+         * El par `{code}` / `{code}-ink` separa dos roles visuales:
+         *   - `{code}`: tono brillante institucional (Azul, Morado,
+         *     Verde, Naranja, Amarillo Icesi). Va en `bg-*`, dots,
+         *     barras de acento. Anclado a la paleta del manual y a
+         *     los mosaicos de la web de INNLAB.
+         *   - `{code}-ink`: misma familia cromática pero oscurecida
+         *     a ≥4.5:1 sobre blanco. Va en `text-*-ink` para
+         *     overlines y etiquetas legibles sin sacrificar la
+         *     identidad cromática del eje.
+         *
+         * IPRL no tiene contraparte directa en los 5 colores Icesi
+         * brillantes; usa un indigo profundo (`#3D3D8C`) — primo
+         * sobrio de Azul Icesi — que diferencia visualmente del TRL
+         * y conserva la familia cromática institucional.
+         */
         dimension: {
           trl: '#5454E9',
-          crl: '#5832B0',
-          brl: '#1F633D',
-          iprl: '#3D3D5C',
-          tmrl: '#8C3811',
-          frl: '#5C4A1A',
+          crl: '#865CF0',
+          brl: '#4CB979',
+          iprl: '#3D3D8C',
+          tmrl: '#E9683B',
+          frl: '#E4EB60',
+
+          'trl-ink': '#3737BD',
+          'crl-ink': '#6037D1',
+          'brl-ink': '#1F8550',
+          'iprl-ink': '#3D3D8C',
+          'tmrl-ink': '#B84F2A',
+          'frl-ink': '#8C7818',
         },
       },
       borderRadius: {

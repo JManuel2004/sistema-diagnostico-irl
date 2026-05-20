@@ -1,46 +1,30 @@
 import type { DimensionWithStatements } from '@innlab/contracts';
 import { StatementCard } from './StatementCard';
+import { getDimensionVisual } from '@/shared/lib/dimensions';
 
 /**
  * Panel de una dimensión IRL — sidebar sticky con contexto +
  * lista de las 8 afirmaciones.
  *
  * Adoptado del prototipo cliente para romper la linealidad de la
- * primera versión (DESIGN.md `reading` width): en pantallas grandes el
- * contexto de la dimensión (código, nombre, descripción, tip "Cómo
- * responder") vive en una columna sticky de ~280px a la izquierda,
- * y las 8 tarjetas de afirmación ocupan el resto. En tablet/móvil
- * todo colapsa a una sola columna conservando el orden lógico.
+ * primera versión (DESIGN.md `reading` width): en pantallas grandes
+ * el contexto de la dimensión (código, nombre, descripción, tip
+ * "Cómo responder") vive en una columna sticky de ~280px a la
+ * izquierda, y las 8 tarjetas de afirmación ocupan el resto. En
+ * tablet/móvil todo colapsa a una sola columna conservando el
+ * orden lógico.
  *
- * La barra de acento (`bg-dimension-*`) sigue presente en el sidebar
- * para mantener la identificación cromática del eje IRL activo, sin
- * teñir el input de respuesta.
+ * El color de acento de la dimensión se resuelve a través de
+ * `getDimensionVisual` (shared/lib/dimensions). Nunca hardcodear el
+ * mapeo aquí — esta tabla vive en un solo lugar para que cualquier
+ * componente futuro (radar, badges del perfil) lo reutilice.
  */
 interface Props {
   dimension: DimensionWithStatements;
 }
 
-const DIMENSION_ACCENT: Record<string, string> = {
-  TRL: 'bg-dimension-trl',
-  CRL: 'bg-dimension-crl',
-  BRL: 'bg-dimension-brl',
-  IPRL: 'bg-dimension-iprl',
-  TmRL: 'bg-dimension-tmrl',
-  FRL: 'bg-dimension-frl',
-};
-
-const DIMENSION_ACCENT_TEXT: Record<string, string> = {
-  TRL: 'text-dimension-trl',
-  CRL: 'text-dimension-crl',
-  BRL: 'text-dimension-brl',
-  IPRL: 'text-dimension-iprl',
-  TmRL: 'text-dimension-tmrl',
-  FRL: 'text-dimension-frl',
-};
-
 export function DimensionPanel({ dimension }: Props) {
-  const accentBg = DIMENSION_ACCENT[dimension.code] ?? 'bg-primary';
-  const accentText = DIMENSION_ACCENT_TEXT[dimension.code] ?? 'text-primary';
+  const visual = getDimensionVisual(dimension.code);
 
   return (
     <section
@@ -53,10 +37,10 @@ export function DimensionPanel({ dimension }: Props) {
           <div className="flex items-start gap-3">
             <span
               aria-hidden="true"
-              className={`mt-1 h-10 w-1 shrink-0 rounded-full ${accentBg}`}
+              className={`mt-1 h-10 w-1 shrink-0 rounded-full ${visual.bg}`}
             />
             <div className="flex-1">
-              <p className={`text-overline ${accentText}`}>
+              <p className={`text-overline ${visual.textInk}`}>
                 Dimensión {dimension.sequence} de 6 · {dimension.code}
               </p>
               <h2
