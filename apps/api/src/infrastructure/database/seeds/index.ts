@@ -59,6 +59,19 @@ async function run(): Promise<void> {
           [s.dimensionCodigo, s.numeroenDimension, s.textoEs],
         );
       }
+
+      await manager.query(
+        `INSERT INTO irl_diagnostic.diagnostico
+           (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (id_diagnostico) DO NOTHING`,
+        [
+          'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+          'usuario-demo',
+          'CUESTIONARIO_EN_CURSO',
+          'KTH-IRL-1.0',
+        ],
+      );
     });
 
     const [{ count: dimCount }] = await dataSource.query<{ count: string }[]>(

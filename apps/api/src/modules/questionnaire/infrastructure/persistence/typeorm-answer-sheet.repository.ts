@@ -9,12 +9,14 @@ import { RespuestaOrm } from './respuesta.orm-entity.js';
 /**
  * TypeORM-backed adapter for the `AnswerSheet` aggregate.
  *
- * Save policy: **replace-all in a single transaction.** The aggregate
- * is the unit of consistency — when the use case loads it, mutates
- * some answers, and saves, we want the post-save state to exactly
- * mirror the in-memory aggregate. Replacing is simpler and safer than
- * computing a diff, and the aggregate is small (≤48 rows). The
- * transaction guarantees we never observe a partial sheet.
+ * Save policy: replace-all in a single transaction. DELETE then INSERT
+ * inside a transaction guarantees the persisted state mirrors the
+ * aggregate exactly. The `UNIQUE (id_diagnostico, id_afirmacion)` DB
+ * constraint provides defense-in-depth against duplicate answers.
+ *
+ * `id_respuesta` is a bigint GENERATED ALWAYS AS IDENTITY — never set
+ * it explicitly. `id_afirmacion` is also a bigint (from
+ * `irl_catalog.afirmacion`), represented as a string in TypeORM.
  */
 @Injectable()
 export class TypeOrmAnswerSheetRepository implements AnswerSheetRepositoryPort {
@@ -33,7 +35,6 @@ export class TypeOrmAnswerSheetRepository implements AnswerSheetRepositoryPort {
     return AnswerSheet.fromPersistence(
       Uuid.create(diagnosticId),
       rows.map((r) => ({
-        id: r.idRespuesta,
         statementId: r.idAfirmacion,
         value: r.valorLikert,
       })),
@@ -42,20 +43,19 @@ export class TypeOrmAnswerSheetRepository implements AnswerSheetRepositoryPort {
 
   async save(sheet: AnswerSheet): Promise<void> {
     const snapshot = sheet.toPersistence();
-    const rows = snapshot.map((a) =>
-      this.orm.create({
-        idRespuesta: a.id,
-        idDiagnostico: sheet.diagnosticId.value,
-        idAfirmacion: a.statementId,
-        valorLikert: a.value,
-      }),
-    );
 
     await this.orm.manager.transaction(async (manager) => {
       await manager.delete(RespuestaOrm, {
         idDiagnostico: sheet.diagnosticId.value,
       });
-      if (rows.length > 0) {
+      if (snapshot.length > 0) {
+        const rows = snapshot.map((a) =>
+          manager.create(RespuestaOrm, {
+            idDiagnostico: sheet.diagnosticId.value,
+            idAfirmacion: a.statementId,
+            valorLikert: a.value,
+          }),
+        );
         await manager.insert(RespuestaOrm, rows);
       }
     });
