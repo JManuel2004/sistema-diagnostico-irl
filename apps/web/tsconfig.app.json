@@ -21,7 +21,8 @@
       "@app/*": ["./src/app/*"],
       "@features/*": ["./src/features/*"],
       "@pages/*": ["./src/pages/*"],
-      "@shared/*": ["./src/shared/*"]
+      "@shared/*": ["./src/shared/*"],
+      "@innlab/contracts": ["../../packages/contracts/src/index.ts"]
     },
 
     /* Linting */
@@ -29,10 +30,7 @@
     "noUnusedParameters": true,
     "strictNullChecks": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
-    "paths": {
-      "@innlab/contracts": ["../../packages/contracts/src/index.ts"]
-    }
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src", "postcss.config.js", "tailwind.config.ts", "vite.config.ts", "index.html"]
 }
