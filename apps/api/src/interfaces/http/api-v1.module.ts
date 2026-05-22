@@ -4,6 +4,7 @@ import { HealthController } from './health.controller.js';
 import { IrlCatalogModule } from '../../modules/irl-catalog/irl-catalog.module.js';
 import { QuestionnaireModule } from '../../modules/questionnaire/questionnaire.module.js';
 import { DiagnosticModule } from '../../modules/diagnostic/diagnostic.module.js';
+import { MaturityProfileModule } from '../../modules/maturity-profile/maturity-profile.module.js';
 
 /**
  * Composition root for the v1 HTTP surface.
@@ -21,6 +22,7 @@ import { DiagnosticModule } from '../../modules/diagnostic/diagnostic.module.js'
     IrlCatalogModule,
     QuestionnaireModule,
     DiagnosticModule,
+    MaturityProfileModule,
   ],
   controllers: [HealthController],
 })
