@@ -80,7 +80,7 @@ export default function HomePage(): JSX.Element {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link to="/diagnosticos/demo/cuestionario" className={buttonVariants({ size: 'lg' })}>
+            <Link to="/diagnosticos/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/cuestionario" className={buttonVariants({ size: 'lg' })}>
               Iniciar diagnóstico
             </Link>
             <a

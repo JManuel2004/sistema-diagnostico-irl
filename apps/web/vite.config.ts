@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [react(), visualizer({ filename: 'dist/stats.html', gzipSize: true, brotliSize: true })],
   resolve: {
     alias: {
+      '@innlab/contracts': path.resolve(__dirname, '../../packages/contracts/src/index.ts'),
       '@': path.resolve(__dirname, './src'),
       '@app': path.resolve(__dirname, './src/app'),
       '@features': path.resolve(__dirname, './src/features'),
