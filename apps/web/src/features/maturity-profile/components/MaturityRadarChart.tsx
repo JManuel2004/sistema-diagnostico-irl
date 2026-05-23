@@ -115,11 +115,19 @@ function AxisLabel({
   const codeColor = DIMENSION_COLOR[point.code] ?? '#1A1A24';
   const levelColor = severityColorForLevel(point.level);
 
+  // Extra clearance for the TOP label (TRL) so it doesn't visually merge
+  // with the topmost radial tick. The other dimensions sit on the sides
+  // and bottom where no vertical stack of radius ticks competes for the
+  // same column of pixels, so they keep the tighter default spacing.
+  const isTopLabel = point.code === 'TRL';
+  const nameOffset = isTopLabel ? -18 : -6;
+  const codeOffset = isTopLabel ? 0 : 12;
+
   return (
     <g>
       <text
         x={x}
-        y={y - 6}
+        y={y + nameOffset}
         textAnchor={textAnchor}
         className="fill-foreground text-base font-semibold"
       >
@@ -127,7 +135,7 @@ function AxisLabel({
       </text>
       <text
         x={x}
-        y={y + 12}
+        y={y + codeOffset}
         textAnchor={textAnchor}
         className="font-mono text-xs uppercase tracking-widest"
       >
@@ -178,7 +186,7 @@ export function MaturityRadarChart({
   return (
     <div className="w-full" role="img" aria-label="Perfil IRL — gráfico radar">
       <ResponsiveContainer width="100%" aspect={1} maxHeight={560}>
-        <RadarChart data={[...points]} margin={{ top: 40, right: 80, bottom: 40, left: 80 }}>
+        <RadarChart data={[...points]} margin={{ top: 56, right: 80, bottom: 40, left: 80 }}>
           <title>Perfil de madurez IRL — gráfico radar</title>
           <desc>{accessibleDescription}</desc>
 
@@ -194,8 +202,14 @@ export function MaturityRadarChart({
             }) => <AxisLabel {...props} pointsByCode={pointsByCode} />}
           />
 
+          {/*
+            angle={30} sitúa los ticks 0/3/6/9 en la diagonal entre TRL
+            (90°) y CRL (-30° → arriba a la derecha), de modo que no se
+            apilan sobre la línea vertical del eje superior y dejan de
+            chocar visualmente con el label "Tecnología".
+          */}
           <PolarRadiusAxis
-            angle={90}
+            angle={30}
             domain={[0, 9]}
             tickCount={4}
             tick={{
