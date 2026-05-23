@@ -115,13 +115,14 @@ function AxisLabel({
   const codeColor = DIMENSION_COLOR[point.code] ?? '#1A1A24';
   const levelColor = severityColorForLevel(point.level);
 
-  // Extra clearance for the TOP label (TRL) so it doesn't visually merge
-  // with the topmost radial tick. The other dimensions sit on the sides
-  // and bottom where no vertical stack of radius ticks competes for the
-  // same column of pixels, so they keep the tighter default spacing.
+  // Extra clearance for the TOP label (TRL) so queda por encima del
+  // stack de ticks 0/3/6/9 que sube por el eje vertical superior. Sin
+  // este margen, "Tecnología" y el código TRL se solapan con el "9".
+  // El resto de dimensiones no comparte columna con los ticks, así que
+  // conservan el spacing ajustado.
   const isTopLabel = point.code === 'TRL';
-  const nameOffset = isTopLabel ? -18 : -6;
-  const codeOffset = isTopLabel ? 0 : 12;
+  const nameOffset = isTopLabel ? -42 : -6;
+  const codeOffset = isTopLabel ? -24 : 12;
 
   return (
     <g>
@@ -186,7 +187,7 @@ export function MaturityRadarChart({
   return (
     <div className="w-full" role="img" aria-label="Perfil IRL — gráfico radar">
       <ResponsiveContainer width="100%" aspect={1} maxHeight={560}>
-        <RadarChart data={[...points]} margin={{ top: 56, right: 80, bottom: 40, left: 80 }}>
+        <RadarChart data={[...points]} margin={{ top: 80, right: 80, bottom: 40, left: 80 }}>
           <title>Perfil de madurez IRL — gráfico radar</title>
           <desc>{accessibleDescription}</desc>
 
@@ -203,52 +204,19 @@ export function MaturityRadarChart({
           />
 
           {/*
-            angle={90} ubica los ticks 0/3/6/9 sobre la mitad horizontal
-            derecha del gráfico (entre el eje CRL a 60° y el eje BRL a
-            120°). En los perfiles IRL típicos del marco KTH las
-            dimensiones del lado comercial (CRL/BRL) suelen mostrar
-            niveles más bajos que el lado técnico, así que ese ángulo
-            cae lejos del polígono. Además el tick es un `g` con un
-            `rect` blanco detrás del texto para que aún cuando el
-            polígono pase cerca el número se lea sin sobreposición.
+            angle={90} ubica los ticks 0/3/6/9 sobre el eje vertical
+            superior del gráfico. El label "9" se acerca a la dimensión
+            del tope (TRL), así que el `AxisLabel` empuja "Tecnología"
+            ~42px arriba para dejarlo por encima del stack de ticks.
+            Texto plano, sin fondo — limpieza visual.
           */}
           <PolarRadiusAxis
             angle={90}
             domain={[0, 9]}
             tickCount={4}
-            tick={(tickProps: {
-              x?: number;
-              y?: number;
-              payload?: { value?: number };
-              textAnchor?: 'start' | 'middle' | 'end';
-            }) => {
-              const { x, y, payload, textAnchor } = tickProps;
-              if (x === undefined || y === undefined || payload?.value === undefined) {
-                return <g />;
-              }
-              // Mini-pill blanco alrededor del número — 14×14 centrado
-              // en el punto del tick. Sin borde para no robar atención.
-              return (
-                <g>
-                  <rect
-                    x={x - 7}
-                    y={y - 7}
-                    width={14}
-                    height={14}
-                    rx={3}
-                    fill="var(--color-background, #FFFFFF)"
-                  />
-                  <text
-                    x={x}
-                    y={y + 4}
-                    textAnchor={textAnchor ?? 'middle'}
-                    className="fill-muted-foreground"
-                    fontSize={11}
-                  >
-                    {payload.value}
-                  </text>
-                </g>
-              );
+            tick={{
+              fill: 'var(--color-muted-foreground, #4A4A55)',
+              fontSize: 11,
             }}
             stroke="var(--color-border, #CECFD4)"
             axisLine={false}

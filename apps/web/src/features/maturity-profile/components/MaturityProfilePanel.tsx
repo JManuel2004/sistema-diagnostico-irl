@@ -44,7 +44,7 @@ export function MaturityProfilePanel({ profile }: MaturityProfilePanelProps): JS
       </header>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="bg-surface-emphasis border-border rounded-lg border p-6 md:p-10">
+        <div className="bg-surface-emphasis rounded-lg p-6 md:p-10">
           <MaturityRadarChart
             dimensionResults={profile.dimensionResults}
             bottleneckDimensions={bottleneckCodes}
