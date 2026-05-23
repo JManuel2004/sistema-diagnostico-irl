@@ -4,3 +4,4 @@
 // helpers (the API client, internal sub-components) stay private.
 
 export { useComputeMaturityProfile } from './hooks/useComputeMaturityProfile';
+export { MaturityRadarChart } from './components/MaturityRadarChart';
