@@ -7,24 +7,6 @@ import { MaturityProfileCalculationError } from '../../domain/errors/maturity-pr
 import { ResultadoDimensionOrm } from './resultado-dimension.orm-entity.js';
 import { DimensionOrm } from '../../../irl-catalog/infrastructure/persistence/entities/dimension.orm-entity.js';
 
-/**
- * TypeORM-backed adapter for the `MaturityProfile` aggregate (RF-07).
- *
- * Mapping concern: the aggregate carries `dimensionCode` (TRL, CRL, ...)
- * but `irl_diagnostic.resultado_dimension` stores the integer FK
- * `id_dimension`. We translate both ways via a small lookup against
- * `irl_catalog.dimension`. The catalog is immutable at runtime so the
- * lookup is correct after the first migration + seed.
- *
- * Save policy: **replace-all inside a single transaction**. DELETE the
- * six prior rows (if any) and INSERT the six fresh ones atomically.
- * Failure rolls back the entire change — fulfils the DIAGIRL-34 error
- * scenario "no guarda resultados parciales".
- *
- * Booleans on insert: `en_estado_critico` and `es_cuello_botella` are
- * always `false` here. DIAGIRL-35 / DIAGIRL-38 will UPDATE them through
- * dedicated calls after the profile lands.
- */
 @Injectable()
 export class TypeOrmMaturityProfileRepository implements MaturityProfileRepositoryPort {
   constructor(
@@ -38,35 +20,35 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
     const snapshot = profile.toPersistence();
     const idByCode = await this.loadDimensionIdByCode();
 
-    await this.orm.manager.transaction(async (manager) => {
-      await manager.delete(ResultadoDimensionOrm, {
+    const rows = snapshot.dimensionResults.map((r) => {
+      const idDimension = idByCode.get(r.dimensionCode);
+      if (idDimension === undefined) {
+        throw new MaturityProfileCalculationError(
+          `Cannot map dimensionCode '${r.dimensionCode}' to id_dimension`,
+          { dimensionCode: r.dimensionCode },
+        );
+      }
+      return {
         idDiagnostico: snapshot.diagnosticId,
-      });
-
-      const rows = snapshot.dimensionResults.map((r) => {
-        const idDimension = idByCode.get(r.dimensionCode);
-        if (idDimension === undefined) {
-          // Should be impossible: the aggregate already validated the
-          // codes. This is defense in depth if the catalog drifted
-          // between the calculation and the persist.
-          throw new MaturityProfileCalculationError(
-            `Cannot map dimensionCode '${r.dimensionCode}' to id_dimension`,
-            { dimensionCode: r.dimensionCode },
-          );
-        }
-        return manager.create(ResultadoDimensionOrm, {
-          idDiagnostico: snapshot.diagnosticId,
-          idDimension,
-          promedioLikert: r.averageLikert,
-          nivelIrl: r.irlLevel,
-          enEstadoCritico: false,
-          esCuelloBotella: false,
-          fechaCalculo: snapshot.computedAt,
-        });
-      });
-
-      await manager.insert(ResultadoDimensionOrm, rows);
+        idDimension,
+        promedioLikert: r.averageLikert,
+        nivelIrl: r.irlLevel,
+        enEstadoCritico: false,
+        esCuelloBotella: false,
+        fechaCalculo: snapshot.computedAt,
+      };
     });
+
+    await this.orm
+      .createQueryBuilder()
+      .insert()
+      .into(ResultadoDimensionOrm)
+      .values(rows)
+      .orUpdate(
+        ['promedio_likert', 'nivel_irl', 'fecha_calculo'],
+        ['id_diagnostico', 'id_dimension'],
+      )
+      .execute();
   }
 
   async findByDiagnosticId(
@@ -81,8 +63,6 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
 
     return MaturityProfile.fromPersistence({
       diagnosticId,
-      // All six rows share the same fecha_calculo (the use case writes
-      // them in one transaction with one timestamp). Pick the first.
       computedAt: rows[0].fechaCalculo,
       dimensionResults: rows.map((row) => {
         const code = codeById.get(row.idDimension);
@@ -100,10 +80,6 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
       }),
     });
   }
-
-  // ───────────────────────────────────────────────────────────────────────
-  // Internals
-  // ───────────────────────────────────────────────────────────────────────
 
   private async loadDimensionIdByCode(): Promise<ReadonlyMap<string, number>> {
     const rows = await this.dimensions.find();

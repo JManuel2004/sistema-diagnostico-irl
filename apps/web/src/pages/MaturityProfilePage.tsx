@@ -1,4 +1,4 @@
-import { useEffect, type JSX } from 'react';
+import { useEffect, useRef, type JSX } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import type { MaturityProfileResponse } from '@innlab/contracts';
@@ -9,19 +9,22 @@ import { queryKeys } from '@/shared/api/query-keys';
 export default function MaturityProfilePage(): JSX.Element {
   const { id: diagnosticId } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
-  const { mutate, data, error, isPending, isError, isIdle } = useComputeMaturityProfile();
+  const { mutate, data, error, isPending, isError } = useComputeMaturityProfile();
 
   const cachedProfile = diagnosticId
     ? queryClient.getQueryData<MaturityProfileResponse>(queryKeys.diagnostic.profile(diagnosticId))
     : undefined;
   const profile = cachedProfile ?? data;
 
+  const firedFor = useRef<string | null>(null);
+
   useEffect(() => {
     if (!diagnosticId) return;
     if (cachedProfile) return;
-    if (!isIdle) return;
+    if (firedFor.current === diagnosticId) return;
+    firedFor.current = diagnosticId;
     mutate(diagnosticId);
-  }, [diagnosticId, cachedProfile, isIdle, mutate]);
+  }, [diagnosticId, cachedProfile, mutate]);
 
   if (!diagnosticId) {
     return <Navigate to="/diagnosticos" replace />;
