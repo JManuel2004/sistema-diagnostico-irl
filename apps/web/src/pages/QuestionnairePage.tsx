@@ -1,5 +1,5 @@
 import { useState, useEffect, type JSX } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { QuestionnaireView } from '@features/questionnaire';
 import {
@@ -8,6 +8,7 @@ import {
   useQuestionnaireDraftStore,
 } from '@features/questionnaire/store/questionnaire-draft.store';
 import { useQuestionnaireStructure } from '@features/questionnaire/hooks/useQuestionnaireStructure';
+import { useComputeMaturityProfile } from '@features/maturity-profile';
 import { PageShell } from '@/shared/ui/page-shell';
 import { Button } from '@/shared/ui/button';
 import { http } from '@/shared/api/http';
@@ -26,12 +27,13 @@ const STATEMENTS_PER_DIM = 8;
  */
 export default function QuestionnairePage(): JSX.Element {
   const { id: diagnosticId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const initialize = useQuestionnaireDraftStore(selectInitialize);
   const answers = useQuestionnaireDraftStore(selectAnswers);
   const { data: catalog } = useQuestionnaireStructure();
 
   const [submitAttempted, setSubmitAttempted] = useState(false);
-  const [serverResult, setServerResult] = useState<SubmitQuestionnaireResponse | null>(null);
+  const computeProfile = useComputeMaturityProfile();
 
   useEffect(() => {
     initialize(diagnosticId ?? null);
@@ -45,43 +47,39 @@ export default function QuestionnairePage(): JSX.Element {
 
   const isComplete = catalog !== undefined && incompleteDimensions.length === 0;
 
-  const mutation = useMutation({
-    mutationFn: (items: Array<{ statementId: string; value: number }>) =>
-      http
-        .post<SubmitQuestionnaireResponse>(`/diagnosticos/${diagnosticId ?? ''}/cuestionario`, {
-          answers: items,
-        })
-        .then((r) => r.data),
-    onSuccess: (data) => setServerResult(data),
+  // Mutation chain: submit answers (HU-33) → compute maturity profile
+  // (DIAGIRL-34) → navigate to /perfil (DIAGIRL-36). All three failures
+  // bubble up through `submitAndCompute.error` so the same banner shows.
+  const submitAndCompute = useMutation({
+    mutationFn: async (items: { statementId: string; value: number }[]): Promise<void> => {
+      if (!diagnosticId) return;
+      // 1) persist the 48 answers
+      await http.post<SubmitQuestionnaireResponse>(`/diagnosticos/${diagnosticId}/cuestionario`, {
+        answers: items,
+      });
+      // 2) compute the profile (uses the mutation hook so the result
+      //    lands in the React Query cache for /perfil to read).
+      await computeProfile.mutateAsync(diagnosticId);
+    },
+    onSuccess: () => {
+      if (diagnosticId) {
+        void navigate(`/diagnosticos/${diagnosticId}/perfil`);
+      }
+    },
   });
 
-  function handleSubmit() {
+  function handleSubmit(): void {
     setSubmitAttempted(true);
     if (!isComplete) return;
     const items = Object.entries(answers).map(([statementId, value]) => ({
       statementId,
-      value: value as number,
+      value: value,
     }));
-    mutation.mutate(items);
+    submitAndCompute.mutate(items);
   }
 
-  if (serverResult) {
-    return (
-      <PageShell width="standard" showAttribution>
-        <div className="flex flex-col items-center gap-6 py-16 text-center">
-          <div className="border-acceptable/30 bg-acceptable-bg rounded-xl border p-8">
-            <p className="text-acceptable text-5xl" aria-hidden="true">✓</p>
-            <h2 className="text-foreground mt-4 text-2xl font-bold">
-              Cuestionario enviado exitosamente
-            </h2>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Se registraron {serverResult.answersRecorded} de 48 respuestas.
-            </p>
-          </div>
-        </div>
-      </PageShell>
-    );
-  }
+  const isProcessing = submitAndCompute.isPending;
+  const hasError = submitAndCompute.isError;
 
   return (
     <PageShell width="standard" showAttribution>
@@ -107,14 +105,12 @@ export default function QuestionnairePage(): JSX.Element {
             role="alert"
             className="border-critical/30 bg-critical-bg mb-4 rounded-md border p-4"
           >
-            <p className="text-critical font-semibold text-sm">
+            <p className="text-critical text-sm font-semibold">
               Hay secciones sin completar. Responde todas las afirmaciones antes de continuar.
             </p>
             <ul className="text-critical mt-2 list-disc pl-5 text-sm">
               {incompleteDimensions.map((dim) => {
-                const answered = dim.statements.filter(
-                  (s) => answers[s.id] !== undefined,
-                ).length;
+                const answered = dim.statements.filter((s) => answers[s.id] !== undefined).length;
                 return (
                   <li key={dim.code}>
                     {dim.code} — {dim.name} ({answered}/{STATEMENTS_PER_DIM})
@@ -125,13 +121,13 @@ export default function QuestionnairePage(): JSX.Element {
           </div>
         )}
 
-        {mutation.isError && (
+        {hasError && (
           <div
             role="alert"
             className="border-critical/30 bg-critical-bg mb-4 rounded-md border p-4"
           >
             <p className="text-critical text-sm font-semibold">
-              Error al comunicarse con el servidor. Intenta de nuevo.
+              No fue posible generar el diagnóstico. Intenta de nuevo en unos minutos.
             </p>
           </div>
         )}
@@ -142,11 +138,8 @@ export default function QuestionnairePage(): JSX.Element {
               ? 'Todas las afirmaciones respondidas — listo para procesar.'
               : `Faltan respuestas en ${incompleteDimensions.length} dimensión(es).`}
           </p>
-          <Button
-            onClick={handleSubmit}
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? 'Procesando...' : 'Procesar diagnóstico'}
+          <Button onClick={handleSubmit} disabled={isProcessing}>
+            {isProcessing ? 'Procesando…' : 'Procesar diagnóstico'}
           </Button>
         </div>
       </div>
