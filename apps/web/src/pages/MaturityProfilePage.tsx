@@ -46,9 +46,11 @@ export default function MaturityProfilePage(): JSX.Element {
     if (cachedProfile) return;
     if (!isIdle) return;
     mutate(diagnosticId);
-    // Intencionalmente sólo dependemos del id; `mutate` es estable y
-    // `cachedProfile`/`isIdle` reflejan estado interno del hook.
-  }, [diagnosticId]);
+    // Los guards arriba (`cachedProfile`, `!isIdle`) cortocircuitan
+    // cualquier re-ejecución cuando `isIdle` cambia true→false tras
+    // `mutate`. Incluir todas las deps satisface al linter sin
+    // re-disparar la mutación.
+  }, [diagnosticId, cachedProfile, isIdle, mutate]);
 
   if (!diagnosticId) {
     return <Navigate to="/diagnosticos" replace />;
