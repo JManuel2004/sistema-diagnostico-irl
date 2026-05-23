@@ -7,24 +7,7 @@ interface MaturityProfilePanelProps {
   profile: MaturityProfileResponse;
 }
 
-/**
- * Panel completo del perfil de madurez (DIAGIRL-36).
- *
- * Compone:
- *   - Encabezado con overline + h1 ("Tu radar IRL")
- *   - El `MaturityRadarChart`
- *   - Pie con timestamp del cálculo + atribución KTH obligatoria
- *     (RNF-09: "Marco IRL © KTH Innovation. Licencia CC BY-NC-SA 4.0")
- *
- * Layout: container `max-w-6xl` para acomodar el grid de 2 columnas
- * (radar a la izquierda, panel de señales numéricas a la derecha) en
- * pantallas md+. En móvil ambos se apilan verticalmente. El radar
- * conserva su contenedor `surface-emphasis`; el resumen va sobre fondo
- * blanco para que las tarjetas tengan suficiente contraste y el ojo
- * descanse entre el radar y las señales (DIAGIRL-37).
- */
 export function MaturityProfilePanel({ profile }: MaturityProfilePanelProps): JSX.Element {
-  const bottleneckCodes = profile.bottleneck?.dimensions ?? [];
   const computedAtLabel = new Date(profile.computedAt).toLocaleString('es-CO', {
     dateStyle: 'long',
     timeStyle: 'short',
@@ -45,10 +28,7 @@ export function MaturityProfilePanel({ profile }: MaturityProfilePanelProps): JS
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="bg-surface-emphasis rounded-lg p-6 md:p-10">
-          <MaturityRadarChart
-            dimensionResults={profile.dimensionResults}
-            bottleneckDimensions={bottleneckCodes}
-          />
+          <MaturityRadarChart dimensionResults={profile.dimensionResults} />
         </div>
         <MaturityProfileSummary dimensionResults={profile.dimensionResults} />
       </div>

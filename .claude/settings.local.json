@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git ls-tree *)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx|sql|json|md\\)$\")",
+      "Bash(grep -i \"\\\\.sql$\")",
+      "Bash(git checkout *)",
+      "Bash(where pdftoppm *)",
+      "Bash(pdftoppm -v)",
+      "Bash(pdfinfo -v)",
+      "Bash(pdftotext -v)",
+      "Bash(pnpm --filter @innlab/api test:unit -- --testPathPattern=diagnostic)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm --filter @innlab/contracts build)",
+      "Bash(pnpm exec *)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(echo \"---exit=$?\")",
+      "Bash(pnpm --filter @innlab/contracts typecheck)",
+      "Bash(pnpm --filter @innlab/web typecheck)",
+      "Bash(pnpm --filter @innlab/api typecheck)",
+      "Bash(pnpm --filter @innlab/contracts lint)",
+      "Bash(pnpm --filter @innlab/api lint)",
+      "Bash(pnpm --filter @innlab/web lint)",
+      "PowerShell(git commit -m \"feat: add diagnostic schemas for irl levels conversion and result in contracts\" 2>&1)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(ls -la \"D:/Descargas/v2/\" 2>&1 | head -30; echo \"---\"; ls \"D:/Descargas/\" 2>&1 | head -40)",
+      "Bash(git commit *)",
+      "Bash(docker exec *)",
+      "Bash(curl -s -i http://localhost:3000/api/v1/health/live)",
+      "Bash(curl -s -i http://localhost:3000/api/v1/health/ready)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/api/docs)",
+      "Bash(git check-ignore *)"
+    ]
+  }
+}

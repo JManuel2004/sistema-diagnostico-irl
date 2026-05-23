@@ -9,11 +9,6 @@ import {
 } from 'recharts';
 import type { DimensionResult } from '@innlab/contracts';
 
-/**
- * Etiqueta humana en español para cada dimensión IRL. Per DESIGN.md la
- * etiqueta del eje del radar lleva el nombre legible — el código (TRL,
- * CRL...) se renderiza junto con el nivel en estilo `overline`.
- */
 const DIMENSION_NAME_ES: Record<string, string> = {
   TRL: 'Tecnología',
   CRL: 'Cliente',
@@ -23,11 +18,6 @@ const DIMENSION_NAME_ES: Record<string, string> = {
   FRL: 'Financiación',
 };
 
-/**
- * Color "por dimensión" per DESIGN.md → "IRL dimension palette". Se usa
- * en el código de la dimensión (overline) para que cada eje conserve
- * su identidad visual incluso si todas tuvieran el mismo nivel.
- */
 const DIMENSION_COLOR: Record<string, string> = {
   TRL: 'var(--color-dimension-trl, #5454E9)',
   CRL: 'var(--color-dimension-crl, #5832B0)',
@@ -37,17 +27,6 @@ const DIMENSION_COLOR: Record<string, string> = {
   FRL: 'var(--color-dimension-frl, #5C4A1A)',
 };
 
-/**
- * Color "por nivel IRL" extendido desde la paleta semántica de DESIGN.md
- * (originalmente ligada a desequilibrios — RF-10). Acá la reusamos como
- * señal de severidad absoluta para el VALOR numérico del nivel:
- *   - 1-3 → crítico (atención inmediata)
- *   - 4-5 → moderado
- *   - 6-9 → aceptable
- * Esta categorización proviene de la guía KTH (página 4 del PDF
- * "Cuestionario KTH IRL"): "🔴 IRL 1–3 en cualquier dimensión: señal de
- * prioridad máxima".
- */
 function severityColorForLevel(level: number): string {
   if (level <= 3) return 'var(--color-critical, #A53221)';
   if (level <= 5) return 'var(--color-moderate, #8C3811)';
@@ -55,24 +34,14 @@ function severityColorForLevel(level: number): string {
 }
 
 interface MaturityRadarChartProps {
-  /** Los 6 resultados dimensionales tal como vienen del backend (DIAGIRL-34). */
   dimensionResults: readonly DimensionResult[];
-  /**
-   * Códigos de dimensión marcados como cuello de botella (DIAGIRL-35).
-   * Llega vacío hasta que esa HU esté lista. Cuando llegue, los vértices
-   * correspondientes se resaltan con un anillo.
-   */
   bottleneckDimensions?: readonly string[];
 }
 
 interface RadarPoint {
-  /** Display name (Spanish) shown around the chart. */
   dimension: string;
-  /** Dimension code (TRL, CRL, ...) — used internally for coloring + lookups. */
   code: string;
-  /** Computed IRL level, 1..9. */
   level: number;
-  /** Original Likert average (kept so the tooltip can show it if added later). */
   averageLikert: number;
 }
 
@@ -85,13 +54,6 @@ function asRadarPoints(results: readonly DimensionResult[]): readonly RadarPoint
   }));
 }
 
-/**
- * Tick personalizado del `PolarAngleAxis`. Renderiza:
- *   - El nombre de la dimensión en español (h4-ish, semibold).
- *   - El código + nivel en estilo `overline` (uppercase, tracked).
- *   - Color del código = color de la dimensión (DESIGN.md dimension
- *     palette). Color del nivel = color por severidad (≤3, 4-5, ≥6).
- */
 function AxisLabel({
   payload,
   x,
@@ -108,18 +70,12 @@ function AxisLabel({
   const dimensionName = payload?.value;
   if (!dimensionName || x === undefined || y === undefined) return null;
 
-  // Recharts gives us the rendered name; reverse-lookup the data point.
   const point = [...pointsByCode.values()].find((p) => p.dimension === dimensionName);
   if (!point) return null;
 
   const codeColor = DIMENSION_COLOR[point.code] ?? '#1A1A24';
   const levelColor = severityColorForLevel(point.level);
 
-  // Extra clearance for the TOP label (TRL) so queda por encima del
-  // stack de ticks 0/3/6/9 que sube por el eje vertical superior. Sin
-  // este margen, "Tecnología" y el código TRL se solapan con el "9".
-  // El resto de dimensiones no comparte columna con los ticks, así que
-  // conservan el spacing ajustado.
   const isTopLabel = point.code === 'TRL';
   const nameOffset = isTopLabel ? -42 : -6;
   const codeOffset = isTopLabel ? -24 : 12;
@@ -150,29 +106,6 @@ function AxisLabel({
   );
 }
 
-/**
- * Radar de madurez IRL (DIAGIRL-36).
- *
- * 6 ejes (uno por dimensión IRL), escala 1-9. El polígono se rellena con
- * Azul Icesi al 20% de alpha y se traza con 2px de Azul Icesi al 100%
- * — per DESIGN.md "single shape, single fill" (la firma visual del
- * marco KTH).
- *
- * Etiquetas: nombre en español + código (DESIGN.md dimension palette) +
- * nivel (severidad por umbral KTH). Esto cumple los 3 criterios de la
- * HU-36:
- *   - 6 ejes uno por dimensión ✓
- *   - Vértices ubicados en su nivel 1-9 ✓
- *   - Nombres de dimensiones visibles ✓
- *
- * Accesibilidad: el SVG raíz lleva `<title>` y `<desc>` para que lectores
- * de pantalla narren el perfil sin depender del visual (DESIGN.md a11y).
- *
- * DIAGIRL-35-ready: la prop opcional `bottleneckDimensions` se acepta
- * pero hoy no altera el render. Cuando aterrice esa HU, el componente
- * la usará para resaltar los vértices correspondientes sin cambios
- * estructurales.
- */
 export function MaturityRadarChart({
   dimensionResults,
   bottleneckDimensions = [],
@@ -203,13 +136,6 @@ export function MaturityRadarChart({
             }) => <AxisLabel {...props} pointsByCode={pointsByCode} />}
           />
 
-          {/*
-            angle={90} ubica los ticks 0/3/6/9 sobre el eje vertical
-            superior del gráfico. El label "9" se acerca a la dimensión
-            del tope (TRL), así que el `AxisLabel` empuja "Tecnología"
-            ~42px arriba para dejarlo por encima del stack de ticks.
-            Texto plano, sin fondo — limpieza visual.
-          */}
           <PolarRadiusAxis
             angle={90}
             domain={[0, 9]}

@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { AlertCircle, ArrowLeftRight, CheckCircle2, Scale, TrendingDown } from 'lucide-react';
+import { ArrowLeftRight, CheckCircle2, Scale, TrendingDown } from 'lucide-react';
 import type { DimensionResult } from '@innlab/contracts';
 import {
   classifyImbalance,
@@ -8,11 +8,6 @@ import {
   type ImbalancePairInsight,
 } from '../utils/profile-insights';
 
-/**
- * Etiquetas en español de cada dimensión, espejo del mapa del radar. Se
- * duplica intencionalmente acá para que el resumen sea autocontenido y
- * el componente del radar no tenga que exponer su tabla interna.
- */
 const DIMENSION_NAME_ES: Record<string, string> = {
   TRL: 'Tecnología',
   CRL: 'Cliente',
@@ -26,12 +21,6 @@ function dimensionLabel(code: string): string {
   return DIMENSION_NAME_ES[code] ?? code;
 }
 
-/**
- * Tono visual de una tarjeta según severidad. Mapea a las variables CSS
- * semánticas que ya consume el radar (`--color-critical`,
- * `--color-moderate`, `--color-acceptable`). Las clases tailwind quedan
- * en valores arbitrarios para no añadir tokens nuevos al theme.
- */
 const TONE_STYLES: Record<
   ImbalanceClassification | 'neutral',
   { ring: string; iconColor: string; chipBg: string; chipText: string }
@@ -62,7 +51,6 @@ const TONE_STYLES: Record<
   },
 };
 
-/** Card visual reusable. Sin lógica — sólo composición visual. */
 function SummaryCard({
   icon: Icon,
   tone,
@@ -80,8 +68,6 @@ function SummaryCard({
   return (
     <article
       className={`flex gap-3 rounded-lg border p-4 ${styles.ring}`}
-      // role group para que lectores de pantalla anuncien el bloque como
-      // unidad junto con el eyebrow.
       role="group"
       aria-label={`${eyebrow}: ${title}`}
     >
@@ -100,51 +86,23 @@ function SummaryCard({
 }
 
 interface MaturityProfileSummaryProps {
-  /** Resultados dimensionales — mismos datos que alimentan al radar. */
   dimensionResults: readonly DimensionResult[];
 }
 
-/**
- * Panel lateral "Señales que vemos en tu radar" (DIAGIRL-37).
- *
- * Lee los 6 `DimensionResult` y deriva client-side las señales que el
- * marco KTH usa para narrar un perfil:
- *   1. Fortaleza   → dimensión(es) con el nivel más alto.
- *   2. Cuello de botella → dimensión(es) con el nivel más bajo
- *      (acceptance de DIAGIRL-37 + DIAGIRL-35).
- *   3. Asimetría   → diferencia max-min; clasificación KTH (>3 crítica,
- *      2–3 moderada, <2 aceptable).
- *   4. Brecha      → dimensiones en nivel ≤ 3 ("prioridad máxima" por
- *      la guía KTH).
- *   5. Pares desequilibrados → de los 6 pares fijos KTH, sólo los que
- *      crucen umbral moderado o crítico. Si todo está aceptable, se
- *      muestra una nota positiva en su lugar.
- *
- * Cuando DIAGIRL-38 esté listo y `MaturityProfileResponse` traiga
- * `imbalances` desde el backend, este componente debe preferir esos
- * datos a la derivación local — la utilidad ya lo deja preparado para
- * sustituir la fuente con un pequeño cambio en el `useMemo`.
- */
 export function MaturityProfileSummary({
   dimensionResults,
 }: MaturityProfileSummaryProps): JSX.Element {
   const insights = computeProfileInsights(dimensionResults);
 
   const strengthNames = insights.strength.dimensions.map(dimensionLabel);
-  const bottleneckNames = insights.bottleneck.dimensions.map(dimensionLabel);
   const gapNames = insights.gapDimensions.map(dimensionLabel);
 
   const asymmetryTone = classifyImbalance(insights.asymmetry);
 
-  // Filtra a sólo los pares "narrables" (moderate + critical). Si la
-  // lista queda vacía, mostramos un mensaje positivo.
   const flaggedPairs: readonly ImbalancePairInsight[] = insights.imbalances.filter(
     (p) => p.classification !== 'acceptable',
   );
 
-  // Caso degenerado — no hay datos (loading o respuesta vacía). El
-  // padre debería evitar montarnos en ese caso, pero defensa en
-  // profundidad.
   if (dimensionResults.length === 0) {
     return (
       <aside aria-label="Señales del perfil" className="flex flex-col gap-3">
@@ -160,7 +118,6 @@ export function MaturityProfileSummary({
         <h2 className="text-foreground mt-1 text-xl font-bold leading-tight">en tu radar</h2>
       </header>
 
-      {/* 1. Fortaleza */}
       <SummaryCard
         icon={CheckCircle2}
         tone="acceptable"
@@ -176,23 +133,6 @@ export function MaturityProfileSummary({
         )}
       </SummaryCard>
 
-      {/* 2. Cuello de botella */}
-      <SummaryCard
-        icon={AlertCircle}
-        tone={insights.bottleneck.level <= 3 ? 'critical' : 'moderate'}
-        eyebrow={bottleneckNames.length > 1 ? 'Cuellos de botella' : 'Cuello de botella'}
-        title={
-          bottleneckNames.length === 1
-            ? `${bottleneckNames[0]} — nivel ${insights.bottleneck.level}`
-            : `${bottleneckNames.length} dimensiones en nivel ${insights.bottleneck.level}`
-        }
-      >
-        {bottleneckNames.length > 1 && (
-          <p className="text-muted-foreground">{bottleneckNames.join(', ')}</p>
-        )}
-      </SummaryCard>
-
-      {/* 3. Asimetría global */}
       <SummaryCard
         icon={Scale}
         tone={asymmetryTone}
@@ -206,7 +146,6 @@ export function MaturityProfileSummary({
         </p>
       </SummaryCard>
 
-      {/* 4. Brecha (≤ 3) */}
       {gapNames.length > 0 && (
         <SummaryCard
           icon={TrendingDown}
@@ -218,7 +157,6 @@ export function MaturityProfileSummary({
         </SummaryCard>
       )}
 
-      {/* 5. Pares desequilibrados */}
       {flaggedPairs.length > 0 ? (
         <SummaryCard
           icon={ArrowLeftRight}

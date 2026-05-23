@@ -6,7 +6,6 @@ import {
   KTH_IMBALANCE_PAIRS,
 } from '../profile-insights';
 
-/** Helper para armar un `DimensionResult` corto. */
 const dr = (code: string, level: number): DimensionResult => ({
   dimensionCode: code as DimensionResult['dimensionCode'],
   name: code,
@@ -14,7 +13,6 @@ const dr = (code: string, level: number): DimensionResult => ({
   irlLevel: level,
 });
 
-/** Perfil sintético de PayFlow (de la guía KTH p. 22) usado para validar. */
 const PAYFLOW: readonly DimensionResult[] = [
   dr('TRL', 5),
   dr('CRL', 3),
@@ -127,7 +125,6 @@ describe('computeProfileInsights', () => {
       const criticalCount = insights.imbalances.filter(
         (i) => i.classification === 'critical',
       ).length;
-      // TRL-CRL=8, TRL-BRL=0, CRL-BRL=8, TmRL-FRL=8, BRL-IPRL=8, TRL-IPRL=8 → 5 critical
       expect(criticalCount).toBe(5);
     });
   });
@@ -143,13 +140,8 @@ describe('computeProfileInsights', () => {
     });
 
     it('omits pairs where one side is missing (defense in depth)', () => {
-      const partial: readonly DimensionResult[] = [
-        dr('TRL', 5),
-        dr('CRL', 3),
-        // BRL, IPRL, TmRL, FRL missing
-      ];
+      const partial: readonly DimensionResult[] = [dr('TRL', 5), dr('CRL', 3)];
       const insights = computeProfileInsights(partial);
-      // Only TRL-CRL is computable.
       expect(insights.imbalances).toHaveLength(1);
       expect(insights.imbalances[0].pair).toEqual(['TRL', 'CRL']);
     });

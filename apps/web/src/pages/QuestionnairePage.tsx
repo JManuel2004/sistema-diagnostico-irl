@@ -47,18 +47,12 @@ export default function QuestionnairePage(): JSX.Element {
 
   const isComplete = catalog !== undefined && incompleteDimensions.length === 0;
 
-  // Mutation chain: submit answers (HU-33) → compute maturity profile
-  // (DIAGIRL-34) → navigate to /perfil (DIAGIRL-36). All three failures
-  // bubble up through `submitAndCompute.error` so the same banner shows.
   const submitAndCompute = useMutation({
     mutationFn: async (items: { statementId: string; value: number }[]): Promise<void> => {
       if (!diagnosticId) return;
-      // 1) persist the 48 answers
       await http.post<SubmitQuestionnaireResponse>(`/diagnosticos/${diagnosticId}/cuestionario`, {
         answers: items,
       });
-      // 2) compute the profile (uses the mutation hook so the result
-      //    lands in the React Query cache for /perfil to read).
       await computeProfile.mutateAsync(diagnosticId);
     },
     onSuccess: () => {
