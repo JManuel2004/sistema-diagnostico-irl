@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { AlertCircle, AlertTriangle, CheckCircle2, Info, Scale } from 'lucide-react';
+import { AlertCircle, ArrowLeftRight, CheckCircle2, Scale, TrendingDown } from 'lucide-react';
 import type { DimensionResult } from '@innlab/contracts';
 import {
   classifyImbalance,
@@ -209,7 +209,7 @@ export function MaturityProfileSummary({
       {/* 4. Brecha (≤ 3) */}
       {gapNames.length > 0 && (
         <SummaryCard
-          icon={AlertTriangle}
+          icon={TrendingDown}
           tone="critical"
           eyebrow="Brecha (nivel ≤ 3)"
           title={`${gapNames.length} ${gapNames.length === 1 ? 'dimensión requiere' : 'dimensiones requieren'} atención`}
@@ -221,20 +221,24 @@ export function MaturityProfileSummary({
       {/* 5. Pares desequilibrados */}
       {flaggedPairs.length > 0 ? (
         <SummaryCard
-          icon={Info}
+          icon={ArrowLeftRight}
           tone={flaggedPairs.some((p) => p.classification === 'critical') ? 'critical' : 'moderate'}
           eyebrow="Pares desequilibrados"
           title={`${flaggedPairs.length} de 6 pares KTH fuera de balance`}
         >
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-col gap-1.5">
             {flaggedPairs.map((p) => {
               const chip = TONE_STYLES[p.classification];
               return (
                 <li key={`${p.pair[0]}-${p.pair[1]}`} className="flex items-center gap-2">
                   <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${chip.chipBg} ${chip.chipText}`}
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${chip.chipBg} ${chip.chipText}`}
                   >
-                    {p.pair[0]} ↔ {p.pair[1]}
+                    <span>{p.pair[0]}</span>
+                    <span aria-hidden className="opacity-60">
+                      —
+                    </span>
+                    <span>{p.pair[1]}</span>
                   </span>
                   <span className="text-muted-foreground">
                     Δ {p.difference} · {p.classification === 'critical' ? 'crítico' : 'moderado'}
