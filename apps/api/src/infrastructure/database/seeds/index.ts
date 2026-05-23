@@ -1,5 +1,6 @@
 import { config as loadEnv } from 'dotenv';
 import dataSource from '../data-source.js';
+import { CONVERSION_RANGES } from './data/conversion-ranges.js';
 import { DIMENSIONS } from './data/dimensions.js';
 import { STATEMENTS } from './data/statements.js';
 
@@ -15,9 +16,11 @@ loadEnv({ path: '.env' });
  * keys declared in the migration:
  *   - `dimension`: UNIQUE (codigo)
  *   - `afirmacion`: UNIQUE (id_dimension, numero_en_dimension)
+ *   - `rango_conversion`: PRIMARY KEY (nivel_irl)
  *
- * Both tables use GENERATED ALWAYS AS IDENTITY PKs — never include
- * id_dimension or id_afirmacion in INSERT statements.
+ * `dimension` and `afirmacion` use GENERATED ALWAYS AS IDENTITY PKs —
+ * never include their PKs in INSERT statements. `rango_conversion` has
+ * `nivel_irl` as the natural PK and IS included explicitly per row.
  *
  * Statements are linked to dimensions by a subquery on codigo so the
  * seed is order-independent and does not hard-code integer FKs.
@@ -60,6 +63,17 @@ async function run(): Promise<void> {
         );
       }
 
+      for (const r of CONVERSION_RANGES) {
+        await manager.query(
+          `INSERT INTO irl_catalog.rango_conversion (nivel_irl, avg_min, avg_max)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (nivel_irl) DO UPDATE
+             SET avg_min = EXCLUDED.avg_min,
+                 avg_max = EXCLUDED.avg_max`,
+          [r.nivelIrl, r.avgMin, r.avgMax],
+        );
+      }
+
       await manager.query(
         `INSERT INTO irl_diagnostic.diagnostico
            (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
@@ -80,10 +94,13 @@ async function run(): Promise<void> {
     const [{ count: afCount }] = await dataSource.query<{ count: string }[]>(
       `SELECT COUNT(*)::text AS count FROM irl_catalog.afirmacion`,
     );
+    const [{ count: rcCount }] = await dataSource.query<{ count: string }[]>(
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.rango_conversion`,
+    );
 
     // eslint-disable-next-line no-console
     console.log(
-      `Seed complete — ${dimCount} dimensions, ${afCount} statements in irl_catalog`,
+      `Seed complete — ${dimCount} dimensions, ${afCount} statements, ${rcCount} conversion ranges in irl_catalog`,
     );
   } finally {
     await dataSource.destroy();

@@ -11,9 +11,22 @@ import { imbalancePairResultSchema } from './imbalance.schema.js';
  *
  * Forma:
  *   - 6 resultados dimensionales (siempre 6, en orden de la dimensión).
- *   - 1 cuello de botella (con manejo de empates).
- *   - 6 resultados de desequilibrio (siempre los pares fijos del marco).
+ *   - 1 cuello de botella (con manejo de empates) — opcional.
+ *   - 6 resultados de desequilibrio (siempre los pares fijos del marco) — opcional.
  *   - `computedAt` permite mostrar la fecha del cálculo en el reporte.
+ *
+ * Construcción incremental por HU:
+ *   - DIAGIRL-34 ("Obtener niveles IRL por dimensión") produce
+ *     `dimensionResults` + `computedAt`. `bottleneck` e `imbalances`
+ *     llegan `undefined` hasta que las HUs posteriores los compongan.
+ *   - DIAGIRL-35 ("Identificar el cuello de botella del perfil") puebla
+ *     `bottleneck`.
+ *   - DIAGIRL-38 ("Ver alertas visuales de desequilibrio en el perfil
+ *     inicial") puebla `imbalances`.
+ *
+ * Por eso `bottleneck` e `imbalances` son `.optional()` aquí: el response
+ * es válido aún cuando esas dos piezas no han sido calculadas todavía.
+ * El frontend renderiza condicionalmente cuando llegan.
  *
  * Cache lado-cliente (STATE_MANAGEMENT.md): `staleTime: 5 minutes` —
  * el perfil es un snapshot inmutable después de calculado.
@@ -26,11 +39,14 @@ export const maturityProfileResponseSchema = z
       .array(dimensionResultSchema)
       .length(6)
       .describe('Resultado por dimensión — exactamente 6 entradas'),
-    bottleneck: bottleneckSchema,
+    bottleneck: bottleneckSchema
+      .optional()
+      .describe('Cuello de botella — pobla en DIAGIRL-35; ausente hasta entonces'),
     imbalances: z
       .array(imbalancePairResultSchema)
       .length(6)
-      .describe('Análisis de los 6 pares fijos del marco KTH'),
+      .optional()
+      .describe('Análisis de los 6 pares — pobla en DIAGIRL-38; ausente hasta entonces'),
   })
   .describe('Perfil de madurez IRL inicial (response)');
 

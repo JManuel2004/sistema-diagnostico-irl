@@ -7,17 +7,19 @@ import { InvariantViolationError } from '../../../shared-kernel/domain/errors/in
 import { NotFoundError } from '../../../shared-kernel/domain/errors/not-found.error.js';
 import { ForbiddenError } from '../../../shared-kernel/domain/errors/forbidden.error.js';
 import { ConflictError } from '../../../shared-kernel/domain/errors/conflict.error.js';
+import { MaturityProfileCalculationError } from '../../../modules/maturity-profile/domain/errors/maturity-profile-calculation.error.js';
 import type { ProblemDetails } from '../problem-details.js';
 
 /**
  * Translates `DomainError` subclasses into RFC 7807 problem-detail responses.
  *
  * Mapping rules:
- * - `InvariantViolationError` → 422 Unprocessable Entity
- * - `NotFoundError`           → 404 Not Found
- * - `ForbiddenError`          → 403 Forbidden
- * - `ConflictError`           → 409 Conflict
- * - any other `DomainError`   → 400 Bad Request (catch-all for new domain errors)
+ * - `InvariantViolationError`           → 422 Unprocessable Entity
+ * - `NotFoundError`                     → 404 Not Found
+ * - `ForbiddenError`                    → 403 Forbidden
+ * - `ConflictError`                     → 409 Conflict
+ * - `MaturityProfileCalculationError`   → 500 Internal Server Error (DIAGIRL-34 error scenario)
+ * - any other `DomainError`             → 400 Bad Request (catch-all for new domain errors)
  */
 @Catch(DomainError)
 export class DomainExceptionFilter implements ExceptionFilter {
@@ -57,6 +59,8 @@ export class DomainExceptionFilter implements ExceptionFilter {
     if (error instanceof NotFoundError) return HttpStatus.NOT_FOUND;
     if (error instanceof ForbiddenError) return HttpStatus.FORBIDDEN;
     if (error instanceof ConflictError) return HttpStatus.CONFLICT;
+    if (error instanceof MaturityProfileCalculationError)
+      return HttpStatus.INTERNAL_SERVER_ERROR;
     return HttpStatus.BAD_REQUEST;
   }
 }
