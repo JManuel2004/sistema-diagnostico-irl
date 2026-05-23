@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { jest } from '@jest/globals';
 import { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/application/submit-questionnaire.use-case.js';
 import type { AnswerSheetRepositoryPort } from '../../../../src/modules/questionnaire/domain/ports/answer-sheet.repository.port.js';
@@ -11,8 +12,12 @@ describe('SubmitQuestionnaireUseCase', () => {
 
   beforeEach(() => {
     mockRepo = {
-      save: jest.fn<AnswerSheetRepositoryPort['save']>().mockResolvedValue(undefined),
-      findByDiagnosticId: jest.fn<AnswerSheetRepositoryPort['findByDiagnosticId']>().mockResolvedValue(null),
+      save: jest
+        .fn<AnswerSheetRepositoryPort['save']>()
+        .mockResolvedValue(undefined),
+      findByDiagnosticId: jest
+        .fn<AnswerSheetRepositoryPort['findByDiagnosticId']>()
+        .mockResolvedValue(null),
     };
     useCase = new SubmitQuestionnaireUseCase(mockRepo);
   });
@@ -23,7 +28,10 @@ describe('SubmitQuestionnaireUseCase', () => {
       value: 3,
     }));
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      answers,
+    });
 
     expect(mockRepo.save).toHaveBeenCalledTimes(1);
     expect(result.diagnosticId).toBe(DIAGNOSTIC_ID);
@@ -54,10 +62,13 @@ describe('SubmitQuestionnaireUseCase', () => {
       { statementId: '1', value: 5 },
     ];
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      answers,
+    });
 
     expect(result.answersRecorded).toBe(1);
-    const savedSheet = (mockRepo.save as jest.Mock).mock.calls[0][0];
+    const savedSheet = mockRepo.save.mock.calls[0][0];
     expect(savedSheet.getAnswer('1')?.value.value).toBe(5);
   });
 });
