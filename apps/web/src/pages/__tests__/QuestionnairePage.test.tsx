@@ -49,11 +49,6 @@ function withCatalog(): void {
   );
 }
 
-/**
- * Respuesta canónica del cálculo de perfil — DIAGIRL-36 encadena el
- * submit con `POST /diagnosticos/:id/perfil` y navega a `/perfil`, así
- * que cualquier test que valide el flujo completo necesita este mock.
- */
 function buildProfileFixture(): unknown {
   return {
     diagnosticId: DIAG_ID,
@@ -84,9 +79,6 @@ function withSubmitSuccess(answersRecorded = 48): void {
       ),
     ),
   );
-  // DIAGIRL-36 encadena ambos endpoints — registrar siempre los dos para
-  // que MSW (con `onUnhandledRequest: 'error'`) no falle al llegar el
-  // POST de perfil que dispara `onSuccess` del submit.
   withProfileComputeSuccess();
 }
 
@@ -98,12 +90,6 @@ function withSubmitError(): void {
   );
 }
 
-/**
- * Stub de la ruta `/perfil`. DIAGIRL-36 navega allí tras encadenar el
- * submit con el cálculo del perfil, así que necesitamos un marcador para
- * aserttar que la navegación realmente ocurrió. Texto estable y único
- * para que `screen.getByText` lo encuentre sin ambigüedad.
- */
 const PROFILE_ROUTE_MARKER = 'PERFIL_ROUTE_STUB';
 
 function renderPage(): ReturnType<typeof render> {
@@ -304,10 +290,6 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
     });
 
     it('navigates to the profile route after a successful submission', async () => {
-      // DIAGIRL-36 cambió el flujo: ya no hay pantalla de confirmación
-      // intermedia — el submit encadena con el cálculo del perfil y
-      // navega directo a `/diagnosticos/:id/perfil`. El test asserta la
-      // navegación contra el stub de ruta declarado en `renderPage`.
       withSubmitSuccess(48);
       populateAllAnswers();
 
@@ -323,11 +305,6 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
     });
 
     it('chain completes even when the server records fewer answers than expected', async () => {
-      // Antes este test validaba el contador "Se registraron 45 de 48"
-      // en la pantalla de confirmación. Esa pantalla desapareció con
-      // DIAGIRL-36; lo único que sobrevive del contrato del backend es
-      // que un `answersRecorded` parcial no debe interrumpir el chain
-      // de submit → compute → navigate.
       withSubmitSuccess(45);
       populateAllAnswers();
 
@@ -359,8 +336,6 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
             }),
         ),
       );
-      // El submit encadena con el cálculo del perfil (DIAGIRL-36) —
-      // mockéalo para que MSW no falle cuando se resuelva el submit.
       withProfileComputeSuccess();
       populateAllAnswers();
 
@@ -376,9 +351,6 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
 
       await act(async () => {
         resolveSubmit();
-        // Flush la microtask que dispara React tras resolverse la
-        // promesa de la mutación — sin esto el lint marca el callback
-        // como async sin await.
         await Promise.resolve();
       });
     });
@@ -397,9 +369,6 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
       );
       await user.click(screen.getByRole('button', { name: 'Procesar diagnóstico' }));
 
-      // DIAGIRL-36 unificó el mensaje: el chain submit→compute puede
-      // fallar en cualquier eslabón, así que el banner usa una copy
-      // genérica en lugar de "Error al comunicarse con el servidor".
       await waitFor(() =>
         screen.getByText(
           'No fue posible generar el diagnóstico. Intenta de nuevo en unos minutos.',

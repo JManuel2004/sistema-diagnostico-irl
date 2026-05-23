@@ -1,34 +1,20 @@
 import type { JSX } from 'react';
 import type { MaturityProfileResponse } from '@innlab/contracts';
 import { MaturityRadarChart } from './MaturityRadarChart';
+import { MaturityProfileSummary } from './MaturityProfileSummary';
 
 interface MaturityProfilePanelProps {
   profile: MaturityProfileResponse;
 }
 
-/**
- * Panel completo del perfil de madurez (DIAGIRL-36).
- *
- * Compone:
- *   - Encabezado con overline + h1 ("Tu radar IRL")
- *   - El `MaturityRadarChart`
- *   - Pie con timestamp del cálculo + atribución KTH obligatoria
- *     (RNF-09: "Marco IRL © KTH Innovation. Licencia CC BY-NC-SA 4.0")
- *
- * Layout: container `max-w-5xl` per DESIGN.md → "Standard container —
- * maturity profile (radar + dimension grid)". Background blanco puro y
- * el contenedor del radar con un `surface-emphasis` (wash sutil de
- * Azul Icesi) para darle peso visual sin oscurecer el fondo.
- */
 export function MaturityProfilePanel({ profile }: MaturityProfilePanelProps): JSX.Element {
-  const bottleneckCodes = profile.bottleneck?.dimensions ?? [];
   const computedAtLabel = new Date(profile.computedAt).toLocaleString('es-CO', {
     dateStyle: 'long',
     timeStyle: 'short',
   });
 
   return (
-    <section className="mx-auto w-full max-w-5xl px-4 py-12 md:px-6">
+    <section className="mx-auto w-full max-w-6xl px-4 py-12 md:px-6">
       <header className="mb-8">
         <p className="text-overline text-azul-icesi">Perfil de Madurez</p>
         <h1 className="text-foreground mt-2 text-[2.25rem] font-bold leading-tight tracking-tight">
@@ -40,11 +26,11 @@ export function MaturityProfilePanel({ profile }: MaturityProfilePanelProps): JS
         </p>
       </header>
 
-      <div className="bg-surface-emphasis border-border rounded-lg border p-6 md:p-10">
-        <MaturityRadarChart
-          dimensionResults={profile.dimensionResults}
-          bottleneckDimensions={bottleneckCodes}
-        />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="bg-surface-emphasis rounded-lg p-6 md:p-10">
+          <MaturityRadarChart dimensionResults={profile.dimensionResults} />
+        </div>
+        <MaturityProfileSummary dimensionResults={profile.dimensionResults} />
       </div>
 
       <footer className="text-muted-foreground mt-8 flex flex-col gap-2 text-xs md:flex-row md:items-center md:justify-between">
