@@ -2,6 +2,7 @@ import type { JSX } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import HomePage from '@pages/HomePage';
 import QuestionnairePage from '@pages/QuestionnairePage';
+import MaturityProfilePage from '@pages/MaturityProfilePage';
 import InProgressPage from '@pages/InProgressPage';
 import NotFoundPage from '@pages/NotFoundPage';
 import { ProtectedRoute } from './ProtectedRoute';
@@ -74,7 +75,7 @@ export function AppRoutes(): JSX.Element {
         path="/diagnosticos/:id/perfil"
         element={
           <ProtectedRoute>
-            <InProgressPage title="Perfil de madurez" story="HU-13 / RF-09" />
+            <MaturityProfilePage />
           </ProtectedRoute>
         }
       />
