@@ -11,9 +11,15 @@ import {
   MATURITY_PROFILE_REPOSITORY,
   type MaturityProfileRepositoryPort,
 } from '../domain/ports/maturity-profile.repository.port.js';
+import {
+  IMBALANCE_REPOSITORY,
+  type ImbalanceRepositoryPort,
+} from '../domain/ports/imbalance.repository.port.js';
 import { IrlCalculatorService } from '../domain/services/irl-calculator.service.js';
+import { ImbalanceEvaluatorService } from '../domain/services/imbalance-evaluator.service.js';
 import { MaturityProfile } from '../domain/entities/maturity-profile.aggregate.js';
 import { MaturityProfileCalculationError } from '../domain/errors/maturity-profile-calculation.error.js';
+import type { ImbalanceResult } from '../domain/value-objects/imbalance-result.vo.js';
 import { Uuid } from '../../../shared-kernel/domain/value-objects/uuid.vo.js';
 import { DimensionCode } from '../../../shared-kernel/domain/value-objects/dimension-code.js';
 import { LikertValue } from '../../../shared-kernel/domain/value-objects/likert-value.vo.js';
@@ -60,10 +66,15 @@ export class ComputeMaturityProfileUseCase {
     private readonly catalog: IrlCatalogRepositoryPort,
     @Inject(MATURITY_PROFILE_REPOSITORY)
     private readonly profiles: MaturityProfileRepositoryPort,
+    @Inject(IMBALANCE_REPOSITORY)
+    private readonly imbalanceRepo: ImbalanceRepositoryPort,
     private readonly calculator: IrlCalculatorService,
+    private readonly imbalanceEvaluator: ImbalanceEvaluatorService,
   ) {}
 
-  async execute(cmd: ComputeMaturityProfileCommand): Promise<MaturityProfile> {
+  async execute(
+    cmd: ComputeMaturityProfileCommand,
+  ): Promise<{ profile: MaturityProfile; imbalances: ImbalanceResult[] }> {
     const diagnosticId = Uuid.create(cmd.diagnosticId);
 
     const sheet = await this.answerSheets.findByDiagnosticId(
@@ -85,9 +96,10 @@ export class ComputeMaturityProfileUseCase {
       );
     }
 
-    const [statements, conversionTable] = await Promise.all([
+    const [statements, conversionTable, pairs] = await Promise.all([
       this.catalog.findAllStatements(),
       this.catalog.findAllConversionRanges(),
+      this.catalog.findAllDimensionPairs(),
     ]);
 
     const dimensionByStatement = new Map<string, DimensionCode>(
@@ -126,8 +138,16 @@ export class ComputeMaturityProfileUseCase {
       dimensionResults,
     });
 
-    await this.profiles.save(profile);
+    const levelByCode = new Map<string, number>(
+      dimensionResults.map((r) => [r.dimensionCode.value, r.irlLevel.value]),
+    );
+    const imbalances = this.imbalanceEvaluator.evaluate(levelByCode, pairs);
 
-    return profile;
+    await Promise.all([
+      this.profiles.save(profile),
+      this.imbalanceRepo.save(diagnosticId.value, imbalances),
+    ]);
+
+    return { profile, imbalances };
   }
 }

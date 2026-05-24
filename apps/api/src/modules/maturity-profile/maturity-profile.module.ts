@@ -1,9 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ResultadoDimensionOrm } from './infrastructure/persistence/resultado-dimension.orm-entity.js';
+import { AnalisisDesequilibrioOrm } from './infrastructure/persistence/analisis-desequilibrio.orm-entity.js';
 import { TypeOrmMaturityProfileRepository } from './infrastructure/persistence/typeorm-maturity-profile.repository.js';
+import { TypeOrmImbalanceRepository } from './infrastructure/persistence/typeorm-imbalance.repository.js';
 import { MATURITY_PROFILE_REPOSITORY } from './domain/ports/maturity-profile.repository.port.js';
+import { IMBALANCE_REPOSITORY } from './domain/ports/imbalance.repository.port.js';
 import { IrlCalculatorService } from './domain/services/irl-calculator.service.js';
+import { ImbalanceEvaluatorService } from './domain/services/imbalance-evaluator.service.js';
 import { ComputeMaturityProfileUseCase } from './application/compute-maturity-profile.use-case.js';
 import { MaturityProfileController } from './interfaces/http/maturity-profile.controller.js';
 import { QuestionnaireModule } from '../questionnaire/questionnaire.module.js';
@@ -34,16 +38,21 @@ import { DimensionOrm } from '../irl-catalog/infrastructure/persistence/entities
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ResultadoDimensionOrm, DimensionOrm]),
+    TypeOrmModule.forFeature([ResultadoDimensionOrm, AnalisisDesequilibrioOrm, DimensionOrm]),
     QuestionnaireModule,
     IrlCatalogModule,
   ],
   providers: [
     IrlCalculatorService,
+    ImbalanceEvaluatorService,
     ComputeMaturityProfileUseCase,
     {
       provide: MATURITY_PROFILE_REPOSITORY,
       useClass: TypeOrmMaturityProfileRepository,
+    },
+    {
+      provide: IMBALANCE_REPOSITORY,
+      useClass: TypeOrmImbalanceRepository,
     },
   ],
   controllers: [MaturityProfileController],
