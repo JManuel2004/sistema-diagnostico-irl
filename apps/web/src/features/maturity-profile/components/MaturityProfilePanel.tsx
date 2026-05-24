@@ -28,7 +28,10 @@ export function MaturityProfilePanel({ profile }: MaturityProfilePanelProps): JS
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="bg-surface-emphasis rounded-lg p-6 md:p-10">
-          <MaturityRadarChart dimensionResults={profile.dimensionResults} />
+          <MaturityRadarChart
+            dimensionResults={profile.dimensionResults}
+            imbalances={profile.imbalances}
+          />
         </div>
         <MaturityProfileSummary dimensionResults={profile.dimensionResults} />
       </div>
