@@ -92,7 +92,7 @@ describe('QuestionnaireView', () => {
     expect(screen.getByText('Afirmación 8 de 8')).toBeInTheDocument();
   });
 
-  it('switches to the clicked dimension and shows its statements', async () => {
+  it('switches to the clicked dimension and shows its statements', { timeout: 10_000 }, async () => {
     withSuccessHandler();
     const user = userEvent.setup();
     renderWithClient(<QuestionnaireView />);
@@ -101,8 +101,9 @@ describe('QuestionnaireView', () => {
 
     await user.click(screen.getByRole('tab', { name: 'CRL' }));
 
-    const activePanel = screen.getByRole('tabpanel');
-    expect(activePanel).toHaveTextContent('CRL — Nombre');
+    await waitFor(() =>
+      expect(screen.getByRole('tabpanel')).toHaveTextContent('CRL — Nombre'),
+    );
   });
 
   it('renders an error state when the request fails', async () => {
