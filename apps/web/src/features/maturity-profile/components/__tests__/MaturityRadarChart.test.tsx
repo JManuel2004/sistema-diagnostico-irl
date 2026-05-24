@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { DimensionResult, ImbalancePairResult } from '@innlab/contracts';
+import { MaturityRadarChart } from '../MaturityRadarChart';
 import {
   buildImbalancedVertices,
-  MaturityRadarChart,
   severityColorForLevel,
-} from '../MaturityRadarChart';
+} from '../../utils/radar-helpers';
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 

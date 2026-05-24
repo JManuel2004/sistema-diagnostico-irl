@@ -153,7 +153,7 @@ export function MaturityProfileSummary({
         eyebrow="Cuello de botella"
         title={
           resolvedBottleneck.dimensions.length === 1
-            ? `${dimensionLabel(resolvedBottleneck.dimensions[0]!)} — nivel ${resolvedBottleneck.level}`
+            ? `${dimensionLabel(resolvedBottleneck.dimensions[0])} — nivel ${resolvedBottleneck.level}`
             : `${resolvedBottleneck.dimensions.length} dimensiones empatadas en nivel ${resolvedBottleneck.level}`
         }
       >
