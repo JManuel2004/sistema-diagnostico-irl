@@ -30,7 +30,10 @@ export function MaturityProfilePanel({ profile }: MaturityProfilePanelProps): JS
         <div className="bg-surface-emphasis rounded-lg p-6 md:p-10">
           <MaturityRadarChart dimensionResults={profile.dimensionResults} />
         </div>
-        <MaturityProfileSummary dimensionResults={profile.dimensionResults} />
+        <MaturityProfileSummary
+          dimensionResults={profile.dimensionResults}
+          bottleneck={profile.bottleneck}
+        />
       </div>
 
       <footer className="text-muted-foreground mt-8 flex flex-col gap-2 text-xs md:flex-row md:items-center md:justify-between">

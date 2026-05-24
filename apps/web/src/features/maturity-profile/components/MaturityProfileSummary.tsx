@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
-import { ArrowLeftRight, CheckCircle2, Scale, TrendingDown } from 'lucide-react';
-import type { DimensionResult } from '@innlab/contracts';
+import { AlertCircle, ArrowLeftRight, CheckCircle2, Scale, TrendingDown } from 'lucide-react';
+import type { Bottleneck, DimensionResult } from '@innlab/contracts';
 import {
   classifyImbalance,
   computeProfileInsights,
@@ -85,14 +85,28 @@ function SummaryCard({
   );
 }
 
+function bottleneckTone(level: number): ImbalanceClassification | 'neutral' {
+  if (level <= 3) return 'critical';
+  if (level <= 5) return 'moderate';
+  return 'acceptable';
+}
+
 interface MaturityProfileSummaryProps {
   dimensionResults: readonly DimensionResult[];
+  bottleneck?: Bottleneck;
 }
 
 export function MaturityProfileSummary({
   dimensionResults,
+  bottleneck: serverBottleneck,
 }: MaturityProfileSummaryProps): JSX.Element {
   const insights = computeProfileInsights(dimensionResults);
+
+  const resolvedBottleneck: { level: number; dimensions: readonly string[] } =
+    serverBottleneck ?? {
+      level: insights.bottleneck.level,
+      dimensions: insights.bottleneck.dimensions,
+    };
 
   const strengthNames = insights.strength.dimensions.map(dimensionLabel);
   const gapNames = insights.gapDimensions.map(dimensionLabel);
@@ -130,6 +144,23 @@ export function MaturityProfileSummary({
       >
         {strengthNames.length > 1 && (
           <p className="text-muted-foreground">{strengthNames.join(', ')}</p>
+        )}
+      </SummaryCard>
+
+      <SummaryCard
+        icon={AlertCircle}
+        tone={bottleneckTone(resolvedBottleneck.level)}
+        eyebrow="Cuello de botella"
+        title={
+          resolvedBottleneck.dimensions.length === 1
+            ? `${dimensionLabel(resolvedBottleneck.dimensions[0]!)} — nivel ${resolvedBottleneck.level}`
+            : `${resolvedBottleneck.dimensions.length} dimensiones empatadas en nivel ${resolvedBottleneck.level}`
+        }
+      >
+        {resolvedBottleneck.dimensions.length > 1 && (
+          <p className="text-muted-foreground">
+            {resolvedBottleneck.dimensions.map(dimensionLabel).join(', ')}
+          </p>
         )}
       </SummaryCard>
 

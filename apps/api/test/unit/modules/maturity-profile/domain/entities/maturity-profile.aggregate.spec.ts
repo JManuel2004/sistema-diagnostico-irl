@@ -141,6 +141,67 @@ describe('MaturityProfile (aggregate root)', () => {
     });
   });
 
+  describe('bottleneck (RF-08)', () => {
+    it('returns the single dimension with the lowest level', () => {
+      const results = [
+        resultFor('TRL', 5),
+        resultFor('CRL', 3),
+        resultFor('BRL', 7),
+        resultFor('IPRL', 4),
+        resultFor('TmRL', 6),
+        resultFor('FRL', 8),
+      ];
+      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      const b = p.bottleneck();
+      expect(b.level).toBe(3);
+      expect(b.dimensions).toHaveLength(1);
+      expect(b.dimensions[0]!.dimensionCode.value).toBe('CRL');
+    });
+
+    it('returns all tied dimensions when several share the minimum level', () => {
+      const results = [
+        resultFor('TRL', 8),
+        resultFor('CRL', 2),
+        resultFor('BRL', 5),
+        resultFor('IPRL', 2),
+        resultFor('TmRL', 2),
+        resultFor('FRL', 7),
+      ];
+      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      const b = p.bottleneck();
+      expect(b.level).toBe(2);
+      expect(b.dimensions).toHaveLength(3);
+      const codes = b.dimensions.map((r) => r.dimensionCode.value).sort();
+      expect(codes).toEqual(['CRL', 'IPRL', 'TmRL']);
+    });
+
+    it('returns all six dimensions when every level is the same', () => {
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: buildSixResults(),
+      });
+      const b = p.bottleneck();
+      expect(b.level).toBe(5);
+      expect(b.dimensions).toHaveLength(6);
+    });
+
+    it('returns level 1 when the minimum is the lowest possible IRL level', () => {
+      const results = [
+        resultFor('TRL', 1),
+        resultFor('CRL', 9),
+        resultFor('BRL', 9),
+        resultFor('IPRL', 9),
+        resultFor('TmRL', 9),
+        resultFor('FRL', 9),
+      ];
+      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      const b = p.bottleneck();
+      expect(b.level).toBe(1);
+      expect(b.dimensions[0]!.dimensionCode.value).toBe('TRL');
+    });
+  });
+
   describe('persistence round-trip', () => {
     it('toPersistence + fromPersistence preserve the aggregate', () => {
       const original = MaturityProfile.create({
