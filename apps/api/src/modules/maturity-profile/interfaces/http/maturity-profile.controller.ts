@@ -28,20 +28,31 @@ export class MaturityProfileController {
   async compute(
     @Param('id') diagnosticId: string,
   ): Promise<MaturityProfileResponse> {
-    const profile = await this.computeProfile.execute({ diagnosticId });
+    const { profile, imbalances } = await this.computeProfile.execute({ diagnosticId });
+
+    const classificationMap = {
+      CRITICO: 'critical',
+      MODERADO: 'moderate',
+      ACEPTABLE: 'acceptable',
+    } as const;
+
     return {
       diagnosticId: profile.diagnosticId.value,
       computedAt: profile.computedAt.toISOString(),
       dimensionResults: profile.dimensionResults().map((r) => ({
         dimensionCode: r.dimensionCode.value,
-        // The contract requires `name`; mirror the code as a sensible
-        // placeholder for now. DIAGIRL-37 ("Consultar el resumen
-        // numérico del perfil inicial") wires the full dimension name
-        // from the catalog into this response.
         name: r.dimensionCode.value,
         averageLikert: r.averageLikert,
         irlLevel: r.irlLevel.value,
       })),
+      imbalances: imbalances.length === 6
+        ? imbalances.map((i) => ({
+            left: i.left.value,
+            right: i.right.value,
+            difference: i.difference,
+            classification: classificationMap[i.classification],
+          }))
+        : undefined,
     };
   }
 }

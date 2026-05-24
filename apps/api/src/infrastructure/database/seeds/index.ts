@@ -74,6 +74,25 @@ async function run(): Promise<void> {
         );
       }
 
+      const PAIRS: Array<[string, string]> = [
+        ['TRL', 'CRL'],
+        ['TRL', 'BRL'],
+        ['CRL', 'BRL'],
+        ['TmRL', 'FRL'],
+        ['BRL', 'IPRL'],
+        ['TRL', 'IPRL'],
+      ];
+      for (const [a, b] of PAIRS) {
+        await manager.query(
+          `INSERT INTO irl_catalog.par_dimension (id_dimension_a, id_dimension_b, codigo_par)
+           SELECT da.id_dimension, db.id_dimension, $3
+             FROM irl_catalog.dimension da, irl_catalog.dimension db
+            WHERE da.codigo = $1 AND db.codigo = $2
+           ON CONFLICT (codigo_par) DO NOTHING`,
+          [a, b, `${a}-${b}`],
+        );
+      }
+
       await manager.query(
         `INSERT INTO irl_diagnostic.diagnostico
            (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
@@ -97,10 +116,13 @@ async function run(): Promise<void> {
     const [{ count: rcCount }] = await dataSource.query<{ count: string }[]>(
       `SELECT COUNT(*)::text AS count FROM irl_catalog.rango_conversion`,
     );
+    const [{ count: parCount }] = await dataSource.query<{ count: string }[]>(
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.par_dimension`,
+    );
 
     // eslint-disable-next-line no-console
     console.log(
-      `Seed complete — ${dimCount} dimensions, ${afCount} statements, ${rcCount} conversion ranges in irl_catalog`,
+      `Seed complete — ${dimCount} dimensions, ${afCount} statements, ${rcCount} conversion ranges, ${parCount} dimension pairs in irl_catalog`,
     );
   } finally {
     await dataSource.destroy();
