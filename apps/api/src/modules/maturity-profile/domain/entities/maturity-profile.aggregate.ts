@@ -88,6 +88,19 @@ export class MaturityProfile {
     );
   }
 
+  /**
+   * RF-08 — Identifica el cuello de botella del perfil.
+   *
+   * El cuello de botella es la dimensión con el nivel IRL más bajo.
+   * Si varias dimensiones comparten ese mínimo, todas se reportan
+   * (empate explícito — el frontend nunca debe asumir tamaño 1).
+   */
+  bottleneck(): { readonly dimensions: readonly DimensionResult[]; readonly level: number } {
+    const minLevel = Math.min(...this._dimensionResults.map((r) => r.irlLevel.value));
+    const dimensions = this._dimensionResults.filter((r) => r.irlLevel.value === minLevel);
+    return { dimensions, level: minLevel };
+  }
+
   /** Persistence snapshot — the repository upserts the whole set atomically. */
   toPersistence(): MaturityProfilePersistence {
     return {

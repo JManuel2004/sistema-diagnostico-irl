@@ -29,19 +29,20 @@ export class MaturityProfileController {
     @Param('id') diagnosticId: string,
   ): Promise<MaturityProfileResponse> {
     const profile = await this.computeProfile.execute({ diagnosticId });
+    const bottleneck = profile.bottleneck();
     return {
       diagnosticId: profile.diagnosticId.value,
       computedAt: profile.computedAt.toISOString(),
       dimensionResults: profile.dimensionResults().map((r) => ({
         dimensionCode: r.dimensionCode.value,
-        // The contract requires `name`; mirror the code as a sensible
-        // placeholder for now. DIAGIRL-37 ("Consultar el resumen
-        // numérico del perfil inicial") wires the full dimension name
-        // from the catalog into this response.
         name: r.dimensionCode.value,
         averageLikert: r.averageLikert,
         irlLevel: r.irlLevel.value,
       })),
+      bottleneck: {
+        dimensions: bottleneck.dimensions.map((r) => r.dimensionCode.value),
+        level: bottleneck.level,
+      },
     };
   }
 }
