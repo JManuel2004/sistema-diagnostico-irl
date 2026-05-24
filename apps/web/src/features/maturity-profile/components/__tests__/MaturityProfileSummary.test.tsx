@@ -29,7 +29,7 @@ const UNIFORM: readonly DimensionResult[] = [
   dr('FRL', 6),
 ];
 
-// Extreme spread TRL 9, FRL 1 — critical asymmetry and critical imbalances
+// Extreme spread → critical asymmetry and critical imbalances
 const EXTREME: readonly DimensionResult[] = [
   dr('TRL', 9),
   dr('CRL', 1),
@@ -38,6 +38,73 @@ const EXTREME: readonly DimensionResult[] = [
   dr('TmRL', 9),
   dr('FRL', 1),
 ];
+
+// ── Bottleneck card (RF-08) ───────────────────────────────────────────────────
+
+describe('MaturityProfileSummary — bottleneck card (RF-08)', () => {
+  describe('using server-provided bottleneck', () => {
+    it('renders the bottleneck eyebrow label', () => {
+      render(
+        <MaturityProfileSummary
+          dimensionResults={PAYFLOW}
+          bottleneck={{ dimensions: ['IPRL'], level: 2 }}
+        />,
+      );
+      expect(screen.getByText('Cuello de botella')).toBeInTheDocument();
+    });
+
+    it('shows the dimension name and level for a single bottleneck', () => {
+      render(
+        <MaturityProfileSummary
+          dimensionResults={PAYFLOW}
+          bottleneck={{ dimensions: ['IPRL'], level: 2 }}
+        />,
+      );
+      expect(screen.getByText('Propiedad Intelectual — nivel 2')).toBeInTheDocument();
+    });
+
+    it('shows a tie summary title when multiple dimensions share the minimum', () => {
+      render(
+        <MaturityProfileSummary
+          dimensionResults={PAYFLOW}
+          bottleneck={{ dimensions: ['CRL', 'BRL', 'FRL'], level: 3 }}
+        />,
+      );
+      expect(screen.getByText('3 dimensiones empatadas en nivel 3')).toBeInTheDocument();
+    });
+
+    it('lists the tied dimension names when there is more than one bottleneck', () => {
+      render(
+        <MaturityProfileSummary
+          dimensionResults={PAYFLOW}
+          bottleneck={{ dimensions: ['CRL', 'BRL', 'FRL'], level: 3 }}
+        />,
+      );
+      expect(screen.getByText('Cliente, Negocio, Financiación')).toBeInTheDocument();
+    });
+
+    it('does not show a name list inside the bottleneck card when there is only one dimension', () => {
+      render(
+        <MaturityProfileSummary
+          dimensionResults={PAYFLOW}
+          bottleneck={{ dimensions: ['IPRL'], level: 2 }}
+        />,
+      );
+      const card = screen.getByRole('group', {
+        name: 'Cuello de botella: Propiedad Intelectual — nivel 2',
+      });
+      expect(within(card).queryByText('Propiedad Intelectual')).toBeNull();
+    });
+  });
+
+  describe('fallback to client-derived bottleneck when server field is absent', () => {
+    it('still renders the bottleneck card from dimensionResults alone', () => {
+      render(<MaturityProfileSummary dimensionResults={PAYFLOW} />);
+      expect(screen.getByText('Cuello de botella')).toBeInTheDocument();
+      expect(screen.getByText('Propiedad Intelectual — nivel 2')).toBeInTheDocument();
+    });
+  });
+});
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
@@ -50,6 +117,7 @@ describe('empty state', () => {
   it('does not render summary cards in empty state', () => {
     render(<MaturityProfileSummary dimensionResults={[]} />);
     expect(screen.queryByText('Fortaleza clara')).not.toBeInTheDocument();
+    expect(screen.queryByText('Cuello de botella')).toBeNull();
   });
 });
 
@@ -111,7 +179,6 @@ describe('Asymmetry card', () => {
   });
 
   it('shows "Asimetría moderada" text for moderate spread', () => {
-    // Asymmetry = 3 → moderate (diff 2-3)
     render(<MaturityProfileSummary dimensionResults={PAYFLOW} />);
     const card = screen.getByRole('group', { name: /Asimetría/i });
     expect(within(card).getByText(/Asimetría moderada/i)).toBeInTheDocument();
@@ -128,7 +195,6 @@ describe('Asymmetry card', () => {
     ];
     render(<MaturityProfileSummary dimensionResults={oneApart} />);
     const card = screen.getByRole('group', { name: /Asimetría/i });
-    // "1 nivel" not "1 niveles"
     expect(within(card).getByText(/1 nivel entre/i)).toBeInTheDocument();
   });
 });
@@ -136,7 +202,7 @@ describe('Asymmetry card', () => {
 // ── Gap card (≤ 3) ────────────────────────────────────────────────────────────
 
 describe('Gap card (level ≤ 3)', () => {
-  it('appears when at least one dimension is at level ≤ 3 (PayFlow: IPRL=2, CRL=3, BRL=3, FRL=3)', () => {
+  it('appears when at least one dimension is at level ≤ 3', () => {
     render(<MaturityProfileSummary dimensionResults={PAYFLOW} />);
     expect(screen.getByRole('group', { name: /Brecha/i })).toBeInTheDocument();
   });
@@ -169,9 +235,7 @@ describe('Imbalance pairs card', () => {
     expect(card).toBeInTheDocument();
   });
 
-  it('shows count of out-of-balance pairs in PayFlow (2 of 6)', () => {
-    // PayFlow: TRL-CRL diff 2 (moderate), TRL-BRL diff 2 (moderate), TRL-IPRL diff 3 (moderate)
-    // CRL-BRL 0, TmRL-FRL 1, BRL-IPRL 1 → 3 flagged pairs
+  it('shows count of out-of-balance pairs', () => {
     render(<MaturityProfileSummary dimensionResults={PAYFLOW} />);
     const card = screen.getByRole('group', { name: /Pares desequilibrados/i });
     expect(within(card).getByText(/de 6 pares KTH fuera de balance/i)).toBeInTheDocument();
@@ -180,7 +244,6 @@ describe('Imbalance pairs card', () => {
   it('lists the flagged pair codes as chips', () => {
     render(<MaturityProfileSummary dimensionResults={PAYFLOW} />);
     const card = screen.getByRole('group', { name: /Pares desequilibrados/i });
-    // PayFlow has 3 moderate pairs; TRL appears in each, CRL appears in TRL-CRL
     expect(within(card).getAllByText('TRL').length).toBeGreaterThan(0);
     expect(within(card).getAllByText('CRL').length).toBeGreaterThan(0);
   });
@@ -199,15 +262,13 @@ describe('Imbalance pairs card', () => {
     expect(within(card).getByText(/crítico/i)).toBeInTheDocument();
   });
 
-  it('shows "moderado" label for a pair with difference of 2 or 3', () => {
+  it('shows "moderado" label for pairs with difference of 2 or 3', () => {
     render(<MaturityProfileSummary dimensionResults={PAYFLOW} />);
     const card = screen.getByRole('group', { name: /Pares desequilibrados/i });
-    // PayFlow has 3 moderate pairs (TRL-CRL Δ2, TRL-BRL Δ2, TRL-IPRL Δ3)
     expect(within(card).getAllByText(/moderado/i).length).toBeGreaterThan(0);
   });
 
-  it('shows all 6 pairs acceptable message for extreme spread with all critical (no acceptable pairs)', () => {
-    // Verify no acceptable message appears with EXTREME data
+  it('does not show acceptable message when there are flagged pairs', () => {
     render(<MaturityProfileSummary dimensionResults={EXTREME} />);
     expect(
       screen.queryByText(/6 pares se mantienen dentro del rango aceptable/i),

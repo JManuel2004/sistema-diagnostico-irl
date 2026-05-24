@@ -59,6 +59,7 @@ function buildProfileFixture(): unknown {
       averageLikert: 3,
       irlLevel: 6,
     })),
+    bottleneck: { dimensions: ['TRL'], level: 6 },
   };
 }
 

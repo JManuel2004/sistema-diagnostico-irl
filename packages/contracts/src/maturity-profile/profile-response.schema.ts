@@ -39,9 +39,7 @@ export const maturityProfileResponseSchema = z
       .array(dimensionResultSchema)
       .length(6)
       .describe('Resultado por dimensión — exactamente 6 entradas'),
-    bottleneck: bottleneckSchema
-      .optional()
-      .describe('Cuello de botella — pobla en DIAGIRL-35; ausente hasta entonces'),
+    bottleneck: bottleneckSchema.describe('Cuello de botella — RF-08 / DIAGIRL-35'),
     imbalances: z
       .array(imbalancePairResultSchema)
       .length(6)
