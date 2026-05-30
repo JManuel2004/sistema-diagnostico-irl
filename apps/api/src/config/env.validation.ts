@@ -7,7 +7,7 @@ export const envValidationSchema = Joi.object({
   APP_PORT: Joi.number().default(3000),
   WEB_ORIGIN: Joi.string().uri().required(),
 
-  DATABASE_URL: Joi.string().uri().required(),
+  DATABASE_URL: Joi.string().required(),
   DATABASE_SCHEMA_DIAGNOSTIC: Joi.string().default('irl_diagnostic'),
   DATABASE_SCHEMA_CATALOG: Joi.string().default('irl_catalog'),
 
