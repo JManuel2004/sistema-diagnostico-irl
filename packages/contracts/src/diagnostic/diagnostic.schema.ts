@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { uuidSchema } from '../common/uuid.schema.js';
+import { answerItemSchema } from '../questionnaire/answer.schema.js';
 
 /**
  * Estados del proceso de diagnóstico — máquina de estados que rige las
@@ -76,3 +77,23 @@ export const startDiagnosticResponseSchema = diagnosticSchema.describe(
 );
 
 export type StartDiagnosticResponse = z.infer<typeof startDiagnosticResponseSchema>;
+
+/**
+ * Body of the orchestrator endpoint that ends phase 1:
+ * `POST /api/v1/diagnosticos/:id/finalizar-inicial`.
+ *
+ * `diagnosticId` travels in the URL. The response is a
+ * `MaturityProfileResponse`.
+ */
+export const finalizeInitialDiagnosticRequestSchema = z
+  .object({
+    answers: z
+      .array(answerItemSchema)
+      .length(48)
+      .describe('Exactamente 48 respuestas, una por afirmación'),
+  })
+  .describe('Comando para finalizar el diagnóstico inicial (envío + cálculo)');
+
+export type FinalizeInitialDiagnosticRequest = z.infer<
+  typeof finalizeInitialDiagnosticRequestSchema
+>;
