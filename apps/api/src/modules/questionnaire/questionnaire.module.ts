@@ -16,6 +16,6 @@ import { SubmitQuestionnaireUseCase } from './application/submit-questionnaire.u
     SubmitQuestionnaireUseCase,
   ],
   controllers: [QuestionnaireController],
-  exports: [ANSWER_SHEET_REPOSITORY],
+  exports: [ANSWER_SHEET_REPOSITORY, SubmitQuestionnaireUseCase],
 })
 export class QuestionnaireModule {}

@@ -42,6 +42,19 @@ export class TypeOrmDiagnosticRepository implements DiagnosticRepositoryPort {
 
   async save(diagnostico: Diagnostico): Promise<void> {
     const snapshot = diagnostico.toPersistence();
+    const existing = await this.orm.findOne({
+      where: { idDiagnostico: snapshot.id },
+    });
+
+    if (existing) {
+      existing.estado = snapshot.state;
+      if (snapshot.state === 'PERFIL_GENERADO' && existing.fechaFinFase1 === null) {
+        existing.fechaFinFase1 = snapshot.updatedAt;
+      }
+      await this.orm.save(existing);
+      return;
+    }
+
     await this.orm.save(
       this.orm.create({
         idDiagnostico: snapshot.id,
