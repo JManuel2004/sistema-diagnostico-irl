@@ -4,10 +4,13 @@ import type { DiagnosticRepositoryPort } from '../../../../src/modules/diagnosti
 import { Diagnostico } from '../../../../src/modules/diagnostic/domain/diagnostic.aggregate.js';
 import { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/application/submit-questionnaire.use-case.js';
 import { ComputeMaturityProfileUseCase } from '../../../../src/modules/maturity-profile/application/compute-maturity-profile.use-case.js';
+import type { AnswerSheetRepositoryPort } from '../../../../src/modules/questionnaire/domain/ports/answer-sheet.repository.port.js';
+import { AnswerSheet } from '../../../../src/modules/questionnaire/domain/entities/answer-sheet.aggregate.js';
 import { MaturityProfile } from '../../../../src/modules/maturity-profile/domain/entities/maturity-profile.aggregate.js';
 import { DimensionResult } from '../../../../src/modules/maturity-profile/domain/value-objects/dimension-result.vo.js';
 import { DimensionCode } from '../../../../src/shared-kernel/domain/value-objects/dimension-code.js';
 import { IrlLevel } from '../../../../src/shared-kernel/domain/value-objects/irl-level.vo.js';
+import { LikertValue } from '../../../../src/shared-kernel/domain/value-objects/likert-value.vo.js';
 import { Uuid } from '../../../../src/shared-kernel/domain/value-objects/uuid.vo.js';
 import { NotFoundError } from '../../../../src/shared-kernel/domain/errors/not-found.error.js';
 import { ConflictError } from '../../../../src/shared-kernel/domain/errors/conflict.error.js';
@@ -30,6 +33,14 @@ function diagnosticoIn(state: string): Diagnostico {
   });
 }
 
+function anAnswerSheet(): AnswerSheet {
+  const sheet = AnswerSheet.create(Uuid.create(DIAGNOSTIC_ID));
+  for (const item of ANSWERS) {
+    sheet.setAnswer(item.statementId, LikertValue.create(item.value));
+  }
+  return sheet;
+}
+
 function aProfile(): MaturityProfile {
   const codes = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;
   return MaturityProfile.create({
@@ -48,6 +59,7 @@ function aProfile(): MaturityProfile {
 describe('FinalizeInitialDiagnosticUseCase', () => {
   let useCase: FinalizeInitialDiagnosticUseCase;
   let diagnostics: jest.Mocked<DiagnosticRepositoryPort>;
+  let answerSheets: jest.Mocked<AnswerSheetRepositoryPort>;
   let submitQuestionnaire: jest.Mocked<Pick<SubmitQuestionnaireUseCase, 'execute'>>;
   let computeProfile: jest.Mocked<Pick<ComputeMaturityProfileUseCase, 'execute'>>;
 
@@ -56,6 +68,10 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
       findById: jest.fn(),
       findLatestByUserId: jest.fn(),
       findAllByUserId: jest.fn(),
+      save: jest.fn(async () => undefined),
+    };
+    answerSheets = {
+      findByDiagnosticId: jest.fn(async () => anAnswerSheet()),
       save: jest.fn(async () => undefined),
     };
     submitQuestionnaire = { execute: jest.fn(async () => ({
@@ -67,6 +83,7 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
 
     useCase = new FinalizeInitialDiagnosticUseCase(
       diagnostics,
+      answerSheets,
       submitQuestionnaire as unknown as SubmitQuestionnaireUseCase,
       computeProfile as unknown as ComputeMaturityProfileUseCase,
     );
@@ -81,7 +98,11 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
       diagnosticId: DIAGNOSTIC_ID,
       answers: ANSWERS,
     });
-    expect(computeProfile.execute).toHaveBeenCalledWith({ diagnosticId: DIAGNOSTIC_ID });
+    expect(answerSheets.findByDiagnosticId).toHaveBeenCalledWith(DIAGNOSTIC_ID);
+    expect(computeProfile.execute).toHaveBeenCalledWith({
+      diagnosticId: DIAGNOSTIC_ID,
+      answers: ANSWERS,
+    });
     expect(diagnostics.save).toHaveBeenCalledTimes(1);
     const saved = diagnostics.save.mock.calls[0][0];
     expect(saved.state.value).toBe('PERFIL_GENERADO');

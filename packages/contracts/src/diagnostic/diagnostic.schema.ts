@@ -83,13 +83,6 @@ export const startDiagnosticResponseSchema = diagnosticSchema.describe(
 
 export type StartDiagnosticResponse = z.infer<typeof startDiagnosticResponseSchema>;
 
-/**
- * Body of the orchestrator endpoint that ends phase 1:
- * `POST /api/v1/diagnosticos/:id/finalizar-inicial`.
- *
- * `diagnosticId` travels in the URL. The response is a
- * `MaturityProfileResponse`.
- */
 export const finalizeInitialDiagnosticRequestSchema = z
   .object({
     answers: z

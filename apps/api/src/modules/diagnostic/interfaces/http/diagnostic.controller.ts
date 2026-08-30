@@ -6,9 +6,12 @@ import type { MaturityProfileResponse } from '@innlab/contracts';
 /**
  * HTTP surface for the diagnostic orchestrator.
  *
- * `POST /api/v1/diagnosticos/:id/finalizar-inicial` composes
- * questionnaire submission + maturity-profile calculation + state
- * transitions. Other write endpoints (list/start) land with later HUs.
+ * Routes that arrive with Stage 2 user stories:
+ *   - `POST /api/v1/diagnosticos`        (HU-04) — start a new diagnostic.
+ *   - `GET  /api/v1/diagnosticos`        (HU-03) — list the user's own.
+ *   - `GET  /api/v1/diagnosticos/:id`    — fetch a single diagnostic.
+ *   - `POST /api/v1/diagnosticos/:id/finalizar-inicial` — orchestrates
+ *     `Questionnaire` + `MaturityProfile` (out of phase-1 scope).
  */
 @ApiTags('diagnosticos')
 @Controller('diagnosticos')

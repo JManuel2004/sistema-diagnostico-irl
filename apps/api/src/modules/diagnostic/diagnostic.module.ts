@@ -12,8 +12,16 @@ import { MaturityProfileModule } from '../maturity-profile/maturity-profile.modu
  * `DiagnosticModule` — bounded context for the `Diagnostico` aggregate
  * and the orchestrator that drives the diagnostic state machine.
  *
- * Cross-module composition lives here: this module is the only one
- * allowed to call questionnaire + maturity-profile use cases together.
+ * The orchestration use cases (`StartDiagnosticUseCase`,
+ * `AdvanceToQuestionnaireUseCase`, `FinalizeInitialDiagnosticUseCase`,
+ * etc.) live in `application/use-cases/` and arrive with their HU.
+ * They will be added here as providers. The orchestrator will compose
+ * the `QuestionnaireModule`'s `ANSWER_SHEET_REPOSITORY` and the future
+ * `MaturityProfileModule`'s services to drive a diagnostic forward.
+ *
+ * The diagnostic repository symbol is exported so the orchestrator
+ * (this module's own use cases) and any future cross-module read
+ * (e.g. an analytics service) can resolve it.
  */
 @Module({
   imports: [

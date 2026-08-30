@@ -10,7 +10,7 @@ export class MaturityProfileController {
 
   @Get()
   @ApiOkResponse({
-    description: 'Perfil de madurez persistido (lectura; el cálculo lo dispara el orquestador)',
+    description: 'Perfil de madurez persistido',
   })
   get(@Param('id') diagnosticId: string): Promise<MaturityProfileResponse> {
     return this.getProfile.execute({ diagnosticId });

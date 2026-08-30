@@ -6,10 +6,15 @@ import {
 } from '../domain/ports/diagnostic.repository.port.js';
 import type { DiagnosticStateName } from '../domain/diagnostic-state.vo.js';
 import { SubmitQuestionnaireUseCase } from '../../questionnaire/application/submit-questionnaire.use-case.js';
+import {
+  ANSWER_SHEET_REPOSITORY,
+  type AnswerSheetRepositoryPort,
+} from '../../questionnaire/domain/ports/answer-sheet.repository.port.js';
 import { ComputeMaturityProfileUseCase } from '../../maturity-profile/application/compute-maturity-profile.use-case.js';
 import { toMaturityProfileResponse } from '../../maturity-profile/application/map-maturity-profile-response.js';
 import { NotFoundError } from '../../../shared-kernel/domain/errors/not-found.error.js';
 import { ConflictError } from '../../../shared-kernel/domain/errors/conflict.error.js';
+import { MaturityProfileCalculationError } from '../../maturity-profile/domain/errors/maturity-profile-calculation.error.js';
 
 const FINALIZABLE_STATES: readonly DiagnosticStateName[] = [
   'CUESTIONARIO_EN_CURSO',
@@ -25,19 +30,13 @@ export interface FinalizeInitialDiagnosticCommand {
   answers: Array<{ statementId: string; value: number }>;
 }
 
-/**
- * Orchestrates the end of phase 1: persist the 48 answers, compute the
- * maturity profile, and advance the diagnostic state machine to
- * `PERFIL_GENERADO`.
- *
- * Other modules do not call each other from HTTP; this use case is the
- * only composer for that sequence.
- */
 @Injectable()
 export class FinalizeInitialDiagnosticUseCase {
   constructor(
     @Inject(DIAGNOSTIC_REPOSITORY)
     private readonly diagnostics: DiagnosticRepositoryPort,
+    @Inject(ANSWER_SHEET_REPOSITORY)
+    private readonly answerSheets: AnswerSheetRepositoryPort,
     private readonly submitQuestionnaire: SubmitQuestionnaireUseCase,
     private readonly computeProfile: ComputeMaturityProfileUseCase,
   ) {}
@@ -63,8 +62,20 @@ export class FinalizeInitialDiagnosticUseCase {
       answers: cmd.answers,
     });
 
+    const sheet = await this.answerSheets.findByDiagnosticId(cmd.diagnosticId);
+    if (!sheet) {
+      throw new MaturityProfileCalculationError(
+        `No answer sheet found for diagnostic ${cmd.diagnosticId}`,
+        { diagnosticId: cmd.diagnosticId },
+      );
+    }
+
     const { profile, imbalances } = await this.computeProfile.execute({
       diagnosticId: cmd.diagnosticId,
+      answers: sheet.answers().map((a) => ({
+        statementId: a.statementId,
+        value: a.value.value,
+      })),
     });
 
     if (diagnostico.state.canTransitionTo('CUESTIONARIO_COMPLETO')) {
