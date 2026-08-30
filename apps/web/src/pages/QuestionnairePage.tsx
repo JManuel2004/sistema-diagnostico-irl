@@ -1,6 +1,6 @@
 import { useState, useEffect, type JSX } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { QuestionnaireView } from '@features/questionnaire';
 import {
   selectInitialize,
@@ -8,11 +8,10 @@ import {
   useQuestionnaireDraftStore,
 } from '@features/questionnaire/store/questionnaire-draft.store';
 import { useQuestionnaireStructure } from '@features/questionnaire/hooks/useQuestionnaireStructure';
-import { useComputeMaturityProfile } from '@features/maturity-profile';
 import { PageShell } from '@/shared/ui/page-shell';
 import { Button } from '@/shared/ui/button';
-import { http } from '@/shared/api/http';
-import type { SubmitQuestionnaireResponse } from '@innlab/contracts';
+import { queryKeys } from '@/shared/api/query-keys';
+import { finalizeInitialDiagnostic } from '@/shared/api/diagnostic.api';
 
 const STATEMENTS_PER_DIM = 8;
 
@@ -33,7 +32,7 @@ export default function QuestionnairePage(): JSX.Element {
   const { data: catalog } = useQuestionnaireStructure();
 
   const [submitAttempted, setSubmitAttempted] = useState(false);
-  const computeProfile = useComputeMaturityProfile();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     initialize(diagnosticId ?? null);
@@ -48,17 +47,16 @@ export default function QuestionnairePage(): JSX.Element {
   const isComplete = catalog !== undefined && incompleteDimensions.length === 0;
 
   const submitAndCompute = useMutation({
-    mutationFn: async (items: { statementId: string; value: number }[]): Promise<void> => {
-      if (!diagnosticId) return;
-      await http.post<SubmitQuestionnaireResponse>(`/diagnosticos/${diagnosticId}/cuestionario`, {
-        answers: items,
-      });
-      await computeProfile.mutateAsync(diagnosticId);
-    },
-    onSuccess: () => {
-      if (diagnosticId) {
-        void navigate(`/diagnosticos/${diagnosticId}/perfil`);
+    mutationFn: async (items: { statementId: string; value: number }[]) => {
+      if (!diagnosticId) {
+        throw new Error('Falta el identificador del diagnóstico');
       }
+      return finalizeInitialDiagnostic(diagnosticId, items);
+    },
+    onSuccess: (profile) => {
+      if (!diagnosticId) return;
+      queryClient.setQueryData(queryKeys.diagnostic.profile(diagnosticId), profile);
+      void navigate(`/diagnosticos/${diagnosticId}/perfil`);
     },
   });
 

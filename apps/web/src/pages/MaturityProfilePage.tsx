@@ -1,30 +1,11 @@
-import { useEffect, useRef, type JSX } from 'react';
+import type { JSX } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import type { MaturityProfileResponse } from '@innlab/contracts';
-import { MaturityProfilePanel, useComputeMaturityProfile } from '@features/maturity-profile';
+import { MaturityProfilePanel, useMaturityProfile } from '@features/maturity-profile';
 import { PageShell } from '@/shared/ui/page-shell';
-import { queryKeys } from '@/shared/api/query-keys';
 
 export default function MaturityProfilePage(): JSX.Element {
   const { id: diagnosticId } = useParams<{ id: string }>();
-  const queryClient = useQueryClient();
-  const { mutate, data, error, isPending, isError } = useComputeMaturityProfile();
-
-  const cachedProfile = diagnosticId
-    ? queryClient.getQueryData<MaturityProfileResponse>(queryKeys.diagnostic.profile(diagnosticId))
-    : undefined;
-  const profile = cachedProfile ?? data;
-
-  const firedFor = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!diagnosticId) return;
-    if (cachedProfile) return;
-    if (firedFor.current === diagnosticId) return;
-    firedFor.current = diagnosticId;
-    mutate(diagnosticId);
-  }, [diagnosticId, cachedProfile, mutate]);
+  const { data: profile, error, isError } = useMaturityProfile(diagnosticId);
 
   if (!diagnosticId) {
     return <Navigate to="/diagnosticos" replace />;
@@ -59,9 +40,7 @@ export default function MaturityProfilePage(): JSX.Element {
           className="border-azul-icesi/40 size-10 animate-spin rounded-full border-2 border-t-transparent"
           aria-hidden="true"
         />
-        <p className="text-foreground text-base">
-          {isPending ? 'Calculando tu perfil IRL…' : 'Cargando perfil…'}
-        </p>
+        <p className="text-foreground text-base">Cargando perfil…</p>
       </div>
     </PageShell>
   );
