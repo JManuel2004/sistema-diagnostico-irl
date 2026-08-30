@@ -97,7 +97,8 @@ async function run(): Promise<void> {
         `INSERT INTO irl_diagnostic.diagnostico
            (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
          VALUES ($1, $2, $3, $4)
-         ON CONFLICT (id_diagnostico) DO NOTHING`,
+         ON CONFLICT (id_diagnostico) DO UPDATE
+           SET estado = EXCLUDED.estado`
         [
           'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
           'usuario-demo',

@@ -18,6 +18,8 @@ import { answerItemSchema } from '../questionnaire/answer.schema.js';
  *     → CUESTIONARIO_EN_CURSO      (HU-07)
  *     → CUESTIONARIO_COMPLETO      (HU-10 / RF-06)
  *     → PERFIL_GENERADO            (HU-11 / RF-07)
+ *     → ANALISIS_PROFUNDO_DECLINADO | ANALISIS_PROFUNDO_EN_CURSO
+ *          → ANALISIS_PROFUNDO_COMPLETO
  */
 export const DIAGNOSTIC_STATES = [
   'INICIADO',
@@ -26,6 +28,9 @@ export const DIAGNOSTIC_STATES = [
   'CUESTIONARIO_EN_CURSO',
   'CUESTIONARIO_COMPLETO',
   'PERFIL_GENERADO',
+  'ANALISIS_PROFUNDO_DECLINADO',
+  'ANALISIS_PROFUNDO_EN_CURSO',
+  'ANALISIS_PROFUNDO_COMPLETO',
 ] as const;
 
 export const diagnosticStateSchema = z

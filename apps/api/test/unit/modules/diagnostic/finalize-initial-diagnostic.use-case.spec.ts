@@ -98,6 +98,20 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
     expect(saved.state.value).toBe('PERFIL_GENERADO');
   });
 
+  it('loads a phase-2 diagnostic and finalizes without regressing state', async () => {
+    diagnostics.findById.mockResolvedValueOnce(
+      diagnosticoIn('ANALISIS_PROFUNDO_EN_CURSO'),
+    );
+
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
+
+    expect(submitQuestionnaire.execute).toHaveBeenCalledTimes(1);
+    expect(computeProfile.execute).toHaveBeenCalledTimes(1);
+    const saved = diagnostics.save.mock.calls[0][0];
+    expect(saved.state.value).toBe('ANALISIS_PROFUNDO_EN_CURSO');
+    expect(result.diagnosticId).toBe(DIAGNOSTIC_ID);
+  });
+
   it('is idempotent when the diagnostic is already PERFIL_GENERADO', async () => {
     diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('PERFIL_GENERADO'));
 

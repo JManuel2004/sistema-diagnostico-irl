@@ -15,6 +15,9 @@ const FINALIZABLE_STATES: readonly DiagnosticStateName[] = [
   'CUESTIONARIO_EN_CURSO',
   'CUESTIONARIO_COMPLETO',
   'PERFIL_GENERADO',
+  'ANALISIS_PROFUNDO_DECLINADO',
+  'ANALISIS_PROFUNDO_EN_CURSO',
+  'ANALISIS_PROFUNDO_COMPLETO',
 ];
 
 export interface FinalizeInitialDiagnosticCommand {

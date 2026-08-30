@@ -12,6 +12,8 @@ import { InvariantViolationError } from '../../../shared-kernel/domain/errors/in
  *     → CUESTIONARIO_EN_CURSO (RF-05 — cuestionario iniciado)
  *     → CUESTIONARIO_COMPLETO (RF-06 — 48 respuestas completas)
  *     → PERFIL_GENERADO      (RF-07/08 — niveles IRL y cuello de botella calculados)
+ *     → ANALISIS_PROFUNDO_DECLINADO | ANALISIS_PROFUNDO_EN_CURSO
+ *          → ANALISIS_PROFUNDO_COMPLETO
  *
  * Each transition's *trigger* is feature work (a use case will call
  * `next()` or `assertCanTransitionTo()`). The state machine itself is
@@ -24,7 +26,10 @@ export type DiagnosticStateName =
   | 'CON_INICIATIVA'
   | 'CUESTIONARIO_EN_CURSO'
   | 'CUESTIONARIO_COMPLETO'
-  | 'PERFIL_GENERADO';
+  | 'PERFIL_GENERADO'
+  | 'ANALISIS_PROFUNDO_DECLINADO'
+  | 'ANALISIS_PROFUNDO_EN_CURSO'
+  | 'ANALISIS_PROFUNDO_COMPLETO';
 
 export const DIAGNOSTIC_STATES: readonly DiagnosticStateName[] = [
   'INICIADO',
@@ -33,6 +38,9 @@ export const DIAGNOSTIC_STATES: readonly DiagnosticStateName[] = [
   'CUESTIONARIO_EN_CURSO',
   'CUESTIONARIO_COMPLETO',
   'PERFIL_GENERADO',
+  'ANALISIS_PROFUNDO_DECLINADO',
+  'ANALISIS_PROFUNDO_EN_CURSO',
+  'ANALISIS_PROFUNDO_COMPLETO',
 ];
 
 /** Adjacency map: `state → states it may transition to` (single step). */
@@ -44,7 +52,10 @@ const TRANSITIONS: Readonly<
   CON_INICIATIVA: ['CUESTIONARIO_EN_CURSO'],
   CUESTIONARIO_EN_CURSO: ['CUESTIONARIO_COMPLETO'],
   CUESTIONARIO_COMPLETO: ['PERFIL_GENERADO'],
-  PERFIL_GENERADO: [],
+  PERFIL_GENERADO: ['ANALISIS_PROFUNDO_DECLINADO', 'ANALISIS_PROFUNDO_EN_CURSO'],
+  ANALISIS_PROFUNDO_DECLINADO: [],
+  ANALISIS_PROFUNDO_EN_CURSO: ['ANALISIS_PROFUNDO_COMPLETO'],
+  ANALISIS_PROFUNDO_COMPLETO: [],
 };
 
 export class DiagnosticState {
