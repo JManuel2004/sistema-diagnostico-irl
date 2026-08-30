@@ -9,6 +9,7 @@ import { IMBALANCE_REPOSITORY } from './domain/ports/imbalance.repository.port.j
 import { IrlCalculatorService } from './domain/services/irl-calculator.service.js';
 import { ImbalanceEvaluatorService } from './domain/services/imbalance-evaluator.service.js';
 import { ComputeMaturityProfileUseCase } from './application/compute-maturity-profile.use-case.js';
+import { GetMaturityProfileUseCase } from './application/get-maturity-profile.use-case.js';
 import { MaturityProfileController } from './interfaces/http/maturity-profile.controller.js';
 import { QuestionnaireModule } from '../questionnaire/questionnaire.module.js';
 import { IrlCatalogModule } from '../irl-catalog/irl-catalog.module.js';
@@ -46,6 +47,7 @@ import { DimensionOrm } from '../irl-catalog/infrastructure/persistence/entities
     IrlCalculatorService,
     ImbalanceEvaluatorService,
     ComputeMaturityProfileUseCase,
+    GetMaturityProfileUseCase,
     {
       provide: MATURITY_PROFILE_REPOSITORY,
       useClass: TypeOrmMaturityProfileRepository,
@@ -56,6 +58,6 @@ import { DimensionOrm } from '../irl-catalog/infrastructure/persistence/entities
     },
   ],
   controllers: [MaturityProfileController],
-  exports: [MATURITY_PROFILE_REPOSITORY],
+  exports: [MATURITY_PROFILE_REPOSITORY, ComputeMaturityProfileUseCase],
 })
 export class MaturityProfileModule {}
