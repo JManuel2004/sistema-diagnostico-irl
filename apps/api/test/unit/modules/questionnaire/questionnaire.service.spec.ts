@@ -59,6 +59,10 @@ describe('SubmitQuestionnaireUseCase', () => {
   it('upserts duplicate statementId (last write wins)', async () => {
     const answers = [
       { statementId: '1', value: 2 },
+      ...Array.from({ length: 47 }, (_, i) => ({
+        statementId: String(i + 2),
+        value: 3,
+      })),
       { statementId: '1', value: 5 },
     ];
 
@@ -67,8 +71,32 @@ describe('SubmitQuestionnaireUseCase', () => {
       answers,
     });
 
-    expect(result.answersRecorded).toBe(1);
+    expect(result.answersRecorded).toBe(48);
     const savedSheet = mockRepo.save.mock.calls[0][0];
     expect(savedSheet.getAnswer('1')?.value.value).toBe(5);
+  });
+
+  it('rejects submission with fewer than 48 answers and does not persist', async () => {
+    const answers = Array.from({ length: 47 }, (_, i) => ({
+      statementId: String(i + 1),
+      value: 3,
+    }));
+
+    await expect(
+      useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers }),
+    ).rejects.toThrow(InvariantViolationError);
+    expect(mockRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('rejects submission with more than 48 distinct answers and does not persist', async () => {
+    const answers = Array.from({ length: 49 }, (_, i) => ({
+      statementId: String(i + 1),
+      value: 3,
+    }));
+
+    await expect(
+      useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers }),
+    ).rejects.toThrow(InvariantViolationError);
+    expect(mockRepo.save).not.toHaveBeenCalled();
   });
 });

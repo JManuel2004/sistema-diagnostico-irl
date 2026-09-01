@@ -7,6 +7,7 @@ import {
 import { AnswerSheet } from '../domain/entities/answer-sheet.aggregate.js';
 import { Uuid } from '../../../shared-kernel/domain/value-objects/uuid.vo.js';
 import { LikertValue } from '../../../shared-kernel/domain/value-objects/likert-value.vo.js';
+import { InvariantViolationError } from '../../../shared-kernel/domain/errors/invariant-violation.error.js';
 
 export interface SubmitQuestionnaireCommand {
   diagnosticId: string;
@@ -26,6 +27,13 @@ export class SubmitQuestionnaireUseCase {
 
     for (const item of cmd.answers) {
       sheet.setAnswer(item.statementId, LikertValue.create(item.value));
+    }
+
+    if (sheet.answeredCount !== 48) {
+      throw new InvariantViolationError(
+        `Cannot submit questionnaire: expected 48 answers, received ${sheet.answeredCount}`,
+        { diagnosticId: diagnosticId.value, answeredCount: sheet.answeredCount },
+      );
     }
 
     await this.repo.save(sheet);
