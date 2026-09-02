@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './health.controller.js';
+import { IdentityModule } from '../../modules/identity/identity.module.js';
 import { IrlCatalogModule } from '../../modules/irl-catalog/irl-catalog.module.js';
 import { QuestionnaireModule } from '../../modules/questionnaire/questionnaire.module.js';
 import { DiagnosticModule } from '../../modules/diagnostic/diagnostic.module.js';
@@ -19,6 +20,7 @@ import { MaturityProfileModule } from '../../modules/maturity-profile/maturity-p
 @Module({
   imports: [
     TerminusModule,
+    IdentityModule,
     IrlCatalogModule,
     QuestionnaireModule,
     DiagnosticModule,
