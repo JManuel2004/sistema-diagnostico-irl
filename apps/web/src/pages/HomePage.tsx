@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 import type { DimensionCode } from '@innlab/contracts';
+import { LogoutButton } from '@features/auth';
 import { buttonVariants } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
 import { PageShell } from '@/shared/ui/page-shell';
@@ -64,7 +65,7 @@ const LANDING_COPY: Record<DimensionCode, Omit<LandingDimensionCopy, 'code'>> = 
 
 export default function HomePage(): JSX.Element {
   return (
-    <PageShell width="wide" showAttribution>
+    <PageShell width="wide" showAttribution headerActions={<LogoutButton />}>
       {/* Hero — institutional layout, left-aligned per brand manual */}
       <section className="grid gap-10 lg:grid-cols-12 lg:items-center">
         <div className="lg:col-span-7">
