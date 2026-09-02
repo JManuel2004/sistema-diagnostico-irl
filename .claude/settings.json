@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker info *)",
+      "Bash(docker pull *)",
+      "Read(//c/Users/JuanDavid/**)",
+      "Bash(./gradlew :services:circleguard-gateway-service:integrationTest :services:circleguard-promotion-service:integrationTest --rerun-tasks --console=plain)",
+      "Bash(curl --silent --max-time 5 --unix-socket //./pipe/docker_engine http://localhost/info)",
+      "Bash(curl --silent --max-time 5 --unix-socket //./pipe/docker_cli http://localhost/info)",
+      "Bash(./gradlew :services:circleguard-gateway-service:integrationTest --info --rerun-tasks --console=plain)",
+      "Bash(./gradlew :services:circleguard-file-service:integrationTest :services:circleguard-form-service:integrationTest :services:circleguard-identity-service:integrationTest --rerun-tasks --console=plain)",
+      "Bash(docker context *)",
+      "Bash(DOCKER_HOST=\"npipe:////./pipe/dockerDesktopLinuxEngine\" ./gradlew :services:circleguard-form-service:integrationTest --rerun-tasks --console=plain)",
+      "Bash(DOCKER_HOST=\"npipe:////./pipe/docker_engine_linux\" docker info)",
+      "Bash(DOCKER_HOST=\"tcp://localhost:2375\" docker info)",
+      "Bash(ls \"C:/Users/JuanDavid/AppData/Local/Docker/run/\" 2>&1 ; echo \"---\"; ls //./pipe 2>&1 | grep -i docker | head -10)",
+      "Read(///./pipe//**)",
+      "Bash(DOCKER_HOST=\"npipe:////./pipe/docker_cli\" ./gradlew :services:circleguard-form-service:integrationTest --rerun-tasks --console=plain)",
+      "Bash(docker desktop *)",
+      "Bash(cd /d/Proyectos/IngsoftV/circle-guard-public && pwd && echo \"=== UNIT TESTS \\(src/test/java/*Test.java\\) ===\" && find services -path \"*/src/test/java/*Test.java\" 2>/dev/null | wc -l && echo \"=== INTEGRATION TESTS \\(src/integrationTest/java/*Test.java\\) ===\" && find services -path \"*/src/integrationTest/java/*Test.java\" 2>/dev/null && echo \"=== POSTMAN E2E flows ===\" && grep -cE '\"name\": \"Flujo' tests/e2e/circleguard.postman_collection.json && echo \"=== LOCUST user classes ===\" && grep -cE \"^class [A-Za-z]+User\\\\\\(HttpUser\\\\\\)\" tests/stress/locustfile.py && echo \"=== LOCUST @task functions ===\" && grep -cE \"^    @task\" tests/stress/locustfile.py)",
+      "Read(//d/d/Proyectos/IngsoftV/circle-guard-public/**)",
+      "Bash(./gradlew :services:circleguard-promotion-service:test --console=plain)",
+      "Bash(./gradlew spotlessApply --no-daemon)",
+      "Bash(npm run *)",
+      "Bash(./gradlew jacocoTestCoverageVerification --max-workers=2 --no-daemon -PmaxParallelForks=2)",
+      "Bash(git fetch *)",
+      "Bash(./gradlew clean *)",
+      "Bash(git push *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\JuanDavid"
+    ]
+  }
+}
