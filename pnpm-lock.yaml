@@ -200,7 +200,7 @@ importers:
         version: 10.1.8(eslint@9.39.4(jiti@2.6.1))
       eslint-plugin-boundaries:
         specifier: ^6.0.2
-        version: 6.0.2(eslint@9.39.4(jiti@2.6.1))
+        version: 6.0.2(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.4(jiti@2.6.1))
       eslint-plugin-prettier:
         specifier: ^5.2.2
         version: 5.5.5(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.4(jiti@2.6.1)))(eslint@9.39.4(jiti@2.6.1))(prettier@3.8.3)
@@ -300,9 +300,6 @@ importers:
       nanoid:
         specifier: ^5.1.11
         version: 5.1.11
-      oidc-client-ts:
-        specifier: ^3.5.0
-        version: 3.5.0
       react:
         specifier: ^19.2.6
         version: 19.2.6
@@ -312,9 +309,6 @@ importers:
       react-hook-form:
         specifier: ^7.75.0
         version: 7.75.0(react@19.2.6)
-      react-oidc-context:
-        specifier: ^3.3.1
-        version: 3.3.1(oidc-client-ts@3.5.0)(react@19.2.6)
       react-router-dom:
         specifier: ^7.15.0
         version: 7.15.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -375,7 +369,7 @@ importers:
         version: 9.39.4(jiti@1.21.7)
       eslint-plugin-boundaries:
         specifier: ^6.0.2
-        version: 6.0.2(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@1.21.7))(typescript@5.6.3))(eslint@9.39.4(jiti@1.21.7))
+        version: 6.0.2(eslint@9.39.4(jiti@1.21.7))
       eslint-plugin-jsx-a11y:
         specifier: ^6.10.2
         version: 6.10.2(eslint@9.39.4(jiti@1.21.7))
@@ -4057,6 +4051,7 @@ packages:
   eslint@9.39.4:
     resolution: {integrity: sha512-XoMjdBOwe/esVgEvLmNsD3IRHkm7fbKIUGvrleloJXUZgDHig2IPWNniv+GwjyJXzuNqVjlr5+4yVUZjycJwfQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -4382,7 +4377,7 @@ packages:
   git-raw-commits@4.0.0:
     resolution: {integrity: sha512-ICsMM1Wk8xSGMowkOmPrzo2Fgmfo4bMHLNX6ytHjajRJUqvHOw/TFapQ+QG75c3X/tTDDhOSRPGC52dDbNM8FQ==}
     engines: {node: '>=16'}
-    deprecated: This package is no longer maintained. For the JavaScript API, please use @conventional-changelog/git-client instead.
+    deprecated: Deprecated and no longer maintained. Use @conventional-changelog/git-client instead.
     hasBin: true
 
   glob-parent@5.1.2:
@@ -5045,10 +5040,6 @@ packages:
   jws@4.0.1:
     resolution: {integrity: sha512-EKI/M/yqPncGUUh44xz0PxSidXFr/+r0pA70+gIYhjv+et7yxM+s29Y+VGDkovRofQem0fs7Uvf4+YmAdyRduA==}
 
-  jwt-decode@4.0.0:
-    resolution: {integrity: sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==}
-    engines: {node: '>=18'}
-
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
@@ -5572,10 +5563,6 @@ packages:
     resolution: {integrity: sha512-gXah6aZrcUxjWg2zR2MwouP2eHlCBzdV4pygudehaKXSGW4v2AsRQUK+lwwXhii6KFZcunEnmSUoYp5CXibxtA==}
     engines: {node: '>= 0.4'}
 
-  oidc-client-ts@3.5.0:
-    resolution: {integrity: sha512-l2q8l9CTCTOlbX+AnK4p3M+4CEpKpyQhle6blQkdFhm0IsBqsxm15bYaSa11G7pWdsYr6epdsRZxJpCyCRbT8A==}
-    engines: {node: '>=18'}
-
   on-exit-leak-free@2.1.2:
     resolution: {integrity: sha512-0eJJY6hXLGf1udHwfNftBqH+g73EU4B504nZeKpz1sYRKafAghwxEJunB2O7rDZkL4PGfsMVnTXZ2EjibbqcsA==}
     engines: {node: '>=14.0.0'}
@@ -6073,13 +6060,6 @@ packages:
 
   react-is@19.2.6:
     resolution: {integrity: sha512-XjBR15BhXuylgWGuslhDKqlSayuqvqBX91BP8pauG8kd1zY8kotkNWbXksTCNRarse4kuGbe2kIY05ARtwNIvw==}
-
-  react-oidc-context@3.3.1:
-    resolution: {integrity: sha512-/Azvm9W4DhhOtSDBE73kFInh1b6zZRRfILKbgmk2syExMF0PCYJOn/dGdOOi2BFX8x0rCeUe45NXHU+/+xDcrQ==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      oidc-client-ts: ^3.1.0
-      react: '>=16.14.0'
 
   react-redux@9.2.0:
     resolution: {integrity: sha512-ROY9fvHhwOD9ySfrF0wmvu//bKCQ6AeZZq1nJNtbDC+kk5DuSuNX/n6YWYF/SYy7bSba4D4FSz8DJeKY/S/r+g==}
@@ -7714,10 +7694,10 @@ snapshots:
 
   '@borewit/text-codec@0.2.2': {}
 
-  '@boundaries/elements@2.0.1(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@1.21.7))(typescript@5.6.3))(eslint@9.39.4(jiti@1.21.7))':
+  '@boundaries/elements@2.0.1(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.4(jiti@2.6.1))':
     dependencies:
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@1.21.7))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.4(jiti@1.21.7))
+      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.4(jiti@2.6.1))
       handlebars: 4.7.9
       is-core-module: 2.16.1
       micromatch: 4.0.8
@@ -7728,10 +7708,10 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  '@boundaries/elements@2.0.1(eslint@9.39.4(jiti@2.6.1))':
+  '@boundaries/elements@2.0.1(eslint@9.39.4(jiti@1.21.7))':
     dependencies:
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(eslint-import-resolver-node@0.3.9)(eslint@9.39.4(jiti@2.6.1))
+      eslint-module-utils: 2.12.1(eslint-import-resolver-node@0.3.9)(eslint@9.39.4(jiti@1.21.7))
       handlebars: 4.7.9
       is-core-module: 2.16.1
       micromatch: 4.0.8
@@ -11275,32 +11255,32 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@1.21.7))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.4(jiti@1.21.7)):
+  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.4(jiti@2.6.1)):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
-      '@typescript-eslint/parser': 8.59.3(eslint@9.39.4(jiti@1.21.7))(typescript@5.6.3)
-      eslint: 9.39.4(jiti@1.21.7)
-      eslint-import-resolver-node: 0.3.9
-    transitivePeerDependencies:
-      - supports-color
-
-  eslint-module-utils@2.12.1(eslint-import-resolver-node@0.3.9)(eslint@9.39.4(jiti@2.6.1)):
-    dependencies:
-      debug: 3.2.7
-    optionalDependencies:
+      '@typescript-eslint/parser': 8.59.3(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
       eslint: 9.39.4(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.9
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-boundaries@6.0.2(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@1.21.7))(typescript@5.6.3))(eslint@9.39.4(jiti@1.21.7)):
+  eslint-module-utils@2.12.1(eslint-import-resolver-node@0.3.9)(eslint@9.39.4(jiti@1.21.7)):
     dependencies:
-      '@boundaries/elements': 2.0.1(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@1.21.7))(typescript@5.6.3))(eslint@9.39.4(jiti@1.21.7))
-      chalk: 4.1.2
+      debug: 3.2.7
+    optionalDependencies:
       eslint: 9.39.4(jiti@1.21.7)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@1.21.7))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.4(jiti@1.21.7))
+    transitivePeerDependencies:
+      - supports-color
+
+  eslint-plugin-boundaries@6.0.2(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.4(jiti@2.6.1)):
+    dependencies:
+      '@boundaries/elements': 2.0.1(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.4(jiti@2.6.1))
+      chalk: 4.1.2
+      eslint: 9.39.4(jiti@2.6.1)
+      eslint-import-resolver-node: 0.3.9
+      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.59.3(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint@9.39.4(jiti@2.6.1))
       handlebars: 4.7.9
       micromatch: 4.0.8
     transitivePeerDependencies:
@@ -11309,13 +11289,13 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-boundaries@6.0.2(eslint@9.39.4(jiti@2.6.1)):
+  eslint-plugin-boundaries@6.0.2(eslint@9.39.4(jiti@1.21.7)):
     dependencies:
-      '@boundaries/elements': 2.0.1(eslint@9.39.4(jiti@2.6.1))
+      '@boundaries/elements': 2.0.1(eslint@9.39.4(jiti@1.21.7))
       chalk: 4.1.2
-      eslint: 9.39.4(jiti@2.6.1)
+      eslint: 9.39.4(jiti@1.21.7)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(eslint-import-resolver-node@0.3.9)(eslint@9.39.4(jiti@2.6.1))
+      eslint-module-utils: 2.12.1(eslint-import-resolver-node@0.3.9)(eslint@9.39.4(jiti@1.21.7))
       handlebars: 4.7.9
       micromatch: 4.0.8
     transitivePeerDependencies:
@@ -12733,8 +12713,6 @@ snapshots:
       jwa: 2.0.1
       safe-buffer: 5.2.1
 
-  jwt-decode@4.0.0: {}
-
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
@@ -13212,10 +13190,6 @@ snapshots:
       define-properties: 1.2.1
       es-object-atoms: 1.1.1
 
-  oidc-client-ts@3.5.0:
-    dependencies:
-      jwt-decode: 4.0.0
-
   on-exit-leak-free@2.1.2: {}
 
   on-finished@2.4.1:
@@ -13662,11 +13636,6 @@ snapshots:
   react-is@18.3.1: {}
 
   react-is@19.2.6: {}
-
-  react-oidc-context@3.3.1(oidc-client-ts@3.5.0)(react@19.2.6):
-    dependencies:
-      oidc-client-ts: 3.5.0
-      react: 19.2.6
 
   react-redux@9.2.0(@types/react@19.2.14)(react@19.2.6)(redux@5.0.1):
     dependencies:
