@@ -39,20 +39,22 @@ export function useSsoExchange(code: string | null): SsoExchangeResult {
   const alreadyExchanged = useRef(false);
 
   useEffect(() => {
-    if (missingCode || alreadyExchanged.current) return;
+    if (missingCode || code === null || alreadyExchanged.current) return;
     alreadyExchanged.current = true;
 
-    let cancelled = false;
-
+    // Sin bandera de cancelacion a proposito. El guard de un solo uso ya
+    // garantiza una peticion: si ademas descartaramos su resultado en la
+    // limpieza del efecto, StrictMode (monta → limpia → remonta) marcaria
+    // como cancelada la UNICA peticion en vuelo y la pantalla se quedaria
+    // en "Conectando..." para siempre, tanto al fallar como al acertar.
+    // Un setState tras desmontar es inocuo desde React 18.
     exchangeSsoCode(code)
       .then((session) => {
-        if (cancelled) return;
         saveSession(session);
         setReturnTo(consumeReturnTo() ?? '/');
         setStatus('done');
       })
       .catch((cause: unknown) => {
-        if (cancelled) return;
         setStatus('error');
         setError(
           cause instanceof Error
@@ -60,10 +62,6 @@ export function useSsoExchange(code: string | null): SsoExchangeResult {
             : 'No se pudo completar el inicio de sesión.',
         );
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [code, missingCode]);
 
   return { status, error, returnTo };

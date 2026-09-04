@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { StrictMode } from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useSsoExchange } from '../useSsoExchange';
 import { readSession } from '@/shared/auth/session';
@@ -71,5 +72,42 @@ describe('useSsoExchange', () => {
       expect(result.current.status).toBe('error');
     });
     expect(exchangeSsoCode).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Regresion: bajo StrictMode React monta, desmonta y remonta el efecto.
+   * El guard de un solo uso impide que el remontaje lance una segunda
+   * peticion — correcto — pero la limpieza del primer montaje no puede
+   * descartar el resultado de la unica peticion en vuelo, o la pantalla
+   * se queda en "Conectando..." para siempre. Afecta igual al exito y al
+   * error, asi que rompe tambien el camino feliz del login.
+   */
+  describe('bajo StrictMode (doble montaje del efecto)', () => {
+    it('sigue resolviendo el estado de error', async () => {
+      exchangeSsoCode.mockRejectedValue(new Error('code expired'));
+
+      const { result } = renderHook(() => useSsoExchange('code-123'), {
+        wrapper: StrictMode,
+      });
+
+      await waitFor(() => {
+        expect(result.current.status).toBe('error');
+      });
+      expect(exchangeSsoCode).toHaveBeenCalledTimes(1);
+    });
+
+    it('sigue resolviendo el camino feliz y persiste la sesion', async () => {
+      exchangeSsoCode.mockResolvedValue(SESSION);
+
+      const { result } = renderHook(() => useSsoExchange('code-123'), {
+        wrapper: StrictMode,
+      });
+
+      await waitFor(() => {
+        expect(result.current.status).toBe('done');
+      });
+      expect(readSession()).toEqual(SESSION);
+      expect(exchangeSsoCode).toHaveBeenCalledTimes(1);
+    });
   });
 });
