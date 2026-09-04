@@ -7,7 +7,7 @@
  *
  * El flujo real de INNLAB (confirmado contra la guía de Core) es:
  *
- *   app sin sesión → {CORE_URL}/sso?redirect=<nuestra url de callback>
+ *   app sin sesión → {CORE_URL}/auth/sso?redirect=<nuestra url de callback>
  *     → el Hub autentica contra Cognito si hace falta
  *     → vuelve a nuestra app con ?code=xxxx  (un solo uso, TTL 30s)
  *     → GET {CORE_API_URL}/auth/sso/exchange?code=xxxx
@@ -106,10 +106,14 @@ export function consumeReturnTo(): string | null {
  * navegación del router: la vuelta la hace el Hub sobre `/auth/callback`.
  */
 export function redirectToSso(returnTo?: string): void {
+  // La ruta del Hub es `/auth/sso`, NO `/sso`: su router no tiene esa
+  // segunda y el usuario cae en una pantalla en blanco con
+  // "No routes matched location" en consola, sin error de red que lo
+  // delate. El Hub hace `new URL(redirect)`, asi que debe ser absoluta.
   if (returnTo !== undefined && returnTo !== '') {
     rememberReturnTo(returnTo);
   }
 
   const redirect = encodeURIComponent(ssoCallbackUrl());
-  window.location.href = `${coreUrl()}/sso?redirect=${redirect}`;
+  window.location.href = `${coreUrl()}/auth/sso?redirect=${redirect}`;
 }

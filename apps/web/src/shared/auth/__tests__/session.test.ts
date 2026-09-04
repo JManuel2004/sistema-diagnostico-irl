@@ -58,6 +58,7 @@ describe('sesión del ecosistema', () => {
   });
 
   it('manda al Hub con la url de callback como redirect', () => {
+    vi.stubEnv('VITE_CORE_URL', 'https://hub.test');
     const assign = vi.fn();
     Object.defineProperty(window, 'location', {
       value: { origin: 'http://localhost:5173', pathname: '/', search: '' },
@@ -67,9 +68,14 @@ describe('sesión del ecosistema', () => {
 
     redirectToSso('/diagnosticos/42/cuestionario');
 
+    // Ruta exacta a proposito: `/sso` (sin `/auth`) no existe en el router
+    // del Hub y falla con una pantalla en blanco, sin error de red. Un
+    // `toContain('/sso?redirect=')` pasaria con la ruta mala.
     const target = String(assign.mock.calls[0]?.[0]);
-    expect(target).toContain('/sso?redirect=');
-    expect(target).toContain(encodeURIComponent('http://localhost:5173/auth/callback'));
+    expect(target).toBe(
+      'https://hub.test/auth/sso?redirect=' +
+        encodeURIComponent('http://localhost:5173/auth/callback'),
+    );
   });
 
   it('recuerda y consume la ruta original una sola vez', () => {
