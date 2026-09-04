@@ -25,9 +25,33 @@ const coreApi = axios.create({
  * flujo completo desde el Hub.
  */
 export async function exchangeSsoCode(code: string): Promise<CoreSession> {
-  const { data } = await coreApi.get<CoreSession>('/auth/sso/exchange', {
-    params: { code },
-  });
+  let data: CoreSession;
+
+  try {
+    ({ data } = await coreApi.get<CoreSession>('/auth/sso/exchange', {
+      params: { code },
+    }));
+  } catch (cause) {
+    // El mensaje crudo de axios ("Request failed with status code 404") acaba
+    // impreso en la pantalla que ve el usuario, y no dice nada accionable.
+    // Traducimos los casos que Core distingue de verdad.
+    if (axios.isAxiosError(cause)) {
+      if (cause.response === undefined) {
+        throw new Error(
+          'No pudimos contactar con INNLAB. Revisa tu conexión e inténtalo de nuevo.',
+        );
+      }
+      if (cause.response.status === 404) {
+        throw new Error(
+          'El enlace de acceso ya se usó o caducó (son válidos 30 segundos). Inicia sesión de nuevo.',
+        );
+      }
+      throw new Error(
+        `INNLAB rechazó el inicio de sesión (error ${String(cause.response.status)}).`,
+      );
+    }
+    throw cause;
+  }
 
   if (typeof data.accessToken !== 'string' || data.accessToken === '') {
     throw new Error('Core devolvió una respuesta de intercambio sin accessToken.');

@@ -3,9 +3,10 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { exchangeSsoCode, isSessionAlive, logoutFromCore } from '../core-auth.api';
 
-// Debe coincidir con VITE_CORE_API_URL en el entorno de test (vacío ⇒
-// axios resuelve contra el origen de jsdom).
-const CORE = 'http://localhost';
+// Fijado en `.env.test`, que tiene prioridad sobre `.env.local`. Sin ese
+// archivo los tests heredarian la URL real de Core de la maquina de quien
+// los corra y saldrian a internet.
+const CORE = 'https://core-api.test';
 
 const server = setupServer();
 
@@ -42,12 +43,28 @@ describe('exchangeSsoCode', () => {
     await expect(exchangeSsoCode('code-123')).rejects.toThrow('sin accessToken');
   });
 
-  it('propaga el fallo de un código ya expirado', async () => {
+  it('explica en claro que el código ya se usó o caducó', async () => {
     server.use(
-      http.get(`${CORE}/auth/sso/exchange`, () => new HttpResponse(null, { status: 400 })),
+      http.get(`${CORE}/auth/sso/exchange`, () => new HttpResponse(null, { status: 404 })),
     );
 
-    await expect(exchangeSsoCode('code-vencido')).rejects.toThrow();
+    // Este texto acaba en pantalla: no puede ser el "Request failed with
+    // status code 404" que devuelve axios por defecto.
+    await expect(exchangeSsoCode('code-vencido')).rejects.toThrow(/ya se usó o caducó/);
+  });
+
+  it('distingue un fallo de red de un rechazo de Core', async () => {
+    server.use(http.get(`${CORE}/auth/sso/exchange`, () => HttpResponse.error()));
+
+    await expect(exchangeSsoCode('code-123')).rejects.toThrow(/No pudimos contactar/);
+  });
+
+  it('reporta el status cuando Core rechaza por otra razón', async () => {
+    server.use(
+      http.get(`${CORE}/auth/sso/exchange`, () => new HttpResponse(null, { status: 500 })),
+    );
+
+    await expect(exchangeSsoCode('code-123')).rejects.toThrow(/error 500/);
   });
 });
 
