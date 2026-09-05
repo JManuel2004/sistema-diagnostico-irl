@@ -23,6 +23,8 @@ export * from './questionnaire/submission.schema.js';
 // ── maturity profile ──────────────────────────────────────────────────
 export * from './maturity-profile/dimension-result.schema.js';
 export * from './maturity-profile/bottleneck.schema.js';
+export * from './maturity-profile/gaps.schema.js';
+export * from './maturity-profile/asymmetry.schema.js';
 export * from './maturity-profile/imbalance.schema.js';
 export * from './maturity-profile/profile-response.schema.js';
 

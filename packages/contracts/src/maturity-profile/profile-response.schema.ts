@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { uuidSchema } from '../common/uuid.schema.js';
 import { dimensionResultSchema } from './dimension-result.schema.js';
 import { bottleneckSchema } from './bottleneck.schema.js';
+import { gapsSchema } from './gaps.schema.js';
+import { asymmetrySchema } from './asymmetry.schema.js';
 import { imbalancePairResultSchema } from './imbalance.schema.js';
 
 /**
@@ -12,6 +14,7 @@ import { imbalancePairResultSchema } from './imbalance.schema.js';
  * Forma:
  *   - 6 resultados dimensionales (siempre 6, en orden de la dimensión).
  *   - 1 cuello de botella (con manejo de empates) — opcional.
+ *   - brechas dimensionales (IRL ≤ umbral; el array puede ir vacío).
  *   - 6 resultados de desequilibrio (siempre los pares fijos del marco) — opcional.
  *   - `computedAt` permite mostrar la fecha del cálculo en el reporte.
  *
@@ -40,6 +43,15 @@ export const maturityProfileResponseSchema = z
       .length(6)
       .describe('Resultado por dimensión — exactamente 6 entradas'),
     bottleneck: bottleneckSchema.describe('Cuello de botella — RF-08 / DIAGIRL-35'),
+    strength: bottleneckSchema.describe(
+      'Dimensión(es) con el IRL más alto — calculado en el backend a partir de los niveles persistidos',
+    ),
+    asymmetry: asymmetrySchema.describe(
+      'Diferencia máx−mín de IRL — calculada en el backend; no recalcular en el cliente',
+    ),
+    gaps: gapsSchema.describe(
+      'Dimensiones en brecha (IRL ≤ umbral) — evaluado en el backend; no recalcular en el cliente',
+    ),
     imbalances: z
       .array(imbalancePairResultSchema)
       .length(6)
