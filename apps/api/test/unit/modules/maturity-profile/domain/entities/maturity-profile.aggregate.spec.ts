@@ -202,6 +202,119 @@ describe('MaturityProfile (aggregate root)', () => {
     });
   });
 
+  describe('strength', () => {
+    it('returns the single dimension with the highest level', () => {
+      const results = [
+        resultFor('TRL', 8),
+        resultFor('CRL', 3),
+        resultFor('BRL', 5),
+        resultFor('IPRL', 4),
+        resultFor('TmRL', 6),
+        resultFor('FRL', 2),
+      ];
+      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      const s = p.strength();
+      expect(s.level).toBe(8);
+      expect(s.dimensions.map((r) => r.dimensionCode.value)).toEqual(['TRL']);
+    });
+
+    it('returns all tied dimensions at the maximum', () => {
+      const results = [
+        resultFor('TRL', 7),
+        resultFor('CRL', 7),
+        resultFor('BRL', 4),
+        resultFor('IPRL', 4),
+        resultFor('TmRL', 4),
+        resultFor('FRL', 4),
+      ];
+      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      expect(p.strength().dimensions.map((r) => r.dimensionCode.value)).toEqual(['TRL', 'CRL']);
+    });
+  });
+
+  describe('asymmetry', () => {
+    it('classifies a spread of 3 as MODERADO', () => {
+      const results = [
+        resultFor('TRL', 5),
+        resultFor('CRL', 3),
+        resultFor('BRL', 3),
+        resultFor('IPRL', 2),
+        resultFor('TmRL', 4),
+        resultFor('FRL', 3),
+      ];
+      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      expect(p.asymmetry()).toEqual({ difference: 3, classification: 'MODERADO' });
+    });
+
+    it('classifies a uniform profile as ACEPTABLE', () => {
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: CODES.map((c) => resultFor(c, 6)),
+      });
+      expect(p.asymmetry()).toEqual({ difference: 0, classification: 'ACEPTABLE' });
+    });
+
+    it('classifies a spread of 8 as CRITICO', () => {
+      const results = [
+        resultFor('TRL', 9),
+        resultFor('CRL', 1),
+        resultFor('BRL', 9),
+        resultFor('IPRL', 1),
+        resultFor('TmRL', 9),
+        resultFor('FRL', 1),
+      ];
+      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      expect(p.asymmetry()).toEqual({ difference: 8, classification: 'CRITICO' });
+    });
+  });
+
+  describe('gaps (critical IRL threshold)', () => {
+    it('includes every dimension with IRL ≤ 3 and reports the threshold', () => {
+      const results = [
+        resultFor('TRL', 5),
+        resultFor('CRL', 3),
+        resultFor('BRL', 3),
+        resultFor('IPRL', 2),
+        resultFor('TmRL', 4),
+        resultFor('FRL', 3),
+      ];
+      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      const g = p.gaps();
+      expect(g.threshold).toBe(3);
+      expect(g.dimensions.map((r) => r.dimensionCode.value)).toEqual([
+        'CRL',
+        'BRL',
+        'IPRL',
+        'FRL',
+      ]);
+    });
+
+    it('returns no dimensions when every level is above the threshold', () => {
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: CODES.map((c) => resultFor(c, 6)),
+      });
+      const g = p.gaps();
+      expect(g.dimensions).toHaveLength(0);
+      expect(g.threshold).toBe(3);
+    });
+
+    it('includes a dimension exactly at the threshold', () => {
+      const results = [
+        resultFor('TRL', 6),
+        resultFor('CRL', 6),
+        resultFor('BRL', 6),
+        resultFor('IPRL', 3),
+        resultFor('TmRL', 6),
+        resultFor('FRL', 6),
+      ];
+      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      expect(p.gaps().dimensions.map((r) => r.dimensionCode.value)).toEqual(['IPRL']);
+    });
+  });
+
   describe('persistence round-trip', () => {
     it('toPersistence + fromPersistence preserve the aggregate', () => {
       const original = MaturityProfile.create({

@@ -13,6 +13,9 @@ export function toMaturityProfileResponse(
   imbalances: readonly ImbalanceResult[],
 ): MaturityProfileResponse {
   const bottleneck = profile.bottleneck();
+  const strength = profile.strength();
+  const asymmetry = profile.asymmetry();
+  const gaps = profile.gaps();
 
   return {
     diagnosticId: profile.diagnosticId.value,
@@ -26,6 +29,18 @@ export function toMaturityProfileResponse(
     bottleneck: {
       dimensions: bottleneck.dimensions.map((r) => r.dimensionCode.value),
       level: bottleneck.level,
+    },
+    strength: {
+      dimensions: strength.dimensions.map((r) => r.dimensionCode.value),
+      level: strength.level,
+    },
+    asymmetry: {
+      difference: asymmetry.difference,
+      classification: CLASSIFICATION_MAP[asymmetry.classification],
+    },
+    gaps: {
+      dimensions: gaps.dimensions.map((r) => r.dimensionCode.value),
+      threshold: gaps.threshold,
     },
     imbalances:
       imbalances.length === 6
