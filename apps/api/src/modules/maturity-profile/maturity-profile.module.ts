@@ -13,6 +13,7 @@ import { GetMaturityProfileUseCase } from './application/get-maturity-profile.us
 import { MaturityProfileController } from './interfaces/http/maturity-profile.controller.js';
 import { IrlCatalogModule } from '../irl-catalog/irl-catalog.module.js';
 import { DimensionOrm } from '../irl-catalog/infrastructure/persistence/entities/dimension.orm-entity.js';
+import { ParDimensionOrm } from '../irl-catalog/infrastructure/persistence/entities/par-dimension.orm-entity.js';
 
 /**
  * `MaturityProfileModule` — bounded context for the IRL maturity profile.
@@ -36,7 +37,12 @@ import { DimensionOrm } from '../irl-catalog/infrastructure/persistence/entities
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ResultadoDimensionOrm, AnalisisDesequilibrioOrm, DimensionOrm]),
+    TypeOrmModule.forFeature([
+      ResultadoDimensionOrm,
+      AnalisisDesequilibrioOrm,
+      DimensionOrm,
+      ParDimensionOrm,
+    ]),
     IrlCatalogModule,
   ],
   providers: [

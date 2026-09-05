@@ -5,10 +5,9 @@ import {
   type MaturityProfileRepositoryPort,
 } from '../domain/ports/maturity-profile.repository.port.js';
 import {
-  IRL_CATALOG_REPOSITORY,
-  type IrlCatalogRepositoryPort,
-} from '../../irl-catalog/domain/ports/irl-catalog.repository.port.js';
-import { ImbalanceEvaluatorService } from '../domain/services/imbalance-evaluator.service.js';
+  IMBALANCE_REPOSITORY,
+  type ImbalanceRepositoryPort,
+} from '../domain/ports/imbalance.repository.port.js';
 import { ConflictError } from '../../../shared-kernel/domain/errors/conflict.error.js';
 import { toMaturityProfileResponse } from './map-maturity-profile-response.js';
 
@@ -21,9 +20,8 @@ export class GetMaturityProfileUseCase {
   constructor(
     @Inject(MATURITY_PROFILE_REPOSITORY)
     private readonly profiles: MaturityProfileRepositoryPort,
-    @Inject(IRL_CATALOG_REPOSITORY)
-    private readonly catalog: IrlCatalogRepositoryPort,
-    private readonly imbalanceEvaluator: ImbalanceEvaluatorService,
+    @Inject(IMBALANCE_REPOSITORY)
+    private readonly imbalances: ImbalanceRepositoryPort,
   ) {}
 
   async execute(query: GetMaturityProfileQuery): Promise<MaturityProfileResponse> {
@@ -34,12 +32,7 @@ export class GetMaturityProfileUseCase {
       });
     }
 
-    const pairs = await this.catalog.findAllDimensionPairs();
-    const levelByCode = new Map<string, number>(
-      profile.dimensionResults().map((r) => [r.dimensionCode.value, r.irlLevel.value]),
-    );
-    const imbalances = this.imbalanceEvaluator.evaluate(levelByCode, pairs);
-
-    return toMaturityProfileResponse(profile, imbalances);
+    const storedImbalances = await this.imbalances.findByDiagnosticId(query.diagnosticId);
+    return toMaturityProfileResponse(profile, storedImbalances);
   }
 }
