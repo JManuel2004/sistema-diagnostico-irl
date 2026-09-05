@@ -60,6 +60,9 @@ function buildProfileFixture(): unknown {
       irlLevel: 6,
     })),
     bottleneck: { dimensions: ['TRL'], level: 6 },
+    strength: { dimensions: ['TRL'], level: 6 },
+    asymmetry: { difference: 0, classification: 'acceptable' },
+    gaps: { dimensions: [], threshold: 3 },
   };
 }
 

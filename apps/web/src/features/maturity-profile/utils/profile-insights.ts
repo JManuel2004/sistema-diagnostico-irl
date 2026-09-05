@@ -9,8 +9,6 @@ export const KTH_IMBALANCE_PAIRS: readonly [string, string][] = [
   ['TRL', 'IPRL'],
 ];
 
-export const GAP_THRESHOLD = 3;
-
 export type ImbalanceClassification = 'critical' | 'moderate' | 'acceptable';
 
 export interface ImbalancePairInsight {
@@ -23,7 +21,6 @@ export interface ProfileInsights {
   readonly strength: { readonly level: number; readonly dimensions: readonly string[] };
   readonly bottleneck: { readonly level: number; readonly dimensions: readonly string[] };
   readonly asymmetry: number;
-  readonly gapDimensions: readonly string[];
   readonly imbalances: readonly ImbalancePairInsight[];
 }
 
@@ -41,7 +38,6 @@ export function computeProfileInsights(
       strength: { level: 0, dimensions: [] },
       bottleneck: { level: 0, dimensions: [] },
       asymmetry: 0,
-      gapDimensions: [],
       imbalances: [],
     };
   }
@@ -61,10 +57,6 @@ export function computeProfileInsights(
     .filter((r) => r.irlLevel === minLevel)
     .map((r) => r.dimensionCode);
 
-  const gapDimensions = dimensionResults
-    .filter((r) => r.irlLevel <= GAP_THRESHOLD)
-    .map((r) => r.dimensionCode);
-
   const imbalances: ImbalancePairInsight[] = [];
   for (const [a, b] of KTH_IMBALANCE_PAIRS) {
     const la = byCode.get(a);
@@ -82,7 +74,6 @@ export function computeProfileInsights(
     strength: { level: maxLevel, dimensions: strengthDimensions },
     bottleneck: { level: minLevel, dimensions: bottleneckDimensions },
     asymmetry: maxLevel - minLevel,
-    gapDimensions,
     imbalances,
   };
 }

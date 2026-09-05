@@ -55,10 +55,6 @@ describe('computeProfileInsights', () => {
       expect(insights.asymmetry).toBe(3);
     });
 
-    it('gapDimensions includes all ≤ 3 (CRL, BRL, IPRL, FRL)', () => {
-      expect([...insights.gapDimensions].sort()).toEqual(['BRL', 'CRL', 'FRL', 'IPRL']);
-    });
-
     it('emits all 6 fixed imbalance pairs', () => {
       expect(insights.imbalances).toHaveLength(6);
       expect(insights.imbalances.map((i) => i.pair)).toEqual(KTH_IMBALANCE_PAIRS);
@@ -135,7 +131,6 @@ describe('computeProfileInsights', () => {
       expect(insights.strength.level).toBe(0);
       expect(insights.bottleneck.level).toBe(0);
       expect(insights.asymmetry).toBe(0);
-      expect(insights.gapDimensions).toEqual([]);
       expect(insights.imbalances).toEqual([]);
     });
 

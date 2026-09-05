@@ -1,12 +1,13 @@
 import type { JSX } from 'react';
 import { AlertCircle, ArrowLeftRight, CheckCircle2, Scale, TrendingDown } from 'lucide-react';
-import type { Bottleneck, DimensionResult } from '@innlab/contracts';
-import {
-  classifyImbalance,
-  computeProfileInsights,
-  type ImbalanceClassification,
-  type ImbalancePairInsight,
-} from '../utils/profile-insights';
+import type {
+  Asymmetry,
+  Bottleneck,
+  DimensionResult,
+  Gaps,
+  ImbalanceClassification,
+  ImbalancePairResult,
+} from '@innlab/contracts';
 
 const DIMENSION_NAME_ES: Record<string, string> = {
   TRL: 'Tecnología',
@@ -94,28 +95,24 @@ function bottleneckTone(level: number): ImbalanceClassification | 'neutral' {
 interface MaturityProfileSummaryProps {
   dimensionResults: readonly DimensionResult[];
   bottleneck?: Bottleneck;
+  strength?: Bottleneck;
+  asymmetry?: Asymmetry;
+  gaps?: Gaps;
+  imbalances?: readonly ImbalancePairResult[];
 }
 
 export function MaturityProfileSummary({
   dimensionResults,
-  bottleneck: serverBottleneck,
+  bottleneck,
+  strength,
+  asymmetry,
+  gaps,
+  imbalances,
 }: MaturityProfileSummaryProps): JSX.Element {
-  const insights = computeProfileInsights(dimensionResults);
-
-  const resolvedBottleneck: { level: number; dimensions: readonly string[] } =
-    serverBottleneck ?? {
-      level: insights.bottleneck.level,
-      dimensions: insights.bottleneck.dimensions,
-    };
-
-  const strengthNames = insights.strength.dimensions.map(dimensionLabel);
-  const gapNames = insights.gapDimensions.map(dimensionLabel);
-
-  const asymmetryTone = classifyImbalance(insights.asymmetry);
-
-  const flaggedPairs: readonly ImbalancePairInsight[] = insights.imbalances.filter(
-    (p) => p.classification !== 'acceptable',
-  );
+  const strengthNames = (strength?.dimensions ?? []).map(dimensionLabel);
+  const gapNames = (gaps?.dimensions ?? []).map(dimensionLabel);
+  const gapThreshold = gaps?.threshold;
+  const flaggedPairs = (imbalances ?? []).filter((p) => p.classification !== 'acceptable');
 
   if (dimensionResults.length === 0) {
     return (
@@ -132,99 +129,106 @@ export function MaturityProfileSummary({
         <h2 className="text-foreground mt-1 text-xl font-bold leading-tight">en tu radar</h2>
       </header>
 
-      <SummaryCard
-        icon={CheckCircle2}
-        tone="acceptable"
-        eyebrow="Fortaleza clara"
-        title={
-          strengthNames.length === 1
-            ? `${strengthNames[0]} — nivel ${insights.strength.level}`
-            : `${strengthNames.length} dimensiones empatadas en nivel ${insights.strength.level}`
-        }
-      >
-        {strengthNames.length > 1 && (
-          <p className="text-muted-foreground">{strengthNames.join(', ')}</p>
-        )}
-      </SummaryCard>
+      {strength !== undefined && (
+        <SummaryCard
+          icon={CheckCircle2}
+          tone="acceptable"
+          eyebrow="Fortaleza clara"
+          title={
+            strengthNames.length === 1
+              ? `${strengthNames[0]} — nivel ${strength.level}`
+              : `${strengthNames.length} dimensiones empatadas en nivel ${strength.level}`
+          }
+        >
+          {strengthNames.length > 1 && (
+            <p className="text-muted-foreground">{strengthNames.join(', ')}</p>
+          )}
+        </SummaryCard>
+      )}
 
-      <SummaryCard
-        icon={AlertCircle}
-        tone={bottleneckTone(resolvedBottleneck.level)}
-        eyebrow="Cuello de botella"
-        title={
-          resolvedBottleneck.dimensions.length === 1
-            ? `${dimensionLabel(resolvedBottleneck.dimensions[0])} — nivel ${resolvedBottleneck.level}`
-            : `${resolvedBottleneck.dimensions.length} dimensiones empatadas en nivel ${resolvedBottleneck.level}`
-        }
-      >
-        {resolvedBottleneck.dimensions.length > 1 && (
+      {bottleneck !== undefined && (
+        <SummaryCard
+          icon={AlertCircle}
+          tone={bottleneckTone(bottleneck.level)}
+          eyebrow="Cuello de botella"
+          title={
+            bottleneck.dimensions.length === 1
+              ? `${dimensionLabel(bottleneck.dimensions[0])} — nivel ${bottleneck.level}`
+              : `${bottleneck.dimensions.length} dimensiones empatadas en nivel ${bottleneck.level}`
+          }
+        >
+          {bottleneck.dimensions.length > 1 && (
+            <p className="text-muted-foreground">
+              {bottleneck.dimensions.map(dimensionLabel).join(', ')}
+            </p>
+          )}
+        </SummaryCard>
+      )}
+
+      {asymmetry !== undefined && (
+        <SummaryCard
+          icon={Scale}
+          tone={asymmetry.classification}
+          eyebrow="Asimetría"
+          title={`${asymmetry.difference} ${asymmetry.difference === 1 ? 'nivel' : 'niveles'} entre la dimensión más alta y la más baja`}
+        >
           <p className="text-muted-foreground">
-            {resolvedBottleneck.dimensions.map(dimensionLabel).join(', ')}
+            {asymmetry.classification === 'critical' && 'Asimetría crítica — atención prioritaria.'}
+            {asymmetry.classification === 'moderate' && 'Asimetría moderada — vale la pena equilibrar.'}
+            {asymmetry.classification === 'acceptable' && 'Perfil balanceado dentro del rango KTH.'}
           </p>
-        )}
-      </SummaryCard>
+        </SummaryCard>
+      )}
 
-      <SummaryCard
-        icon={Scale}
-        tone={asymmetryTone}
-        eyebrow="Asimetría"
-        title={`${insights.asymmetry} ${insights.asymmetry === 1 ? 'nivel' : 'niveles'} entre la dimensión más alta y la más baja`}
-      >
-        <p className="text-muted-foreground">
-          {asymmetryTone === 'critical' && 'Asimetría crítica — atención prioritaria.'}
-          {asymmetryTone === 'moderate' && 'Asimetría moderada — vale la pena equilibrar.'}
-          {asymmetryTone === 'acceptable' && 'Perfil balanceado dentro del rango KTH.'}
-        </p>
-      </SummaryCard>
-
-      {gapNames.length > 0 && (
+      {gapNames.length > 0 && gapThreshold !== undefined && (
         <SummaryCard
           icon={TrendingDown}
           tone="critical"
-          eyebrow="Brecha (nivel ≤ 3)"
+          eyebrow={`Brecha (nivel ≤ ${gapThreshold})`}
           title={`${gapNames.length} ${gapNames.length === 1 ? 'dimensión requiere' : 'dimensiones requieren'} atención`}
         >
           <p className="text-muted-foreground">{gapNames.join(', ')}</p>
         </SummaryCard>
       )}
 
-      {flaggedPairs.length > 0 ? (
-        <SummaryCard
-          icon={ArrowLeftRight}
-          tone={flaggedPairs.some((p) => p.classification === 'critical') ? 'critical' : 'moderate'}
-          eyebrow="Pares desequilibrados"
-          title={`${flaggedPairs.length} de 6 pares KTH fuera de balance`}
-        >
-          <ul className="flex flex-col gap-1.5">
-            {flaggedPairs.map((p) => {
-              const chip = TONE_STYLES[p.classification];
-              return (
-                <li key={`${p.pair[0]}-${p.pair[1]}`} className="flex items-center gap-2">
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${chip.chipBg} ${chip.chipText}`}
-                  >
-                    <span>{p.pair[0]}</span>
-                    <span aria-hidden className="opacity-60">
-                      —
+      {imbalances !== undefined &&
+        (flaggedPairs.length > 0 ? (
+          <SummaryCard
+            icon={ArrowLeftRight}
+            tone={flaggedPairs.some((p) => p.classification === 'critical') ? 'critical' : 'moderate'}
+            eyebrow="Pares desequilibrados"
+            title={`${flaggedPairs.length} de ${imbalances.length} pares KTH fuera de balance`}
+          >
+            <ul className="flex flex-col gap-1.5">
+              {flaggedPairs.map((p) => {
+                const chip = TONE_STYLES[p.classification];
+                return (
+                  <li key={`${p.left}-${p.right}`} className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${chip.chipBg} ${chip.chipText}`}
+                    >
+                      <span>{p.left}</span>
+                      <span aria-hidden className="opacity-60">
+                        —
+                      </span>
+                      <span>{p.right}</span>
                     </span>
-                    <span>{p.pair[1]}</span>
-                  </span>
-                  <span className="text-muted-foreground">
-                    Δ {p.difference} · {p.classification === 'critical' ? 'crítico' : 'moderado'}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </SummaryCard>
-      ) : (
-        <SummaryCard
-          icon={CheckCircle2}
-          tone="acceptable"
-          eyebrow="Pares KTH"
-          title="Los 6 pares se mantienen dentro del rango aceptable"
-        />
-      )}
+                    <span className="text-muted-foreground">
+                      Δ {p.difference} · {p.classification === 'critical' ? 'crítico' : 'moderado'}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </SummaryCard>
+        ) : (
+          <SummaryCard
+            icon={CheckCircle2}
+            tone="acceptable"
+            eyebrow="Pares KTH"
+            title={`Los ${imbalances.length} pares se mantienen dentro del rango aceptable`}
+          />
+        ))}
     </aside>
   );
 }
