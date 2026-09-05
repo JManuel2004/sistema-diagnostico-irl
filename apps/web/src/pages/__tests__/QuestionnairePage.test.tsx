@@ -196,6 +196,42 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
       }
     });
 
+    it('hides the completeness alert after the user answers another statement', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await waitFor(() => screen.getByRole('button', { name: 'Procesar diagnóstico' }));
+      await user.click(screen.getByRole('button', { name: 'Procesar diagnóstico' }));
+      expect(screen.getByRole('alert')).toHaveTextContent('Hay secciones sin completar');
+
+      act(() => {
+        useQuestionnaireDraftStore.getState().setAnswer('1', 3);
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      });
+    });
+
+    it('shows the completeness alert again if the user retries submit while still incomplete', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await waitFor(() => screen.getByRole('button', { name: 'Procesar diagnóstico' }));
+      await user.click(screen.getByRole('button', { name: 'Procesar diagnóstico' }));
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+
+      act(() => {
+        useQuestionnaireDraftStore.getState().setAnswer('1', 3);
+      });
+      await waitFor(() => {
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Procesar diagnóstico' }));
+      expect(screen.getByRole('alert')).toHaveTextContent('Hay secciones sin completar');
+    });
+
     it('does NOT call the submission API when the questionnaire is incomplete', async () => {
       let postCalled = false;
       server.use(

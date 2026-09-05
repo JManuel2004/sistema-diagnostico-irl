@@ -38,6 +38,10 @@ export default function QuestionnairePage(): JSX.Element {
     initialize(diagnosticId ?? null);
   }, [diagnosticId, initialize]);
 
+  useEffect(() => {
+    setSubmitAttempted(false);
+  }, [answers]);
+
   const incompleteDimensions =
     catalog?.dimensions.filter(
       (dim) =>
