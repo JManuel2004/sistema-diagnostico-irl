@@ -74,7 +74,7 @@ async function run(): Promise<void> {
         );
       }
 
-      const PAIRS: Array<[string, string]> = [
+      const PAIRS: [string, string][] = [
         ['TRL', 'CRL'],
         ['TRL', 'BRL'],
         ['CRL', 'BRL'],

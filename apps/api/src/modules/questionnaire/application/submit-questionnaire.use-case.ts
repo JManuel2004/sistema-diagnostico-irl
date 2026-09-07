@@ -11,7 +11,7 @@ import { InvariantViolationError } from '../../../shared-kernel/domain/errors/in
 
 export interface SubmitQuestionnaireCommand {
   diagnosticId: string;
-  answers: Array<{ statementId: string; value: number }>;
+  answers: { statementId: string; value: number }[];
 }
 
 @Injectable()

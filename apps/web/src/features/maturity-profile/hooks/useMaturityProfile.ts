@@ -7,7 +7,7 @@ export function useMaturityProfile(diagnosticId: string | undefined) {
     queryKey: diagnosticId
       ? queryKeys.diagnostic.profile(diagnosticId)
       : ['diagnostic', 'profile', 'idle'],
-    queryFn: () => getMaturityProfile(diagnosticId as string),
+    queryFn: () => getMaturityProfile(diagnosticId!),
     enabled: Boolean(diagnosticId),
     staleTime: 5 * 60 * 1000,
   });

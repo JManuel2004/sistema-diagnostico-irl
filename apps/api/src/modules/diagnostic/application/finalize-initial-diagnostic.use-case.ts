@@ -27,7 +27,7 @@ const FINALIZABLE_STATES: readonly DiagnosticStateName[] = [
 
 export interface FinalizeInitialDiagnosticCommand {
   diagnosticId: string;
-  answers: Array<{ statementId: string; value: number }>;
+  answers: { statementId: string; value: number }[];
 }
 
 @Injectable()

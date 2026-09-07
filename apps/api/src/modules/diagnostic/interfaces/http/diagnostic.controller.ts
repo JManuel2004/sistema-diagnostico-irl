@@ -27,7 +27,7 @@ export class DiagnosticController {
   })
   finalize(
     @Param('id') diagnosticId: string,
-    @Body() body: { answers: Array<{ statementId: string; value: number }> },
+    @Body() body: { answers: { statementId: string; value: number }[] },
   ): Promise<MaturityProfileResponse> {
     return this.finalizeInitial.execute({
       diagnosticId,

@@ -2,8 +2,8 @@ import { jest } from '@jest/globals';
 import { FinalizeInitialDiagnosticUseCase } from '../../../../src/modules/diagnostic/application/finalize-initial-diagnostic.use-case.js';
 import type { DiagnosticRepositoryPort } from '../../../../src/modules/diagnostic/domain/ports/diagnostic.repository.port.js';
 import { Diagnostico } from '../../../../src/modules/diagnostic/domain/diagnostic.aggregate.js';
-import { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/application/submit-questionnaire.use-case.js';
-import { ComputeMaturityProfileUseCase } from '../../../../src/modules/maturity-profile/application/compute-maturity-profile.use-case.js';
+import type { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/application/submit-questionnaire.use-case.js';
+import type { ComputeMaturityProfileUseCase } from '../../../../src/modules/maturity-profile/application/compute-maturity-profile.use-case.js';
 import type { AnswerSheetRepositoryPort } from '../../../../src/modules/questionnaire/domain/ports/answer-sheet.repository.port.js';
 import { AnswerSheet } from '../../../../src/modules/questionnaire/domain/entities/answer-sheet.aggregate.js';
 import { MaturityProfile } from '../../../../src/modules/maturity-profile/domain/entities/maturity-profile.aggregate.js';
@@ -68,18 +68,18 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
       findById: jest.fn(),
       findLatestByUserId: jest.fn(),
       findAllByUserId: jest.fn(),
-      save: jest.fn(async () => undefined),
+      save: jest.fn(() => Promise.resolve(undefined)),
     };
     answerSheets = {
-      findByDiagnosticId: jest.fn(async () => anAnswerSheet()),
-      save: jest.fn(async () => undefined),
+      findByDiagnosticId: jest.fn(() => Promise.resolve(anAnswerSheet())),
+      save: jest.fn(() => Promise.resolve(undefined)),
     };
-    submitQuestionnaire = { execute: jest.fn(async () => ({
+    submitQuestionnaire = { execute: jest.fn(() => Promise.resolve({
       diagnosticId: DIAGNOSTIC_ID,
       answersRecorded: 48,
       state: 'CUESTIONARIO_COMPLETO' as const,
     })) };
-    computeProfile = { execute: jest.fn(async () => ({ profile: aProfile(), imbalances: [] })) };
+    computeProfile = { execute: jest.fn(() => Promise.resolve({ profile: aProfile(), imbalances: [] })) };
 
     useCase = new FinalizeInitialDiagnosticUseCase(
       diagnostics,
@@ -165,7 +165,7 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
 
   it('does not transition state if computation fails', async () => {
     diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('CUESTIONARIO_EN_CURSO'));
-    computeProfile.execute.mockRejectedValueOnce(new Error('calc failed') as never);
+    computeProfile.execute.mockRejectedValueOnce(new Error('calc failed'));
 
     await expect(
       useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS }),

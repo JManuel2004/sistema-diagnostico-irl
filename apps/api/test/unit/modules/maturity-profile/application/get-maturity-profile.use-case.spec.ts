@@ -44,11 +44,11 @@ describe('GetMaturityProfileUseCase', () => {
   beforeEach(() => {
     profiles = {
       findByDiagnosticId: jest.fn(),
-      save: jest.fn(async () => undefined),
+      save: jest.fn(() => Promise.resolve(undefined)),
     };
     imbalances = {
-      findByDiagnosticId: jest.fn(async () => []),
-      save: jest.fn(async () => undefined),
+      findByDiagnosticId: jest.fn(() => Promise.resolve([])),
+      save: jest.fn(() => Promise.resolve(undefined)),
     };
     useCase = new GetMaturityProfileUseCase(profiles, imbalances);
   });

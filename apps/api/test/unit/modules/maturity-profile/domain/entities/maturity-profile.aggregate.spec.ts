@@ -155,7 +155,7 @@ describe('MaturityProfile (aggregate root)', () => {
       const b = p.bottleneck();
       expect(b.level).toBe(3);
       expect(b.dimensions).toHaveLength(1);
-      expect(b.dimensions[0]!.dimensionCode.value).toBe('CRL');
+      expect(b.dimensions[0].dimensionCode.value).toBe('CRL');
     });
 
     it('returns all tied dimensions when several share the minimum level', () => {
@@ -198,7 +198,7 @@ describe('MaturityProfile (aggregate root)', () => {
       const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
       const b = p.bottleneck();
       expect(b.level).toBe(1);
-      expect(b.dimensions[0]!.dimensionCode.value).toBe('TRL');
+      expect(b.dimensions[0].dimensionCode.value).toBe('TRL');
     });
   });
 

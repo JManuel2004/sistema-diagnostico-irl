@@ -3,7 +3,7 @@ import { maturityProfileResponseSchema, type MaturityProfileResponse } from '@in
 
 export async function finalizeInitialDiagnostic(
   diagnosticId: string,
-  answers: Array<{ statementId: string; value: number }>,
+  answers: { statementId: string; value: number }[],
 ): Promise<MaturityProfileResponse> {
   const { data } = await http.post<unknown>(
     `/diagnosticos/${diagnosticId}/finalizar-inicial`,

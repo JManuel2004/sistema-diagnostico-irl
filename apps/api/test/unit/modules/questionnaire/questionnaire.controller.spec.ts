@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { QuestionnaireController } from '../../../../src/modules/questionnaire/interfaces/http/questionnaire.controller.js';
-import { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/application/submit-questionnaire.use-case.js';
+import type { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/application/submit-questionnaire.use-case.js';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
@@ -33,7 +33,7 @@ describe('QuestionnaireController', () => {
     });
 
     it('propagates use case errors', async () => {
-      mockUseCase.execute.mockRejectedValueOnce(new Error('domain error') as never);
+      mockUseCase.execute.mockRejectedValueOnce(new Error('domain error'));
       await expect(
         controller.submitQuestionnaire(DIAGNOSTIC_ID, { answers: [] }),
       ).rejects.toThrow('domain error');
