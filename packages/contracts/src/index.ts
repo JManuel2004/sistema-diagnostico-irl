@@ -34,3 +34,9 @@ export * from './diagnostic/consent.schema.js';
 
 // ── initiative ────────────────────────────────────────────────────────
 export * from './initiative/initiative.schema.js';
+
+// ── portfolio routing ─────────────────────────────────────────────────
+export * from './portfolio-routing/predicado.schema.js';
+export * from './portfolio-routing/hechos-diagnostico.schema.js';
+export * from './portfolio-routing/recomendacion-response.schema.js';
+export * from './portfolio-routing/traza-capas.schema.js';

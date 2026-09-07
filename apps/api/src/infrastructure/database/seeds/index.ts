@@ -3,6 +3,7 @@ import dataSource from '../data-source.js';
 import { CONVERSION_RANGES } from './data/conversion-ranges.js';
 import { DIMENSIONS } from './data/dimensions.js';
 import { STATEMENTS } from './data/statements.js';
+import { seedPortfolioRouting } from './seed-portfolio-routing.js';
 
 loadEnv({ path: '.env.local' });
 loadEnv({ path: '.env' });
@@ -27,6 +28,7 @@ loadEnv({ path: '.env' });
  */
 async function run(): Promise<void> {
   await dataSource.initialize();
+  let routing = { versionPublicada: false };
   try {
     await dataSource.transaction(async (manager) => {
       for (const d of DIMENSIONS) {
@@ -106,6 +108,12 @@ async function run(): Promise<void> {
           'KTH-IRL-1.0',
         ],
       );
+
+      // Catálogo de enrutamiento + publicación de la versión 1. Va dentro
+      // de la misma transacción: una versión con fichas pero sin reglas de
+      // excepción haría que el motor arrancase y diera resultados
+      // silenciosamente incompletos.
+      routing = await seedPortfolioRouting(manager);
     });
 
     const [{ count: dimCount }] = await dataSource.query<{ count: string }[]>(
@@ -121,9 +129,19 @@ async function run(): Promise<void> {
       `SELECT COUNT(*)::text AS count FROM irl_catalog.par_dimension`,
     );
 
+    const [{ count: svcCount }] = await dataSource.query<{ count: string }[]>(
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.servicio_portafolio`,
+    );
+    const [{ count: fichaCount }] = await dataSource.query<{ count: string }[]>(
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.ficha_ordinal_publicada`,
+    );
+
     // eslint-disable-next-line no-console
     console.log(
-      `Seed complete — ${dimCount} dimensions, ${afCount} statements, ${rcCount} conversion ranges, ${parCount} dimension pairs in irl_catalog`,
+      `Seed complete — ${dimCount} dimensions, ${afCount} statements, ${rcCount} conversion ranges, ` +
+        `${parCount} dimension pairs, ${svcCount} portfolio services, ${fichaCount} ordinal profiles ` +
+        `in irl_catalog. Routing configuration v1: ` +
+        `${routing.versionPublicada ? 'published' : 'already present, left untouched'}.`,
     );
   } finally {
     await dataSource.destroy();
