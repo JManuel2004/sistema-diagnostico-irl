@@ -135,6 +135,33 @@ describe('PredicateCompilerService', () => {
       ).toThrow(/al menos un operando/);
     });
 
+it('rechaza un nodo que no es un objeto', () => {
+      expect(() => compiler.compile('cuelloBotella', 'CON_GRADO')).toThrow(
+        /se esperaba un objeto/,
+      );
+      expect(() => compiler.compile(null, 'CON_GRADO')).toThrow(
+        /se esperaba un objeto/,
+      );
+    });
+
+    it('rechaza un operador que no existe en el DSL', () => {
+      expect(() =>
+        compiler.compile(
+          { campo: 'nivelPromedio', op: 'entre', valor: 3 },
+          'CON_GRADO',
+        ),
+      ).toThrow(/Operador desconocido/);
+    });
+
+    it('rechaza un valor no textual para un operador de pertenencia', () => {
+      expect(() =>
+        compiler.compile(
+          { campo: 'brechas', op: 'contiene', valor: 3 },
+          'CON_GRADO',
+        ),
+      ).toThrow(/requiere un valor de texto/);
+    });
+
     it('propaga el error desde un nodo anidado, indicando la ruta', () => {
       expect(() =>
         compiler.compile(
@@ -219,6 +246,55 @@ describe('PredicateCompilerService', () => {
           ],
         }),
       ).toBe(true);
+    });
+
+
+    describe('cobertura de todos los operadores', () => {
+      // Un operador sin probar en un evaluador de DSL es el sitio exacto
+      // donde se esconde un fallo silencioso: devuelve `false` para todo y
+      // la regla parece no cumplirse nunca.
+      it.each([
+        [{ campo: 'cuelloBotella', op: 'no_contiene', valor: 'TRL' }, true],
+        [{ campo: 'cuelloBotella', op: 'no_contiene', valor: 'IPRL' }, false],
+        [{ campo: 'brechas', op: 'conteo<=', valor: 3 }, true],
+        [{ campo: 'brechas', op: 'conteo<=', valor: 2 }, false],
+        [{ campo: 'brechas', op: 'conteo=', valor: 3 }, true],
+        [{ campo: 'brechas', op: 'conteo=', valor: 4 }, false],
+        [{ campo: 'nivelPromedio', op: '>=', valor: 3.5 }, true],
+        [{ campo: 'nivelPromedio', op: '>=', valor: 4 }, false],
+        [{ campo: 'nivelPromedio', op: '>', valor: 3 }, true],
+        [{ campo: 'nivelPromedio', op: '>', valor: 3.5 }, false],
+        [{ campo: 'nivelPorDimension.TRL', op: '=', valor: 6 }, true],
+        [{ campo: 'nivelPorDimension.TRL', op: '!=', valor: 6 }, false],
+        [{ campo: 'caracterizacion.etapa', op: '!=', valor: 'idea' }, true],
+        [{ campo: 'caracterizacion.sector', op: '=', valor: null }, true],
+        [
+          { campo: 'desequilibriosModerados', op: 'contiene', valor: 'TRL-CRL' },
+          true,
+        ],
+        [
+          { campo: 'desequilibriosModerados', op: 'contiene', valor: 'TRL-IPRL' },
+          false,
+        ],
+      ] as [Record<string, unknown>, boolean][])(
+        'evalúa %j como %s',
+        (predicado, esperado) => {
+          expect(compilarYEvaluar(predicado)).toBe(esperado);
+        },
+      );
+
+      it('un nivel dimensional inexistente resuelve a null y no cumple', () => {
+        const sinTrl = {
+          ...HECHOS,
+          nivelPorDimension: { CRL: 4 },
+        } as unknown as HechosDiagnostico;
+        expect(
+          compilarYEvaluar(
+            { campo: 'nivelPorDimension.TRL', op: '>=', valor: 1 },
+            sinTrl,
+          ),
+        ).toBe(false);
+      });
     });
 
     describe('datos ausentes', () => {

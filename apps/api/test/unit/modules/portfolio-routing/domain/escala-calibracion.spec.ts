@@ -53,6 +53,12 @@ describe('EscalaCalibracion', () => {
     );
   });
 
+  it('`tiene` permite comprobar pertenencia sin lanzar', () => {
+    const escala = EscalaCalibracion.create(VALIDA);
+    expect(escala.tiene('marginal')).toBe(true);
+    expect(escala.tiene('critico')).toBe(false);
+  });
+
   it('lanza al pedir una etiqueta que no existe, en vez de devolver cero', () => {
     // Un cero silencioso dejaría una ficha huérfana funcionando como si
     // no aportara nada, y nadie se enteraría de que quedó desconectada al

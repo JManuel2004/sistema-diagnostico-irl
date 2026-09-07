@@ -127,13 +127,15 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
   });
 
   it('el perfil de partida es el de AgroConecta', async () => {
-    const { body } = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer())
       .get(`/api/v1/diagnosticos/${diagnosticId}/perfil`)
       .expect(200);
 
+    const perfil = res.body as {
+      dimensionResults: { dimensionCode: string; irlLevel: number }[];
+    };
     const niveles = Object.fromEntries(
-      (body as { dimensionResults: { dimensionCode: string; irlLevel: number }[] })
-        .dimensionResults.map((r) => [r.dimensionCode, r.irlLevel]),
+      perfil.dimensionResults.map((r) => [r.dimensionCode, r.irlLevel]),
     );
     expect(niveles).toEqual({
       TRL: 6,
@@ -146,11 +148,11 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
   });
 
   it('POST /recomendacion devuelve Consultoría con sus dos alternativas', async () => {
-    const { body } = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer())
       .post(`/api/v1/diagnosticos/${diagnosticId}/recomendacion`)
       .expect(201);
 
-    const dto = recomendacionResponseSchema.parse(body);
+    const dto = recomendacionResponseSchema.parse(res.body);
 
     expect(dto.resultadoTipo).toBe('RECOMENDACION');
     expect(dto.principal?.nombre).toBe('Consultoría');
@@ -173,11 +175,11 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
   });
 
   it('GET /recomendacion/traza expone las tres capas y atribuye el resultado a E-01', async () => {
-    const { body } = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer())
       .get(`/api/v1/diagnosticos/${diagnosticId}/recomendacion/traza`)
       .expect(200);
 
-    const traza = trazaCapasResponseSchema.parse(body);
+    const traza = trazaCapasResponseSchema.parse(res.body);
 
     // Capa 1
     expect(traza.excluidosCapa1.map((e) => e.nombre)).toEqual([
@@ -242,10 +244,10 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     );
 
     try {
-      const { body } = await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get(`/api/v1/diagnosticos/${otro}/recomendacion`)
         .expect(409);
-      expect((body as { code: string }).code).toBe(
+      expect((res.body as { code: string }).code).toBe(
         'ROUTING_RECOMMENDATION_NOT_GENERATED',
       );
     } finally {

@@ -49,7 +49,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
   describe('Questionnaire structure endpoint', () => {
     it('returns 200 with the complete questionnaire structure', async () => {
       const start = Date.now();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       const response = await request(app.getHttpServer()).get(
         '/api/v1/catalogo/cuestionario',
       );
@@ -85,11 +85,11 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
 
     it('returns consistent results on multiple calls (idempotency)', async () => {
       // Call the endpoint twice and verify the responses are identical
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       const response1 = await request(app.getHttpServer()).get(
         '/api/v1/catalogo/cuestionario',
       );
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       const response2 = await request(app.getHttpServer()).get(
         '/api/v1/catalogo/cuestionario',
       );
@@ -102,7 +102,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     });
 
     it('response body contains required fields in each dimension', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       const response = await request(app.getHttpServer()).get(
         '/api/v1/catalogo/cuestionario',
       );
@@ -126,7 +126,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     });
 
     it('response body contains required fields in each statement', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       const response = await request(app.getHttpServer()).get(
         '/api/v1/catalogo/cuestionario',
       );
@@ -157,7 +157,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     });
 
     it('returns a versionMarco field for cache invalidation', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       const response = await request(app.getHttpServer()).get(
         '/api/v1/catalogo/cuestionario',
       );
