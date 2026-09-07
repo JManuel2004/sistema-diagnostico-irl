@@ -19,7 +19,7 @@
     "test": "pnpm contracts:build && node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js",
     "test:unit": "pnpm contracts:build && node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --selectProjects unit",
     "test:integration": "pnpm contracts:build && node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --selectProjects integration",
-    "test:e2e": "pnpm contracts:build && node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --selectProjects e2e --runInBand",
+    "test:e2e": "pnpm contracts:build && node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --selectProjects e2e",
     "test:cov": "pnpm contracts:build && node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --coverage",
     "test:watch": "pnpm contracts:build && node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --watch",
     "db:migration:generate": "pnpm typeorm migration:generate -d src/infrastructure/database/data-source.ts",
