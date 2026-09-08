@@ -1,4 +1,4 @@
-import { useState, type JSX } from 'react';
+import { useEffect, useState, type JSX } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import {
   LayerTracePanel,
@@ -8,7 +8,6 @@ import {
   useRecommendationTrace,
 } from '@features/portfolio-recommendation';
 import { PageShell } from '@/shared/ui/page-shell';
-import { Button } from '@/shared/ui/button';
 import { ApiError } from '@/shared/api/http';
 
 /**
@@ -16,8 +15,11 @@ import { ApiError } from '@/shared/api/http';
  *
  * Si la recomendación aún no existe el backend responde 409 con
  * `ROUTING_RECOMMENDATION_NOT_GENERATED`; eso no es un fallo sino el
- * estado inicial, así que la página ofrece generarla. Distinguirlo de un
- * error real depende del `code` que el interceptor ahora conserva.
+ * estado inicial. Quien llega a esta ruta lo hace porque quiere ver la
+ * recomendación de portafolio, así que la página la genera automáticamente
+ * en vez de exigir un click adicional — no hay ninguna otra razón para
+ * visitar esta URL. Distinguir ese 409 de un error real depende del
+ * `code` que el interceptor conserva.
  */
 export default function RecommendationPage(): JSX.Element {
   const { id: diagnosticId } = useParams<{ id: string }>();
@@ -25,17 +27,27 @@ export default function RecommendationPage(): JSX.Element {
 
   const { data: recomendacion, error, isPending } = useRecommendation(diagnosticId);
   const generar = useGenerateRecommendation(diagnosticId);
+  const { mutate: generarRecomendacion, isIdle: generarEsIdle } = generar;
   // Al regenerar, la mutación invalida la traza, así que si el panel está
   // abierto se refresca solo. No hace falta cerrarlo ni sincronizar estado.
   const traza = useRecommendationTrace(diagnosticId, trazaSolicitada);
 
-  if (!diagnosticId) {
-    return <Navigate to="/diagnosticos" replace />;
-  }
-
   const noGenerada =
     error instanceof ApiError &&
     error.code === 'ROUTING_RECOMMENDATION_NOT_GENERATED';
+
+  // `generarEsIdle` es lo que evita relanzar la mutación en cada render:
+  // una vez que pasa a 'pending' (o falla), deja de ser idle y este efecto
+  // no vuelve a dispararse aunque `noGenerada` siga en true.
+  useEffect(() => {
+    if (noGenerada && generarEsIdle) {
+      generarRecomendacion();
+    }
+  }, [noGenerada, generarEsIdle, generarRecomendacion]);
+
+  if (!diagnosticId) {
+    return <Navigate to="/diagnosticos" replace />;
+  }
 
   return (
     <PageShell width="standard" showAttribution>
@@ -50,23 +62,12 @@ export default function RecommendationPage(): JSX.Element {
         </p>
       </header>
 
-      {isPending && !noGenerada && (
+      {isPending && (
         <p className="text-muted-foreground text-base">Cargando…</p>
       )}
 
-      {noGenerada && !recomendacion && (
-        <section className="border-border bg-surface-emphasis rounded-lg border p-6">
-          <p className="text-foreground text-base">
-            Todavía no has generado la recomendación para este diagnóstico.
-          </p>
-          <Button
-            className="mt-4"
-            onClick={() => generar.mutate()}
-            disabled={generar.isPending}
-          >
-            {generar.isPending ? 'Generando…' : 'Generar recomendación'}
-          </Button>
-        </section>
+      {noGenerada && !generar.isError && (
+        <p className="text-muted-foreground text-base">Generando recomendación…</p>
       )}
 
       {error && !noGenerada && (

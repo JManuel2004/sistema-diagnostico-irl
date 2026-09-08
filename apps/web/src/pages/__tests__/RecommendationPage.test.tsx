@@ -67,10 +67,10 @@ describe('RecommendationPage', () => {
     expect(screen.getByText(/riesgo legal más urgente/)).toBeInTheDocument();
   });
 
-  it('ofrece generarla cuando el backend dice que aún no existe', async () => {
+  it('genera la recomendación automáticamente cuando todavía no existe', async () => {
     // 409 con ROUTING_RECOMMENDATION_NOT_GENERATED no es un error: es el
-    // estado inicial. Distinguirlo depende del `code`, que el interceptor
-    // conserva.
+    // estado inicial. Quien llega a esta ruta quiere ver la recomendación,
+    // así que la página la dispara sola — no hay botón que pulsar.
     server.use(
       mswHttp.get(BASE, () =>
         problema(
@@ -79,33 +79,75 @@ describe('RecommendationPage', () => {
           'Todavía no tiene recomendación generada.',
         ),
       ),
-    );
-
-    renderPage();
-
-    expect(
-      await screen.findByRole('button', { name: 'Generar recomendación' }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  });
-
-  it('genera la recomendación y la muestra sin recargar', async () => {
-    server.use(
-      mswHttp.get(BASE, () =>
-        problema('ROUTING_RECOMMENDATION_NOT_GENERATED', 409, 'aún no'),
-      ),
       mswHttp.post(BASE, () => HttpResponse.json(RECOMENDACION, { status: 201 })),
     );
 
     renderPage();
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Generar recomendación' }),
-    );
+    expect(
+      screen.queryByRole('button', { name: /Generar recomendación/ }),
+    ).not.toBeInTheDocument();
 
     expect(
       await screen.findByRole('heading', { name: 'Consultoría' }),
     ).toBeInTheDocument();
+  });
+
+  it('muestra un estado de carga mientras la generación está en curso', async () => {
+    let resolvePost!: () => void;
+    server.use(
+      mswHttp.get(BASE, () =>
+        problema('ROUTING_RECOMMENDATION_NOT_GENERATED', 409, 'aún no'),
+      ),
+      mswHttp.post(
+        BASE,
+        () =>
+          new Promise<Response>((resolve) => {
+            resolvePost = () =>
+              resolve(HttpResponse.json(RECOMENDACION, { status: 201 }));
+          }),
+      ),
+    );
+
+    renderPage();
+
+    await screen.findByText('Generando recomendación…');
+
+    resolvePost();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Consultoría' }),
+    ).toBeInTheDocument();
+  });
+
+  it('no reintenta la generación indefinidamente si falla', async () => {
+    let intentosDePost = 0;
+    server.use(
+      mswHttp.get(BASE, () =>
+        problema('ROUTING_RECOMMENDATION_NOT_GENERATED', 409, 'aún no'),
+      ),
+      mswHttp.post(BASE, () => {
+        intentosDePost += 1;
+        return problema(
+          'ROUTING_NO_ACTIVE_CONFIGURATION',
+          409,
+          'No hay versión vigente.',
+        );
+      }),
+    );
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toContain(
+        'No hay una configuración de enrutamiento vigente',
+      );
+    });
+
+    // Un solo intento: el efecto que dispara la generación se apaga en
+    // cuanto la mutación deja de estar "idle", así que un fallo no debe
+    // desatar un bucle de reintentos.
+    expect(intentosDePost).toBe(1);
   });
 
   it('distingue la falta de configuración vigente de un error genérico', async () => {
