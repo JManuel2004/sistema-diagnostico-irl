@@ -17,6 +17,16 @@ export interface DimensionSeed {
   readonly descripcion: string;
   readonly esDimensionCritica: boolean;
   readonly orden: 1 | 2 | 3 | 4 | 5 | 6;
+  /**
+   * Nivel IRL que se espera que la dimensión alcance para considerar
+   * equilibrada la iniciativa. Lo consume el roadmap de escalamiento:
+   * una dimensión por debajo de su mínimo entra al foco de intervención.
+   *
+   * ⚠ El 4 uniforme es un valor hipotético pendiente de validación por
+   * INNLAB. El esquema admite un mínimo distinto por dimensión; que hoy
+   * coincidan no debe leerse como que el sistema asume uno global.
+   */
+  readonly nivelMinimoEsperado: number;
 }
 
 export const DIMENSIONS: readonly DimensionSeed[] = [
@@ -28,6 +38,7 @@ export const DIMENSIONS: readonly DimensionSeed[] = [
       'Madurez tecnológica: qué tan probada y lista para producción está la solución técnica de la iniciativa.',
     esDimensionCritica: false,
     orden: 1,
+    nivelMinimoEsperado: 4,
   },
   {
     codigo: 'CRL',
@@ -37,6 +48,7 @@ export const DIMENSIONS: readonly DimensionSeed[] = [
       'Madurez del entendimiento del cliente y del mercado: validación de la necesidad, segmentación y disposición a adoptar.',
     esDimensionCritica: false,
     orden: 2,
+    nivelMinimoEsperado: 4,
   },
   {
     codigo: 'BRL',
@@ -46,6 +58,7 @@ export const DIMENSIONS: readonly DimensionSeed[] = [
       'Madurez del modelo de negocio: propuesta de valor, fuentes de ingresos, estructura de costos y viabilidad económica.',
     esDimensionCritica: false,
     orden: 3,
+    nivelMinimoEsperado: 4,
   },
   {
     codigo: 'IPRL',
@@ -55,6 +68,7 @@ export const DIMENSIONS: readonly DimensionSeed[] = [
       'Madurez de la propiedad intelectual: identificación, protección y libertad de operación de los activos intangibles.',
     esDimensionCritica: false,
     orden: 4,
+    nivelMinimoEsperado: 4,
   },
   {
     codigo: 'TmRL',
@@ -64,6 +78,7 @@ export const DIMENSIONS: readonly DimensionSeed[] = [
       'Madurez del equipo: composición, complementariedad de competencias y dedicación de los miembros clave.',
     esDimensionCritica: false,
     orden: 5,
+    nivelMinimoEsperado: 4,
   },
   {
     codigo: 'FRL',
@@ -73,5 +88,6 @@ export const DIMENSIONS: readonly DimensionSeed[] = [
       'Madurez de la financiación: fuentes de capital aseguradas, runway y plan financiero para alcanzar los siguientes hitos.',
     esDimensionCritica: false,
     orden: 6,
+    nivelMinimoEsperado: 4,
   },
 ];

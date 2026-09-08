@@ -48,6 +48,12 @@ export default {
       lines: 95,
       statements: 95,
     },
+    './src/modules/scaling-roadmap/domain/': {
+      branches: 90,
+      functions: 95,
+      lines: 95,
+      statements: 95,
+    },
     './src/modules/questionnaire/domain/': {
       branches: 90,
       functions: 90,

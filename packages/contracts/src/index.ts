@@ -40,3 +40,6 @@ export * from './portfolio-routing/predicado.schema.js';
 export * from './portfolio-routing/hechos-diagnostico.schema.js';
 export * from './portfolio-routing/recomendacion-response.schema.js';
 export * from './portfolio-routing/traza-capas.schema.js';
+
+// ── scaling roadmap ───────────────────────────────────────────────────
+export * from './scaling-roadmap/roadmap-response.schema.js';
