@@ -27,7 +27,14 @@ export default function MaturityProfilePage(): JSX.Element {
           cambio, sí puede orquestar la navegación entre ambas.
         */}
         <div className="mx-auto w-full max-w-6xl px-4 pb-12 md:px-6">
-          <div className="border-border flex justify-end border-t pt-6">
+          <div className="border-border flex flex-wrap justify-end gap-3 border-t pt-6">
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => void navigate(`/diagnosticos/${diagnosticId}/roadmap`)}
+            >
+              Ver roadmap de escalamiento
+            </Button>
             <Button
               size="lg"
               onClick={() => void navigate(`/diagnosticos/${diagnosticId}/recomendacion`)}

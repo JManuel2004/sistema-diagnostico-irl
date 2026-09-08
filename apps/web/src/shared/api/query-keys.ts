@@ -11,5 +11,6 @@ export const queryKeys = {
     recommendation: (id: string) => ['diagnostic', id, 'recommendation'] as const,
     recommendationTrace: (id: string) =>
       ['diagnostic', id, 'recommendation', 'trace'] as const,
+    roadmap: (id: string) => ['diagnostic', id, 'roadmap'] as const,
   },
 } as const;

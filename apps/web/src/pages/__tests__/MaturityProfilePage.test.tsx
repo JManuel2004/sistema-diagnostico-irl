@@ -86,6 +86,24 @@ describe('MaturityProfilePage', () => {
     );
   });
 
+  it('ofrece también el roadmap de escalamiento', async () => {
+    server.use(
+      mswHttp.get('*/diagnosticos/:id/perfil', () =>
+        HttpResponse.json(buildProfileFixture()),
+      ),
+    );
+
+    renderPage();
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: /Ver roadmap de escalamiento/ }),
+    );
+
+    expect(navigateMock).toHaveBeenCalledWith(
+      `/diagnosticos/${DIAGNOSTIC_ID}/roadmap`,
+    );
+  });
+
   it('no muestra el botón mientras el perfil está cargando o si falla', async () => {
     server.use(
       mswHttp.get('*/diagnosticos/:id/perfil', () =>

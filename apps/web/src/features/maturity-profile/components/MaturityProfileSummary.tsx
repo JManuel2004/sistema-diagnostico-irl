@@ -8,19 +8,15 @@ import type {
   ImbalanceClassification,
   ImbalancePairResult,
 } from '@innlab/contracts';
+import { getDimensionShortName } from '@/shared/lib/dimensions';
 
-const DIMENSION_NAME_ES: Record<string, string> = {
-  TRL: 'Tecnología',
-  CRL: 'Cliente',
-  BRL: 'Negocio',
-  IPRL: 'Propiedad Intelectual',
-  TmRL: 'Equipo',
-  FRL: 'Financiación',
-};
-
-function dimensionLabel(code: string): string {
-  return DIMENSION_NAME_ES[code] ?? code;
-}
+/**
+ * Las etiquetas cortas viven en `shared/lib/dimensions` y no aquí: el
+ * roadmap también las necesita, y el aislamiento por feature impide que
+ * las tome de este componente. Duplicarlas habría añadido una fuente más
+ * de nombres a las que el repositorio ya arrastra.
+ */
+const dimensionLabel = getDimensionShortName;
 
 const TONE_STYLES: Record<
   ImbalanceClassification | 'neutral',

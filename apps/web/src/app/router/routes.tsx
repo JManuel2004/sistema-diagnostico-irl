@@ -4,6 +4,7 @@ import HomePage from '@pages/HomePage';
 import QuestionnairePage from '@pages/QuestionnairePage';
 import MaturityProfilePage from '@pages/MaturityProfilePage';
 import RecommendationPage from '@pages/RecommendationPage';
+import ScalingRoadmapPage from '@pages/ScalingRoadmapPage';
 import InProgressPage from '@pages/InProgressPage';
 import NotFoundPage from '@pages/NotFoundPage';
 import { ProtectedRoute } from './ProtectedRoute';
@@ -86,6 +87,15 @@ export function AppRoutes(): JSX.Element {
         element={
           <ProtectedRoute>
             <RecommendationPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/diagnosticos/:id/roadmap"
+        element={
+          <ProtectedRoute>
+            <ScalingRoadmapPage />
           </ProtectedRoute>
         }
       />
