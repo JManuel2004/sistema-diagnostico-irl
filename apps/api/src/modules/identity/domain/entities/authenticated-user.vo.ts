@@ -10,7 +10,15 @@
 export interface AuthenticatedUser {
   /** Cognito `sub`. Same value identifies this user in every product. */
   readonly id: string;
-  readonly email: string;
+  /**
+   * All three are optional because the shared INNLAB pool does not put them
+   * in an access token — a real one carries only `sub`, `token_use`, `scope`
+   * and `username`. Verified against a live token, not assumed.
+   *
+   * So `id` is the only field to rely on here. Email and name are read from
+   * INNLAB Core (`UserContext`), which is their authoritative source anyway.
+   */
+  readonly email?: string;
   readonly firstName?: string;
   readonly lastName?: string;
 }

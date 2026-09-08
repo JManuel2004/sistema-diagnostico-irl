@@ -27,12 +27,15 @@ export class MeController {
     const context = await this.resolveUserContext.execute({ userId: user.id });
 
     return {
-      // From the JWT — available with no extra hop.
+      // `id` is the only identity claim a real access token from the shared
+      // pool carries. Email and name come from Core, which owns them —-
+      // reading them off the token yielded `undefined` and silently dropped
+      // them from this response.
       user: {
         id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        email: context.email,
+        firstName: context.name,
+        lastName: context.lastName,
       },
       // From INNLAB Core — lives in the innlab_core database, never ours.
       core: {

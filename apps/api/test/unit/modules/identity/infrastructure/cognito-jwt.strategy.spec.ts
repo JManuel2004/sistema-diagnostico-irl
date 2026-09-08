@@ -56,4 +56,20 @@ describe('CognitoJwtStrategy', () => {
     expect(user).not.toHaveProperty('companyId');
     expect(user).not.toHaveProperty('companyRole');
   });
+
+  /**
+   * Shape of a real access token from the shared INNLAB pool, captured from
+   * a live session: no `email`, no `given_name`, no `family_name`. The guard
+   * must still authenticate it — treating the missing claims as a reason to
+   * reject would lock out every genuine user.
+   */
+  it('acepta el token real del pool, que solo trae sub', () => {
+    const user = strategy.validate({
+      sub: 'e17bc500-30f1-7037-ff18-f860e2b77806',
+      token_use: 'access',
+    } as Parameters<typeof strategy.validate>[0]);
+
+    expect(user.id).toBe('e17bc500-30f1-7037-ff18-f860e2b77806');
+    expect(user.email).toBeUndefined();
+  });
 });
