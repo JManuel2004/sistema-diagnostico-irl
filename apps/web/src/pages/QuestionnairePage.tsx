@@ -1,6 +1,6 @@
 import { useState, useEffect, type JSX } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { QuestionnaireView } from '@features/questionnaire';
 import {
   selectInitialize,
@@ -8,11 +8,10 @@ import {
   useQuestionnaireDraftStore,
 } from '@features/questionnaire/store/questionnaire-draft.store';
 import { useQuestionnaireStructure } from '@features/questionnaire/hooks/useQuestionnaireStructure';
-import { useComputeMaturityProfile } from '@features/maturity-profile';
 import { PageShell } from '@/shared/ui/page-shell';
 import { Button } from '@/shared/ui/button';
-import { http } from '@/shared/api/http';
-import type { SubmitQuestionnaireResponse } from '@innlab/contracts';
+import { queryKeys } from '@/shared/api/query-keys';
+import { finalizeInitialDiagnostic } from '@/shared/api/diagnostic.api';
 
 const STATEMENTS_PER_DIM = 8;
 
@@ -32,8 +31,21 @@ export default function QuestionnairePage(): JSX.Element {
   const answers = useQuestionnaireDraftStore(selectAnswers);
   const { data: catalog } = useQuestionnaireStructure();
 
-  const [submitAttempted, setSubmitAttempted] = useState(false);
-  const computeProfile = useComputeMaturityProfile();
+  /**
+   * El aviso de incompletitud se muestra desde que el usuario intenta
+   * enviar con respuestas faltantes y hasta que toca cualquier respuesta.
+   *
+   * Se deriva en vez de sincronizarse: guardamos la identidad del objeto
+   * `answers` que había en el intento y la comparamos por referencia. El
+   * store crea un objeto nuevo en cada `setAnswer`, así que esa comparación
+   * es exactamente la señal "algo cambió desde entonces". Resetear un
+   * booleano dentro de un `useEffect` sobre `answers` producía el mismo
+   * efecto visible, pero a costa de un render extra y de un estado que
+   * puede quedar desincronizado (regla `react-hooks/set-state-in-effect`).
+   */
+  const [attemptedWith, setAttemptedWith] = useState<object | null>(null);
+  const submitAttempted = attemptedWith === answers;
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     initialize(diagnosticId ?? null);
@@ -48,22 +60,21 @@ export default function QuestionnairePage(): JSX.Element {
   const isComplete = catalog !== undefined && incompleteDimensions.length === 0;
 
   const submitAndCompute = useMutation({
-    mutationFn: async (items: { statementId: string; value: number }[]): Promise<void> => {
-      if (!diagnosticId) return;
-      await http.post<SubmitQuestionnaireResponse>(`/diagnosticos/${diagnosticId}/cuestionario`, {
-        answers: items,
-      });
-      await computeProfile.mutateAsync(diagnosticId);
-    },
-    onSuccess: () => {
-      if (diagnosticId) {
-        void navigate(`/diagnosticos/${diagnosticId}/perfil`);
+    mutationFn: async (items: { statementId: string; value: number }[]) => {
+      if (!diagnosticId) {
+        throw new Error('Falta el identificador del diagnóstico');
       }
+      return finalizeInitialDiagnostic(diagnosticId, items);
+    },
+    onSuccess: (profile) => {
+      if (!diagnosticId) return;
+      queryClient.setQueryData(queryKeys.diagnostic.profile(diagnosticId), profile);
+      void navigate(`/diagnosticos/${diagnosticId}/perfil`);
     },
   });
 
   function handleSubmit(): void {
-    setSubmitAttempted(true);
+    setAttemptedWith(answers);
     if (!isComplete) return;
     const items = Object.entries(answers).map(([statementId, value]) => ({
       statementId,

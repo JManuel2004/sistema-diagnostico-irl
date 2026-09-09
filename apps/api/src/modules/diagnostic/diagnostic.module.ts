@@ -4,8 +4,9 @@ import { DiagnosticoOrm } from './infrastructure/persistence/diagnostico.orm-ent
 import { TypeOrmDiagnosticRepository } from './infrastructure/persistence/typeorm-diagnostic.repository.js';
 import { DIAGNOSTIC_REPOSITORY } from './domain/ports/diagnostic.repository.port.js';
 import { DiagnosticController } from './interfaces/http/diagnostic.controller.js';
+import { FinalizeInitialDiagnosticUseCase } from './application/finalize-initial-diagnostic.use-case.js';
 import { QuestionnaireModule } from '../questionnaire/questionnaire.module.js';
-import { IrlCatalogModule } from '../irl-catalog/irl-catalog.module.js';
+import { MaturityProfileModule } from '../maturity-profile/maturity-profile.module.js';
 
 /**
  * `DiagnosticModule` — bounded context for the `Diagnostico` aggregate
@@ -26,10 +27,11 @@ import { IrlCatalogModule } from '../irl-catalog/irl-catalog.module.js';
   imports: [
     TypeOrmModule.forFeature([DiagnosticoOrm]),
     QuestionnaireModule,
-    IrlCatalogModule,
+    MaturityProfileModule,
   ],
   providers: [
     { provide: DIAGNOSTIC_REPOSITORY, useClass: TypeOrmDiagnosticRepository },
+    FinalizeInitialDiagnosticUseCase,
   ],
   controllers: [DiagnosticController],
   exports: [DIAGNOSTIC_REPOSITORY],

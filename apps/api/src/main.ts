@@ -3,10 +3,8 @@ import {
   FastifyAdapter,
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
-import { ClsService } from 'nestjs-cls';
 import helmet from '@fastify/helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
@@ -14,9 +12,7 @@ import {
   APP_CONFIG_NAMESPACE,
   type AppConfig,
 } from './config/configuration.js';
-import { DomainExceptionFilter } from './infrastructure/http/filters/domain-exception.filter.js';
-import { ValidationExceptionFilter } from './infrastructure/http/filters/validation-exception.filter.js';
-import { GlobalExceptionFilter } from './infrastructure/http/filters/global-exception.filter.js';
+import { configureApp } from './infrastructure/http/configure-app.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -43,24 +39,9 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-
-  // Filter resolution: Nest tries the most-specifically-typed filter first
-  // for a thrown exception; the catch-all (`@Catch()`) is the safety net.
-  const cls = app.get(ClsService);
-  app.useGlobalFilters(
-    new GlobalExceptionFilter(cls),
-    new ValidationExceptionFilter(cls),
-    new DomainExceptionFilter(cls),
-  );
-
-  app.setGlobalPrefix('api/v1');
+  // Pipes, exception filters and the version prefix. Shared with the e2e
+  // suite so the two cannot drift apart.
+  configureApp(app);
 
   const swaggerDocument = SwaggerModule.createDocument(
     app,

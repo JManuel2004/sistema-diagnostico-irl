@@ -12,9 +12,9 @@ import { DIMENSION_CODES } from '@innlab/contracts';
  * páginas alcancen dentro de la carpeta de un feature.
  *
  * Qué NO va aquí:
- *  - Nombre completo en español (`Madurez Tecnológica`) y descripción
- *    canónica → vienen del catálogo (API `GET /catalogo/cuestionario`).
- *    Duplicarlos crearía dos verdades.
+ *  - Nombre **completo** en español (`Nivel de Madurez Tecnológica`) y
+ *    descripción canónica → vienen del catálogo (API
+ *    `GET /catalogo/cuestionario`). Duplicarlos crearía dos verdades.
  *  - Copy de marketing (`shortDescription` del landing) → es contenido
  *    editorial de la página, no metadata del marco; vive en el page.
  *
@@ -22,6 +22,11 @@ import { DIMENSION_CODES } from '@innlab/contracts';
  *  - Mapeo `code → clases Tailwind` para que ningún componente repita
  *    `{ TRL: 'bg-dimension-trl', ... }`.
  *  - Orden canónico de presentación (`DIMENSION_ORDER`).
+ *  - Etiqueta **corta** de display (`Tecnología`, `Negocio`). No es el
+ *    nombre canónico del marco sino una abreviatura de interfaz, así que
+ *    no la sirve el catálogo y no tiene sentido pedirla por red: son seis
+ *    cadenas fijas. Vive aquí porque varias superficies la necesitan y el
+ *    aislamiento por feature impide compartirla de otro modo.
  */
 export interface DimensionVisualMeta {
   /** Clase Tailwind para fondos sólidos (barras de acento, dots, chips). */
@@ -38,6 +43,30 @@ const DIMENSION_VISUAL: Record<DimensionCode, DimensionVisualMeta> = {
   TmRL: { bg: 'bg-dimension-tmrl', textInk: 'text-dimension-tmrl-ink' },
   FRL: { bg: 'bg-dimension-frl', textInk: 'text-dimension-frl-ink' },
 };
+
+/**
+ * Etiqueta corta de cada dimensión para interfaz.
+ *
+ * Deliberadamente breve: cabe en una tarjeta, un chip o una línea de
+ * roadmap sin truncarse. Para el nombre canónico completo (`Nivel de
+ * Madurez Tecnológica`) hay que ir al catálogo.
+ */
+const DIMENSION_SHORT_NAME: Record<DimensionCode, string> = {
+  TRL: 'Tecnología',
+  CRL: 'Cliente',
+  BRL: 'Negocio',
+  IPRL: 'Propiedad Intelectual',
+  TmRL: 'Equipo',
+  FRL: 'Financiación',
+};
+
+/**
+ * Etiqueta corta de una dimensión. Devuelve el código tal cual si llega
+ * uno desconocido: preferible a romper el render por un dato inesperado.
+ */
+export function getDimensionShortName(code: string): string {
+  return DIMENSION_SHORT_NAME[code as DimensionCode] ?? code;
+}
 
 /**
  * Devuelve la metadata visual de una dimensión por código.

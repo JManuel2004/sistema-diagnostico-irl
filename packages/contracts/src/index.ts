@@ -23,6 +23,8 @@ export * from './questionnaire/submission.schema.js';
 // ── maturity profile ──────────────────────────────────────────────────
 export * from './maturity-profile/dimension-result.schema.js';
 export * from './maturity-profile/bottleneck.schema.js';
+export * from './maturity-profile/gaps.schema.js';
+export * from './maturity-profile/asymmetry.schema.js';
 export * from './maturity-profile/imbalance.schema.js';
 export * from './maturity-profile/profile-response.schema.js';
 
@@ -32,3 +34,12 @@ export * from './diagnostic/consent.schema.js';
 
 // ── initiative ────────────────────────────────────────────────────────
 export * from './initiative/initiative.schema.js';
+
+// ── portfolio routing ─────────────────────────────────────────────────
+export * from './portfolio-routing/predicado.schema.js';
+export * from './portfolio-routing/hechos-diagnostico.schema.js';
+export * from './portfolio-routing/recomendacion-response.schema.js';
+export * from './portfolio-routing/traza-capas.schema.js';
+
+// ── scaling roadmap ───────────────────────────────────────────────────
+export * from './scaling-roadmap/roadmap-response.schema.js';

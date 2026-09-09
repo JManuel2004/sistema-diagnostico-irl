@@ -30,6 +30,18 @@ export class DimensionOrm {
   @Column({ name: 'orden', type: 'integer' })
   orden!: number;
 
+  /**
+   * Nivel IRL que se espera que esta dimensión alcance para considerar
+   * equilibrada la iniciativa. Insumo del roadmap de escalamiento
+   * (RF-14): una dimensión por debajo de su mínimo entra al foco.
+   *
+   * La columna lleva `DEFAULT 4` en la base solo para que la migración
+   * pudiera aplicarse sobre las seis filas ya sembradas; el valor real
+   * lo fija el seed en las seis.
+   */
+  @Column({ name: 'nivel_minimo_esperado', type: 'smallint', default: 4 })
+  nivelMinimoEsperado!: number;
+
   @OneToMany(() => AfirmacionOrm, (a) => a.dimension)
   afirmaciones!: Relation<AfirmacionOrm[]>;
 }

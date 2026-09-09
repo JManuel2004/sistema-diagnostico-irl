@@ -19,6 +19,9 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
   async save(profile: MaturityProfile): Promise<void> {
     const snapshot = profile.toPersistence();
     const idByCode = await this.loadDimensionIdByCode();
+    const gapCodes = new Set<string>(
+      profile.gaps().dimensions.map((d) => d.dimensionCode.value),
+    );
 
     const rows = snapshot.dimensionResults.map((r) => {
       const idDimension = idByCode.get(r.dimensionCode);
@@ -33,7 +36,7 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
         idDimension,
         promedioLikert: r.averageLikert,
         nivelIrl: r.irlLevel,
-        enEstadoCritico: false,
+        enEstadoCritico: gapCodes.has(r.dimensionCode),
         esCuelloBotella: false,
         fechaCalculo: snapshot.computedAt,
       };
@@ -45,7 +48,7 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
       .into(ResultadoDimensionOrm)
       .values(rows)
       .orUpdate(
-        ['promedio_likert', 'nivel_irl', 'fecha_calculo'],
+        ['promedio_likert', 'nivel_irl', 'en_estado_critico', 'fecha_calculo'],
         ['id_diagnostico', 'id_dimension'],
       )
       .execute();

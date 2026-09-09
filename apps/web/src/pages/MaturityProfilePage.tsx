@@ -1,37 +1,51 @@
-import { useEffect, useRef, type JSX } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import type { MaturityProfileResponse } from '@innlab/contracts';
-import { MaturityProfilePanel, useComputeMaturityProfile } from '@features/maturity-profile';
+import type { JSX } from 'react';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+import { MaturityProfilePanel, useMaturityProfile } from '@features/maturity-profile';
 import { PageShell } from '@/shared/ui/page-shell';
-import { queryKeys } from '@/shared/api/query-keys';
+import { Button } from '@/shared/ui/button';
 
 export default function MaturityProfilePage(): JSX.Element {
   const { id: diagnosticId } = useParams<{ id: string }>();
-  const queryClient = useQueryClient();
-  const { mutate, data, error, isPending, isError } = useComputeMaturityProfile();
-
-  const cachedProfile = diagnosticId
-    ? queryClient.getQueryData<MaturityProfileResponse>(queryKeys.diagnostic.profile(diagnosticId))
-    : undefined;
-  const profile = cachedProfile ?? data;
-
-  const firedFor = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!diagnosticId) return;
-    if (cachedProfile) return;
-    if (firedFor.current === diagnosticId) return;
-    firedFor.current = diagnosticId;
-    mutate(diagnosticId);
-  }, [diagnosticId, cachedProfile, mutate]);
+  const navigate = useNavigate();
+  const { data: profile, error, isError } = useMaturityProfile(diagnosticId);
 
   if (!diagnosticId) {
     return <Navigate to="/diagnosticos" replace />;
   }
 
   if (profile) {
-    return <MaturityProfilePanel profile={profile} />;
+    return (
+      <>
+        <MaturityProfilePanel profile={profile} />
+        {/*
+          CTA hacia el análisis profundo (RF-11 / RF-15). Vive en la página
+          y no en `MaturityProfilePanel` porque ese componente pertenece a
+          la feature `maturity-profile`, que no puede navegar hacia una
+          ruta de otra feature (`portfolio-recommendation`) sin romper el
+          aislamiento por feature de `apps/web/CLAUDE.md`. La página, en
+          cambio, sí puede orquestar la navegación entre ambas.
+        */}
+        <div className="mx-auto w-full max-w-6xl px-4 pb-12 md:px-6">
+          <div className="border-border flex flex-wrap justify-end gap-3 border-t pt-6">
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() => void navigate(`/diagnosticos/${diagnosticId}/roadmap`)}
+            >
+              Ver roadmap de escalamiento
+            </Button>
+            <Button
+              size="lg"
+              onClick={() => void navigate(`/diagnosticos/${diagnosticId}/recomendacion`)}
+            >
+              Generar recomendación
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+      </>
+    );
   }
 
   if (isError) {
@@ -59,9 +73,7 @@ export default function MaturityProfilePage(): JSX.Element {
           className="border-azul-icesi/40 size-10 animate-spin rounded-full border-2 border-t-transparent"
           aria-hidden="true"
         />
-        <p className="text-foreground text-base">
-          {isPending ? 'Calculando tu perfil IRL…' : 'Cargando perfil…'}
-        </p>
+        <p className="text-foreground text-base">Cargando perfil…</p>
       </div>
     </PageShell>
   );

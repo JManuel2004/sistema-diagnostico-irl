@@ -36,6 +36,10 @@ export function MaturityProfilePanel({ profile }: MaturityProfilePanelProps): JS
         <MaturityProfileSummary
           dimensionResults={profile.dimensionResults}
           bottleneck={profile.bottleneck}
+          strength={profile.strength}
+          asymmetry={profile.asymmetry}
+          gaps={profile.gaps}
+          imbalances={profile.imbalances}
         />
       </div>
 

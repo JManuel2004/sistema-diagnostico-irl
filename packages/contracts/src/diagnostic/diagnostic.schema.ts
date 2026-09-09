@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { uuidSchema } from '../common/uuid.schema.js';
+import { answerItemSchema } from '../questionnaire/answer.schema.js';
 
 /**
  * Estados del proceso de diagnóstico — máquina de estados que rige las
@@ -17,6 +18,8 @@ import { uuidSchema } from '../common/uuid.schema.js';
  *     → CUESTIONARIO_EN_CURSO      (HU-07)
  *     → CUESTIONARIO_COMPLETO      (HU-10 / RF-06)
  *     → PERFIL_GENERADO            (HU-11 / RF-07)
+ *     → ANALISIS_PROFUNDO_DECLINADO | ANALISIS_PROFUNDO_EN_CURSO
+ *          → ANALISIS_PROFUNDO_COMPLETO
  */
 export const DIAGNOSTIC_STATES = [
   'INICIADO',
@@ -25,6 +28,9 @@ export const DIAGNOSTIC_STATES = [
   'CUESTIONARIO_EN_CURSO',
   'CUESTIONARIO_COMPLETO',
   'PERFIL_GENERADO',
+  'ANALISIS_PROFUNDO_DECLINADO',
+  'ANALISIS_PROFUNDO_EN_CURSO',
+  'ANALISIS_PROFUNDO_COMPLETO',
 ] as const;
 
 export const diagnosticStateSchema = z
@@ -76,3 +82,16 @@ export const startDiagnosticResponseSchema = diagnosticSchema.describe(
 );
 
 export type StartDiagnosticResponse = z.infer<typeof startDiagnosticResponseSchema>;
+
+export const finalizeInitialDiagnosticRequestSchema = z
+  .object({
+    answers: z
+      .array(answerItemSchema)
+      .length(48)
+      .describe('Exactamente 48 respuestas, una por afirmación'),
+  })
+  .describe('Comando para finalizar el diagnóstico inicial (envío + cálculo)');
+
+export type FinalizeInitialDiagnosticRequest = z.infer<
+  typeof finalizeInitialDiagnosticRequestSchema
+>;

@@ -43,7 +43,7 @@ afterAll(() => server.close());
 
 function withCatalog(): void {
   server.use(
-    mswHttp.get('http://localhost/api/v1/catalogo/cuestionario', () =>
+    mswHttp.get('*/api/v1/catalogo/cuestionario', () =>
       HttpResponse.json(buildCatalogFixture()),
     ),
   );
@@ -60,32 +60,27 @@ function buildProfileFixture(): unknown {
       irlLevel: 6,
     })),
     bottleneck: { dimensions: ['TRL'], level: 6 },
+    strength: { dimensions: ['TRL'], level: 6 },
+    asymmetry: { difference: 0, classification: 'acceptable' },
+    gaps: { dimensions: [], threshold: 3 },
   };
 }
 
-function withProfileComputeSuccess(): void {
+function withFinalizeSuccess(): void {
   server.use(
-    mswHttp.post(`http://localhost/api/v1/diagnosticos/${DIAG_ID}/perfil`, () =>
+    mswHttp.post(`*/api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`, () =>
       HttpResponse.json(buildProfileFixture(), { status: 201 }),
     ),
   );
 }
 
-function withSubmitSuccess(answersRecorded = 48): void {
-  server.use(
-    mswHttp.post(`http://localhost/api/v1/diagnosticos/${DIAG_ID}/cuestionario`, () =>
-      HttpResponse.json(
-        { diagnosticId: DIAG_ID, answersRecorded, state: 'CUESTIONARIO_COMPLETO' },
-        { status: 201 },
-      ),
-    ),
-  );
-  withProfileComputeSuccess();
+function withSubmitSuccess(): void {
+  withFinalizeSuccess();
 }
 
 function withSubmitError(): void {
   server.use(
-    mswHttp.post(`http://localhost/api/v1/diagnosticos/${DIAG_ID}/cuestionario`, () =>
+    mswHttp.post(`*/api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`, () =>
       HttpResponse.json({ message: 'Internal server error' }, { status: 500 }),
     ),
   );
@@ -201,10 +196,46 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
       }
     });
 
+    it('hides the completeness alert after the user answers another statement', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await waitFor(() => screen.getByRole('button', { name: 'Procesar diagnóstico' }));
+      await user.click(screen.getByRole('button', { name: 'Procesar diagnóstico' }));
+      expect(screen.getByRole('alert')).toHaveTextContent('Hay secciones sin completar');
+
+      act(() => {
+        useQuestionnaireDraftStore.getState().setAnswer('1', 3);
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      });
+    });
+
+    it('shows the completeness alert again if the user retries submit while still incomplete', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await waitFor(() => screen.getByRole('button', { name: 'Procesar diagnóstico' }));
+      await user.click(screen.getByRole('button', { name: 'Procesar diagnóstico' }));
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+
+      act(() => {
+        useQuestionnaireDraftStore.getState().setAnswer('1', 3);
+      });
+      await waitFor(() => {
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Procesar diagnóstico' }));
+      expect(screen.getByRole('alert')).toHaveTextContent('Hay secciones sin completar');
+    });
+
     it('does NOT call the submission API when the questionnaire is incomplete', async () => {
       let postCalled = false;
       server.use(
-        mswHttp.post(`http://localhost/api/v1/diagnosticos/${DIAG_ID}/cuestionario`, () => {
+        mswHttp.post(`*/api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`, () => {
           postCalled = true;
           return HttpResponse.json({});
         }),
@@ -265,17 +296,13 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
       let capturedBody: { answers: unknown[] } | undefined;
       server.use(
         mswHttp.post(
-          `http://localhost/api/v1/diagnosticos/${DIAG_ID}/cuestionario`,
+          `*/api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`,
           async ({ request }) => {
             capturedBody = (await request.json()) as { answers: unknown[] };
-            return HttpResponse.json(
-              { diagnosticId: DIAG_ID, answersRecorded: 48, state: 'CUESTIONARIO_COMPLETO' },
-              { status: 201 },
-            );
+            return HttpResponse.json(buildProfileFixture(), { status: 201 });
           },
         ),
       );
-      withProfileComputeSuccess();
       populateAllAnswers();
 
       const user = userEvent.setup();
@@ -291,7 +318,7 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
     });
 
     it('navigates to the profile route after a successful submission', async () => {
-      withSubmitSuccess(48);
+      withSubmitSuccess();
       populateAllAnswers();
 
       const user = userEvent.setup();
@@ -306,7 +333,7 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
     });
 
     it('chain completes even when the server records fewer answers than expected', async () => {
-      withSubmitSuccess(45);
+      withSubmitSuccess();
       populateAllAnswers();
 
       const user = userEvent.setup();
@@ -324,20 +351,14 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
       let resolveSubmit!: () => void;
       server.use(
         mswHttp.post(
-          `http://localhost/api/v1/diagnosticos/${DIAG_ID}/cuestionario`,
+          `*/api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`,
           () =>
             new Promise<Response>((resolve) => {
               resolveSubmit = () =>
-                resolve(
-                  HttpResponse.json(
-                    { diagnosticId: DIAG_ID, answersRecorded: 48, state: 'CUESTIONARIO_COMPLETO' },
-                    { status: 201 },
-                  ),
-                );
+                resolve(HttpResponse.json(buildProfileFixture(), { status: 201 }));
             }),
         ),
       );
-      withProfileComputeSuccess();
       populateAllAnswers();
 
       const user = userEvent.setup();

@@ -1,3 +1,4 @@
+import { CRITICAL_IRL_THRESHOLD } from '@innlab/contracts';
 import { Uuid } from '../../../../shared-kernel/domain/value-objects/uuid.vo.js';
 import { InvariantViolationError } from '../../../../shared-kernel/domain/errors/invariant-violation.error.js';
 import { DIMENSION_CODES } from '../../../../shared-kernel/domain/value-objects/dimension-code.js';
@@ -99,6 +100,44 @@ export class MaturityProfile {
     const minLevel = Math.min(...this._dimensionResults.map((r) => r.irlLevel.value));
     const dimensions = this._dimensionResults.filter((r) => r.irlLevel.value === minLevel);
     return { dimensions, level: minLevel };
+  }
+
+  /** Dimensión(es) con el nivel IRL más alto — la fortaleza del perfil. */
+  strength(): { readonly dimensions: readonly DimensionResult[]; readonly level: number } {
+    const maxLevel = Math.max(...this._dimensionResults.map((r) => r.irlLevel.value));
+    const dimensions = this._dimensionResults.filter((r) => r.irlLevel.value === maxLevel);
+    return { dimensions, level: maxLevel };
+  }
+
+  /**
+   * Amplitud del perfil: diferencia entre el IRL máximo y el mínimo,
+   * clasificada con los mismos umbrales de desequilibrio KTH.
+   */
+  asymmetry(): {
+    readonly difference: number;
+    readonly classification: 'CRITICO' | 'MODERADO' | 'ACEPTABLE';
+  } {
+    const levels = this._dimensionResults.map((r) => r.irlLevel.value);
+    const difference = Math.max(...levels) - Math.min(...levels);
+    const classification =
+      difference > 3 ? 'CRITICO' : difference >= 2 ? 'MODERADO' : 'ACEPTABLE';
+    return { difference, classification };
+  }
+
+  /**
+   * Dimensiones en brecha: nivel IRL menor o igual al umbral del marco.
+   *
+   * El umbral es `CRITICAL_IRL_THRESHOLD` del contrato. Puede devolver
+   * cero dimensiones — no es un error, es un perfil sin brecha.
+   */
+  gaps(): {
+    readonly dimensions: readonly DimensionResult[];
+    readonly threshold: number;
+  } {
+    const dimensions = this._dimensionResults.filter(
+      (r) => r.irlLevel.value <= CRITICAL_IRL_THRESHOLD,
+    );
+    return { dimensions, threshold: CRITICAL_IRL_THRESHOLD };
   }
 
   /** Persistence snapshot — the repository upserts the whole set atomically. */

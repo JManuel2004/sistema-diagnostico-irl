@@ -66,4 +66,21 @@ describe('ImbalanceResult (value object)', () => {
       expect(r.toPersistence()).not.toBe(r.toPersistence());
     });
   });
+
+  describe('fromPersistence()', () => {
+    it('restores the value object from a snapshot', () => {
+      const r = ImbalanceResult.fromPersistence({
+        pairId: 4,
+        leftCode: 'TRL',
+        rightCode: 'IPRL',
+        difference: 3,
+        classification: 'MODERADO',
+      });
+      expect(r.pairId).toBe(4);
+      expect(r.left.value).toBe('TRL');
+      expect(r.right.value).toBe('IPRL');
+      expect(r.difference).toBe(3);
+      expect(r.classification).toBe('MODERADO');
+    });
+  });
 });

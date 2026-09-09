@@ -4,4 +4,5 @@ export const IMBALANCE_REPOSITORY = Symbol('IMBALANCE_REPOSITORY');
 
 export interface ImbalanceRepositoryPort {
   save(diagnosticId: string, results: readonly ImbalanceResult[]): Promise<void>;
+  findByDiagnosticId(diagnosticId: string): Promise<ImbalanceResult[]>;
 }

@@ -1,4 +1,3 @@
-import { Uuid } from '../../../../shared-kernel/domain/value-objects/uuid.vo.js';
 import { LikertValue } from '../../../../shared-kernel/domain/value-objects/likert-value.vo.js';
 
 /**

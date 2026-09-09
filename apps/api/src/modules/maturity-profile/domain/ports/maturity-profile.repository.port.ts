@@ -34,9 +34,10 @@ export interface MaturityProfileRepositoryPort {
    * Atomically persist the six `DimensionResult` rows backing `profile`.
    *
    * Replace-all semantics: any prior `resultado_dimension` rows for the
-   * same `diagnosticId` are overwritten in the same transaction. The
-   * flags `es_cuello_botella` and `en_estado_critico` are reset to
-   * `false` here — DIAGIRL-35 / DIAGIRL-38 will set them later.
+   * same `diagnosticId` are overwritten in the same transaction.
+   * `en_estado_critico` is written from the IRL gap threshold
+   * (`CRITICAL_IRL_THRESHOLD`). `es_cuello_botella` remains derived
+   * in the aggregate until a dedicated persist lands.
    *
    * @throws when the underlying transaction fails; the caller maps it
    *   to a `MaturityProfileCalculationError` (HTTP 500).
