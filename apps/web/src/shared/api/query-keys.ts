@@ -8,5 +8,9 @@ export const queryKeys = {
     detail: (id: string) => ['diagnostic', 'detail', id] as const,
     profile: (id: string) => ['diagnostic', id, 'profile'] as const,
     progress: (id: string) => ['diagnostic', id, 'progress'] as const,
+    recommendation: (id: string) => ['diagnostic', id, 'recommendation'] as const,
+    recommendationTrace: (id: string) =>
+      ['diagnostic', id, 'recommendation', 'trace'] as const,
+    roadmap: (id: string) => ['diagnostic', id, 'roadmap'] as const,
   },
 } as const;

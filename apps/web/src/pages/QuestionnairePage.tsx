@@ -31,16 +31,25 @@ export default function QuestionnairePage(): JSX.Element {
   const answers = useQuestionnaireDraftStore(selectAnswers);
   const { data: catalog } = useQuestionnaireStructure();
 
-  const [submitAttempted, setSubmitAttempted] = useState(false);
+  /**
+   * El aviso de incompletitud se muestra desde que el usuario intenta
+   * enviar con respuestas faltantes y hasta que toca cualquier respuesta.
+   *
+   * Se deriva en vez de sincronizarse: guardamos la identidad del objeto
+   * `answers` que había en el intento y la comparamos por referencia. El
+   * store crea un objeto nuevo en cada `setAnswer`, así que esa comparación
+   * es exactamente la señal "algo cambió desde entonces". Resetear un
+   * booleano dentro de un `useEffect` sobre `answers` producía el mismo
+   * efecto visible, pero a costa de un render extra y de un estado que
+   * puede quedar desincronizado (regla `react-hooks/set-state-in-effect`).
+   */
+  const [attemptedWith, setAttemptedWith] = useState<object | null>(null);
+  const submitAttempted = attemptedWith === answers;
   const queryClient = useQueryClient();
 
   useEffect(() => {
     initialize(diagnosticId ?? null);
   }, [diagnosticId, initialize]);
-
-  useEffect(() => {
-    setSubmitAttempted(false);
-  }, [answers]);
 
   const incompleteDimensions =
     catalog?.dimensions.filter(
@@ -65,7 +74,7 @@ export default function QuestionnairePage(): JSX.Element {
   });
 
   function handleSubmit(): void {
-    setSubmitAttempted(true);
+    setAttemptedWith(answers);
     if (!isComplete) return;
     const items = Object.entries(answers).map(([statementId, value]) => ({
       statementId,

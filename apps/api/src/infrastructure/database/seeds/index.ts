@@ -3,6 +3,8 @@ import dataSource from '../data-source.js';
 import { CONVERSION_RANGES } from './data/conversion-ranges.js';
 import { DIMENSIONS } from './data/dimensions.js';
 import { STATEMENTS } from './data/statements.js';
+import { seedPortfolioRouting } from './seed-portfolio-routing.js';
+import { seedRoadmapGraph } from './seed-roadmap-graph.js';
 
 loadEnv({ path: '.env.local' });
 loadEnv({ path: '.env' });
@@ -27,19 +29,23 @@ loadEnv({ path: '.env' });
  */
 async function run(): Promise<void> {
   await dataSource.initialize();
+  let routing = { versionPublicada: false };
+  let roadmap = { aristas: 0 };
   try {
     await dataSource.transaction(async (manager) => {
       for (const d of DIMENSIONS) {
         await manager.query(
           `INSERT INTO irl_catalog.dimension
-             (codigo, nombre_es, nombre_en, descripcion, es_dimension_critica, orden)
-           VALUES ($1, $2, $3, $4, $5, $6)
+             (codigo, nombre_es, nombre_en, descripcion, es_dimension_critica, orden,
+              nivel_minimo_esperado)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
            ON CONFLICT (codigo) DO UPDATE
-             SET nombre_es            = EXCLUDED.nombre_es,
-                 nombre_en            = EXCLUDED.nombre_en,
-                 descripcion          = EXCLUDED.descripcion,
-                 es_dimension_critica = EXCLUDED.es_dimension_critica,
-                 orden                = EXCLUDED.orden`,
+             SET nombre_es             = EXCLUDED.nombre_es,
+                 nombre_en             = EXCLUDED.nombre_en,
+                 descripcion           = EXCLUDED.descripcion,
+                 es_dimension_critica  = EXCLUDED.es_dimension_critica,
+                 orden                 = EXCLUDED.orden,
+                 nivel_minimo_esperado = EXCLUDED.nivel_minimo_esperado`,
           [
             d.codigo,
             d.nombreEs,
@@ -47,6 +53,7 @@ async function run(): Promise<void> {
             d.descripcion,
             d.esDimensionCritica,
             d.orden,
+            d.nivelMinimoEsperado,
           ],
         );
       }
@@ -74,7 +81,7 @@ async function run(): Promise<void> {
         );
       }
 
-      const PAIRS: Array<[string, string]> = [
+      const PAIRS: [string, string][] = [
         ['TRL', 'CRL'],
         ['TRL', 'BRL'],
         ['CRL', 'BRL'],
@@ -106,6 +113,16 @@ async function run(): Promise<void> {
           'KTH-IRL-1.0',
         ],
       );
+
+      // Catálogo de enrutamiento + publicación de la versión 1. Va dentro
+      // de la misma transacción: una versión con fichas pero sin reglas de
+      // excepción haría que el motor arrancase y diera resultados
+      // silenciosamente incompletos.
+      routing = await seedPortfolioRouting(manager);
+
+      // Grafo de dependencias del roadmap. Va después de `dimension`
+      // porque resuelve sus FKs por subconsulta sobre `codigo`.
+      roadmap = await seedRoadmapGraph(manager);
     });
 
     const [{ count: dimCount }] = await dataSource.query<{ count: string }[]>(
@@ -121,9 +138,19 @@ async function run(): Promise<void> {
       `SELECT COUNT(*)::text AS count FROM irl_catalog.par_dimension`,
     );
 
+    const [{ count: svcCount }] = await dataSource.query<{ count: string }[]>(
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.servicio_portafolio`,
+    );
+    const [{ count: fichaCount }] = await dataSource.query<{ count: string }[]>(
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.ficha_ordinal_publicada`,
+    );
+
     // eslint-disable-next-line no-console
     console.log(
-      `Seed complete — ${dimCount} dimensions, ${afCount} statements, ${rcCount} conversion ranges, ${parCount} dimension pairs in irl_catalog`,
+      `Seed complete — ${dimCount} dimensions, ${afCount} statements, ${rcCount} conversion ranges, ` +
+        `${parCount} dimension pairs, ${svcCount} portfolio services, ${fichaCount} ordinal profiles, ` +
+        `${roadmap.aristas} roadmap dependency edges in irl_catalog. Routing configuration v1: ` +
+        `${routing.versionPublicada ? 'published' : 'already present, left untouched'}.`,
     );
   } finally {
     await dataSource.destroy();

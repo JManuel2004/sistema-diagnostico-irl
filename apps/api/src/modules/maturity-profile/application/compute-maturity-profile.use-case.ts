@@ -22,7 +22,7 @@ import { LikertValue } from '../../../shared-kernel/domain/value-objects/likert-
 
 export interface ComputeMaturityProfileCommand {
   diagnosticId: string;
-  answers: Array<{ statementId: string; value: number }>;
+  answers: { statementId: string; value: number }[];
 }
 
 @Injectable()

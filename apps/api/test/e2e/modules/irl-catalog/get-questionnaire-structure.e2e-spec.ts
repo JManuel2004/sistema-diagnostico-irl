@@ -1,8 +1,11 @@
-import type { INestApplication } from '@nestjs/common';
-import { ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import {
+  FastifyAdapter,
+  type NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import request from 'supertest';
 import { AppModule } from '../../../../src/app.module.js';
+import { configureApp } from '../../../../src/infrastructure/http/configure-app.js';
 import { questionnaireStructureSchema } from '@innlab/contracts';
 
 /**
@@ -19,7 +22,7 @@ import { questionnaireStructureSchema } from '@innlab/contracts';
  *  NF-2: Endpoint is read-only and idempotent.
  */
 describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
-  let app: INestApplication;
+  let app: NestFastifyApplication;
 
   beforeAll(async () => {
     // Build the test module using the real AppModule to get all wiring
@@ -27,19 +30,12 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
+    app = moduleFixture.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter({ logger: false }),
     );
-
-    // Manually set the global prefix since the test module doesn't boot main.ts
-    app.setGlobalPrefix('api/v1');
-
+    configureApp(app);
     await app.init();
+    await app.getHttpAdapter().getInstance().ready();
 
     // Note: This test assumes the database is available via the configured
     // connection string (e.g., docker-compose or local DB). The integration
@@ -53,7 +49,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
   describe('Questionnaire structure endpoint', () => {
     it('returns 200 with the complete questionnaire structure', async () => {
       const start = Date.now();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       const response = await request(app.getHttpServer()).get(
         '/api/v1/catalogo/cuestionario',
       );
@@ -89,11 +85,11 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
 
     it('returns consistent results on multiple calls (idempotency)', async () => {
       // Call the endpoint twice and verify the responses are identical
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       const response1 = await request(app.getHttpServer()).get(
         '/api/v1/catalogo/cuestionario',
       );
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       const response2 = await request(app.getHttpServer()).get(
         '/api/v1/catalogo/cuestionario',
       );
@@ -106,7 +102,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     });
 
     it('response body contains required fields in each dimension', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       const response = await request(app.getHttpServer()).get(
         '/api/v1/catalogo/cuestionario',
       );
@@ -130,7 +126,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     });
 
     it('response body contains required fields in each statement', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       const response = await request(app.getHttpServer()).get(
         '/api/v1/catalogo/cuestionario',
       );
@@ -161,7 +157,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     });
 
     it('returns a versionMarco field for cache invalidation', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       const response = await request(app.getHttpServer()).get(
         '/api/v1/catalogo/cuestionario',
       );

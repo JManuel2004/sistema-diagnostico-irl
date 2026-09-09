@@ -60,6 +60,13 @@ import { ParDimensionOrm } from '../irl-catalog/infrastructure/persistence/entit
     },
   ],
   controllers: [MaturityProfileController],
-  exports: [MATURITY_PROFILE_REPOSITORY, ComputeMaturityProfileUseCase],
+  exports: [
+    MATURITY_PROFILE_REPOSITORY,
+    ComputeMaturityProfileUseCase,
+    // Consumido por PortfolioRoutingModule: el motor de enrutamiento lee
+    // el perfil por su caso de uso de lectura, nunca alcanzando las tablas
+    // de este módulo.
+    GetMaturityProfileUseCase,
+  ],
 })
 export class MaturityProfileModule {}

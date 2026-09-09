@@ -5,6 +5,8 @@ import { IrlCatalogModule } from '../../modules/irl-catalog/irl-catalog.module.j
 import { QuestionnaireModule } from '../../modules/questionnaire/questionnaire.module.js';
 import { DiagnosticModule } from '../../modules/diagnostic/diagnostic.module.js';
 import { MaturityProfileModule } from '../../modules/maturity-profile/maturity-profile.module.js';
+import { PortfolioRoutingModule } from '../../modules/portfolio-routing/portfolio-routing.module.js';
+import { ScalingRoadmapModule } from '../../modules/scaling-roadmap/scaling-roadmap.module.js';
 
 /**
  * Composition root for the v1 HTTP surface.
@@ -23,6 +25,8 @@ import { MaturityProfileModule } from '../../modules/maturity-profile/maturity-p
     QuestionnaireModule,
     DiagnosticModule,
     MaturityProfileModule,
+    PortfolioRoutingModule,
+    ScalingRoadmapModule,
   ],
   controllers: [HealthController],
 })

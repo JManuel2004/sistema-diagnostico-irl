@@ -1,13 +1,5 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
-
-const numericTransformer = {
-  to(value: number | null | undefined): number | null | undefined {
-    return value;
-  },
-  from(value: string | null | undefined): number | null | undefined {
-    return value === null || value === undefined ? value : Number(value);
-  },
-};
+import { numericTransformer } from '../../../../../infrastructure/database/numeric.transformer.js';
 
 @Entity({ schema: 'irl_catalog', name: 'rango_conversion' })
 export class RangoConversionOrm {

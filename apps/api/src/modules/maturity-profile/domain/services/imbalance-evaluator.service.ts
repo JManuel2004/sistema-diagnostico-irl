@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import type { DimensionPair } from '../../../irl-catalog/domain/dimension-pair.js';
 import { DimensionCode } from '../../../../shared-kernel/domain/value-objects/dimension-code.js';
 import {
@@ -16,8 +15,12 @@ import {
  *   - difference < 2  → ACEPTABLE
  *
  * No side effects. Input and output are domain objects only.
+ *
+ * Deliberately undecorated: the domain layer imports nothing from a
+ * framework. NestJS can still register it as a class provider because it
+ * takes no constructor arguments — the same way `IrlCalculatorService` is
+ * registered in `MaturityProfileModule`.
  */
-@Injectable()
 export class ImbalanceEvaluatorService {
   evaluate(
     levelByCode: ReadonlyMap<string, number>,

@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { DiagnosticController } from '../../../../src/modules/diagnostic/interfaces/http/diagnostic.controller.js';
-import { FinalizeInitialDiagnosticUseCase } from '../../../../src/modules/diagnostic/application/finalize-initial-diagnostic.use-case.js';
+import type { FinalizeInitialDiagnosticUseCase } from '../../../../src/modules/diagnostic/application/finalize-initial-diagnostic.use-case.js';
 import type { MaturityProfileResponse } from '@innlab/contracts';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
@@ -18,7 +18,7 @@ describe('DiagnosticController', () => {
 
   it('delegates finalizar-inicial to the orchestrator use case', async () => {
     const profile = { diagnosticId: DIAGNOSTIC_ID } as MaturityProfileResponse;
-    mockUseCase.execute.mockResolvedValueOnce(profile as never);
+    mockUseCase.execute.mockResolvedValueOnce(profile);
     const answers = [{ statementId: '1', value: 3 }];
 
     const result = await controller.finalize(DIAGNOSTIC_ID, { answers });
