@@ -180,7 +180,7 @@ GET /api/v1/diagnosticos
 Authorization: Bearer eyJhbGciOiJSUzI1NiIs...
 ```
 
-The `KeycloakGuard` validates the JWT against JWKS keys cached at boot. No HTTP roundtrip per request.
+The global `JwtAuthGuard` validates the Cognito JWT against JWKS keys cached by `jwks-rsa`. No HTTP roundtrip per request. It is an `APP_GUARD`, so every route is protected unless it carries `@Public()`.
 
 A request without a valid token returns:
 

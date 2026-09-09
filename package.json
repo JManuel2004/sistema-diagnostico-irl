@@ -22,7 +22,6 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "db:up": "docker compose -f docker-compose.yml up -d postgres",
     "db:down": "docker compose -f docker-compose.yml down",
-    "keycloak:up": "docker compose -f docker-compose.yml up -d keycloak",
     "prepare": "husky"
   },
   "devDependencies": {

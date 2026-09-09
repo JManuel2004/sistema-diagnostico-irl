@@ -390,7 +390,7 @@ If you can't answer "yes" to any of 1–4, the answer is 5. Resist the urge to s
 
 For provider-style cross-cutting state (theme, locale, auth context), React Context is fine. We use it for:
 
-- `react-oidc-context` (auth) — provided by the library.
+- Auth is the exception: there is no context and no store. The INNLAB session lives in `localStorage` behind `shared/auth/session.ts`, because `shared/api/http.ts` needs the access token on every request and cannot subscribe to React state.
 - The React Query `QueryClientProvider` — required.
 - The Radix `ToastProvider` — required by the toast component.
 

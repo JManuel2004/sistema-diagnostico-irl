@@ -9,7 +9,6 @@ If at any step something fails, check [`docs/troubleshooting.md`](../troubleshoo
 - **Backend** (`@innlab/api`) on <http://localhost:3000>
 - **Frontend** (`@innlab/web`) on <http://localhost:5173>
 - **PostgreSQL** on `localhost:5432`
-- **Keycloak** on <http://localhost:8080>
 - **Mailpit** (SMTP catcher) on <http://localhost:8025>
 
 Estimated time: **30–45 minutes** the first time, including a Docker pull. Subsequent starts are under 2 minutes.
@@ -97,10 +96,10 @@ Open `apps/api/.env.local` and review:
 | Variable                            | What to set                                                                 |
 | ----------------------------------- | --------------------------------------------------------------------------- |
 | `DATABASE_URL`                      | Leave as-is; matches the docker-compose Postgres                            |
-| `KEYCLOAK_ISSUER_URL`               | Leave as-is; matches the docker-compose Keycloak                            |
-| `KEYCLOAK_AUDIENCE`                 | `diagnostico-irl-api`                                                       |
-| `INNLAB_CORE_BASE_URL`              | For local dev, use the mock server at `http://localhost:8081` (see Step 5b) |
-| `INNLAB_CORE_CLIENT_ID` / `_SECRET` | Use any values; the local mock doesn't validate them                        |
+| `COGNITO_JWKS_URI`                  | Ask the Core team — the shared INNLAB pool (see Step 5b). Required at boot  |
+| `COGNITO_ISSUER`                    | Ask the Core team — same pool as `COGNITO_JWKS_URI`. Required at boot       |
+| `INNLAB_API_BASE_URL`               | Base URL of `innlab-core-api`                                              |
+| `CORE_INTERNAL_KEY`                 | Static `x-internal-key`; the Core team registers it by hand, no self-service |
 | `SMTP_HOST` / `_PORT`               | Leave as-is; matches Mailpit                                                |
 | `LOG_LEVEL`                         | `debug` for local dev                                                       |
 
@@ -117,19 +116,17 @@ Open `apps/web/.env.local`:
 | Variable                 | What to set                                             |
 | ------------------------ | ------------------------------------------------------- |
 | `VITE_API_BASE_URL`      | Leave as `/api/v1` — Vite proxies to the backend in dev |
-| `VITE_OIDC_AUTHORITY`    | `http://localhost:8080/realms/innlab-dev`               |
-| `VITE_OIDC_CLIENT_ID`    | `diagnostico-irl-web`                                   |
-| `VITE_OIDC_REDIRECT_URI` | `http://localhost:5173/auth/callback`                   |
+| `VITE_CORE_URL`          | INNLAB Hub — where a visitor without a session is sent   |
+| `VITE_CORE_API_URL`      | `innlab-core-api` — where the `?code=` is exchanged      |
 
 ## Step 5 — Start supporting services
 
-### 5a. Database, Keycloak, and Mailpit
+### 5a. Database
 
 The repo ships a single `docker-compose.dev.yml` at the root. Convenience scripts wrap it:
 
 ```bash
 pnpm db:up          # starts postgres
-pnpm keycloak:up    # starts keycloak
 
 # or all at once:
 docker compose -f docker-compose.dev.yml up -d
@@ -141,20 +138,31 @@ Check they're healthy:
 docker compose -f docker-compose.dev.yml ps
 ```
 
-You should see `postgres`, `keycloak`, and `mailpit` with status `running` (postgres should also say `healthy` after ~10s).
+You should see `postgres` with status `running` (and `healthy` after ~10s). Keycloak and Mailpit are commented out in the compose file.
 
-### 5b. Keycloak realm import — first-time only
+### 5b. Cognito credentials — first-time only
 
-Keycloak boots with an empty admin account by default. The repo includes a pre-configured realm export under `.docker/keycloak/innlab-dev-realm.json` that defines:
+There is **no local identity provider to start**. Authentication runs against the
+**Amazon Cognito User Pool shared across the INNLAB ecosystem** — the same pool
+`innlab-core-api` validates against. Do not create a User Pool of your own and do
+not build the URLs from a region you picked: ask the Core team for the real
+values and paste them into `apps/api/.env.local`:
 
-- The `innlab-dev` realm.
-- The `diagnostico-irl-api` client (audience for backend JWT validation).
-- The `diagnostico-irl-web` client (public, PKCE, for the SPA).
-- A test user (`test@innlab.icesi.edu.co` / password `password`).
+```dotenv
+COGNITO_JWKS_URI=https://cognito-idp.<region>.amazonaws.com/<userPoolId>/.well-known/jwks.json
+COGNITO_ISSUER=https://cognito-idp.<region>.amazonaws.com/<userPoolId>
+```
 
-The compose file mounts the export directory so Keycloak auto-imports on first boot. If you don't see the realm in the admin UI, see [`docs/workflows/debugging-keycloak.md`](./debugging-keycloak.md).
+Both are **required** at boot (`env.validation.ts` uses Joi `.required()`), so the
+API refuses to start without them. With the placeholder values shipped in
+`.env.example` the API does boot, but every authenticated request answers 401 —
+the JWKS host does not resolve, so no signature can be verified.
 
-Verify by going to <http://localhost:8080/realms/innlab-dev/.well-known/openid-configuration> — you should see a JSON response.
+The browser never talks to Cognito directly: the SPA sends a visitor without a
+session to the INNLAB Hub (`VITE_CORE_URL`), the Hub authenticates against
+Cognito, and it returns to `/auth/callback?code=…`, which the SPA exchanges for
+tokens against `VITE_CORE_API_URL`. See the `auth` feature in
+[`apps/web/docs/MODULES.md`](../../apps/web/docs/MODULES.md).
 
 ### 5c. InnLab Core mock — first-time only
 
@@ -224,7 +232,7 @@ Open the apps:
 
 - API health: <http://localhost:3000/health/live> should return `{"status":"ok"}`.
 - API docs: <http://localhost:3000/api/v1/docs> should render Swagger UI.
-- Frontend: <http://localhost:5173> should redirect to Keycloak. Sign in with `test@innlab.icesi.edu.co` / `password`.
+- Frontend: <http://localhost:5173> should redirect to the INNLAB Hub for SSO. Sign in with an account of the shared INNLAB Cognito pool.
 - After sign-in: you should land on the home page, then be able to start a new diagnostic.
 
 Mailpit UI is at <http://localhost:8025> — any email the backend sends shows up here.
@@ -236,7 +244,7 @@ You don't repeat the whole flow each morning. Typical loop:
 ```bash
 git checkout dev && git pull
 pnpm install                # only if package.json changed (it almost always has)
-pnpm db:up && pnpm keycloak:up   # if you stopped them
+pnpm db:up                  # if you stopped it
 pnpm dev
 ```
 
@@ -264,7 +272,7 @@ You forgot Step 3. Run `pnpm --filter @innlab/contracts build`.
 
 ### "Invalid token signature" when the SPA calls the API
 
-Keycloak hadn't finished booting when the backend started, so the JWKS fetch returned empty. Restart the backend (`pnpm --filter @innlab/api dev`). Keycloak takes ~15s to be ready on first boot.
+Almost always `COGNITO_JWKS_URI` or `COGNITO_ISSUER` in `apps/api/.env.local` still holds the `<region>`/`<userPoolId>` placeholder from `.env.example`, so no key can be fetched and no signature verified. Get the real values from the Core team (Step 5b). If they are already set, check that the SPA is sending `accessToken` and not `token`: the guard requires `token_use === 'access'` and rejects the id_token.
 
 ### "EACCES" on macOS/Linux when running `pnpm install`
 

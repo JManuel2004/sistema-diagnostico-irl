@@ -1,6 +1,6 @@
 # @innlab/api — Backend
 
-The IRL Diagnostic System backend. **NestJS 10+** running on **Fastify**, persisting to **PostgreSQL** via **TypeORM**, authenticating against **Keycloak** via OIDC, and consuming the **InnLab Core API** for user context.
+The IRL Diagnostic System backend. **NestJS 10+** running on **Fastify**, persisting to **PostgreSQL** via **TypeORM**, authenticating against the **INNLAB Amazon Cognito** User Pool, and consuming the **INNLAB Core API** for user context.
 
 This README is for backend developers. For the system overview, see the [root README](../../README.md).
 
@@ -11,7 +11,7 @@ This README is for backend developers. For the system overview, see the [root RE
 | HTTP framework | NestJS 10 with Fastify adapter                                                                                 |
 | ORM            | TypeORM (mandated by the anteproyecto)                                                                         |
 | Database       | PostgreSQL 16                                                                                                  |
-| Authentication | Keycloak (OIDC, RS256 JWT, JWKS) — via `passport-jwt` + `jwks-rsa`                                             |
+| Authentication | Amazon Cognito (RS256 JWT, JWKS) — via `passport-jwt` + `jwks-rsa`                                            |
 | Validation     | `class-validator` at HTTP boundary, `zod` at cross-tier contract boundary                                      |
 | Logging        | Pino via `nestjs-pino`                                                                                         |
 | Mail           | `nodemailer` behind a `MailerPort`                                                                             |
@@ -29,7 +29,6 @@ cp apps/api/.env.example apps/api/.env.local
 # edit apps/api/.env.local with real values
 
 pnpm db:up
-pnpm keycloak:up
 
 pnpm --filter @innlab/api db:migration:run
 pnpm --filter @innlab/api db:seed
@@ -64,7 +63,7 @@ apps/api/
 │   │   └── application/         # use-case interface
 │   │
 │   ├── modules/
-│   │   ├── identity/            # E-01 — Keycloak guard + InnLab Core client
+│   │   ├── identity/            # E-01 — Cognito guard + INNLAB Core client
 │   │   ├── irl-catalog/         # read-only catalogs (dimensions, statements, conversion)
 │   │   ├── consent/             # E-02 — RF-03
 │   │   ├── initiative/          # E-02 — RF-04
@@ -121,7 +120,7 @@ For the full walk-through of every module, see [`docs/modules.md`](./docs/module
 
 ## Architecture in one paragraph
 
-Modular monolith with DDD-lite. One NestJS module per bounded context. The **Diagnostic module is the orchestrator** — other modules never call each other directly. The domain layer imports zero framework code. Repositories implement domain ports; HTTP clients (Keycloak, InnLab Core) implement domain ports. The IRL calculator is a pure function over the conversion table, exhaustively property-tested.
+Modular monolith with DDD-lite. One NestJS module per bounded context. The **Diagnostic module is the orchestrator** — other modules never call each other directly. The domain layer imports zero framework code. Repositories implement domain ports; HTTP clients (INNLAB Core) implement domain ports. The IRL calculator is a pure function over the conversion table, exhaustively property-tested.
 
 ## Database
 
@@ -136,13 +135,43 @@ The split is enforced at the database level via role grants — defense in depth
 
 ## Authentication
 
-Three rules:
+The identity provider is the **Amazon Cognito User Pool shared across the INNLAB
+ecosystem** — the same pool `innlab-core-api` validates against. It is not ours
+to create or configure: ask the Core team for `COGNITO_JWKS_URI` and
+`COGNITO_ISSUER` rather than standing up a pool of your own.
 
-1. **All requests** to `/api/v1/*` (except `/health`) carry `Authorization: Bearer <JWT>`. The `KeycloakGuard` verifies the JWT locally against JWKS keys cached at boot — **no HTTP call per request**.
-2. **User context** (name, email, identifier) comes from the InnLab Core API, **called once per session** and cached in memory. The call uses **service credentials** (`client_credentials`), never the user's JWT — see RNF-05.
-3. **Resource authorization** is checked in use cases: `if (diagnostic.userId !== currentUser.id) throw new ForbiddenError()`. RNF-04 — no user sees another user's diagnostics.
+Four rules:
 
-Troubleshooting auth failures: [`docs/workflows/debugging-keycloak.md`](../../docs/workflows/debugging-keycloak.md).
+1. **Authentication is the default, not an opt-in.** `JwtAuthGuard` is registered
+   as an `APP_GUARD` in `identity.module.ts`, so it covers the entire HTTP
+   surface. A route opens up only by carrying `@Public()` — today just the
+   health endpoints. Fail-closed: a new controller is protected the moment it is
+   written, without anyone remembering to guard it.
+2. **Validation is local and offline.** `jwks-rsa` caches the pool's public keys,
+   so signature, issuer and algorithm (RS256) are verified with **no HTTP call
+   per request**. There is deliberately **no audience / `client_id` check**: any
+   valid token from the shared pool passes, in any product of the ecosystem.
+   Per-product authorization is a separate question, answered by Core.
+3. **Only an access token authenticates.** The SSO exchange hands the frontend
+   both `token` (the id_token) and `accessToken`; the guard requires
+   `token_use === 'access'` and rejects the id_token. Core enforces the same
+   check, so accepting it here would turn a legible 401 into an opaque one one
+   hop later.
+4. **User context** (name, email, identifier) comes from the INNLAB Core API,
+   **called once per session** and cached in memory. That call authenticates
+   with the static `x-internal-key` header (`CORE_INTERNAL_KEY`), registered by
+   hand by the Core team — not OAuth `client_credentials`, and never the user's
+   own JWT. See RNF-05.
+
+**Resource authorization** remains a separate concern, checked inside use cases:
+`if (diagnostic.userId !== currentUser.id) throw new ForbiddenError()`. RNF-04 —
+no user sees another user's diagnostics.
+
+When debugging an auth failure, read
+[`test/e2e/modules/identity/cognito-jwt-guard.e2e-spec.ts`](./test/e2e/modules/identity/cognito-jwt-guard.e2e-spec.ts)
+first: it pins the guard's real behaviour end to end — signature, issuer,
+algorithm, `kid` lookup, `token_use`, and `@Public()` routes — by signing its own
+RS256 tokens against a mocked JWKS.
 
 ## API design
 
@@ -170,7 +199,7 @@ start:prod              # NODE_ENV=production node dist/main.js
 test                    # all projects (unit + integration + e2e)
 test:unit               # fast: domain + application, no DB
 test:integration        # Testcontainers spins up Postgres
-test:e2e                # supertest against compiled app, mocked Keycloak/InnLab Core
+test:e2e                # supertest against compiled app, self-signed JWT + mocked JWKS
 test:cov                # coverage report
 test:watch              # watch mode
 
@@ -196,7 +225,7 @@ Three tiers, three speed budgets:
 | ----------- | ------------------- | --------------------------------------------------------------- | --------------- |
 | Unit        | `test/unit/`        | Domain + application, no IO                                     | < 5s full suite |
 | Integration | `test/integration/` | Repositories, use cases with DB (Testcontainers)                | < 60s           |
-| E2E         | `test/e2e/`         | One spec per user story, full HTTP, mocked Keycloak/InnLab Core | < 3min          |
+| E2E         | `test/e2e/`         | One spec per user story, full HTTP, self-signed JWT + mocked JWKS | < 3min          |
 
 Coverage thresholds are scoped, not repo-wide. `modules/maturity-profile/domain/` requires **95%**. `modules/questionnaire/domain/` requires **90%**. Everything else is best-effort. The IRL calculator is property-tested with `fast-check` over the full Likert input space.
 
