@@ -4,8 +4,10 @@ import {
   type NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import request from 'supertest';
+import nock from 'nock';
 import { AppModule } from '../../../../src/app.module.js';
 import { configureApp } from '../../../../src/infrastructure/http/configure-app.js';
+import { authenticateAgainst } from '../../support/authenticated-app.js';
 import { questionnaireStructureSchema } from '@innlab/contracts';
 
 /**
@@ -23,6 +25,9 @@ import { questionnaireStructureSchema } from '@innlab/contracts';
  */
 describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
   let app: NestFastifyApplication;
+  // Agente con la cabecera Authorization por defecto: el guard global
+  // rechaza cualquier peticion sin token.
+  let agent: ReturnType<typeof request.agent>;
 
   beforeAll(async () => {
     // Build the test module using the real AppModule to get all wiring
@@ -37,22 +42,25 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 
+    agent = request
+      .agent(app.getHttpServer())
+      .set('Authorization', authenticateAgainst(app));
+
     // Note: This test assumes the database is available via the configured
     // connection string (e.g., docker-compose or local DB). The integration
     // tests use Testcontainers; this test uses the real DB.
   }, 30_000);
 
   afterAll(async () => {
+    nock.cleanAll();
     await app.close();
   });
 
   describe('Questionnaire structure endpoint', () => {
     it('returns 200 with the complete questionnaire structure', async () => {
       const start = Date.now();
-       
-      const response = await request(app.getHttpServer()).get(
-        '/api/v1/catalogo/cuestionario',
-      );
+
+      const response = await agent.get('/api/v1/catalogo/cuestionario');
       const elapsed = Date.now() - start;
 
       // AC-6: Returns 200
@@ -85,14 +93,10 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
 
     it('returns consistent results on multiple calls (idempotency)', async () => {
       // Call the endpoint twice and verify the responses are identical
-       
-      const response1 = await request(app.getHttpServer()).get(
-        '/api/v1/catalogo/cuestionario',
-      );
-       
-      const response2 = await request(app.getHttpServer()).get(
-        '/api/v1/catalogo/cuestionario',
-      );
+
+      const response1 = await agent.get('/api/v1/catalogo/cuestionario');
+
+      const response2 = await agent.get('/api/v1/catalogo/cuestionario');
 
       expect(response1.status).toBe(200);
       expect(response2.status).toBe(200);
@@ -102,10 +106,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     });
 
     it('response body contains required fields in each dimension', async () => {
-       
-      const response = await request(app.getHttpServer()).get(
-        '/api/v1/catalogo/cuestionario',
-      );
+      const response = await agent.get('/api/v1/catalogo/cuestionario');
       const parsed = questionnaireStructureSchema.parse(response.body);
 
       for (const dimension of parsed.dimensions) {
@@ -126,10 +127,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     });
 
     it('response body contains required fields in each statement', async () => {
-       
-      const response = await request(app.getHttpServer()).get(
-        '/api/v1/catalogo/cuestionario',
-      );
+      const response = await agent.get('/api/v1/catalogo/cuestionario');
       const parsed = questionnaireStructureSchema.parse(response.body);
 
       for (const dimension of parsed.dimensions) {
@@ -157,10 +155,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     });
 
     it('returns a versionMarco field for cache invalidation', async () => {
-       
-      const response = await request(app.getHttpServer()).get(
-        '/api/v1/catalogo/cuestionario',
-      );
+      const response = await agent.get('/api/v1/catalogo/cuestionario');
       const parsed = questionnaireStructureSchema.parse(response.body);
 
       expect(parsed).toHaveProperty('versionMarco');

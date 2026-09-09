@@ -6,10 +6,12 @@ import {
 } from '@nestjs/platform-fastify';
 import { DataSource } from 'typeorm';
 import request from 'supertest';
+import nock from 'nock';
 import { randomUUID } from 'node:crypto';
 import { roadmapResponseSchema } from '@innlab/contracts';
 import { AppModule } from '../../../../src/app.module.js';
 import { configureApp } from '../../../../src/infrastructure/http/configure-app.js';
+import { authenticateAgainst } from '../../support/authenticated-app.js';
 
 /**
  * E2E — roadmap de escalamiento para el perfil de AgroConecta.
@@ -43,6 +45,9 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
   let app: NestFastifyApplication;
   let dataSource: DataSource;
   let diagnosticId: string;
+  // Agente con la cabecera Authorization por defecto: el guard global
+  // rechaza cualquier peticion sin token.
+  let agent: ReturnType<typeof request.agent>;
 
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
@@ -55,6 +60,10 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
     configureApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
+
+    agent = request
+      .agent(app.getHttpServer())
+      .set('Authorization', authenticateAgainst(app));
 
     dataSource = app.get(DataSource);
     diagnosticId = randomUUID();
@@ -80,7 +89,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
       value: RESPUESTAS_POR_DIMENSION[a.codigo][a.numero_en_dimension - 1],
     }));
 
-    await request(app.getHttpServer())
+    await agent
       .post(`/api/v1/diagnosticos/${diagnosticId}/finalizar-inicial`)
       .send({ answers })
       .expect(201);
@@ -93,11 +102,12 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
         [diagnosticId],
       );
     }
+    nock.cleanAll();
     await app?.close();
   });
 
   it('el perfil de partida es el de AgroConecta', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await agent
       .get(`/api/v1/diagnosticos/${diagnosticId}/perfil`)
       .expect(200);
 
@@ -112,7 +122,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
   });
 
   it('GET /roadmap devuelve dos fases con el orden de dependencias esperado', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await agent
       .get(`/api/v1/diagnosticos/${diagnosticId}/roadmap`)
       .expect(200);
 
@@ -135,7 +145,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
   });
 
   it('excluye Tecnología, Cliente y Equipo, y lo dice explícitamente', () => {
-    return request(app.getHttpServer())
+    return agent
       .get(`/api/v1/diagnosticos/${diagnosticId}/roadmap`)
       .expect(200)
       .expect((res) => {
@@ -157,7 +167,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
   });
 
   it('lleva las tres dimensiones intervenidas hasta el nivel 4', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await agent
       .get(`/api/v1/diagnosticos/${diagnosticId}/roadmap`)
       .expect(200);
     const roadmap = roadmapResponseSchema.parse(res.body);
@@ -179,7 +189,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
   });
 
   it('expone qué desbloquea cada dimensión, para que el orden sea refutable', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await agent
       .get(`/api/v1/diagnosticos/${diagnosticId}/roadmap`)
       .expect(200);
     const roadmap = roadmapResponseSchema.parse(res.body);
@@ -203,9 +213,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
     );
 
     try {
-      await request(app.getHttpServer())
-        .get(`/api/v1/diagnosticos/${otro}/roadmap`)
-        .expect(409);
+      await agent.get(`/api/v1/diagnosticos/${otro}/roadmap`).expect(409);
     } finally {
       await dataSource.query(
         `DELETE FROM irl_diagnostic.diagnostico WHERE id_diagnostico = $1`,

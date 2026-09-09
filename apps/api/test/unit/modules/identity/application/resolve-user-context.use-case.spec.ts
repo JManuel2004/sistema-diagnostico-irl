@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/unbound-method */
+ 
 import { jest } from '@jest/globals';
 import { ResolveUserContextUseCase } from '../../../../../src/modules/identity/application/resolve-user-context.use-case.js';
 import type { UserContext } from '../../../../../src/modules/identity/domain/entities/user-context.vo.js';
