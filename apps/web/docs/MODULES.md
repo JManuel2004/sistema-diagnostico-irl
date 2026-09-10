@@ -10,7 +10,7 @@ Phase 1 covers user stories from epics **E-03 (Cuestionario IRL)** and **E-04 (D
 
 | Feature                                 | Phase 1 status              | Owns                                                             |
 | --------------------------------------- | --------------------------- | ---------------------------------------------------------------- |
-| [`auth`](#auth)                         | Walking skeleton            | OIDC integration, protected route guard                          |
+| [`auth`](#auth)                         | Implemented                 | INNLAB SSO session, protected route guard                        |
 | [`diagnostic`](#diagnostic)             | Walking skeleton            | Diagnostic listing, state machine guard                          |
 | [`consent`](#consent)                   | Walking skeleton            | Ley 1581 consent form                                            |
 | [`initiative`](#initiative)             | Walking skeleton            | Initiative form (nombre, sector, descripción)                    |
@@ -21,46 +21,67 @@ Phase 1 covers user stories from epics **E-03 (Cuestionario IRL)** and **E-04 (D
 
 ## `auth`
 
-**Responsibility:** integrate with Keycloak via `react-oidc-context`. Provide the authentication context, the post-login callback, and the `ProtectedRoute` element used by the router. Expose the current user from a single hook.
+**Responsibility:** hold the INNLAB ecosystem session. Send a visitor without one to the INNLAB Hub, exchange the returned `?code=` for tokens, keep the session alive, and log out. There is no OIDC library: the flow is INNLAB's own SSO handshake against `innlab-core-api`, and Cognito is reached through the Hub, never by this app directly.
 
 **User stories:** HU-01 (RF-00, RF-01) — first authenticated session.
+
+### The flow
+
+```
+app without a session
+  → {VITE_CORE_URL}/auth/sso?redirect=<our callback url>
+  → the Hub authenticates against Cognito if needed
+  → back to /auth/callback?code=xxxx        (single use, 30s TTL)
+  → GET {VITE_CORE_API_URL}/auth/sso/exchange?code=xxxx
+  → { token: <id_token>, accessToken: <access_token> }
+```
+
+The frontend exchanges the code **directly against Core**; our backend never sees it. `token` is the id_token and does not authenticate — the backend requires `token_use === 'access'`, so the Bearer is always `accessToken`.
+
+There is **no refresh token**. A session is kept alive by passive polling (`useSessionLiveness`), and a 401 from our API means the session is dead: `shared/api/http.ts` clears it and restarts the SSO flow.
 
 ### Folder structure
 
 ```
 features/auth/
 ├── components/
-│   ├── AuthCallbackHandler.tsx     # /auth/callback — exchange code for tokens
-│   └── ProtectedRoute.tsx          # route element wrapper
+│   └── LogoutButton.tsx            # ends the session, here and at Core
 ├── hooks/
-│   ├── useCurrentUser.ts           # { id, name, email } or null
-│   └── useSignOut.ts
+│   ├── useSsoExchange.ts           # drives /auth/callback
+│   ├── useSessionLiveness.ts       # re-checks the session on tab focus
+│   └── useLogout.ts
 ├── api/
-│   └── (none — react-oidc-context owns the network calls)
+│   └── core-auth.api.ts            # its own axios instance, aimed at Core
 └── index.ts
 ```
+
+Two pieces deliberately live **outside** this feature:
+
+- `shared/auth/session.ts` — token storage and `redirectToSso()`. The interceptor in `shared/api/http.ts` needs the access token, and the boundary rules forbid `shared/` importing from a feature.
+- `app/router/ProtectedRoute.tsx` — the route element that redirects to the Hub when there is no session.
 
 ### Public surface
 
 ```ts
-export { ProtectedRoute } from './components/ProtectedRoute';
-export { AuthCallbackHandler } from './components/AuthCallbackHandler';
-export { useCurrentUser } from './hooks/useCurrentUser';
-export { useSignOut } from './hooks/useSignOut';
+export { LogoutButton } from './components/LogoutButton';
+export { useLogout } from './hooks/useLogout';
+export { useSessionLiveness } from './hooks/useSessionLiveness';
+export { useSsoExchange } from './hooks/useSsoExchange';
+export { exchangeSsoCode, isSessionAlive, logoutFromCore } from './api/core-auth.api';
 ```
 
 ### State
 
-No Zustand store. `react-oidc-context` keeps tokens in its in-memory `UserManager`. The `useCurrentUser` hook is a thin selector over `useAuth()`.
+No Zustand store. The session lives in `localStorage` under `innlab.session.v1`, read through `shared/auth/session.ts`.
 
 ### Routes consumed by
 
-- `/auth/callback` → `AuthCallbackHandler`
-- Every protected route is wrapped in `<ProtectedRoute>` at the router level (`app/router/routes.tsx`).
+- `/auth/callback` → `AuthCallbackPage`, the one route deliberately left **outside** `<ProtectedRoute>`: the user arrives there without a session, and guarding it would bounce them back to the Hub in a loop.
+- Every other route is wrapped in `<ProtectedRoute>` at the router level (`app/router/routes.tsx`).
 
 ### Phase 1 status
 
-Walking skeleton. Sign-in, sign-out, and protected-route enforcement work end-to-end. No role-based UI gating yet — every authenticated user is a "Líder de Iniciativa." Future: a `useHasRole('innlab-staff')` hook for admin UI.
+Sign-in, sign-out, session liveness and protected-route enforcement work end-to-end. No role-based UI gating — every authenticated user is a "Líder de Iniciativa"; per-product authorization is Core's call, not a claim we read from the token.
 
 ---
 

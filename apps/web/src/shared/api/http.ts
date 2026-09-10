@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { nanoid } from 'nanoid';
 import { problemDetailsSchema, type ProblemDetails } from '@innlab/contracts';
+import { clearSession, getAccessToken, redirectToSso } from '@/shared/auth/session';
 
 export const http = axios.create({
   baseURL: String(import.meta.env.VITE_API_BASE_URL ?? '/api/v1'),
@@ -9,6 +10,14 @@ export const http = axios.create({
 
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   config.headers.set('X-Correlation-Id', nanoid());
+
+  // `accessToken`, nunca `token`: el id_token no autentica (el guard del
+  // backend exige `token_use === 'access'`). Ver shared/auth/session.ts.
+  const accessToken = getAccessToken();
+  if (accessToken !== null) {
+    config.headers.set('Authorization', `Bearer ${accessToken}`);
+  }
+
   return config;
 });
 
@@ -50,6 +59,17 @@ http.interceptors.response.use(
   (error: AxiosError<unknown>) => {
     const status = error.response?.status;
     const data = error.response?.data;
+
+    // Sin refresh token: un 401 significa sesión muerta, y la única
+    // recuperación posible es rehacer el SSO desde cero. Va antes de
+    // interpretar el cuerpo porque la acción no depende de su forma.
+    if (status === 401) {
+      clearSession();
+      redirectToSso(window.location.pathname + window.location.search);
+      return Promise.reject(
+        new ApiError('Sesión expirada. Redirigiendo al inicio de sesión.', undefined, status),
+      );
+    }
 
     const parsed = problemDetailsSchema.safeParse(data);
     if (parsed.success) {

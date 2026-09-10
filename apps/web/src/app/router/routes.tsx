@@ -7,6 +7,7 @@ import RecommendationPage from '@pages/RecommendationPage';
 import ScalingRoadmapPage from '@pages/ScalingRoadmapPage';
 import InProgressPage from '@pages/InProgressPage';
 import NotFoundPage from '@pages/NotFoundPage';
+import AuthCallbackPage from '@pages/AuthCallbackPage';
 import { ProtectedRoute } from './ProtectedRoute';
 
 /**
@@ -18,10 +19,10 @@ import { ProtectedRoute } from './ProtectedRoute';
  * un `<InProgressPage>` que nombra la HU que eventualmente las
  * reemplazará.
  *
- * Toda ruta autenticada está envuelta en `<ProtectedRoute>` aunque
- * ahora sea no-op (ver `ProtectedRoute.tsx`). El wrapper es
- * documentación intencional — cuando Stage 2 introduzca auth real,
- * la tabla de rutas no se edita, solo el wrapper.
+ * Toda ruta autenticada está envuelta en `<ProtectedRoute>`, que desde
+ * HU-01 redirige al Hub de INNLAB cuando no hay sesión. La única
+ * excepción es `/auth/callback`, que por definición se visita sin
+ * sesión.
  */
 export function AppRoutes(): JSX.Element {
   return (
@@ -100,10 +101,12 @@ export function AppRoutes(): JSX.Element {
         }
       />
 
-      <Route
-        path="/auth/callback"
-        element={<InProgressPage title="Procesando inicio de sesión" story="HU-01 / RF-00" />}
-      />
+      {/*
+        Publica a proposito: el usuario llega aqui todavia sin sesion,
+        de vuelta desde el Hub de INNLAB con `?code=`. Envolverla en
+        <ProtectedRoute> la mandaria de nuevo al Hub, en bucle.
+      */}
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

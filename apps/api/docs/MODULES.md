@@ -6,7 +6,7 @@ Phase 1 implements user stories from epics **E-03 (Cuestionario IRL)** and **E-0
 
 | Module                                    | Phase 1 status                        | Owns                                                               |
 | ----------------------------------------- | ------------------------------------- | ------------------------------------------------------------------ |
-| [`identity`](#identity)                   | Walking skeleton                      | Keycloak guard, InnLab Core client, user context                   |
+| [`identity`](#identity)                   | Implemented                           | Cognito guard, INNLAB Core client, user context                    |
 | [`irl-catalog`](#irl-catalog)             | Full                                  | Dimensions, statements, conversion table, dimension pairs, sectors |
 | [`consent`](#consent)                     | Walking skeleton                      | Ley 1581 consent capture                                           |
 | [`initiative`](#initiative)               | Walking skeleton                      | Initiative form (nombre, sector, descripción)                      |
@@ -23,36 +23,36 @@ Phase 1 implements user stories from epics **E-03 (Cuestionario IRL)** and **E-0
 
 ## `identity`
 
-**Responsibility:** authenticate every request via Keycloak JWT, then resolve the user's profile (name, email, identifier) from the InnLab Core API. Cache aggressively — JWKS once at boot, user context once per session.
+**Responsibility:** authenticate every request against the INNLAB Amazon Cognito User Pool, then resolve the user's profile (name, email, identifier) from the INNLAB Core API. Cache aggressively — JWKS by `jwks-rsa`, user context once per session.
 
 **SRS coverage:** RF-00, RF-01. RNF-03, RNF-04, RNF-05.
 
 ### Domain
 
-- `UserContext` value object — `{ id, name, email }`. Validated on construction.
-- `UserContextPort` — interface, declared in `domain/ports/`.
+- `AuthenticatedUser` value object — `{ id, email, firstName?, lastName? }`. Built from the token claims alone; it is what `req.user` carries.
+- `UserContext` value object — the richer profile resolved from Core.
+- `UserContextPort` / `UserContextCachePort` — interfaces, declared in `domain/ports/`.
 
 ### Application
 
-- `ResolveUserContextUseCase` — given a Keycloak `sub` claim, returns the `UserContext`. Calls the port, caches the result for the session TTL.
+- `ResolveUserContextUseCase` — given a Cognito `sub` claim, returns the `UserContext`. Calls the port, caches the result for the session TTL. Wired with a factory in the module, because the application layer may not import `@nestjs/common` (enforced in `eslint.config.mjs`).
 
 ### Infrastructure
 
-- `JwksProvider` — downloads Keycloak JWKS at boot via `jwks-rsa`, refreshes on `kid` mismatch.
-- `KeycloakStrategy` (passport-jwt) — validates JWT locally, no HTTP per request.
-- `KeycloakGuard` — `@UseGuards(KeycloakGuard)` at the controller level.
-- `InnlabCoreHttpClient` (implements `UserContextPort`) — calls `GET /users/{id}` with a service token.
-- `ServiceTokenProvider` — obtains a token via `client_credentials`, rotates 30s before expiry.
-- `UserContextCache` — in-memory LRU keyed by `sub`.
+- `CognitoJwtStrategy` (passport-jwt) — validates the JWT locally against the pool's JWKS, no HTTP per request. Checks signature, issuer and RS256; requires `token_use === 'access'`, so an id_token is rejected. Deliberately does **not** check audience / `client_id` — see the backend README.
+- `JwtAuthGuard` — registered as an `APP_GUARD` in `identity.module.ts`, so it protects the whole HTTP surface by default. Opting out is per-route, via `@Public()`.
+- `InnlabCoreHttpClient` (implements `UserContextPort`) — calls `GET /internal/users/{id}/context` authenticated with the static `x-internal-key` header (`CORE_INTERNAL_KEY`). The Core team registers that key by hand; there is no self-service and no OAuth `client_credentials`.
+- `InMemoryUserContextCache` (implements `UserContextCachePort`) — keyed by `sub`.
 
 ### Interfaces
 
-- `@CurrentUser()` decorator — extracts the resolved `UserContext` from request scope.
-- No controllers (identity isn't a user-facing resource; it runs as middleware/interceptor).
+- `@CurrentUser()` decorator — extracts the `AuthenticatedUser` from the request.
+- `@Public()` decorator — marks a route as reachable without a token.
+- `MeController` — `GET /api/v1/me/context`, the caller's own resolved context.
 
 ### Phase 1 status
 
-Walking skeleton. The guard and user context resolution work end-to-end. No role-based authorization yet — every authenticated user is a "Líder de Iniciativa." Future: `@Roles('innlab-staff')` decorator when the admin role lands in Keycloak.
+The guard, the strategy and user context resolution work end-to-end, and the module is `@Global()` because every other context resolves the caller's identity. No role-based authorization yet — every authenticated user is a "Líder de Iniciativa." Per-product authorization is Core's responsibility, not a claim in our token.
 
 ---
 

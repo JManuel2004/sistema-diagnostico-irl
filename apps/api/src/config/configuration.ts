@@ -25,16 +25,32 @@ export interface DatabaseConfig {
   readonly schemaCatalog: string;
 }
 
-export interface KeycloakConfig {
-  readonly issuerUrl: string;
+/**
+ * Cognito — validation of the user access token.
+ *
+ * The whole INNLAB ecosystem shares a single Cognito User Pool owned by
+ * `innlab-core`. Both values are handed over by the Core team; never
+ * derive them from a region/pool id of our own. Validation against them
+ * is local and offline (JWKS is cached by `jwks-rsa`), so no request to
+ * Core or to Cognito happens per HTTP call.
+ */
+export interface CognitoConfig {
   readonly jwksUri: string;
-  readonly audience: string;
+  readonly issuer: string;
 }
 
+/**
+ * Outbound calls to `innlab-core-api` `/internal/*`.
+ *
+ * Authentication is a static shared secret in the `x-internal-key`
+ * header — NOT an OAuth `client_credentials` exchange. The key is
+ * registered by hand on the Core side (`SERVICE_KEY_ENV` in their
+ * `internal.guard.ts`); there is no self-service.
+ */
 export interface InnLabCoreConfig {
   readonly baseUrl: string;
-  readonly clientId: string;
-  readonly clientSecret: string;
+  readonly timeoutMs: number;
+  readonly internalKey: string;
 }
 
 export interface SmtpConfig {
@@ -52,7 +68,7 @@ export interface AppConfig {
   readonly webOrigin: string;
   readonly logLevel: LogLevel;
   readonly database: DatabaseConfig;
-  readonly keycloak: KeycloakConfig;
+  readonly cognito: CognitoConfig;
   readonly innlabCore: InnLabCoreConfig;
   readonly smtp: SmtpConfig;
 }
@@ -79,21 +95,14 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       schemaDiagnostic: env.DATABASE_SCHEMA_DIAGNOSTIC ?? 'irl_diagnostic',
       schemaCatalog: env.DATABASE_SCHEMA_CATALOG ?? 'irl_catalog',
     },
-    keycloak: {
-      issuerUrl: requireString(env.KEYCLOAK_ISSUER_URL, 'KEYCLOAK_ISSUER_URL'),
-      jwksUri: requireString(env.KEYCLOAK_JWKS_URI, 'KEYCLOAK_JWKS_URI'),
-      audience: requireString(env.KEYCLOAK_AUDIENCE, 'KEYCLOAK_AUDIENCE'),
+    cognito: {
+      jwksUri: requireString(env.COGNITO_JWKS_URI, 'COGNITO_JWKS_URI'),
+      issuer: requireString(env.COGNITO_ISSUER, 'COGNITO_ISSUER'),
     },
     innlabCore: {
-      baseUrl: requireString(env.INNLAB_CORE_BASE_URL, 'INNLAB_CORE_BASE_URL'),
-      clientId: requireString(
-        env.INNLAB_CORE_CLIENT_ID,
-        'INNLAB_CORE_CLIENT_ID',
-      ),
-      clientSecret: requireString(
-        env.INNLAB_CORE_CLIENT_SECRET,
-        'INNLAB_CORE_CLIENT_SECRET',
-      ),
+      baseUrl: requireString(env.INNLAB_API_BASE_URL, 'INNLAB_API_BASE_URL'),
+      timeoutMs: Number(env.INNLAB_API_TIMEOUT ?? 5000),
+      internalKey: requireString(env.CORE_INTERNAL_KEY, 'CORE_INTERNAL_KEY'),
     },
     smtp: {
       host: requireString(env.SMTP_HOST, 'SMTP_HOST'),

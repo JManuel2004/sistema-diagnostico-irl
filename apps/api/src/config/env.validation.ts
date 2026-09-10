@@ -11,13 +11,16 @@ export const envValidationSchema = Joi.object({
   DATABASE_SCHEMA_DIAGNOSTIC: Joi.string().default('irl_diagnostic'),
   DATABASE_SCHEMA_CATALOG: Joi.string().default('irl_catalog'),
 
-  KEYCLOAK_ISSUER_URL: Joi.string().uri().required(),
-  KEYCLOAK_JWKS_URI: Joi.string().uri().required(),
-  KEYCLOAK_AUDIENCE: Joi.string().required(),
+  // Shared INNLAB Cognito User Pool — same values for every product in
+  // the ecosystem. Ask the Core team; do not build them from a region.
+  COGNITO_JWKS_URI: Joi.string().uri().required(),
+  COGNITO_ISSUER: Joi.string().uri().required(),
 
-  INNLAB_CORE_BASE_URL: Joi.string().uri().required(),
-  INNLAB_CORE_CLIENT_ID: Joi.string().required(),
-  INNLAB_CORE_CLIENT_SECRET: Joi.string().required(),
+  // innlab-core-api. `CORE_INTERNAL_KEY` is a static shared secret sent
+  // as `x-internal-key` on every /internal/* call.
+  INNLAB_API_BASE_URL: Joi.string().uri().required(),
+  INNLAB_API_TIMEOUT: Joi.number().default(5000),
+  CORE_INTERNAL_KEY: Joi.string().required(),
 
   SMTP_HOST: Joi.string().required(),
   SMTP_PORT: Joi.number().default(587),

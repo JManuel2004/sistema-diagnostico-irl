@@ -14,7 +14,7 @@ This README is for frontend developers. For the system overview, see the [root R
 | Server state   | TanStack Query 5                                                 |
 | Local/UI state | Zustand (with `persist` middleware for the questionnaire draft)  |
 | Forms          | React Hook Form + Zod via `@hookform/resolvers`                  |
-| Auth           | `react-oidc-context` (OIDC + PKCE S256)                          |
+| Auth           | INNLAB SSO against Core (no OIDC library; Cognito via the Hub)   |
 | Visualization  | Recharts (radar chart)                                           |
 | UI primitives  | Radix UI (dialog, radio-group, tabs)                             |
 | Toasts         | Sonner                                                           |
@@ -155,15 +155,14 @@ export async function submitQuestionnaire(cmd: SubmitCommand) {
 
 React Router 6, with two route element layers:
 
-- **`ProtectedRoute`** — requires an authenticated Keycloak session. Redirects to login otherwise.
+- **`ProtectedRoute`** — requires an INNLAB ecosystem session. Redirects to the INNLAB Hub for SSO otherwise. `/auth/callback` is deliberately left outside it.
 - **`DiagnosticGuard`** — enforces the diagnostic state machine. You can't reach `/diagnosticos/:id/cuestionario` until the user has consented and registered an initiative.
 
 Route map:
 
 ```
 /                                       HomePage
-/login                                  → OIDC redirect (no component)
-/auth/callback                          → OIDC callback handler
+/auth/callback                          AuthCallbackPage (public: exchanges ?code=)
 /diagnosticos                           HomePage (list + start new)
 /diagnosticos/nuevo                     ConsentPage
 /diagnosticos/:id/consentimiento        ConsentPage

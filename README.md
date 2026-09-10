@@ -12,7 +12,7 @@ This is a pnpm monorepo with three packages:
 
 | Path                 | Package             | What it is                                                                      |
 | -------------------- | ------------------- | ------------------------------------------------------------------------------- |
-| `apps/api`           | `@innlab/api`       | NestJS backend — REST API on Fastify, PostgreSQL via TypeORM, Keycloak for auth |
+| `apps/api`           | `@innlab/api`       | NestJS backend — REST API on Fastify, PostgreSQL via TypeORM, Cognito for auth |
 | `apps/web`           | `@innlab/web`       | React + Vite SPA — questionnaire UI and radar profile visualization             |
 | `packages/contracts` | `@innlab/contracts` | Shared Zod schemas — single source of truth for request/response shapes         |
 
@@ -26,7 +26,7 @@ Lock these versions or use `nvm`/Corepack to pin them automatically:
 
 - **Node.js 22.x LTS** (see `.nvmrc`)
 - **pnpm 9.x** (declared in `packageManager` field, installed via Corepack)
-- **Docker** — required for local Postgres, Keycloak, and Mailpit
+- **Docker** — required for the local PostgreSQL instance
 
 Verify:
 
@@ -40,7 +40,7 @@ docker --version
 
 ## Get it running locally
 
-If this is your first time, read [`docs/workflows/local-setup.md`](./docs/workflows/local-setup.md) — it covers the gotchas (Keycloak realm import, Windows path issues, InnLab Core mock).
+If this is your first time, read [`docs/workflows/local-setup.md`](./docs/workflows/local-setup.md) — it covers the gotchas (Cognito credentials, Windows path issues, the INNLAB Core internal key).
 
 The short version:
 
@@ -54,7 +54,6 @@ cp apps/api/.env.example apps/api/.env.local  # fill in real values
 cp apps/web/.env.example apps/web/.env.local
 
 pnpm db:up                                    # start postgres in docker
-pnpm keycloak:up                              # start keycloak in docker
 
 pnpm --filter @innlab/api db:migration:run    # apply migrations
 pnpm --filter @innlab/api db:seed             # load IRL catalogs
@@ -66,7 +65,6 @@ You should see:
 
 - API: <http://localhost:3000>, Swagger at <http://localhost:3000/api/v1/docs>
 - Web: <http://localhost:5173>
-- Keycloak admin: <http://localhost:8080> (admin/admin)
 - Mailpit UI: <http://localhost:8025>
 
 ## Common commands

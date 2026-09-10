@@ -6,6 +6,7 @@ import {
 } from '@nestjs/platform-fastify';
 import { DataSource } from 'typeorm';
 import request from 'supertest';
+import nock from 'nock';
 import { randomUUID } from 'node:crypto';
 import {
   recomendacionResponseSchema,
@@ -13,6 +14,7 @@ import {
 } from '@innlab/contracts';
 import { AppModule } from '../../../../src/app.module.js';
 import { configureApp } from '../../../../src/infrastructure/http/configure-app.js';
+import { authenticateAgainst } from '../../support/authenticated-app.js';
 
 /**
  * E2E — recorrido completo de enrutamiento al portafolio para AgroConecta.
@@ -46,6 +48,9 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
   let app: NestFastifyApplication;
   let dataSource: DataSource;
   let diagnosticId: string;
+  // Agente con la cabecera Authorization por defecto: el guard global
+  // rechaza cualquier peticion sin token.
+  let agent: ReturnType<typeof request.agent>;
 
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
@@ -61,6 +66,10 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     configureApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
+
+    agent = request
+      .agent(app.getHttpServer())
+      .set('Authorization', authenticateAgainst(app));
 
     dataSource = app.get(DataSource);
     diagnosticId = randomUUID();
@@ -110,7 +119,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
       value: RESPUESTAS_POR_DIMENSION[a.codigo][a.numero_en_dimension - 1],
     }));
 
-    await request(app.getHttpServer())
+    await agent
       .post(`/api/v1/diagnosticos/${diagnosticId}/finalizar-inicial`)
       .send({ answers })
       .expect(201);
@@ -123,11 +132,12 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
         [diagnosticId],
       );
     }
+    nock.cleanAll();
     await app?.close();
   });
 
   it('el perfil de partida es el de AgroConecta', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await agent
       .get(`/api/v1/diagnosticos/${diagnosticId}/perfil`)
       .expect(200);
 
@@ -148,7 +158,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
   });
 
   it('POST /recomendacion devuelve Consultoría con sus dos alternativas', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await agent
       .post(`/api/v1/diagnosticos/${diagnosticId}/recomendacion`)
       .expect(201);
 
@@ -165,7 +175,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
   });
 
   it('la justificación cita el motivo declarado del ajuste que decidió el puesto', () => {
-    return request(app.getHttpServer())
+    return agent
       .get(`/api/v1/diagnosticos/${diagnosticId}/recomendacion`)
       .expect(200)
       .expect((res) => {
@@ -175,7 +185,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
   });
 
   it('GET /recomendacion/traza expone las tres capas y atribuye el resultado a E-01', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await agent
       .get(`/api/v1/diagnosticos/${diagnosticId}/recomendacion/traza`)
       .expect(200);
 
@@ -221,7 +231,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
   });
 
   it('regenerar la recomendación es idempotente y no acumula filas', async () => {
-    await request(app.getHttpServer())
+    await agent
       .post(`/api/v1/diagnosticos/${diagnosticId}/recomendacion`)
       .expect(201);
 
@@ -244,7 +254,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     );
 
     try {
-      const res = await request(app.getHttpServer())
+      const res = await agent
         .get(`/api/v1/diagnosticos/${otro}/recomendacion`)
         .expect(409);
       expect((res.body as { code: string }).code).toBe(

@@ -42,7 +42,7 @@ Examples:
 
     feat: add questionnaire render dimension tabs with progress indicator
     feat: add maturity-profile compute irl levels from likert answers
-    feat: add auth validate jwt against keycloak jwks
+    feat: add auth validate jwt against cognito jwks
     feat: add contracts export submit-questionnaire zod schema
 
 ### `fix: correct` — bug fix
@@ -79,7 +79,7 @@ Used for documentation changes only. No code changes in the same commit.
 Examples:
 
     doc: add error-codes.md catalog backend error codes with http mapping
-    doc: update local-setup.md add windows-specific keycloak docker note
+    doc: update local-setup.md add windows-specific docker note
     doc: update domain-model.md clarify bottleneck rule for tied minimum levels
 
 ### `test: add` — tests

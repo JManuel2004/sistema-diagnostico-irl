@@ -16,7 +16,7 @@ Three principles guide every test we write:
 | --------------- | ---------------------------- | -------------------------------- | ----------------------------------------------------------------------- | ----------------- |
 | **Unit**        | `apps/api/test/unit/`        | Jest + fast-check                | Domain logic, application use cases with port stubs                     | Full suite < 5s   |
 | **Integration** | `apps/api/test/integration/` | Jest + Testcontainers (Postgres) | Repositories, use cases with real DB                                    | Full suite < 60s  |
-| **E2E**         | `apps/api/test/e2e/`         | Jest + supertest + nock          | Full HTTP cycle, one spec per user story, mocked Keycloak + InnLab Core | Full suite < 3min |
+| **E2E**         | `apps/api/test/e2e/`         | Jest + supertest + nock          | Full HTTP cycle, one spec per user story, self-signed JWT + mocked JWKS | Full suite < 3min |
 
 ### Coverage thresholds (enforced in CI)
 
@@ -151,47 +151,63 @@ Integration tests **truncate tables in `beforeEach`**, then **seed catalogs** if
 
 One spec per user story. The spec mirrors the Gherkin scenarios from the backlog.
 
+`JwtAuthGuard` is registered as an `APP_GUARD`, so **every** e2e request needs a
+token — a suite that forgets one gets 401 on every assertion. Do not try to
+substitute the guard: neither `overrideGuard(JwtAuthGuard)` nor
+`overrideProvider(APP_GUARD)` reaches the instance Nest mounts in the global
+pipeline. Go **through** authentication instead, with
+`test/e2e/support/authenticated-app.ts`: it signs its own RS256 token and serves
+the matching JWKS with `nock`, reading the issuer and JWKS URI from the config
+the app already loaded, so it works with real Cognito credentials and with the
+placeholders in `.env.example` alike.
+
 ```ts
 // test/e2e/modules/questionnaire/submit-questionnaire.e2e-spec.ts
+import { authenticateAgainst } from '../../support/authenticated-app.js';
+
 describe('HU-10: Verify completeness before calculation', () => {
-  let app: INestApplication;
+  let app: NestFastifyApplication;
+  // Agent carrying the Authorization header by default.
+  let agent: ReturnType<typeof request.agent>;
 
   beforeAll(async () => {
-    app = await buildTestApp({
-      mockKeycloak: { sub: 'user-1', name: 'Test', email: 'test@example.com' },
-      mockInnlabCore: { userContext: { id: 'user-1', name: 'Test', email: 'test@example.com' } },
-    });
+    const moduleFixture = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter({ logger: false }),
+    );
+    configureApp(app);
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+
+    agent = request
+      .agent(app.getHttpServer())
+      .set('Authorization', authenticateAgainst(app));
   });
 
-  afterAll(async () => app.close());
+  afterAll(async () => {
+    nock.cleanAll();
+    await app.close();
+  });
 
   it('blocks the submission when answers are missing', async () => {
     const diagnostic = await seedDiagnosticReadyForQuestionnaire(app, 'user-1');
 
-    const res = await request(app.getHttpServer())
+    const res = await agent
       .post(`/api/v1/diagnosticos/${diagnostic.id}/cuestionario/envio`)
-      .set('Authorization', `Bearer ${mockToken('user-1')}`)
       .send({ answers: incompleteAnswers() });
 
     expect(res.status).toBe(422);
     expect(res.body.code).toBe('QUESTIONNAIRE_INCOMPLETE');
     expect(res.body.missing).toBeDefined();
   });
-
-  it('accepts a complete submission and returns the computed profile', async () => {
-    const diagnostic = await seedDiagnosticReadyForQuestionnaire(app, 'user-1');
-
-    const res = await request(app.getHttpServer())
-      .post(`/api/v1/diagnosticos/${diagnostic.id}/cuestionario/envio`)
-      .set('Authorization', `Bearer ${mockToken('user-1')}`)
-      .send({ answers: validForty8Answers() });
-
-    expect(res.status).toBe(200);
-    expect(res.body.results).toHaveLength(6);
-    expect(res.body.bottleneck).toBeDefined();
-  });
-});
 ```
+
+The guard itself is not this suite's job — `modules/identity/cognito-jwt-guard.e2e-spec.ts`
+covers signature, issuer, algorithm, `kid` lookup, `token_use` and `@Public()`
+routes on its own.
 
 ## Frontend testing tiers
 
@@ -286,7 +302,7 @@ test('HU-10: blocks submission and points to missing items', async ({ page }) =>
 });
 ```
 
-OIDC is stubbed at the fixture level (`signInAsTestUser` injects a mock token via `react-oidc-context`'s storage). No real Keycloak in E2E.
+The INNLAB session is stubbed at the fixture level (`signInAsTestUser` writes a session into `localStorage` under `innlab.session.v1`). No real Hub, no real Cognito in E2E.
 
 ## Shared testing rules
 
