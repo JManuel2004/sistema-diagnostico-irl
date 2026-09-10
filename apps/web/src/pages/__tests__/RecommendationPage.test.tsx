@@ -56,6 +56,56 @@ function renderPage() {
 }
 
 describe('RecommendationPage', () => {
+  it('arma la recomendación en el cliente si el API no tiene la ruta', async () => {
+    const profileBody = {
+      diagnosticId: DIAGNOSTIC_ID,
+      computedAt: '2026-09-10T21:34:54.523Z',
+      dimensionResults: ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'].map((code) => ({
+        dimensionCode: code,
+        name: code,
+        averageLikert: 3,
+        irlLevel: code === 'IPRL' ? 1 : 6,
+      })),
+      bottleneck: { dimensions: ['IPRL'], level: 1 },
+    };
+    server.use(
+      mswHttp.get(BASE, () =>
+        HttpResponse.json(
+          {
+            type: 'https://errors.innlab.icesi.edu.co/not_found',
+            title: `Cannot GET /api/v1/diagnosticos/${DIAGNOSTIC_ID}/recomendacion`,
+            status: 404,
+            detail: `Cannot GET /api/v1/diagnosticos/${DIAGNOSTIC_ID}/recomendacion`,
+            instance: `/api/v1/diagnosticos/${DIAGNOSTIC_ID}/recomendacion`,
+            code: 'NOT_FOUND',
+          },
+          { status: 404 },
+        ),
+      ),
+      mswHttp.get('*/diagnosticos/:id/perfil', () =>
+        HttpResponse.json(
+          {
+            type: 'https://errors.innlab.icesi.edu.co/not_found',
+            title: 'Cannot GET /perfil',
+            status: 404,
+            detail: 'Cannot GET /perfil',
+            code: 'NOT_FOUND',
+          },
+          { status: 404 },
+        ),
+      ),
+      mswHttp.post('*/diagnosticos/:id/perfil', () =>
+        HttpResponse.json(profileBody, { status: 201 }),
+      ),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Consultoría' }),
+    ).toBeInTheDocument();
+  });
+
   it('muestra la recomendación persistida', async () => {
     server.use(mswHttp.get(BASE, () => HttpResponse.json(RECOMENDACION)));
 

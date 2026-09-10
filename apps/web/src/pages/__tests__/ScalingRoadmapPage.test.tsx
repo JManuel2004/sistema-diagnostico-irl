@@ -98,6 +98,57 @@ describe('ScalingRoadmapPage', () => {
     });
   });
 
+  it('construye el roadmap en el cliente si el API no tiene la ruta', async () => {
+    const profileBody = {
+      diagnosticId: DIAGNOSTIC_ID,
+      computedAt: '2026-09-10T21:34:54.523Z',
+      dimensionResults: ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'].map((code) => ({
+        dimensionCode: code,
+        name: code,
+        averageLikert: 3,
+        irlLevel: 6,
+      })),
+      bottleneck: { dimensions: ['TRL'], level: 6 },
+    };
+    server.use(
+      mswHttp.get(BASE, () =>
+        HttpResponse.json(
+          {
+            type: 'https://errors.innlab.icesi.edu.co/not_found',
+            title: `Cannot GET /api/v1/diagnosticos/${DIAGNOSTIC_ID}/roadmap`,
+            status: 404,
+            detail: `Cannot GET /api/v1/diagnosticos/${DIAGNOSTIC_ID}/roadmap`,
+            instance: `/api/v1/diagnosticos/${DIAGNOSTIC_ID}/roadmap`,
+            code: 'NOT_FOUND',
+          },
+          { status: 404 },
+        ),
+      ),
+      mswHttp.get('*/diagnosticos/:id/perfil', () =>
+        HttpResponse.json(
+          {
+            type: 'https://errors.innlab.icesi.edu.co/not_found',
+            title: 'Cannot GET /api/v1/diagnosticos/x/perfil',
+            status: 404,
+            detail: 'Cannot GET /api/v1/diagnosticos/x/perfil',
+            code: 'NOT_FOUND',
+          },
+          { status: 404 },
+        ),
+      ),
+      mswHttp.post('*/diagnosticos/:id/perfil', () =>
+        HttpResponse.json(profileBody, { status: 201 }),
+      ),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Sin fases pendientes' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('presenta un roadmap vacío como resultado sano, sin alerta', async () => {
     server.use(
       mswHttp.get(BASE, () =>
