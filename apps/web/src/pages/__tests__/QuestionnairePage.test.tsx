@@ -332,6 +332,69 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
       await waitFor(() => screen.getByText(PROFILE_ROUTE_MARKER));
     });
 
+    it('falls back to cuestionario + perfil when finalizar-inicial is not deployed', async () => {
+      let cuestionarioCalled = false;
+      let perfilCalled = false;
+      const legacyProfile = {
+        diagnosticId: DIAG_ID,
+        computedAt: '2026-09-10T21:34:54.523Z',
+        dimensionResults: DIMENSION_CODES.map((code) => ({
+          dimensionCode: code,
+          name: code,
+          averageLikert: 3,
+          irlLevel: 6,
+        })),
+        bottleneck: { dimensions: ['TRL'], level: 6 },
+        imbalances: [
+          { left: 'TRL', right: 'CRL', difference: 0, classification: 'acceptable' },
+          { left: 'TRL', right: 'BRL', difference: 0, classification: 'acceptable' },
+          { left: 'CRL', right: 'BRL', difference: 0, classification: 'acceptable' },
+          { left: 'TmRL', right: 'FRL', difference: 0, classification: 'acceptable' },
+          { left: 'BRL', right: 'IPRL', difference: 0, classification: 'acceptable' },
+          { left: 'TRL', right: 'IPRL', difference: 0, classification: 'acceptable' },
+        ],
+      };
+      server.use(
+        mswHttp.post(`*/api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`, () =>
+          HttpResponse.json(
+            {
+              type: 'https://errors.innlab.icesi.edu.co/not_found',
+              title: `Cannot POST /api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`,
+              status: 404,
+              detail: `Cannot POST /api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`,
+              instance: `/api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`,
+              code: 'NOT_FOUND',
+            },
+            { status: 404 },
+          ),
+        ),
+        mswHttp.post(`*/api/v1/diagnosticos/${DIAG_ID}/cuestionario`, () => {
+          cuestionarioCalled = true;
+          return HttpResponse.json(
+            { diagnosticId: DIAG_ID, answersRecorded: 48, state: 'CUESTIONARIO_COMPLETO' },
+            { status: 201 },
+          );
+        }),
+        mswHttp.post(`*/api/v1/diagnosticos/${DIAG_ID}/perfil`, () => {
+          perfilCalled = true;
+          return HttpResponse.json(legacyProfile, { status: 201 });
+        }),
+      );
+      populateAllAnswers();
+
+      const user = userEvent.setup();
+      renderPage();
+
+      await waitFor(() =>
+        screen.getByText('Todas las afirmaciones respondidas — listo para procesar.'),
+      );
+      await user.click(screen.getByRole('button', { name: 'Procesar diagnóstico' }));
+
+      await waitFor(() => screen.getByText(PROFILE_ROUTE_MARKER));
+      expect(cuestionarioCalled).toBe(true);
+      expect(perfilCalled).toBe(true);
+    });
+
     it('chain completes even when the server records fewer answers than expected', async () => {
       withSubmitSuccess();
       populateAllAnswers();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { ApiError, http } from '../http';
+import { ApiError, http, isMissingHttpRoute } from '../http';
 
 /**
  * El interceptor de errores es la pieza que permite a la UI distinguir
@@ -73,5 +73,33 @@ describe('interceptor de errores HTTP', () => {
     expect(error).toBeInstanceOf(ApiError);
     expect(error.message).toBe('Network Error');
     expect(error.status).toBeUndefined();
+  });
+});
+
+describe('isMissingHttpRoute', () => {
+  it('reconoce el 404 de Fastify cuando la ruta no está registrada', async () => {
+    const error = (await rejectVia(404, {
+      type: 'https://errors.innlab.icesi.edu.co/not_found',
+      title: 'Cannot POST /api/v1/diagnosticos/x/finalizar-inicial',
+      status: 404,
+      detail: 'Cannot POST /api/v1/diagnosticos/x/finalizar-inicial',
+      instance: '/api/v1/diagnosticos/x/finalizar-inicial',
+      code: 'NOT_FOUND',
+    })) as ApiError;
+
+    expect(isMissingHttpRoute(error)).toBe(true);
+  });
+
+  it('no confunde un 404 de dominio con una ruta ausente', async () => {
+    const error = (await rejectVia(404, {
+      type: 'https://errors.innlab.icesi.edu.co/not_found',
+      title: 'not found',
+      status: 404,
+      detail: "Diagnostico 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' not found",
+      instance: '/api/v1/diagnosticos/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/finalizar-inicial',
+      code: 'NOT_FOUND',
+    })) as ApiError;
+
+    expect(isMissingHttpRoute(error)).toBe(false);
   });
 });

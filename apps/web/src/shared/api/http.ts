@@ -45,6 +45,18 @@ export function isApiErrorWithCode(error: unknown, code: string): boolean {
   return error instanceof ApiError && error.code === code;
 }
 
+/**
+ * 404 de Fastify/Nest cuando la ruta HTTP no existe (`Cannot POST /...`).
+ * Distinto de un 404 de dominio (`Diagnostico 'id' not found`).
+ */
+export function isMissingHttpRoute(error: unknown): boolean {
+  if (!(error instanceof ApiError) || error.status !== 404) {
+    return false;
+  }
+  const text = `${error.message}\n${error.problem?.title ?? ''}`;
+  return /Cannot (GET|POST|PUT|PATCH|DELETE) /i.test(text);
+}
+
 http.interceptors.response.use(
   (response) => response,
   (error: AxiosError<unknown>) => {
