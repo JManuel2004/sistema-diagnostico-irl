@@ -70,7 +70,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
 
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostico
-         (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
+         (id_diagnostico, id_usuario, estado, version_marco_irl)
        VALUES ($1, 'usuario-e2e-roadmap', 'CUESTIONARIO_EN_CURSO', 'KTH-IRL-1.0')`,
       [diagnosticId],
     );
@@ -207,7 +207,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
     const otro = randomUUID();
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostico
-         (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
+         (id_diagnostico, id_usuario, estado, version_marco_irl)
        VALUES ($1, 'usuario-e2e-roadmap', 'CUESTIONARIO_EN_CURSO', 'KTH-IRL-1.0')`,
       [otro],
     );

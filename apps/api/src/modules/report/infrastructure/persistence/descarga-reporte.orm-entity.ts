@@ -8,8 +8,8 @@ export class DescargaReporteOrm {
   @Column({ name: 'id_diagnostico', type: 'uuid' })
   idDiagnostico!: string;
 
-  @Column({ name: 'keycloak_user_id', type: 'varchar', length: 64 })
-  keycloakUserId!: string;
+  @Column({ name: 'id_usuario', type: 'varchar', length: 64 })
+  idUsuario!: string;
 
   @Column({ name: 'timestamp_descarga', type: 'timestamptz' })
   timestampDescarga!: Date;

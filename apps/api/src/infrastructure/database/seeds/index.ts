@@ -102,7 +102,7 @@ async function run(): Promise<void> {
 
       await manager.query(
         `INSERT INTO irl_diagnostic.diagnostico
-           (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
+           (id_diagnostico, id_usuario, estado, version_marco_irl)
          VALUES ($1, $2, $3, $4)
          ON CONFLICT (id_diagnostico) DO UPDATE
            SET estado = EXCLUDED.estado`,

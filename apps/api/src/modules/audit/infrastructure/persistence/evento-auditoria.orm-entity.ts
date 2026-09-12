@@ -12,12 +12,12 @@ export class EventoAuditoriaOrm {
   tipoEvento!: string;
 
   @Column({
-    name: 'keycloak_user_id',
+    name: 'id_usuario',
     type: 'varchar',
     length: 64,
     nullable: true,
   })
-  keycloakUserId!: string | null;
+  idUsuario!: string | null;
 
   @Column({ name: 'timestamp_evento', type: 'timestamptz' })
   timestampEvento!: Date;

@@ -44,7 +44,8 @@ export type DiagnosticState = z.infer<typeof diagnosticStateSchema>;
  *
  * Endpoint principal: `GET /api/v1/diagnosticos/:id`.
  *
- * `userId` es opaco (lo emite Keycloak); el frontend lo usa solo para
+ * `userId` es opaco (es el `sub` del usuario en el ecosistema INNLAB,
+ * hoy emitido por Cognito); el frontend lo usa solo para
  * comparar con el usuario actual y decidir si mostrar el diagnóstico.
  */
 export const diagnosticSchema = z
