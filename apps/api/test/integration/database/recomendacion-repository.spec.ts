@@ -14,6 +14,7 @@ import { RoutingConfigurationVersion1747526400008 } from '../../../src/infrastru
 import { RoutingConfigurationDraft1747526400009 } from '../../../src/infrastructure/database/migrations/20260518009-RoutingConfigurationDraft.js';
 import { RecommendationResultAndTrace1747526400010 } from '../../../src/infrastructure/database/migrations/20260518010-RecommendationResultAndTrace.js';
 import { InitiativeCharacterization1747526400011 } from '../../../src/infrastructure/database/migrations/20260518011-InitiativeCharacterization.js';
+import { RenameKeycloakUserIdToIdUsuario1747526400013 } from '../../../src/infrastructure/database/migrations/20260518013-RenameKeycloakUserIdToIdUsuario.js';
 import { RecomendacionPortafolioOrm } from '../../../src/modules/portfolio-routing/infrastructure/persistence/recomendacion-portafolio.orm-entity.js';
 import { AlternativaRecomendacionOrm } from '../../../src/modules/portfolio-routing/infrastructure/persistence/alternativa-recomendacion.orm-entity.js';
 import { TrazaCapasOrm } from '../../../src/modules/portfolio-routing/infrastructure/persistence/traza-capas.orm-entity.js';
@@ -90,6 +91,10 @@ describe('Recomendación — persistencia (integration)', () => {
         RoutingConfigurationDraft1747526400009,
         RecommendationResultAndTrace1747526400010,
         InitiativeCharacterization1747526400011,
+        // La lista es manual: toda migración nueva que afecte a estas tablas
+        // hay que añadirla aquí, o el esquema del contenedor se queda atrás
+        // respecto a lo que las entidades esperan.
+        RenameKeycloakUserIdToIdUsuario1747526400013,
       ],
       migrationsTableName: 'typeorm_migrations',
     });
