@@ -10,6 +10,9 @@
 export * from './common/uuid.schema.js';
 export * from './common/problem-details.schema.js';
 
+// ── identity ──────────────────────────────────────────────────────────
+export * from './identity/me-context.schema.js';
+
 // ── catalog ───────────────────────────────────────────────────────────
 export * from './catalog/dimension.schema.js';
 export * from './catalog/questionnaire-structure.schema.js';

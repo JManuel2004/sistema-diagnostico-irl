@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import type { MeContextResponse } from '@innlab/contracts';
 import { ResolveUserContextUseCase } from '../../application/resolve-user-context.use-case.js';
 import { CurrentUser } from '../../infrastructure/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../domain/entities/authenticated-user.vo.js';
@@ -23,7 +24,10 @@ export class MeController {
   @ApiOkResponse({
     description: 'Identidad del token mas el contexto de empresa de INNLAB Core',
   })
-  async getContext(@CurrentUser() user: AuthenticatedUser) {
+  // Tipado con el contrato compartido a proposito: si el backend deja de
+  // devolver lo que el frontend parsea, falla la compilacion en vez de
+  // fallar en tiempo de ejecucion contra el schema de Zod.
+  async getContext(@CurrentUser() user: AuthenticatedUser): Promise<MeContextResponse> {
     const context = await this.resolveUserContext.execute({ userId: user.id });
 
     return {
@@ -42,7 +46,10 @@ export class MeController {
         companyId: context.companyId,
         companyRole: context.companyRole,
         workspaceId: context.workspaceId,
-        companies: context.companies,
+        // El VO de dominio expone `companies` como readonly; se copia al
+        // cruzar la frontera HTTP para no filtrar esa inmutabilidad al
+        // contrato compartido, donde seria el unico schema con readonly.
+        companies: [...context.companies],
       },
     };
   }
