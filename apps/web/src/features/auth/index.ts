@@ -1,6 +1,10 @@
+export { CurrentUserBadge } from './components/CurrentUserBadge';
+export { UserContextGate } from './components/UserContextGate';
 export { LogoutButton } from './components/LogoutButton';
 export { useLogout } from './hooks/useLogout';
 export { useSessionLiveness } from './hooks/useSessionLiveness';
 export { useSsoExchange } from './hooks/useSsoExchange';
 export type { SsoExchangeStatus, SsoExchangeResult } from './hooks/useSsoExchange';
 export { exchangeSsoCode, isSessionAlive, logoutFromCore } from './api/core-auth.api';
+export { useCurrentUser } from './hooks/useCurrentUser';
+export { getMeContext } from './api/me.api';

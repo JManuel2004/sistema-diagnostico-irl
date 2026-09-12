@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 import type { DimensionCode } from '@innlab/contracts';
-import { LogoutButton } from '@features/auth';
+import { CurrentUserBadge, LogoutButton, UserContextGate } from '@features/auth';
 import { buttonVariants } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
 import { PageShell } from '@/shared/ui/page-shell';
@@ -65,7 +65,16 @@ const LANDING_COPY: Record<DimensionCode, Omit<LandingDimensionCopy, 'code'>> = 
 
 export default function HomePage(): JSX.Element {
   return (
-    <PageShell width="wide" showAttribution headerActions={<LogoutButton />}>
+    <PageShell
+      width="wide"
+      showAttribution
+      headerActions={
+        <>
+          <CurrentUserBadge />
+          <LogoutButton />
+        </>
+      }
+    >
       {/* Hero — institutional layout, left-aligned per brand manual */}
       <section className="grid gap-10 lg:grid-cols-12 lg:items-center">
         <div className="lg:col-span-7">
@@ -80,10 +89,21 @@ export default function HomePage(): JSX.Element {
             Readiness Level y obtén un perfil con el roadmap para cerrar las brechas más críticas.
           </p>
 
+          {/*
+            El diagnóstico se asocia a quien lo inicia, así que la acción
+            vive tras `UserContextGate`: sin perfil resuelto no se ofrece.
+            "Conocer INNLAB" queda fuera — es un enlace externo que no
+            depende de la identidad.
+          */}
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link to="/diagnosticos/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/cuestionario" className={buttonVariants({ size: 'lg' })}>
-              Iniciar diagnóstico
-            </Link>
+            <UserContextGate>
+              <Link
+                to="/diagnosticos/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/cuestionario"
+                className={buttonVariants({ size: 'lg' })}
+              >
+                Iniciar diagnóstico
+              </Link>
+            </UserContextGate>
             <a
               href="https://innlab.org/"
               target="_blank"
