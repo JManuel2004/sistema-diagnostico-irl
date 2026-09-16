@@ -21,7 +21,7 @@ export class MeController {
 
   @Get('context')
   @ApiOkResponse({
-    description: 'Identidad del token mas el contexto de empresa de INNLAB Core',
+    description: 'Token identity plus the company context from INNLAB Core',
   })
   async getContext(@CurrentUser() user: AuthenticatedUser) {
     const context = await this.resolveUserContext.execute({ userId: user.id });

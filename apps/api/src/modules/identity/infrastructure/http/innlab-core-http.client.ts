@@ -36,7 +36,7 @@ export class InnlabCoreHttpClient implements UserContextPort {
   async getUserContext(userId: string): Promise<UserContext> {
     return this.get<UserContext>(
       `/internal/users/${encodeURIComponent(userId)}/context`,
-      'contexto de usuario',
+      'user context',
       userId,
     );
   }
@@ -50,7 +50,7 @@ export class InnlabCoreHttpClient implements UserContextPort {
   async getUserFeatures(userId: string): Promise<{ features: string[] }> {
     return this.get<{ features: string[] }>(
       `/internal/users/${encodeURIComponent(userId)}/features?product=${PRODUCT_SLUG}`,
-      'features de usuario',
+      'user features',
       userId,
     );
   }
