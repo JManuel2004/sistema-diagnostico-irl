@@ -11,9 +11,9 @@ import type { DiagnosticStateName } from './diagnostic-state.vo.js';
  * and consist of one `next(...)` call followed by a domain event
  * emission. Stage 1 keeps the API surface minimal.
  *
- * Per root `CLAUDE.md`: modules communicate by id only. Other modules
- * never receive a `Diagnostico` instance — they ask the orchestrator
- * via the use cases that live here.
+ * Modules communicate by id only. Other modules never receive a
+ * `Diagnostico` instance — they ask the orchestrator via the use
+ * cases that live here.
  */
 export interface DiagnosticPersistence {
   readonly id: string;

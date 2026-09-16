@@ -23,8 +23,8 @@ export default function MaturityProfilePage(): JSX.Element {
           y no en `MaturityProfilePanel` porque ese componente pertenece a
           la feature `maturity-profile`, que no puede navegar hacia una
           ruta de otra feature (`portfolio-recommendation`) sin romper el
-          aislamiento por feature de `apps/web/CLAUDE.md`. La página, en
-          cambio, sí puede orquestar la navegación entre ambas.
+          aislamiento por feature del proyecto. La página, en cambio,
+          sí puede orquestar la navegación entre ambas.
         */}
         <div className="mx-auto w-full max-w-6xl px-4 pb-12 md:px-6">
           <div className="border-border flex flex-wrap justify-end gap-3 border-t pt-6">

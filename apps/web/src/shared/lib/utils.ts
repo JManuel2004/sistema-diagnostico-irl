@@ -10,8 +10,7 @@ import { twMerge } from 'tailwind-merge';
  *   sobreescribir un default con `p-2`.
  *
  * Es la única forma autorizada de componer `className` dinámico en este
- * proyecto (ver CLAUDE.web.md §"Stack assumptions"). Importar como
- * `import { cn } from '@/shared/lib/utils'`.
+ * proyecto. Importar como `import { cn } from '@/shared/lib/utils'`.
  */
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));

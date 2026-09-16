@@ -17,7 +17,7 @@ import { ScalingRoadmapModule } from '../../modules/scaling-roadmap/scaling-road
  * via `app.setGlobalPrefix('api/v1')` in `main.ts`).
  *
  * Modules communicate by ID only — the orchestrator (Diagnostic) is the
- * only module that composes other modules. See `CLAUDE.md`.
+ * only module that composes other modules.
  */
 @Module({
   imports: [

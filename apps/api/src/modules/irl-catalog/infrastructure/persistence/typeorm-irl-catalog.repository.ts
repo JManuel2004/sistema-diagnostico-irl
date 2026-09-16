@@ -20,7 +20,7 @@ import { ParDimensionOrm } from './entities/par-dimension.orm-entity.js';
  *
  * ORM rows are mapped to domain objects via the static `fromPersistence`
  * factories on each domain class so ORM types do not leak across the
- * boundary (CLAUDE.api.md §"Repository pattern").
+ * boundary (see the repository-pattern convention for this backend).
  */
 @Injectable()
 export class TypeOrmIrlCatalogRepository implements IrlCatalogRepositoryPort {

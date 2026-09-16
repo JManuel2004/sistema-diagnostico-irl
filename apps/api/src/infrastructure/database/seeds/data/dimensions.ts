@@ -2,7 +2,7 @@
  * Six IRL dimensions of the KTH Innovation Readiness Level framework.
  *
  * The codes, names, and order are non-negotiable domain facts (see
- * `CLAUDE.md` and PROJECT-SUMMARY.md §1.2). The descriptions are
+ * the project's domain-model conventions, PROJECT-SUMMARY.md §1.2). The descriptions are
  * authored from the public KTH framework documentation; if the project
  * stakeholders provide canonical Spanish text, replace these strings
  * but never change the codes or order.

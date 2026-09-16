@@ -20,8 +20,8 @@ export type ImbalanceClassification = z.infer<typeof imbalanceClassificationSche
 
 /**
  * Las seis duplas evaluadas para desequilibrio según el marco KTH —
- * el sistema **siempre** evalúa estas y solo estas (CLAUDE.md §
- * "Non-negotiable domain facts").
+ * el sistema **siempre** evalúa estas y solo estas (ver los hechos
+ * de dominio no negociables del proyecto).
  */
 export const IMBALANCE_PAIRS = [
   ['TRL', 'CRL'],

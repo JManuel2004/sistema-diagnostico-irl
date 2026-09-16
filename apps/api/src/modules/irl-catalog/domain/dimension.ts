@@ -12,7 +12,7 @@ import { InvariantViolationError } from '../../../shared-kernel/domain/errors/in
  *
  * The Spanish persistence model speaks `dimension(codigo, nombre,
  * descripcion, orden)`; this domain class uses English property names
- * per the project's bilingual rule (CLAUDE.md → CODE-STYLE).
+ * per the project's language convention (see CODE-STYLE).
  */
 export interface DimensionPersistence {
   readonly id: number;

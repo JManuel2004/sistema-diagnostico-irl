@@ -21,7 +21,7 @@ import { GetQuestionnaireStructureQuery } from './application/queries/get-questi
  * is **exported** because at least two modules (questionnaire,
  * maturity-profile) need to read catalog data — modules communicate
  * by id and through ports, never by reaching into another module's
- * internals (root CLAUDE.md).
+ * internals.
  */
 @Module({
   imports: [

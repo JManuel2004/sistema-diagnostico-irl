@@ -2,7 +2,7 @@
  * Canonical use-case shape — every application-layer use case
  * implements `execute(command)` and returns a `Promise<Result>`.
  *
- * Convention (CLAUDE.api.md §"Use case shape"):
+ * Convention (see the backend's "Use case shape" convention):
  *   - Single public method named `execute`.
  *   - One command/query DTO in, one result out.
  *   - Constructor injection only — ports as symbols, never concretes.

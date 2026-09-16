@@ -22,8 +22,8 @@ import {
  * service and the repository raises a `MaturityProfileCalculationError`
  * and the database remains untouched.
  *
- * Modules communicate by id (root `CLAUDE.md`): other bounded contexts
- * receive `diagnosticId` and look up the profile via the repository, never
+ * Modules communicate by id: other bounded contexts receive
+ * `diagnosticId` and look up the profile via the repository, never
  * by holding a `MaturityProfile` instance directly.
  *
  * DIAGIRL-35 (bottleneck detection) and DIAGIRL-38 (imbalance evaluation)

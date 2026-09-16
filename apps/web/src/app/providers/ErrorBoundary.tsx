@@ -5,9 +5,9 @@ import type { ErrorInfo, ReactNode } from 'react';
  * Error boundary global de la aplicación.
  *
  * React todavía exige un componente de clase para capturar errores de
- * renderizado — esta es la única clase tolerada en el frontend
- * (CLAUDE.web.md §"Stack assumptions"). Una excepción durante el
- * render aterriza aquí en vez de dejar la SPA en blanco.
+ * renderizado — esta es la única clase tolerada en el frontend.
+ * Una excepción durante el render aterriza aquí en vez de dejar la
+ * SPA en blanco.
  *
  * Los `feature`-level boundaries son recomendables cuando un widget
  * inestable (un gráfico, un widget de terceros) puede fallar sin

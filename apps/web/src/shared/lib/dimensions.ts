@@ -8,8 +8,8 @@ import { DIMENSION_CODES } from '@innlab/contracts';
  * `questionnaire`: la información cromática y el orden canónico se
  * consumen desde múltiples superficies — la landing, el cuestionario
  * y los futuros componentes del perfil (HU-13/HU-14) — y el principio
- * de "modules communicate by id only" del CLAUDE.md raíz prohíbe que
- * páginas alcancen dentro de la carpeta de un feature.
+ * de "modules communicate by id only" prohíbe que páginas alcancen
+ * dentro de la carpeta de un feature.
  *
  * Qué NO va aquí:
  *  - Nombre **completo** en español (`Nivel de Madurez Tecnológica`) y
