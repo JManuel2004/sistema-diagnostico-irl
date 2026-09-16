@@ -8,8 +8,8 @@ import type { AnswerSheet } from '../entities/answer-sheet.aggregate.js';
  * the diagnostic, not the synthetic answer rows.
  *
  * `save(sheet)` upserts the entire row set in a single transaction —
- * the unique constraint `(id_diagnostico, id_afirmacion)` from the
- * initial migration is the primary key for upsert semantics. The
+ * the unique constraint `(id_diagnostico, id_statement)` on the
+ * `answer` table is the primary key for upsert semantics. The
  * adapter (`TypeOrmAnswerSheetRepository`) decides whether to replace
  * or merge per-call; see its docstring for the policy.
  */

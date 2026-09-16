@@ -4,39 +4,39 @@ import { Repository } from 'typeorm';
 import type { AnswerSheetRepositoryPort } from '../../domain/ports/answer-sheet.repository.port.js';
 import { AnswerSheet } from '../../domain/entities/answer-sheet.aggregate.js';
 import { Uuid } from '../../../../shared-kernel/domain/value-objects/uuid.vo.js';
-import { RespuestaOrm } from './respuesta.orm-entity.js';
+import { AnswerOrm } from './answer.orm-entity.js';
 
 /**
  * TypeORM-backed adapter for the `AnswerSheet` aggregate.
  *
  * Save policy: replace-all in a single transaction. DELETE then INSERT
  * inside a transaction guarantees the persisted state mirrors the
- * aggregate exactly. The `UNIQUE (id_diagnostico, id_afirmacion)` DB
+ * aggregate exactly. The `UNIQUE (id_diagnostico, id_statement)` DB
  * constraint provides defense-in-depth against duplicate answers.
  *
- * `id_respuesta` is a bigint GENERATED ALWAYS AS IDENTITY — never set
- * it explicitly. `id_afirmacion` is also a bigint (from
+ * `id` is a bigint GENERATED ALWAYS AS IDENTITY — never set it
+ * explicitly. `id_statement` is also a bigint (from
  * `irl_catalog.statement`), represented as a string in TypeORM.
  */
 @Injectable()
 export class TypeOrmAnswerSheetRepository implements AnswerSheetRepositoryPort {
   constructor(
-    @InjectRepository(RespuestaOrm)
-    private readonly orm: Repository<RespuestaOrm>,
+    @InjectRepository(AnswerOrm)
+    private readonly orm: Repository<AnswerOrm>,
   ) {}
 
   async findByDiagnosticId(diagnosticId: string): Promise<AnswerSheet | null> {
     const rows = await this.orm.find({
       where: { idDiagnostico: diagnosticId },
-      order: { idAfirmacion: 'ASC' },
+      order: { idStatement: 'ASC' },
     });
     if (rows.length === 0) return null;
 
     return AnswerSheet.fromPersistence(
       Uuid.create(diagnosticId),
       rows.map((r) => ({
-        statementId: r.idAfirmacion,
-        value: r.valorLikert,
+        statementId: r.idStatement,
+        value: r.likertValue,
       })),
     );
   }
@@ -45,18 +45,18 @@ export class TypeOrmAnswerSheetRepository implements AnswerSheetRepositoryPort {
     const snapshot = sheet.toPersistence();
 
     await this.orm.manager.transaction(async (manager) => {
-      await manager.delete(RespuestaOrm, {
+      await manager.delete(AnswerOrm, {
         idDiagnostico: sheet.diagnosticId.value,
       });
       if (snapshot.length > 0) {
         const rows = snapshot.map((a) =>
-          manager.create(RespuestaOrm, {
+          manager.create(AnswerOrm, {
             idDiagnostico: sheet.diagnosticId.value,
-            idAfirmacion: a.statementId,
-            valorLikert: a.value,
+            idStatement: a.statementId,
+            likertValue: a.value,
           }),
         );
-        await manager.insert(RespuestaOrm, rows);
+        await manager.insert(AnswerOrm, rows);
       }
     });
   }

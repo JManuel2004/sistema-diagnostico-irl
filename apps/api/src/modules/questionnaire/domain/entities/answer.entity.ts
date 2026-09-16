@@ -7,11 +7,11 @@ import { LikertValue } from '../../../../shared-kernel/domain/value-objects/like
  * `statementId` is the bigint PK of `irl_catalog.statement`, returned
  * by TypeORM as a string. It is NOT a UUID.
  *
- * `id` (the `respuesta` PK) is a bigint GENERATED ALWAYS AS IDENTITY —
+ * `id` (the `answer` PK) is a bigint GENERATED ALWAYS AS IDENTITY —
  * the database assigns it on INSERT. The domain entity does not carry
  * it; only the repository layer sees it.
  *
- * Persisted as one `irl_diagnostic.respuesta` row.
+ * Persisted as one `irl_diagnostic.answer` row.
  */
 export interface AnswerPersistence {
   readonly statementId: string;

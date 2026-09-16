@@ -5,11 +5,11 @@ import { SubmitQuestionnaireUseCase } from '../../application/submit-questionnai
 /**
  * HTTP surface for the questionnaire (write-side).
  *
- * POST /api/v1/diagnosticos/:id/cuestionario (HU-10 / RF-06) — submits
+ * POST /api/v1/diagnosticos/:id/questionnaire (HU-10 / RF-06) — submits
  * the 48 answers; runs completeness validation and persists the sheet.
  */
-@ApiTags('cuestionario')
-@Controller('diagnosticos/:id/cuestionario')
+@ApiTags('questionnaire')
+@Controller('diagnosticos/:id/questionnaire')
 export class QuestionnaireController {
   constructor(private readonly submit: SubmitQuestionnaireUseCase) {}
 
