@@ -57,8 +57,8 @@ function construirGrafoDelSeed(): DependencyGraph {
       nivelMinimoRequerido: a.nivelMinimoRequerido,
     })),
     DIMENSIONS.map((d) => ({
-      dimension: d.codigo,
-      nivelMinimoEsperado: d.nivelMinimoEsperado,
+      dimension: d.code,
+      nivelMinimoEsperado: d.minimumExpectedLevel,
     })),
   );
 }

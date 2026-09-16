@@ -61,7 +61,7 @@ export class IrlCalculatorService {
    * @param answersByDimension Map keyed by `DimensionCode`, values are
    *   arrays of exactly 8 `LikertValue` per dimension.
    * @param conversionTable The 9-row SA-06 conversion table (read from
-   *   `irl_catalog.rango_conversion` by the use case).
+   *   `irl_catalog.conversion_range` by the use case).
    * @returns Array of 6 `DimensionResult`, NOT guaranteed to be in any
    *   particular order — the aggregate `MaturityProfile` sorts them
    *   canonically.

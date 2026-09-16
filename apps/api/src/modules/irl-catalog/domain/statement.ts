@@ -10,10 +10,9 @@ import { InvariantViolationError } from '../../../shared-kernel/domain/errors/in
  *   - `dimensionCode` is one of the six valid codes.
  *   - `text` is non-empty.
  *
- * Per the project's language convention: the database column is `texto`,
- * the domain property is `text`. The English domain name `Statement`
- * is allowed by CODE-STYLE because it is a scale concept; the
- * persistence-layer ORM class is `AfirmacionOrm`.
+ * The domain property `text` maps to the `text_es` database column
+ * (Spanish statement text; the language suffix names the data, not
+ * the schema). The persistence-layer ORM class is `StatementOrm`.
  */
 export interface StatementPersistence {
   readonly id: string; // bigint PK; TypeORM returns bigint columns as string

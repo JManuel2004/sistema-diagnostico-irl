@@ -10,7 +10,7 @@
  * Innovation.
  *
  * Domain invariants enforced by the migration (SA-06):
- *   - `nivel_irl` is an integer in [1, 9].
+ *   - `irl_level` is an integer in [1, 9].
  *   - `avg_min`, `avg_max` are numeric(3,2) in [1, 5].
  *   - `avg_min <= avg_max`.
  *
@@ -22,23 +22,23 @@
  *     of 0.125 and therefore always fall strictly inside one range — never
  *     on a boundary that two ranges share.
  *
- * NOTE: `nivel_irl` is the natural primary key — do NOT introduce a
- * surrogate. INSERTs include `nivel_irl` explicitly.
+ * NOTE: `irl_level` is the natural primary key — do NOT introduce a
+ * surrogate. INSERTs include `irl_level` explicitly.
  */
 export interface ConversionRangeSeed {
-  readonly nivelIrl: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+  readonly irlLevel: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
   readonly avgMin: number;
   readonly avgMax: number;
 }
 
 export const CONVERSION_RANGES: readonly ConversionRangeSeed[] = [
-  { nivelIrl: 1, avgMin: 1.0, avgMax: 1.39 },
-  { nivelIrl: 2, avgMin: 1.4, avgMax: 1.79 },
-  { nivelIrl: 3, avgMin: 1.8, avgMax: 2.19 },
-  { nivelIrl: 4, avgMin: 2.2, avgMax: 2.59 },
-  { nivelIrl: 5, avgMin: 2.6, avgMax: 2.99 },
-  { nivelIrl: 6, avgMin: 3.0, avgMax: 3.39 },
-  { nivelIrl: 7, avgMin: 3.4, avgMax: 3.79 },
-  { nivelIrl: 8, avgMin: 3.8, avgMax: 4.39 },
-  { nivelIrl: 9, avgMin: 4.4, avgMax: 5.0 },
+  { irlLevel: 1, avgMin: 1.0, avgMax: 1.39 },
+  { irlLevel: 2, avgMin: 1.4, avgMax: 1.79 },
+  { irlLevel: 3, avgMin: 1.8, avgMax: 2.19 },
+  { irlLevel: 4, avgMin: 2.2, avgMax: 2.59 },
+  { irlLevel: 5, avgMin: 2.6, avgMax: 2.99 },
+  { irlLevel: 6, avgMin: 3.0, avgMax: 3.39 },
+  { irlLevel: 7, avgMin: 3.4, avgMax: 3.79 },
+  { irlLevel: 8, avgMin: 3.8, avgMax: 4.39 },
+  { irlLevel: 9, avgMin: 4.4, avgMax: 5.0 },
 ];

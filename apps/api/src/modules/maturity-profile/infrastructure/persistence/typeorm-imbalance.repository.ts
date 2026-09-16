@@ -7,15 +7,15 @@ import {
   type ImbalanceClassification,
 } from '../../domain/value-objects/imbalance-result.vo.js';
 import { AnalisisDesequilibrioOrm } from './analisis-desequilibrio.orm-entity.js';
-import { ParDimensionOrm } from '../../../irl-catalog/infrastructure/persistence/entities/par-dimension.orm-entity.js';
+import { DimensionPairOrm } from '../../../irl-catalog/infrastructure/persistence/entities/dimension-pair.orm-entity.js';
 
 @Injectable()
 export class TypeOrmImbalanceRepository implements ImbalanceRepositoryPort {
   constructor(
     @InjectRepository(AnalisisDesequilibrioOrm)
     private readonly orm: Repository<AnalisisDesequilibrioOrm>,
-    @InjectRepository(ParDimensionOrm)
-    private readonly pairs: Repository<ParDimensionOrm>,
+    @InjectRepository(DimensionPairOrm)
+    private readonly pairs: Repository<DimensionPairOrm>,
   ) {}
 
   async findByDiagnosticId(diagnosticId: string): Promise<ImbalanceResult[]> {
@@ -26,13 +26,13 @@ export class TypeOrmImbalanceRepository implements ImbalanceRepositoryPort {
     if (rows.length === 0) return [];
 
     const pairRows = await this.pairs.find();
-    const pairById = new Map(pairRows.map((p) => [p.idPar, p] as const));
+    const pairById = new Map(pairRows.map((p) => [p.idPair, p] as const));
 
     const results: ImbalanceResult[] = [];
     for (const row of rows) {
       const pair = pairById.get(row.idPar);
       if (!pair) continue;
-      const [leftCode = '', rightCode = ''] = pair.codigoPar.split('-');
+      const [leftCode = '', rightCode = ''] = pair.pairCode.split('-');
       results.push(
         ImbalanceResult.fromPersistence({
           pairId: row.idPar,

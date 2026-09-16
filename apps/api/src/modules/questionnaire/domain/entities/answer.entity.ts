@@ -4,7 +4,7 @@ import { LikertValue } from '../../../../shared-kernel/domain/value-objects/like
  * `Answer` — a single response in an `AnswerSheet`. Pure data + the
  * Likert-value invariant; no behavior beyond `equals`.
  *
- * `statementId` is the bigint PK of `irl_catalog.afirmacion`, returned
+ * `statementId` is the bigint PK of `irl_catalog.statement`, returned
  * by TypeORM as a string. It is NOT a UUID.
  *
  * `id` (the `respuesta` PK) is a bigint GENERATED ALWAYS AS IDENTITY —

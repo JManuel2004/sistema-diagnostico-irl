@@ -7,9 +7,9 @@ import { Statement } from '../../domain/statement.js';
 import { ConversionRange } from '../../domain/conversion-range.js';
 import { DimensionPair } from '../../domain/dimension-pair.js';
 import { DimensionOrm } from './entities/dimension.orm-entity.js';
-import { AfirmacionOrm } from './entities/afirmacion.orm-entity.js';
-import { RangoConversionOrm } from './entities/rango-conversion.orm-entity.js';
-import { ParDimensionOrm } from './entities/par-dimension.orm-entity.js';
+import { StatementOrm } from './entities/statement.orm-entity.js';
+import { ConversionRangeOrm } from './entities/conversion-range.orm-entity.js';
+import { DimensionPairOrm } from './entities/dimension-pair.orm-entity.js';
 
 /**
  * TypeORM-backed adapter for the catalog port.
@@ -27,77 +27,77 @@ export class TypeOrmIrlCatalogRepository implements IrlCatalogRepositoryPort {
   constructor(
     @InjectRepository(DimensionOrm)
     private readonly dimensions: Repository<DimensionOrm>,
-    @InjectRepository(AfirmacionOrm)
-    private readonly afirmaciones: Repository<AfirmacionOrm>,
-    @InjectRepository(RangoConversionOrm)
-    private readonly rangos: Repository<RangoConversionOrm>,
-    @InjectRepository(ParDimensionOrm)
-    private readonly pares: Repository<ParDimensionOrm>,
+    @InjectRepository(StatementOrm)
+    private readonly statements: Repository<StatementOrm>,
+    @InjectRepository(ConversionRangeOrm)
+    private readonly ranges: Repository<ConversionRangeOrm>,
+    @InjectRepository(DimensionPairOrm)
+    private readonly pairs: Repository<DimensionPairOrm>,
   ) {}
 
   async findAllDimensions(): Promise<Dimension[]> {
-    const rows = await this.dimensions.find({ order: { orden: 'ASC' } });
+    const rows = await this.dimensions.find({ order: { sequence: 'ASC' } });
     return rows.map((r) =>
       Dimension.fromPersistence({
         id: r.idDimension,
-        code: r.codigo,
-        name: r.nombreEs,
-        description: r.descripcion,
-        sequence: r.orden,
+        code: r.code,
+        name: r.nameEs,
+        description: r.description,
+        sequence: r.sequence,
       }),
     );
   }
 
   async findAllStatements(): Promise<Statement[]> {
-    const rows = await this.afirmaciones.find({
+    const rows = await this.statements.find({
       relations: { dimension: true },
-      order: { dimension: { orden: 'ASC' }, numeroEnDimension: 'ASC' },
+      order: { dimension: { sequence: 'ASC' }, sequence: 'ASC' },
     });
     return rows.map((r) =>
       Statement.fromPersistence({
-        id: r.idAfirmacion,
+        id: r.idStatement,
         dimensionId: r.idDimension,
-        dimensionCode: r.dimension.codigo,
-        sequence: r.numeroEnDimension,
-        text: r.textoEs,
+        dimensionCode: r.dimension.code,
+        sequence: r.sequence,
+        text: r.textEs,
       }),
     );
   }
 
   async findStatementsByDimensionCode(code: string): Promise<Statement[]> {
-    const rows = await this.afirmaciones.find({
-      where: { dimension: { codigo: code } },
+    const rows = await this.statements.find({
+      where: { dimension: { code } },
       relations: { dimension: true },
-      order: { numeroEnDimension: 'ASC' },
+      order: { sequence: 'ASC' },
     });
     return rows.map((r) =>
       Statement.fromPersistence({
-        id: r.idAfirmacion,
+        id: r.idStatement,
         dimensionId: r.idDimension,
-        dimensionCode: r.dimension.codigo,
-        sequence: r.numeroEnDimension,
-        text: r.textoEs,
+        dimensionCode: r.dimension.code,
+        sequence: r.sequence,
+        text: r.textEs,
       }),
     );
   }
 
   async findAllConversionRanges(): Promise<ConversionRange[]> {
-    const rows = await this.rangos.find({ order: { nivelIrl: 'ASC' } });
+    const rows = await this.ranges.find({ order: { irlLevel: 'ASC' } });
     return rows.map((r) =>
       ConversionRange.fromPersistence({
         avgMin: r.avgMin,
         avgMax: r.avgMax,
-        irlLevel: r.nivelIrl,
+        irlLevel: r.irlLevel,
       }),
     );
   }
 
   async findAllDimensionPairs(): Promise<DimensionPair[]> {
-    const rows = await this.pares.find();
+    const rows = await this.pairs.find();
     return rows.map((r) => {
-      const [leftCode = '', rightCode = ''] = r.codigoPar.split('-');
+      const [leftCode = '', rightCode = ''] = r.pairCode.split('-');
       return DimensionPair.fromPersistence({
-        id: r.idPar,
+        id: r.idPair,
         leftCode,
         rightCode,
       });

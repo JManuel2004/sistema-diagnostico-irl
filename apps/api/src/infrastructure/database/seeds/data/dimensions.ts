@@ -11,83 +11,84 @@
  * it in INSERT statements. The DB assigns the PK automatically.
  */
 export interface DimensionSeed {
-  readonly codigo: 'TRL' | 'CRL' | 'BRL' | 'IPRL' | 'TmRL' | 'FRL';
-  readonly nombreEs: string;
-  readonly nombreEn: string;
-  readonly descripcion: string;
-  readonly esDimensionCritica: boolean;
-  readonly orden: 1 | 2 | 3 | 4 | 5 | 6;
+  readonly code: 'TRL' | 'CRL' | 'BRL' | 'IPRL' | 'TmRL' | 'FRL';
+  readonly nameEs: string;
+  readonly nameEn: string;
+  readonly description: string;
+  readonly isCriticalDimension: boolean;
+  readonly sequence: 1 | 2 | 3 | 4 | 5 | 6;
   /**
-   * Nivel IRL que se espera que la dimensión alcance para considerar
-   * equilibrada la iniciativa. Lo consume el roadmap de escalamiento:
-   * una dimensión por debajo de su mínimo entra al foco de intervención.
+   * IRL level the dimension is expected to reach for the initiative to
+   * be considered balanced. Consumed by the scaling roadmap: a
+   * dimension below its minimum enters the intervention focus set.
    *
-   * ⚠ El 4 uniforme es un valor hipotético pendiente de validación por
-   * INNLAB. El esquema admite un mínimo distinto por dimensión; que hoy
-   * coincidan no debe leerse como que el sistema asume uno global.
+   * ⚠ The uniform value of 4 is a placeholder pending validation by
+   * INNLAB. The schema allows a different minimum per dimension; that
+   * they currently coincide should not be read as the system assuming
+   * a single global minimum.
    */
-  readonly nivelMinimoEsperado: number;
+  readonly minimumExpectedLevel: number;
 }
 
 export const DIMENSIONS: readonly DimensionSeed[] = [
   {
-    codigo: 'TRL',
-    nombreEs: 'Nivel de Madurez Tecnológica',
-    nombreEn: 'Technology Readiness Level',
-    descripcion:
+    code: 'TRL',
+    nameEs: 'Nivel de Madurez Tecnológica',
+    nameEn: 'Technology Readiness Level',
+    description:
       'Madurez tecnológica: qué tan probada y lista para producción está la solución técnica de la iniciativa.',
-    esDimensionCritica: false,
-    orden: 1,
-    nivelMinimoEsperado: 4,
+    isCriticalDimension: false,
+    sequence: 1,
+    minimumExpectedLevel: 4,
   },
   {
-    codigo: 'CRL',
-    nombreEs: 'Nivel de Madurez del Cliente',
-    nombreEn: 'Customer Readiness Level',
-    descripcion:
+    code: 'CRL',
+    nameEs: 'Nivel de Madurez del Cliente',
+    nameEn: 'Customer Readiness Level',
+    description:
       'Madurez del entendimiento del cliente y del mercado: validación de la necesidad, segmentación y disposición a adoptar.',
-    esDimensionCritica: false,
-    orden: 2,
-    nivelMinimoEsperado: 4,
+    isCriticalDimension: false,
+    sequence: 2,
+    minimumExpectedLevel: 4,
   },
   {
-    codigo: 'BRL',
-    nombreEs: 'Nivel de Madurez del Modelo de Negocio',
-    nombreEn: 'Business Model Readiness Level',
-    descripcion:
+    code: 'BRL',
+    nameEs: 'Nivel de Madurez del Modelo de Negocio',
+    nameEn: 'Business Model Readiness Level',
+    description:
       'Madurez del modelo de negocio: propuesta de valor, fuentes de ingresos, estructura de costos y viabilidad económica.',
-    esDimensionCritica: false,
-    orden: 3,
-    nivelMinimoEsperado: 4,
+    isCriticalDimension: false,
+    sequence: 3,
+    minimumExpectedLevel: 4,
   },
   {
-    codigo: 'IPRL',
-    nombreEs: 'Nivel de Madurez de la Propiedad Intelectual',
-    nombreEn: 'Intellectual Property Readiness Level',
-    descripcion:
+    code: 'IPRL',
+    nameEs: 'Nivel de Madurez de la Propiedad Intelectual',
+    nameEn: 'Intellectual Property Readiness Level',
+    description:
       'Madurez de la propiedad intelectual: identificación, protección y libertad de operación de los activos intangibles.',
-    esDimensionCritica: false,
-    orden: 4,
-    nivelMinimoEsperado: 4,
+    isCriticalDimension: false,
+    sequence: 4,
+    minimumExpectedLevel: 4,
   },
   {
-    codigo: 'TmRL',
-    nombreEs: 'Nivel de Madurez del Equipo',
-    nombreEn: 'Team Readiness Level',
-    descripcion:
+    code: 'TmRL',
+    nameEs: 'Nivel de Madurez del Equipo',
+    nameEn: 'Team Readiness Level',
+    description:
       'Madurez del equipo: composición, complementariedad de competencias y dedicación de los miembros clave.',
-    esDimensionCritica: false,
-    orden: 5,
-    nivelMinimoEsperado: 4,
+    isCriticalDimension: false,
+    sequence: 5,
+    minimumExpectedLevel: 4,
   },
   {
-    codigo: 'FRL',
-    nombreEs: 'Nivel de Madurez de la Financiación',
-    nombreEn: 'Funding Readiness Level',
-    descripcion:
+    code: 'FRL',
+    nameEs: 'Nivel de Madurez de la Financiación',
+    nameEn: 'Funding Readiness Level',
+    description:
       'Madurez de la financiación: fuentes de capital aseguradas, runway y plan financiero para alcanzar los siguientes hitos.',
-    esDimensionCritica: false,
-    orden: 6,
-    nivelMinimoEsperado: 4,
+    isCriticalDimension: false,
+    sequence: 6,
+    minimumExpectedLevel: 4,
   },
 ];

@@ -152,7 +152,7 @@ export async function seedPortfolioRouting(
            (id_ficha_publicada, id_dimension, etiqueta)
          SELECT $1, d.id_dimension, $3
            FROM irl_catalog.dimension d
-          WHERE d.codigo = $2`,
+          WHERE d.code = $2`,
         [idFicha, dimension, etiqueta],
       );
     }

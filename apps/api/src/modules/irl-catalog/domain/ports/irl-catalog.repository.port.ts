@@ -7,8 +7,8 @@ import type { DimensionPair } from '../dimension-pair.js';
  * Read-only port for the IRL catalog.
  *
  * The catalog is immutable at runtime — see PROJECT-SUMMARY §1.8 ("read
- * only at runtime, holds dimension, afirmacion, rango_conversion,
- * par_dimension..."). The port therefore exposes only queries; no
+ * only at runtime, holds dimension, statement, conversion_range,
+ * dimension_pair..."). The port therefore exposes only queries; no
  * write methods exist by design.
  *
  * Adapters: `TypeOrmIrlCatalogRepository` (Postgres). A read-through
@@ -20,7 +20,7 @@ export interface IrlCatalogRepositoryPort {
   /** All six dimensions in display order (`orden` ascending). */
   findAllDimensions(): Promise<Dimension[]>;
 
-  /** All 48 statements in `(dimensionOrden, sequence)` order. */
+  /** All 48 statements in `(dimensionSequence, sequence)` order. */
   findAllStatements(): Promise<Statement[]>;
 
   /** Statements that belong to a specific dimension, ordered by sequence. */

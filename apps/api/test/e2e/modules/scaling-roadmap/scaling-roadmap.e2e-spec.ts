@@ -75,18 +75,18 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
       [diagnosticId],
     );
 
-    const afirmaciones = await dataSource.query<
-      { id_afirmacion: string; codigo: string; numero_en_dimension: number }[]
+    const statements = await dataSource.query<
+      { id_statement: string; code: string; sequence: number }[]
     >(
-      `SELECT a.id_afirmacion, d.codigo, a.numero_en_dimension
-         FROM irl_catalog.afirmacion a
+      `SELECT a.id_statement, d.code, a.sequence
+         FROM irl_catalog.statement a
          JOIN irl_catalog.dimension d ON d.id_dimension = a.id_dimension
-        ORDER BY d.orden, a.numero_en_dimension`,
+        ORDER BY d.sequence, a.sequence`,
     );
 
-    const answers = afirmaciones.map((a) => ({
-      statementId: String(a.id_afirmacion),
-      value: RESPUESTAS_POR_DIMENSION[a.codigo][a.numero_en_dimension - 1],
+    const answers = statements.map((a) => ({
+      statementId: String(a.id_statement),
+      value: RESPUESTAS_POR_DIMENSION[a.code][a.sequence - 1],
     }));
 
     await agent

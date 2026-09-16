@@ -2,26 +2,26 @@ import { z } from 'zod';
 import { dimensionCodeSchema } from '../catalog/dimension.schema.js';
 
 /**
- * Una afirmación del cuestionario IRL.
+ * A statement of the IRL questionnaire.
  *
- * Invariantes del marco KTH:
- *   - Cada dimensión contiene exactamente 8 afirmaciones (RF-05).
- *   - El total a lo largo de las 6 dimensiones es 48.
- *   - `sequence` es la posición dentro de la dimensión (1–8), no
- *     un índice global.
+ * KTH framework invariants:
+ *   - Each dimension contains exactly 8 statements (RF-05).
+ *   - The total across the 6 dimensions is 48.
+ *   - `sequence` is the position within the dimension (1–8), not
+ *     a global index.
  *
- * El texto viene en español (campo `texto_es` en la tabla `afirmacion`).
+ * The text comes in Spanish (column `text_es` on the `statement` table).
  *
- * `id` es el bigint de la PK (`id_afirmacion`) serializado como string.
- * No es un UUID — la tabla usa GENERATED ALWAYS AS IDENTITY.
+ * `id` is the bigint PK (`id_statement`) serialized as a string.
+ * It is not a UUID — the table uses GENERATED ALWAYS AS IDENTITY.
  */
 export const statementSchema = z
   .object({
-    id: z.string().min(1).describe('Identificador único de la afirmación (bigint como string)'),
+    id: z.string().min(1).describe('Unique statement identifier (bigint as string)'),
     dimensionCode: dimensionCodeSchema,
-    sequence: z.number().int().min(1).max(8).describe('Posición dentro de la dimensión: 1–8'),
-    text: z.string().min(1).describe('Texto de la afirmación en español'),
+    sequence: z.number().int().min(1).max(8).describe('Position within the dimension: 1–8'),
+    text: z.string().min(1).describe('Statement text, in Spanish'),
   })
-  .describe('Una afirmación del cuestionario (irl_catalog.afirmacion)');
+  .describe('A questionnaire statement (irl_catalog.statement)');
 
 export type Statement = z.infer<typeof statementSchema>;

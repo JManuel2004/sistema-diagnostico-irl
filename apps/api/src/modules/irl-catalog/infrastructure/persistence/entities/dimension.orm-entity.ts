@@ -5,43 +5,43 @@ import {
   PrimaryGeneratedColumn,
   type Relation,
 } from 'typeorm';
-import { AfirmacionOrm } from './afirmacion.orm-entity.js';
+import { StatementOrm } from './statement.orm-entity.js';
 
 @Entity({ schema: 'irl_catalog', name: 'dimension' })
 export class DimensionOrm {
   @PrimaryGeneratedColumn({ type: 'integer', name: 'id_dimension' })
   idDimension!: number;
 
-  @Column({ name: 'codigo', type: 'varchar', length: 8 })
-  codigo!: string;
+  @Column({ name: 'code', type: 'varchar', length: 8 })
+  code!: string;
 
-  @Column({ name: 'nombre_es', type: 'varchar', length: 80 })
-  nombreEs!: string;
+  @Column({ name: 'name_es', type: 'varchar', length: 80 })
+  nameEs!: string;
 
-  @Column({ name: 'nombre_en', type: 'varchar', length: 80 })
-  nombreEn!: string;
+  @Column({ name: 'name_en', type: 'varchar', length: 80 })
+  nameEn!: string;
 
-  @Column({ name: 'descripcion', type: 'varchar', length: 500 })
-  descripcion!: string;
+  @Column({ name: 'description', type: 'varchar', length: 500 })
+  description!: string;
 
-  @Column({ name: 'es_dimension_critica', type: 'boolean', default: false })
-  esDimensionCritica!: boolean;
+  @Column({ name: 'is_critical_dimension', type: 'boolean', default: false })
+  isCriticalDimension!: boolean;
 
-  @Column({ name: 'orden', type: 'integer' })
-  orden!: number;
+  @Column({ name: 'sequence', type: 'integer' })
+  sequence!: number;
 
   /**
-   * Nivel IRL que se espera que esta dimensión alcance para considerar
-   * equilibrada la iniciativa. Insumo del roadmap de escalamiento
-   * (RF-14): una dimensión por debajo de su mínimo entra al foco.
+   * IRL level the dimension is expected to reach for the initiative to
+   * be considered balanced. Input to the scaling roadmap (RF-14): a
+   * dimension below its minimum enters the focus set.
    *
-   * La columna lleva `DEFAULT 4` en la base solo para que la migración
-   * pudiera aplicarse sobre las seis filas ya sembradas; el valor real
-   * lo fija el seed en las seis.
+   * The column carries `DEFAULT 4` in the database only so the
+   * migration could apply over the six already-seeded rows; the real
+   * value is set by the seed for all six.
    */
-  @Column({ name: 'nivel_minimo_esperado', type: 'smallint', default: 4 })
-  nivelMinimoEsperado!: number;
+  @Column({ name: 'minimum_expected_level', type: 'smallint', default: 4 })
+  minimumExpectedLevel!: number;
 
-  @OneToMany(() => AfirmacionOrm, (a) => a.dimension)
-  afirmaciones!: Relation<AfirmacionOrm[]>;
+  @OneToMany(() => StatementOrm, (s) => s.dimension)
+  statements!: Relation<StatementOrm[]>;
 }

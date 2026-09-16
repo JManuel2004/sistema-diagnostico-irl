@@ -1,10 +1,10 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 import { numericTransformer } from '../../../../../infrastructure/database/numeric.transformer.js';
 
-@Entity({ schema: 'irl_catalog', name: 'rango_conversion' })
-export class RangoConversionOrm {
-  @PrimaryColumn({ name: 'nivel_irl', type: 'smallint' })
-  nivelIrl!: number;
+@Entity({ schema: 'irl_catalog', name: 'conversion_range' })
+export class ConversionRangeOrm {
+  @PrimaryColumn({ name: 'irl_level', type: 'smallint' })
+  irlLevel!: number;
 
   @Column({
     name: 'avg_min',

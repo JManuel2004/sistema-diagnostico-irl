@@ -54,17 +54,17 @@ export class TypeOrmDependencyGraphRepository
   }
 
   async findExpectedMinimums(): Promise<DimensionMinimumSnapshot[]> {
-    const filas = await this.dimensiones.find({ order: { orden: 'ASC' } });
+    const filas = await this.dimensiones.find({ order: { sequence: 'ASC' } });
     return filas.map((d) => ({
-      dimension: d.codigo as DimensionCode,
-      nivelMinimoEsperado: d.nivelMinimoEsperado,
+      dimension: d.code as DimensionCode,
+      nivelMinimoEsperado: d.minimumExpectedLevel,
     }));
   }
 
   private async codigoPorId(): Promise<ReadonlyMap<number, DimensionCode>> {
     const filas = await this.dimensiones.find();
     return new Map(
-      filas.map((d) => [d.idDimension, d.codigo as DimensionCode] as const),
+      filas.map((d) => [d.idDimension, d.code as DimensionCode] as const),
     );
   }
 }

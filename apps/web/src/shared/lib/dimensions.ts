@@ -14,7 +14,7 @@ import { DIMENSION_CODES } from '@innlab/contracts';
  * Qué NO va aquí:
  *  - Nombre **completo** en español (`Nivel de Madurez Tecnológica`) y
  *    descripción canónica → vienen del catálogo (API
- *    `GET /catalogo/cuestionario`). Duplicarlos crearía dos verdades.
+ *    `GET /catalog/questionnaire`). Duplicarlos crearía dos verdades.
  *  - Copy de marketing (`shortDescription` del landing) → es contenido
  *    editorial de la página, no metadata del marco; vive en el page.
  *

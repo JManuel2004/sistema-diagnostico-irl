@@ -16,15 +16,15 @@ loadEnv({ path: '.env' });
  *
  * Idempotency strategy: UPSERT using `ON CONFLICT` on the natural unique
  * keys declared in the migration:
- *   - `dimension`: UNIQUE (codigo)
- *   - `afirmacion`: UNIQUE (id_dimension, numero_en_dimension)
- *   - `rango_conversion`: PRIMARY KEY (nivel_irl)
+ *   - `dimension`: UNIQUE (code)
+ *   - `statement`: UNIQUE (id_dimension, sequence)
+ *   - `conversion_range`: PRIMARY KEY (irl_level)
  *
- * `dimension` and `afirmacion` use GENERATED ALWAYS AS IDENTITY PKs —
- * never include their PKs in INSERT statements. `rango_conversion` has
- * `nivel_irl` as the natural PK and IS included explicitly per row.
+ * `dimension` and `statement` use GENERATED ALWAYS AS IDENTITY PKs —
+ * never include their PKs in INSERT statements. `conversion_range` has
+ * `irl_level` as the natural PK and IS included explicitly per row.
  *
- * Statements are linked to dimensions by a subquery on codigo so the
+ * Statements are linked to dimensions by a subquery on code so the
  * seed is order-independent and does not hard-code integer FKs.
  */
 async function run(): Promise<void> {
@@ -36,48 +36,48 @@ async function run(): Promise<void> {
       for (const d of DIMENSIONS) {
         await manager.query(
           `INSERT INTO irl_catalog.dimension
-             (codigo, nombre_es, nombre_en, descripcion, es_dimension_critica, orden,
-              nivel_minimo_esperado)
+             (code, name_es, name_en, description, is_critical_dimension, sequence,
+              minimum_expected_level)
            VALUES ($1, $2, $3, $4, $5, $6, $7)
-           ON CONFLICT (codigo) DO UPDATE
-             SET nombre_es             = EXCLUDED.nombre_es,
-                 nombre_en             = EXCLUDED.nombre_en,
-                 descripcion           = EXCLUDED.descripcion,
-                 es_dimension_critica  = EXCLUDED.es_dimension_critica,
-                 orden                 = EXCLUDED.orden,
-                 nivel_minimo_esperado = EXCLUDED.nivel_minimo_esperado`,
+           ON CONFLICT (code) DO UPDATE
+             SET name_es                = EXCLUDED.name_es,
+                 name_en                = EXCLUDED.name_en,
+                 description            = EXCLUDED.description,
+                 is_critical_dimension  = EXCLUDED.is_critical_dimension,
+                 sequence               = EXCLUDED.sequence,
+                 minimum_expected_level = EXCLUDED.minimum_expected_level`,
           [
-            d.codigo,
-            d.nombreEs,
-            d.nombreEn,
-            d.descripcion,
-            d.esDimensionCritica,
-            d.orden,
-            d.nivelMinimoEsperado,
+            d.code,
+            d.nameEs,
+            d.nameEn,
+            d.description,
+            d.isCriticalDimension,
+            d.sequence,
+            d.minimumExpectedLevel,
           ],
         );
       }
 
       for (const s of STATEMENTS) {
         await manager.query(
-          `INSERT INTO irl_catalog.afirmacion (id_dimension, numero_en_dimension, texto_es)
+          `INSERT INTO irl_catalog.statement (id_dimension, sequence, text_es)
            SELECT d.id_dimension, $2, $3
              FROM irl_catalog.dimension d
-            WHERE d.codigo = $1
-           ON CONFLICT (id_dimension, numero_en_dimension) DO UPDATE
-             SET texto_es = EXCLUDED.texto_es`,
-          [s.dimensionCodigo, s.numeroenDimension, s.textoEs],
+            WHERE d.code = $1
+           ON CONFLICT (id_dimension, sequence) DO UPDATE
+             SET text_es = EXCLUDED.text_es`,
+          [s.dimensionCode, s.sequence, s.textEs],
         );
       }
 
       for (const r of CONVERSION_RANGES) {
         await manager.query(
-          `INSERT INTO irl_catalog.rango_conversion (nivel_irl, avg_min, avg_max)
+          `INSERT INTO irl_catalog.conversion_range (irl_level, avg_min, avg_max)
            VALUES ($1, $2, $3)
-           ON CONFLICT (nivel_irl) DO UPDATE
+           ON CONFLICT (irl_level) DO UPDATE
              SET avg_min = EXCLUDED.avg_min,
                  avg_max = EXCLUDED.avg_max`,
-          [r.nivelIrl, r.avgMin, r.avgMax],
+          [r.irlLevel, r.avgMin, r.avgMax],
         );
       }
 
@@ -91,11 +91,11 @@ async function run(): Promise<void> {
       ];
       for (const [a, b] of PAIRS) {
         await manager.query(
-          `INSERT INTO irl_catalog.par_dimension (id_dimension_a, id_dimension_b, codigo_par)
+          `INSERT INTO irl_catalog.dimension_pair (id_dimension_a, id_dimension_b, pair_code)
            SELECT da.id_dimension, db.id_dimension, $3
              FROM irl_catalog.dimension da, irl_catalog.dimension db
-            WHERE da.codigo = $1 AND db.codigo = $2
-           ON CONFLICT (codigo_par) DO NOTHING`,
+            WHERE da.code = $1 AND db.code = $2
+           ON CONFLICT (pair_code) DO NOTHING`,
           [a, b, `${a}-${b}`],
         );
       }
@@ -121,7 +121,7 @@ async function run(): Promise<void> {
       routing = await seedPortfolioRouting(manager);
 
       // Grafo de dependencias del roadmap. Va después de `dimension`
-      // porque resuelve sus FKs por subconsulta sobre `codigo`.
+      // porque resuelve sus FKs por subconsulta sobre `code`.
       roadmap = await seedRoadmapGraph(manager);
     });
 
@@ -129,13 +129,13 @@ async function run(): Promise<void> {
       `SELECT COUNT(*)::text AS count FROM irl_catalog.dimension`,
     );
     const [{ count: afCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.afirmacion`,
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.statement`,
     );
     const [{ count: rcCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.rango_conversion`,
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.conversion_range`,
     );
     const [{ count: parCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.par_dimension`,
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.dimension_pair`,
     );
 
     const [{ count: svcCount }] = await dataSource.query<{ count: string }[]>(

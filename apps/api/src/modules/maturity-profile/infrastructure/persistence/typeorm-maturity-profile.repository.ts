@@ -86,11 +86,11 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
 
   private async loadDimensionIdByCode(): Promise<ReadonlyMap<string, number>> {
     const rows = await this.dimensions.find();
-    return new Map(rows.map((d) => [d.codigo, d.idDimension] as const));
+    return new Map(rows.map((d) => [d.code, d.idDimension] as const));
   }
 
   private async loadDimensionCodeById(): Promise<ReadonlyMap<number, string>> {
     const rows = await this.dimensions.find();
-    return new Map(rows.map((d) => [d.idDimension, d.codigo] as const));
+    return new Map(rows.map((d) => [d.idDimension, d.code] as const));
   }
 }

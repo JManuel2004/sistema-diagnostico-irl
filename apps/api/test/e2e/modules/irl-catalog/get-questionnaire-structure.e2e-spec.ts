@@ -11,7 +11,7 @@ import { authenticateAgainst } from '../../support/authenticated-app.js';
 import { questionnaireStructureSchema } from '@innlab/contracts';
 
 /**
- * E2E test suite: `GET /api/v1/catalogo/cuestionario` — questionnaire structure endpoint.
+ * E2E test suite: `GET /api/v1/catalog/questionnaire` — questionnaire structure endpoint.
  *
  * HU-07 acceptance criteria:
  *  AC-1: Exactly 6 dimensions, each with exactly 8 statements.
@@ -23,7 +23,7 @@ import { questionnaireStructureSchema } from '@innlab/contracts';
  *  NF-1: Response under 500ms at p95 (conservative baseline).
  *  NF-2: Endpoint is read-only and idempotent.
  */
-describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
+describe('GET /api/v1/catalog/questionnaire (e2e)', () => {
   let app: NestFastifyApplication;
   // Agente con la cabecera Authorization por defecto: el guard global
   // rechaza cualquier peticion sin token.
@@ -60,7 +60,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     it('returns 200 with the complete questionnaire structure', async () => {
       const start = Date.now();
 
-      const response = await agent.get('/api/v1/catalogo/cuestionario');
+      const response = await agent.get('/api/v1/catalog/questionnaire');
       const elapsed = Date.now() - start;
 
       // AC-6: Returns 200
@@ -94,9 +94,9 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     it('returns consistent results on multiple calls (idempotency)', async () => {
       // Call the endpoint twice and verify the responses are identical
 
-      const response1 = await agent.get('/api/v1/catalogo/cuestionario');
+      const response1 = await agent.get('/api/v1/catalog/questionnaire');
 
-      const response2 = await agent.get('/api/v1/catalogo/cuestionario');
+      const response2 = await agent.get('/api/v1/catalog/questionnaire');
 
       expect(response1.status).toBe(200);
       expect(response2.status).toBe(200);
@@ -106,7 +106,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     });
 
     it('response body contains required fields in each dimension', async () => {
-      const response = await agent.get('/api/v1/catalogo/cuestionario');
+      const response = await agent.get('/api/v1/catalog/questionnaire');
       const parsed = questionnaireStructureSchema.parse(response.body);
 
       for (const dimension of parsed.dimensions) {
@@ -127,7 +127,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     });
 
     it('response body contains required fields in each statement', async () => {
-      const response = await agent.get('/api/v1/catalogo/cuestionario');
+      const response = await agent.get('/api/v1/catalog/questionnaire');
       const parsed = questionnaireStructureSchema.parse(response.body);
 
       for (const dimension of parsed.dimensions) {
@@ -155,7 +155,7 @@ describe('GET /api/v1/catalogo/cuestionario (e2e)', () => {
     });
 
     it('returns a versionMarco field for cache invalidation', async () => {
-      const response = await agent.get('/api/v1/catalogo/cuestionario');
+      const response = await agent.get('/api/v1/catalog/questionnaire');
       const parsed = questionnaireStructureSchema.parse(response.body);
 
       expect(parsed).toHaveProperty('versionMarco');

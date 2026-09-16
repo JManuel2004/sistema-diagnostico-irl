@@ -3,15 +3,14 @@ import { dimensionCodeSchema } from './dimension.schema.js';
 import { statementSchema } from '../questionnaire/statement.schema.js';
 
 /**
- * Una dimensión con sus 8 afirmaciones embebidas — la forma anidada
- * que el frontend consume para HU-07 ("ver el cuestionario organizado
- * por dimensiones IRL").
+ * A dimension with its 8 statements embedded — the nested shape the
+ * frontend consumes for HU-07 ("view the questionnaire organized by
+ * IRL dimension").
  *
- * Mantener el shape anidado (en vez de devolver dimensiones y
- * afirmaciones por separado) evita que el cliente tenga que hacer la
- * unión `dimension_id` ⇄ `id_dimension`. La respuesta es de tamaño
- * fijo y pequeño (6 × 8 = 48 textos), así que no hay incentivo de
- * paginación.
+ * Keeping the nested shape (instead of returning dimensions and
+ * statements separately) spares the client from joining
+ * `dimension_id` ⇄ `id_dimension` itself. The response is small and
+ * fixed-size (6 × 8 = 48 texts), so there is no incentive to paginate.
  */
 export const dimensionWithStatementsSchema = z
   .object({
@@ -22,27 +21,27 @@ export const dimensionWithStatementsSchema = z
     statements: z
       .array(statementSchema)
       .length(8)
-      .describe('Exactamente 8 afirmaciones por dimensión (RF-05)'),
+      .describe('Exactly 8 statements per dimension (RF-05)'),
   })
-  .describe('Una dimensión con sus 8 afirmaciones embebidas');
+  .describe('A dimension with its 8 statements embedded');
 
 export type DimensionWithStatements = z.infer<typeof dimensionWithStatementsSchema>;
 
 /**
- * Estructura completa del cuestionario: 6 dimensiones × 8 afirmaciones.
+ * Full questionnaire structure: 6 dimensions × 8 statements.
  *
- * Endpoint: `GET /api/v1/catalogo/cuestionario`.
- * Cache lado-cliente: `staleTime: Infinity` (catálogo inmutable en
- * runtime — ver STATE_MANAGEMENT.md).
+ * Endpoint: `GET /api/v1/catalog/questionnaire`.
+ * Client-side cache: `staleTime: Infinity` (catalog is immutable at
+ * runtime — see STATE_MANAGEMENT.md).
  */
 export const questionnaireStructureSchema = z
   .object({
-    versionMarco: z.string().describe('Versión del marco IRL — clave para invalidar caches'),
+    versionMarco: z.string().describe('IRL framework version — cache-invalidation key'),
     dimensions: z
       .array(dimensionWithStatementsSchema)
       .length(6)
-      .describe('Exactamente 6 dimensiones'),
+      .describe('Exactly 6 dimensions'),
   })
-  .describe('Estructura completa del cuestionario IRL agrupada por dimensión');
+  .describe('Full IRL questionnaire structure, grouped by dimension');
 
 export type QuestionnaireStructure = z.infer<typeof questionnaireStructureSchema>;

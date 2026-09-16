@@ -13,6 +13,7 @@ import { RoutingConfigurationDraft1747526400009 } from '../../../src/infrastruct
 import { RecommendationResultAndTrace1747526400010 } from '../../../src/infrastructure/database/migrations/20260518010-RecommendationResultAndTrace.js';
 import { InitiativeCharacterization1747526400011 } from '../../../src/infrastructure/database/migrations/20260518011-InitiativeCharacterization.js';
 import { RoadmapDependencyGraph1747526400012 } from '../../../src/infrastructure/database/migrations/20260518012-RoadmapDependencyGraph.js';
+import { EnglishCatalogNaming1747526400013 } from '../../../src/infrastructure/database/migrations/20260518013-EnglishCatalogNaming.js';
 import { DIMENSIONS } from '../../../src/infrastructure/database/seeds/data/dimensions.js';
 import { DIMENSION_DEPENDENCIES } from '../../../src/infrastructure/database/seeds/data/dimension-dependencies.js';
 import { seedRoadmapGraph } from '../../../src/infrastructure/database/seeds/seed-roadmap-graph.js';
@@ -21,7 +22,7 @@ import { seedRoadmapGraph } from '../../../src/infrastructure/database/seeds/see
  * Integración del seed del grafo de dependencias contra Postgres real.
  *
  * Verifica lo que un test unitario no puede: que las FKs se resuelvan
- * por `codigo` (no por id, que es IDENTITY y no estable), que el
+ * por `code` (no por id, que es IDENTITY y no estable), que el
  * `ON CONFLICT` sea idempotente de verdad, y que la lista de columnas
  * del `DO UPDATE` incluya efectivamente las mutables — omitir una haría
  * que el seed pareciera idempotente pero nunca actualizara ese valor.
@@ -53,6 +54,7 @@ describe('Seed del grafo de dependencias (integration)', () => {
         RecommendationResultAndTrace1747526400010,
         InitiativeCharacterization1747526400011,
         RoadmapDependencyGraph1747526400012,
+        EnglishCatalogNaming1747526400013,
       ],
       migrationsTableName: 'typeorm_migrations',
     });
@@ -64,17 +66,17 @@ describe('Seed del grafo de dependencias (integration)', () => {
     for (const d of DIMENSIONS) {
       await dataSource.query(
         `INSERT INTO irl_catalog.dimension
-           (codigo, nombre_es, nombre_en, descripcion, es_dimension_critica,
-            orden, nivel_minimo_esperado)
+           (code, name_es, name_en, description, is_critical_dimension,
+            sequence, minimum_expected_level)
          VALUES ($1,$2,$3,$4,$5,$6,$7)`,
         [
-          d.codigo,
-          d.nombreEs,
-          d.nombreEn,
-          d.descripcion,
-          d.esDimensionCritica,
-          d.orden,
-          d.nivelMinimoEsperado,
+          d.code,
+          d.nameEs,
+          d.nameEn,
+          d.description,
+          d.isCriticalDimension,
+          d.sequence,
+          d.minimumExpectedLevel,
         ],
       );
     }
@@ -91,7 +93,7 @@ describe('Seed del grafo de dependencias (integration)', () => {
     const filas = await dataSource.query<
       { origen: string; destino: string; req: number }[]
     >(
-      `SELECT o.codigo AS origen, d.codigo AS destino,
+      `SELECT o.code AS origen, d.code AS destino,
               dep.nivel_minimo_requerido AS req
          FROM irl_catalog.dependencia_dimension dep
          JOIN irl_catalog.dimension o ON o.id_dimension = dep.id_dimension_origen
@@ -111,8 +113,8 @@ describe('Seed del grafo de dependencias (integration)', () => {
     const filas = await dataSource.query<
       { codigo: string; nivel: number }[]
     >(
-      `SELECT codigo, nivel_minimo_esperado AS nivel
-         FROM irl_catalog.dimension ORDER BY orden`,
+      `SELECT code AS codigo, minimum_expected_level AS nivel
+         FROM irl_catalog.dimension ORDER BY sequence`,
     );
     expect(filas).toHaveLength(6);
     expect(filas.every((f) => f.nivel === 4)).toBe(true);
@@ -149,7 +151,7 @@ describe('Seed del grafo de dependencias (integration)', () => {
         `INSERT INTO irl_catalog.dependencia_dimension
            (id_dimension_origen, id_dimension_destino, nivel_minimo_requerido)
          SELECT d.id_dimension, d.id_dimension, 3
-           FROM irl_catalog.dimension d WHERE d.codigo = 'TRL'`,
+           FROM irl_catalog.dimension d WHERE d.code = 'TRL'`,
       ),
     ).rejects.toThrow(/ck_dependencia_no_reflexiva/);
   });
@@ -161,7 +163,7 @@ describe('Seed del grafo de dependencias (integration)', () => {
            (id_dimension_origen, id_dimension_destino, nivel_minimo_requerido)
          SELECT o.id_dimension, d.id_dimension, 3
            FROM irl_catalog.dimension o, irl_catalog.dimension d
-          WHERE o.codigo = 'BRL' AND d.codigo = 'FRL'`,
+          WHERE o.code = 'BRL' AND d.code = 'FRL'`,
       ),
     ).rejects.toThrow(/uq_dependencia_par/);
   });
@@ -174,7 +176,7 @@ describe('Seed del grafo de dependencias (integration)', () => {
          (id_dimension_origen, id_dimension_destino, nivel_minimo_requerido)
        SELECT o.id_dimension, d.id_dimension, 3
          FROM irl_catalog.dimension o, irl_catalog.dimension d
-        WHERE o.codigo = 'FRL' AND d.codigo = 'BRL'`,
+        WHERE o.code = 'FRL' AND d.code = 'BRL'`,
     );
 
     const [{ count }] = await dataSource.query<{ count: string }[]>(
@@ -187,7 +189,7 @@ describe('Seed del grafo de dependencias (integration)', () => {
         USING irl_catalog.dimension o, irl_catalog.dimension d
         WHERE dep.id_dimension_origen = o.id_dimension
           AND dep.id_dimension_destino = d.id_dimension
-          AND o.codigo = 'FRL' AND d.codigo = 'BRL'`,
+          AND o.code = 'FRL' AND d.code = 'BRL'`,
     );
   });
 });

@@ -16,7 +16,7 @@ import { RespuestaOrm } from './respuesta.orm-entity.js';
  *
  * `id_respuesta` is a bigint GENERATED ALWAYS AS IDENTITY — never set
  * it explicitly. `id_afirmacion` is also a bigint (from
- * `irl_catalog.afirmacion`), represented as a string in TypeORM.
+ * `irl_catalog.statement`), represented as a string in TypeORM.
  */
 @Injectable()
 export class TypeOrmAnswerSheetRepository implements AnswerSheetRepositoryPort {

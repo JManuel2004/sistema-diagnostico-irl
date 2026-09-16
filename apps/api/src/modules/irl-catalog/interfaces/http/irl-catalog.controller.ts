@@ -7,19 +7,19 @@ import { QuestionnaireStructureResponseDto } from './dto/questionnaire-structure
  * HTTP surface for the IRL catalog (read-only).
  *
  * Routes:
- *   - `GET /api/v1/catalogo/cuestionario` (HU-07) — 6 dimensions × 8 statements.
- *   - `GET /api/v1/catalogo/tabla-conversion` (E-04) — SA-06 conversion table.
+ *   - `GET /api/v1/catalog/questionnaire` (HU-07) — 6 dimensions × 8 statements.
+ *   - `GET /api/v1/catalog/conversion-table` (E-04) — SA-06 conversion table.
  */
-@ApiTags('catalogo')
-@Controller('catalogo')
+@ApiTags('catalog')
+@Controller('catalog')
 export class IrlCatalogController {
   constructor(
     private readonly getQuestionnaire: GetQuestionnaireStructureQuery,
   ) {}
 
-  @Get('cuestionario')
+  @Get('questionnaire')
   @ApiOkResponse({ type: QuestionnaireStructureResponseDto })
-  async getQuestionnaireSructure(): Promise<QuestionnaireStructureResponseDto> {
+  async getQuestionnaireStructure(): Promise<QuestionnaireStructureResponseDto> {
     return this.getQuestionnaire.execute();
   }
 }

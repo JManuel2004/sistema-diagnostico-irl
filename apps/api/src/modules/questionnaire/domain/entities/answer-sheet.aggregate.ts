@@ -10,7 +10,7 @@ import type { AnswerPersistence } from './answer.entity.js';
  * The aggregate enforces that each statement appears at most once —
  * duplicate `statementId` writes are an upsert, not an append.
  *
- * `statementId` is the bigint PK of `irl_catalog.afirmacion` serialised
+ * `statementId` is the bigint PK of `irl_catalog.statement` serialised
  * as string (TypeORM returns bigint columns as string). It is NOT a UUID.
  */
 export class AnswerSheet {

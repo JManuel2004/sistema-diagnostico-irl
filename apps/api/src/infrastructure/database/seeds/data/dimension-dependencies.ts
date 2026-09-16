@@ -105,7 +105,7 @@ export const DIMENSION_DEPENDENCIES: readonly DimensionDependencySeed[] = [
 // hay 48 afirmaciones. Convierten un error de configuración en un fallo
 // de arranque del seed en vez de un 500 frente a un usuario meses después.
 
-const CODIGOS_VALIDOS = new Set(DIMENSIONS.map((d) => d.codigo as string));
+const CODIGOS_VALIDOS = new Set(DIMENSIONS.map((d) => d.code as string));
 
 for (const arista of DIMENSION_DEPENDENCIES) {
   for (const [rol, codigo] of [

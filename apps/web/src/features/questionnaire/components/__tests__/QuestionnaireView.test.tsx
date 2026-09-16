@@ -36,7 +36,7 @@ afterAll(() => server.close());
 
 function withSuccessHandler(): void {
   server.use(
-    http.get('*/api/v1/catalogo/cuestionario', () =>
+    http.get('*/api/v1/catalog/questionnaire', () =>
       HttpResponse.json(buildFixture()),
     ),
   );
@@ -44,7 +44,7 @@ function withSuccessHandler(): void {
 
 function withErrorHandler(): void {
   server.use(
-    http.get('*/api/v1/catalogo/cuestionario', () =>
+    http.get('*/api/v1/catalog/questionnaire', () =>
       HttpResponse.json({ error: 'Internal server error' }, { status: 500 }),
     ),
   );
@@ -61,7 +61,7 @@ describe('QuestionnaireView', () => {
 
   it('renders the skeleton while the request is in flight', () => {
     server.use(
-      http.get('*/api/v1/catalogo/cuestionario', () => new Promise(() => undefined)),
+      http.get('*/api/v1/catalog/questionnaire', () => new Promise(() => undefined)),
     );
     renderWithClient(<QuestionnaireView />);
 
@@ -119,7 +119,7 @@ describe('QuestionnaireView', () => {
   it('clicking Reintentar triggers a refetch', async () => {
     let callCount = 0;
     server.use(
-      http.get('*/api/v1/catalogo/cuestionario', () => {
+      http.get('*/api/v1/catalog/questionnaire', () => {
         callCount++;
         return HttpResponse.json({ error: 'fail' }, { status: 500 });
       }),

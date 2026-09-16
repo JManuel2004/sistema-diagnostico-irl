@@ -5,7 +5,7 @@ import { likertValueSchema } from './likert.schema.js';
 /**
  * Una respuesta individual del cuestionario.
  *
- * `statementId` es el bigint PK de `irl_catalog.afirmacion` serializado
+ * `statementId` es el bigint PK de `irl_catalog.statement` serializado
  * como string (TypeORM retorna columnas bigint como string). NO es un UUID.
  */
 export const answerItemSchema = z

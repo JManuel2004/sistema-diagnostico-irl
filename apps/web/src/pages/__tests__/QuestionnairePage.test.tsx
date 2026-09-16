@@ -43,7 +43,7 @@ afterAll(() => server.close());
 
 function withCatalog(): void {
   server.use(
-    mswHttp.get('*/api/v1/catalogo/cuestionario', () =>
+    mswHttp.get('*/api/v1/catalog/questionnaire', () =>
       HttpResponse.json(buildCatalogFixture()),
     ),
   );

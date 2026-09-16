@@ -12,7 +12,7 @@ import { InvariantViolationError } from '../../../../shared-kernel/domain/errors
  *     for that dimension. Float; preserved with full precision so the UI
  *     can decide how many decimals to display.
  *   - `irlLevel` ∈ [1, 9], the level derived from `averageLikert` via the
- *     `irl_catalog.rango_conversion` table (Annex A of the KTH guide).
+ *     `irl_catalog.conversion_range` table (Annex A of the KTH guide).
  *
  * Construction goes through the static factory `create(...)` so the
  * invariants are checked at the boundary; calling code cannot smuggle a

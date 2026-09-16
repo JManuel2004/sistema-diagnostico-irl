@@ -14,6 +14,13 @@ import { STATEMENTS } from '../../../src/infrastructure/database/seeds/data/stat
  *
  * Also re-runs the seed to confirm idempotency — no duplicate rows,
  * updated text content reflected on the second pass.
+ *
+ * Deliberately applies only migration 001 (the schema as originally
+ * created) and hand-rolls the equivalent insert SQL against that
+ * schema's Spanish column names — it exercises the initial migration
+ * in isolation, not the current renamed schema. Seed-data field names
+ * (`DIMENSIONS`/`STATEMENTS`) follow the current English convention;
+ * only the raw SQL column names below stay pinned to migration 001.
  */
 describe('Catalog seed (integration)', () => {
   let container: StartedPostgreSqlContainer;
@@ -56,12 +63,12 @@ describe('Catalog seed (integration)', () => {
                  es_dimension_critica = EXCLUDED.es_dimension_critica,
                  orden                = EXCLUDED.orden`,
           [
-            d.codigo,
-            d.nombreEs,
-            d.nombreEn,
-            d.descripcion,
-            d.esDimensionCritica,
-            d.orden,
+            d.code,
+            d.nameEs,
+            d.nameEn,
+            d.description,
+            d.isCriticalDimension,
+            d.sequence,
           ],
         );
       }
@@ -73,7 +80,7 @@ describe('Catalog seed (integration)', () => {
             WHERE d.codigo = $1
            ON CONFLICT (id_dimension, numero_en_dimension) DO UPDATE
              SET texto_es = EXCLUDED.texto_es`,
-          [s.dimensionCodigo, s.numeroenDimension, s.textoEs],
+          [s.dimensionCode, s.sequence, s.textEs],
         );
       }
     });

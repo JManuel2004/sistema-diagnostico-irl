@@ -6,8 +6,8 @@ import { uuidSchema } from '../common/uuid.schema.js';
  * Readiness Level™.
  *
  * Fuente autoritativa: tabla `irl_catalog.dimension` del modelo de
- * datos v2.0 (columna `codigo`). El orden coincide con
- * `dimension.orden` ASC.
+ * datos v2.0 (columna `code`). El orden coincide con
+ * `dimension.sequence` ASC.
  *
  * Notar la mayúscula/minúscula de `TmRL` (KTH lo escribe así en su
  * material oficial — Team Readiness Level con la `m` minúscula).

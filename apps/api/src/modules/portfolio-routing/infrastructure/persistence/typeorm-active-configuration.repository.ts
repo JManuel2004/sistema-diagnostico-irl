@@ -117,7 +117,7 @@ export class TypeOrmActiveConfigurationRepository
       serviciosRows.map((s) => [s.idServicio, s.nombre] as const),
     );
     const codigoPorDimension = new Map(
-      dimRows.map((d) => [d.idDimension, d.codigo as DimensionCode] as const),
+      dimRows.map((d) => [d.idDimension, d.code as DimensionCode] as const),
     );
 
     const intensidadesRows = await this.intensidades.find({

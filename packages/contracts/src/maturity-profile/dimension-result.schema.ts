@@ -6,7 +6,7 @@ import { dimensionCodeSchema } from '../catalog/dimension.schema.js';
  *
  * Pipeline de cálculo (`IrlCalculatorService` en el backend):
  *   1. Promediar los 8 valores Likert de la dimensión.
- *   2. Buscar el `irlLevel` en `rango_conversion` (tabla SA-06) que
+ *   2. Buscar el `irlLevel` en `conversion_range` (tabla SA-06) que
  *      contenga ese promedio.
  *   3. Empaquetar promedio + nivel en este resultado.
  *

@@ -1,24 +1,24 @@
 import { DIMENSIONS } from './dimensions.js';
 
 /**
- * Forty-eight statements (afirmaciones) of the IRL questionnaire — 8 per
- * dimension, 6 dimensions, total 48 (RF-05).
+ * Forty-eight statements of the IRL questionnaire — 8 per dimension,
+ * 6 dimensions, total 48 (RF-05).
  *
  * IMPORTANT: the Spanish text below is placeholder representative of
  * the KTH Innovation Readiness Level framework. Before going to
  * production, replace it with the project-stakeholder-approved wording
  * referenced in `sistema-diagnostico-irl-docs/01-requirements/backlog.md`.
- * Replace the text only — never change `numeroenDimension`, the dimension
+ * Replace the text only — never change `sequence`, the dimension
  * mapping, or the count of 8 per dimension.
  *
- * `id_afirmacion` is GENERATED ALWAYS AS IDENTITY — statements are inserted
+ * `id_statement` is GENERATED ALWAYS AS IDENTITY — statements are inserted
  * without an explicit PK; the DB assigns it. Statements are linked to
- * dimensions by `dimensionCodigo` (looked up in a subquery during seed).
+ * dimensions by `dimensionCode` (looked up in a subquery during seed).
  */
 export interface StatementSeed {
-  readonly dimensionCodigo: string;
-  readonly numeroenDimension: number;
-  readonly textoEs: string;
+  readonly dimensionCode: string;
+  readonly sequence: number;
+  readonly textEs: string;
 }
 
 const TRL_TEXTS: readonly string[] = [
@@ -97,16 +97,16 @@ const TEXTS_BY_CODE: Record<string, readonly string[]> = {
 };
 
 export const STATEMENTS: readonly StatementSeed[] = DIMENSIONS.flatMap((d) => {
-  const texts = TEXTS_BY_CODE[d.codigo];
+  const texts = TEXTS_BY_CODE[d.code];
   if (texts?.length !== 8) {
     throw new Error(
-      `Dimension ${d.codigo} must have exactly 8 statement texts`,
+      `Dimension ${d.code} must have exactly 8 statement texts`,
     );
   }
-  return texts.map((textoEs, index) => ({
-    dimensionCodigo: d.codigo,
-    numeroenDimension: index + 1,
-    textoEs,
+  return texts.map((textEs, index) => ({
+    dimensionCode: d.code,
+    sequence: index + 1,
+    textEs,
   }));
 });
 

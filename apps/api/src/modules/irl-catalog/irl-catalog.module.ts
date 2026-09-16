@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DimensionOrm } from './infrastructure/persistence/entities/dimension.orm-entity.js';
-import { AfirmacionOrm } from './infrastructure/persistence/entities/afirmacion.orm-entity.js';
-import { RangoConversionOrm } from './infrastructure/persistence/entities/rango-conversion.orm-entity.js';
-import { ParDimensionOrm } from './infrastructure/persistence/entities/par-dimension.orm-entity.js';
+import { StatementOrm } from './infrastructure/persistence/entities/statement.orm-entity.js';
+import { ConversionRangeOrm } from './infrastructure/persistence/entities/conversion-range.orm-entity.js';
+import { DimensionPairOrm } from './infrastructure/persistence/entities/dimension-pair.orm-entity.js';
 import { TypeOrmIrlCatalogRepository } from './infrastructure/persistence/typeorm-irl-catalog.repository.js';
 import {
   IRL_CATALOG_REPOSITORY,
@@ -27,9 +27,9 @@ import { GetQuestionnaireStructureQuery } from './application/queries/get-questi
   imports: [
     TypeOrmModule.forFeature([
       DimensionOrm,
-      AfirmacionOrm,
-      RangoConversionOrm,
-      ParDimensionOrm,
+      StatementOrm,
+      ConversionRangeOrm,
+      DimensionPairOrm,
     ]),
   ],
   providers: [

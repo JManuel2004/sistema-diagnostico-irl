@@ -60,7 +60,7 @@ export type RoadmapPhase = z.infer<typeof roadmapPhaseSchema>;
  *    parámetro de duración por fase que no está definido ni validado con
  *    INNLAB. Las fases se entregan como orden, no como cronograma.
  *
- *  - **Sin textos de orientación.** `texto_roadmap` está vacía y sus
+ *  - **Sin textos de orientación.** `roadmap_text` está vacía y sus
  *    entradas son un insumo pendiente de INNLAB.
  *
  * `phases` puede venir vacío: significa que la iniciativa cumple el
