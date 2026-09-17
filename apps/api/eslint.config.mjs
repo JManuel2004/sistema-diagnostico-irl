@@ -7,14 +7,24 @@ import boundaries from 'eslint-plugin-boundaries';
  * Two layers of rules:
  *
  *  1. `eslint-plugin-boundaries` enforces that modules respect the four-layer
- *     dependency direction (interfaces → application → domain ← infrastructure).
+ *     dependency direction (application → usecase → domain ← infrastructure).
  *     Shared kernel may be imported by anyone; it imports nothing else.
  *
- *  2. `no-restricted-imports` denies the specific framework / IO packages
- *     listed in CLAUDE.api.md, in two tiers:
+ *  2. `no-restricted-imports` denies the specific framework / IO packages,
+ *     in two tiers:
  *       - `domain/` (and the shared kernel domain) bans everything.
- *       - `application/` bans IO but allows the NestJS DI decorators.
- *     See the inline rationale on the second tier below.
+ *       - `usecase/` and `application/` ban IO but allow the NestJS DI
+ *         decorators. See the inline rationale on the second tier below.
+ *
+ * MIGRATION NOTE — the layer folders are being renamed module by module
+ * (`application/` → `usecase/`, `interfaces/` → `application/`). Until all
+ * seven modules have moved, both layouts coexist: a module that has not
+ * migrated yet still keeps its use cases in `application/` and its
+ * controllers in `interfaces/`. This config therefore recognises `usecase`,
+ * `application` and `interfaces` at the same time, and `application`
+ * temporarily allows the union of what both meanings need. The legacy
+ * `interfaces` element and that widened allowance are removed once the last
+ * module has migrated.
  */
 
 /** Framework packages. Banned outright in `domain/`. */
@@ -52,6 +62,7 @@ export default [
     settings: {
       'boundaries/elements': [
         { type: 'domain', pattern: 'src/modules/*/domain/**' },
+        { type: 'usecase', pattern: 'src/modules/*/usecase/**' },
         { type: 'application', pattern: 'src/modules/*/application/**' },
         { type: 'infrastructure', pattern: 'src/modules/*/infrastructure/**' },
         { type: 'interfaces', pattern: 'src/modules/*/interfaces/**' },
@@ -68,13 +79,21 @@ export default [
           rules: [
             { from: 'domain', allow: ['domain', 'shared-kernel'] },
             {
+              from: 'usecase',
+              allow: ['usecase', 'domain', 'shared-kernel'],
+            },
+            {
+              // Widened during the migration: in a migrated module this is
+              // the controller layer (allowed: usecase), in one that has not
+              // migrated it is still the use-case layer (allowed: domain).
               from: 'application',
-              allow: ['application', 'domain', 'shared-kernel'],
+              allow: ['application', 'usecase', 'domain', 'shared-kernel'],
             },
             {
               from: 'infrastructure',
               allow: [
                 'infrastructure',
+                'usecase',
                 'application',
                 'domain',
                 'shared-kernel',
@@ -82,7 +101,7 @@ export default [
             },
             {
               from: 'interfaces',
-              allow: ['interfaces', 'application', 'shared-kernel'],
+              allow: ['interfaces', 'application', 'usecase', 'shared-kernel'],
             },
             { from: 'shared-kernel', allow: ['shared-kernel'] },
           ],
@@ -118,7 +137,15 @@ export default [
     // HTTP clients, mailers, filesystem, sockets. That one stays intact, and
     // so does the ban on the NestJS packages that have no business here
     // (`@nestjs/core`, `@nestjs/typeorm`, the platform adapters).
-    files: ['src/modules/*/application/**/*.ts'],
+    //
+    // Both `usecase/` and `application/` are listed so the rule keeps
+    // applying through the folder migration: it covers the use cases
+    // wherever they currently live, and it is equally correct for the
+    // controller layer, which has no business importing IO either.
+    files: [
+      'src/modules/*/usecase/**/*.ts',
+      'src/modules/*/application/**/*.ts',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',

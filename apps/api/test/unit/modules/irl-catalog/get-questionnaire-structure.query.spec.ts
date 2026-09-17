@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { GetQuestionnaireStructureQuery } from '../../../../src/modules/irl-catalog/application/queries/get-questionnaire-structure.query.js';
+import { GetQuestionnaireStructureQuery } from '../../../../src/modules/irl-catalog/usecase/queries/get-questionnaire-structure.query.js';
 import type { IrlCatalogRepositoryPort } from '../../../../src/modules/irl-catalog/domain/ports/irl-catalog.repository.port.js';
 import { Dimension } from '../../../../src/modules/irl-catalog/domain/dimension.js';
 import { Statement } from '../../../../src/modules/irl-catalog/domain/statement.js';

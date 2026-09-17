@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { GetQuestionnaireStructureQuery } from '../../application/queries/get-questionnaire-structure.query.js';
+import { GetQuestionnaireStructureQuery } from '../../usecase/queries/get-questionnaire-structure.query.js';
 import { QuestionnaireStructureResponseDto } from './dto/questionnaire-structure.response.dto.js';
 
 /**

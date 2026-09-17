@@ -9,8 +9,8 @@ import {
   IRL_CATALOG_REPOSITORY,
   type IrlCatalogRepositoryPort,
 } from './domain/ports/irl-catalog.repository.port.js';
-import { IrlCatalogController } from './interfaces/http/irl-catalog.controller.js';
-import { GetQuestionnaireStructureQuery } from './application/queries/get-questionnaire-structure.query.js';
+import { IrlCatalogController } from './application/http/irl-catalog.controller.js';
+import { GetQuestionnaireStructureQuery } from './usecase/queries/get-questionnaire-structure.query.js';
 
 /**
  * `IrlCatalogModule` — bounded context for the read-only KTH IRL
