@@ -59,12 +59,12 @@ const FACTS_AGROCONECTA: DiagnosticFacts = {
   bottlenecks: ['IPRL'],
   gaps: ['BRL', 'IPRL', 'FRL'],
   imbalances: [
-    { left: 'TRL', right: 'CRL', difference: 2, classification: 'MODERADO' },
-    { left: 'TRL', right: 'BRL', difference: 3, classification: 'MODERADO' },
-    { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACEPTABLE' },
-    { left: 'TmRL', right: 'FRL', difference: 3, classification: 'MODERADO' },
-    { left: 'BRL', right: 'IPRL', difference: 2, classification: 'MODERADO' },
-    { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICO' },
+    { left: 'TRL', right: 'CRL', difference: 2, classification: 'MODERATE' },
+    { left: 'TRL', right: 'BRL', difference: 3, classification: 'MODERATE' },
+    { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACCEPTABLE' },
+    { left: 'TmRL', right: 'FRL', difference: 3, classification: 'MODERATE' },
+    { left: 'BRL', right: 'IPRL', difference: 2, classification: 'MODERATE' },
+    { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICAL' },
   ],
   averageLevel: 3.5,
   // El documento del caso registra `vinculacion_academica` como "null
@@ -306,7 +306,7 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
         gaps: ['BRL', 'FRL', 'CRL'],
         imbalances: FACTS_AGROCONECTA.imbalances.map((d) =>
           d.left === 'TRL' && d.right === 'IPRL'
-            ? { ...d, difference: 1, classification: 'ACEPTABLE' as const }
+            ? { ...d, difference: 1, classification: 'ACCEPTABLE' as const }
             : d,
         ),
       };

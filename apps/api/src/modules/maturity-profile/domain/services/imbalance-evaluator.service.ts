@@ -10,9 +10,9 @@ import {
  *
  * Evaluates the six fixed KTH pairs against the computed dimension levels
  * and classifies each gap:
- *   - difference > 3  → CRITICO
- *   - difference 2–3  → MODERADO
- *   - difference < 2  → ACEPTABLE
+ *   - difference > 3  → CRITICAL
+ *   - difference 2–3  → MODERATE
+ *   - difference < 2  → ACCEPTABLE
  *
  * No side effects. Input and output are domain objects only.
  *
@@ -41,8 +41,8 @@ export class ImbalanceEvaluatorService {
   }
 
   private classify(difference: number): ImbalanceClassification {
-    if (difference > 3) return 'CRITICO';
-    if (difference >= 2) return 'MODERADO';
-    return 'ACEPTABLE';
+    if (difference > 3) return 'CRITICAL';
+    if (difference >= 2) return 'MODERATE';
+    return 'ACCEPTABLE';
   }
 }

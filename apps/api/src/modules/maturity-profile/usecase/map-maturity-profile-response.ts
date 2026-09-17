@@ -3,9 +3,9 @@ import type { MaturityProfile } from '../domain/entities/maturity-profile.aggreg
 import type { ImbalanceResult } from '../domain/value-objects/imbalance-result.vo.js';
 
 const CLASSIFICATION_MAP = {
-  CRITICO: 'critical',
-  MODERADO: 'moderate',
-  ACEPTABLE: 'acceptable',
+  CRITICAL: 'critical',
+  MODERATE: 'moderate',
+  ACCEPTABLE: 'acceptable',
 } as const;
 
 export function toMaturityProfileResponse(

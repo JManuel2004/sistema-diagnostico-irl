@@ -40,13 +40,13 @@ describe('ImbalanceEvaluatorService', () => {
     }
 
     it.each([
-      [5, 5, 0, 'ACEPTABLE'],
-      [5, 4, 1, 'ACEPTABLE'],
-      [5, 4, 1, 'ACEPTABLE'], // diff 1 → acceptable
-      [5, 3, 2, 'MODERADO'],  // diff 2 → moderate (lower bound)
-      [5, 2, 3, 'MODERADO'],  // diff 3 → moderate (upper bound)
-      [5, 1, 4, 'CRITICO'],   // diff 4 → critical (lower bound of critical)
-      [9, 1, 8, 'CRITICO'],   // diff 8 → critical (max possible)
+      [5, 5, 0, 'ACCEPTABLE'],
+      [5, 4, 1, 'ACCEPTABLE'],
+      [5, 4, 1, 'ACCEPTABLE'], // diff 1 → acceptable
+      [5, 3, 2, 'MODERATE'],  // diff 2 → moderate (lower bound)
+      [5, 2, 3, 'MODERATE'],  // diff 3 → moderate (upper bound)
+      [5, 1, 4, 'CRITICAL'],   // diff 4 → critical (lower bound of critical)
+      [9, 1, 8, 'CRITICAL'],   // diff 8 → critical (max possible)
     ])(
       'levels %i vs %i → diff %i → %s',
       (la, lb, expectedDiff, expectedClass) => {
@@ -83,12 +83,12 @@ describe('ImbalanceEvaluatorService', () => {
 
     it.each([
       // [pairIndex, expectedDiff, expectedClass]
-      [0, 2, 'MODERADO'],   // TRL(5) - CRL(3) = 2
-      [1, 2, 'MODERADO'],   // TRL(5) - BRL(3) = 2
-      [2, 0, 'ACEPTABLE'],  // CRL(3) - BRL(3) = 0
-      [3, 1, 'ACEPTABLE'],  // TmRL(4) - FRL(3) = 1
-      [4, 1, 'ACEPTABLE'],  // BRL(3) - IPRL(2) = 1
-      [5, 3, 'MODERADO'],   // TRL(5) - IPRL(2) = 3
+      [0, 2, 'MODERATE'],   // TRL(5) - CRL(3) = 2
+      [1, 2, 'MODERATE'],   // TRL(5) - BRL(3) = 2
+      [2, 0, 'ACCEPTABLE'],  // CRL(3) - BRL(3) = 0
+      [3, 1, 'ACCEPTABLE'],  // TmRL(4) - FRL(3) = 1
+      [4, 1, 'ACCEPTABLE'],  // BRL(3) - IPRL(2) = 1
+      [5, 3, 'MODERATE'],   // TRL(5) - IPRL(2) = 3
     ])(
       'pair[%i]: difference=%i, classification=%s',
       (idx, diff, cls) => {
@@ -111,39 +111,39 @@ describe('ImbalanceEvaluatorService', () => {
         [pair(1, 'TRL', 'CRL')],
       )[0];
       expect(result.difference).toBe(5);
-      expect(result.classification).toBe('CRITICO');
+      expect(result.classification).toBe('CRITICAL');
     });
 
-    it('classifies as ACEPTABLE when both codes are missing', () => {
+    it('classifies as ACCEPTABLE when both codes are missing', () => {
       const result = svc.evaluate(new Map(), [pair(1, 'TRL', 'CRL')])[0];
       expect(result.difference).toBe(0);
-      expect(result.classification).toBe('ACEPTABLE');
+      expect(result.classification).toBe('ACCEPTABLE');
     });
 
     it('critical threshold is strictly > 3 (not ≥ 3)', () => {
       const at3 = svc.evaluate(new Map([['TRL', 6], ['CRL', 3]]), [pair(1, 'TRL', 'CRL')])[0];
       const at4 = svc.evaluate(new Map([['TRL', 7], ['CRL', 3]]), [pair(1, 'TRL', 'CRL')])[0];
-      expect(at3.classification).toBe('MODERADO');
-      expect(at4.classification).toBe('CRITICO');
+      expect(at3.classification).toBe('MODERATE');
+      expect(at4.classification).toBe('CRITICAL');
     });
 
-    it('all levels equal → all pairs ACEPTABLE with difference 0', () => {
+    it('all levels equal → all pairs ACCEPTABLE with difference 0', () => {
       const uniform = new Map<string, number>([
         ['TRL', 5], ['CRL', 5], ['BRL', 5], ['IPRL', 5], ['TmRL', 5], ['FRL', 5],
       ]);
       const results = svc.evaluate(uniform, KTH_PAIRS);
       for (const r of results) {
         expect(r.difference).toBe(0);
-        expect(r.classification).toBe('ACEPTABLE');
+        expect(r.classification).toBe('ACCEPTABLE');
       }
     });
 
-    it('extreme levels (1 vs 9) → all possible pairs CRITICO', () => {
+    it('extreme levels (1 vs 9) → all possible pairs CRITICAL', () => {
       const extreme = new Map<string, number>([
         ['TRL', 9], ['CRL', 1], ['BRL', 9], ['IPRL', 1], ['TmRL', 9], ['FRL', 1],
       ]);
       const results = svc.evaluate(extreme, KTH_PAIRS);
-      const criticalCount = results.filter((r) => r.classification === 'CRITICO').length;
+      const criticalCount = results.filter((r) => r.classification === 'CRITICAL').length;
       expect(criticalCount).toBeGreaterThan(0);
     });
   });

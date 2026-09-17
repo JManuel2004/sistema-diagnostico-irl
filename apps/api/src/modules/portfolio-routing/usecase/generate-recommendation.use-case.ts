@@ -162,10 +162,10 @@ export class GenerateRecommendationUseCase {
         difference: i.difference,
         classification:
           i.classification === 'critical'
-            ? ('CRITICO' as const)
+            ? ('CRITICAL' as const)
             : i.classification === 'moderate'
-              ? ('MODERADO' as const)
-              : ('ACEPTABLE' as const),
+              ? ('MODERATE' as const)
+              : ('ACCEPTABLE' as const),
       })),
       averageLevel,
       characterization,

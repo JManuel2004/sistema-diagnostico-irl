@@ -57,12 +57,12 @@ function facts(overrides: Partial<DiagnosticFacts> = {}): DiagnosticFacts {
     bottlenecks: ['IPRL'],
     gaps: ['BRL', 'IPRL', 'FRL'],
     imbalances: [
-      { left: 'TRL', right: 'CRL', difference: 2, classification: 'MODERADO' },
-      { left: 'TRL', right: 'BRL', difference: 3, classification: 'MODERADO' },
-      { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACEPTABLE' },
-      { left: 'TmRL', right: 'FRL', difference: 3, classification: 'MODERADO' },
-      { left: 'BRL', right: 'IPRL', difference: 2, classification: 'MODERADO' },
-      { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICO' },
+      { left: 'TRL', right: 'CRL', difference: 2, classification: 'MODERATE' },
+      { left: 'TRL', right: 'BRL', difference: 3, classification: 'MODERATE' },
+      { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACCEPTABLE' },
+      { left: 'TmRL', right: 'FRL', difference: 3, classification: 'MODERATE' },
+      { left: 'BRL', right: 'IPRL', difference: 2, classification: 'MODERATE' },
+      { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICAL' },
     ],
     averageLevel: 3.5,
     characterization: {
@@ -133,7 +133,7 @@ describe('AffinityScorerService', () => {
         [profile({ TRL: 0.0, IPRL: 0.5 })],
         facts({
           imbalances: [
-            { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICO' },
+            { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICAL' },
           ],
         }),
         PARAMS,
@@ -146,7 +146,7 @@ describe('AffinityScorerService', () => {
         [profile({ CRL: 1.0, BRL: 1.0 })],
         facts({
           imbalances: [
-            { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACEPTABLE' },
+            { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACCEPTABLE' },
           ],
         }),
         PARAMS,
@@ -162,7 +162,7 @@ describe('AffinityScorerService', () => {
         [profile({ TmRL: 1.0 })],
         facts({
           imbalances: [
-            { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICO' },
+            { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICAL' },
           ],
         }),
         PARAMS,

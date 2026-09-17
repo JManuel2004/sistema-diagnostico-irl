@@ -28,12 +28,12 @@ function aProfile(): MaturityProfile {
 }
 
 const STORED_PAIRS: ImbalanceResult[] = [
-  new ImbalanceResult(1, DimensionCode.create('TRL'), DimensionCode.create('CRL'), 2, 'MODERADO'),
-  new ImbalanceResult(2, DimensionCode.create('TRL'), DimensionCode.create('BRL'), 0, 'ACEPTABLE'),
-  new ImbalanceResult(3, DimensionCode.create('CRL'), DimensionCode.create('BRL'), 0, 'ACEPTABLE'),
-  new ImbalanceResult(4, DimensionCode.create('TmRL'), DimensionCode.create('FRL'), 1, 'ACEPTABLE'),
-  new ImbalanceResult(5, DimensionCode.create('BRL'), DimensionCode.create('IPRL'), 1, 'ACEPTABLE'),
-  new ImbalanceResult(6, DimensionCode.create('TRL'), DimensionCode.create('IPRL'), 4, 'CRITICO'),
+  new ImbalanceResult(1, DimensionCode.create('TRL'), DimensionCode.create('CRL'), 2, 'MODERATE'),
+  new ImbalanceResult(2, DimensionCode.create('TRL'), DimensionCode.create('BRL'), 0, 'ACCEPTABLE'),
+  new ImbalanceResult(3, DimensionCode.create('CRL'), DimensionCode.create('BRL'), 0, 'ACCEPTABLE'),
+  new ImbalanceResult(4, DimensionCode.create('TmRL'), DimensionCode.create('FRL'), 1, 'ACCEPTABLE'),
+  new ImbalanceResult(5, DimensionCode.create('BRL'), DimensionCode.create('IPRL'), 1, 'ACCEPTABLE'),
+  new ImbalanceResult(6, DimensionCode.create('TRL'), DimensionCode.create('IPRL'), 4, 'CRITICAL'),
 ];
 
 describe('GetMaturityProfileUseCase', () => {

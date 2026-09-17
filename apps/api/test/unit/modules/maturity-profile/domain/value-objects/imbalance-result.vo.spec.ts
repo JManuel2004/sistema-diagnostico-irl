@@ -6,7 +6,7 @@ function makeResult(
   left = 'TRL',
   right = 'CRL',
   difference = 2,
-  classification: 'CRITICO' | 'MODERADO' | 'ACEPTABLE' = 'MODERADO',
+  classification: 'CRITICAL' | 'MODERATE' | 'ACCEPTABLE' = 'MODERATE',
 ) {
   return new ImbalanceResult(
     pairId,
@@ -20,42 +20,42 @@ function makeResult(
 describe('ImbalanceResult (value object)', () => {
   describe('constructor', () => {
     it('stores all fields as given', () => {
-      const r = makeResult(3, 'TmRL', 'FRL', 5, 'CRITICO');
+      const r = makeResult(3, 'TmRL', 'FRL', 5, 'CRITICAL');
       expect(r.pairId).toBe(3);
       expect(r.left.value).toBe('TmRL');
       expect(r.right.value).toBe('FRL');
       expect(r.difference).toBe(5);
-      expect(r.classification).toBe('CRITICO');
+      expect(r.classification).toBe('CRITICAL');
     });
 
     it('accepts difference = 0 (identical levels)', () => {
-      const r = makeResult(1, 'TRL', 'CRL', 0, 'ACEPTABLE');
+      const r = makeResult(1, 'TRL', 'CRL', 0, 'ACCEPTABLE');
       expect(r.difference).toBe(0);
     });
 
     it('accepts difference = 8 (max spread IRL 1 vs IRL 9)', () => {
-      const r = makeResult(1, 'TRL', 'CRL', 8, 'CRITICO');
+      const r = makeResult(1, 'TRL', 'CRL', 8, 'CRITICAL');
       expect(r.difference).toBe(8);
     });
   });
 
   describe('toPersistence()', () => {
     it('returns a plain object with the correct shape', () => {
-      const r = makeResult(2, 'BRL', 'IPRL', 3, 'MODERADO');
+      const r = makeResult(2, 'BRL', 'IPRL', 3, 'MODERATE');
       const p = r.toPersistence();
       expect(p).toEqual({
         pairId: 2,
         leftCode: 'BRL',
         rightCode: 'IPRL',
         difference: 3,
-        classification: 'MODERADO',
+        classification: 'MODERATE',
       });
     });
 
     it.each([
-      ['CRITICO' as const],
-      ['MODERADO' as const],
-      ['ACEPTABLE' as const],
+      ['CRITICAL' as const],
+      ['MODERATE' as const],
+      ['ACCEPTABLE' as const],
     ])('round-trips classification %s', (cls) => {
       const r = makeResult(1, 'TRL', 'CRL', 1, cls);
       expect(r.toPersistence().classification).toBe(cls);
@@ -74,13 +74,13 @@ describe('ImbalanceResult (value object)', () => {
         leftCode: 'TRL',
         rightCode: 'IPRL',
         difference: 3,
-        classification: 'MODERADO',
+        classification: 'MODERATE',
       });
       expect(r.pairId).toBe(4);
       expect(r.left.value).toBe('TRL');
       expect(r.right.value).toBe('IPRL');
       expect(r.difference).toBe(3);
-      expect(r.classification).toBe('MODERADO');
+      expect(r.classification).toBe('MODERATE');
     });
   });
 });

@@ -115,12 +115,12 @@ export class MaturityProfile {
    */
   asymmetry(): {
     readonly difference: number;
-    readonly classification: 'CRITICO' | 'MODERADO' | 'ACEPTABLE';
+    readonly classification: 'CRITICAL' | 'MODERATE' | 'ACCEPTABLE';
   } {
     const levels = this._dimensionResults.map((r) => r.irlLevel.value);
     const difference = Math.max(...levels) - Math.min(...levels);
     const classification =
-      difference > 3 ? 'CRITICO' : difference >= 2 ? 'MODERADO' : 'ACEPTABLE';
+      difference > 3 ? 'CRITICAL' : difference >= 2 ? 'MODERATE' : 'ACCEPTABLE';
     return { difference, classification };
   }
 

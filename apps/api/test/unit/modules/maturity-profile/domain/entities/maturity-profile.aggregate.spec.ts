@@ -233,7 +233,7 @@ describe('MaturityProfile (aggregate root)', () => {
   });
 
   describe('asymmetry', () => {
-    it('classifies a spread of 3 as MODERADO', () => {
+    it('classifies a spread of 3 as MODERATE', () => {
       const results = [
         resultFor('TRL', 5),
         resultFor('CRL', 3),
@@ -243,19 +243,19 @@ describe('MaturityProfile (aggregate root)', () => {
         resultFor('FRL', 3),
       ];
       const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
-      expect(p.asymmetry()).toEqual({ difference: 3, classification: 'MODERADO' });
+      expect(p.asymmetry()).toEqual({ difference: 3, classification: 'MODERATE' });
     });
 
-    it('classifies a uniform profile as ACEPTABLE', () => {
+    it('classifies a uniform profile as ACCEPTABLE', () => {
       const p = MaturityProfile.create({
         diagnosticId,
         computedAt,
         dimensionResults: CODES.map((c) => resultFor(c, 6)),
       });
-      expect(p.asymmetry()).toEqual({ difference: 0, classification: 'ACEPTABLE' });
+      expect(p.asymmetry()).toEqual({ difference: 0, classification: 'ACCEPTABLE' });
     });
 
-    it('classifies a spread of 8 as CRITICO', () => {
+    it('classifies a spread of 8 as CRITICAL', () => {
       const results = [
         resultFor('TRL', 9),
         resultFor('CRL', 1),
@@ -265,7 +265,7 @@ describe('MaturityProfile (aggregate root)', () => {
         resultFor('FRL', 1),
       ];
       const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
-      expect(p.asymmetry()).toEqual({ difference: 8, classification: 'CRITICO' });
+      expect(p.asymmetry()).toEqual({ difference: 8, classification: 'CRITICAL' });
     });
   });
 

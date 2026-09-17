@@ -16,12 +16,12 @@ const FACTS: DiagnosticFacts = {
   bottlenecks: ['IPRL'],
   gaps: ['BRL', 'IPRL', 'FRL'],
   imbalances: [
-    { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICO' },
-    { left: 'TRL', right: 'CRL', difference: 2, classification: 'MODERADO' },
-    { left: 'TRL', right: 'BRL', difference: 3, classification: 'MODERADO' },
-    { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACEPTABLE' },
-    { left: 'TmRL', right: 'FRL', difference: 3, classification: 'MODERADO' },
-    { left: 'BRL', right: 'IPRL', difference: 2, classification: 'MODERADO' },
+    { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICAL' },
+    { left: 'TRL', right: 'CRL', difference: 2, classification: 'MODERATE' },
+    { left: 'TRL', right: 'BRL', difference: 3, classification: 'MODERATE' },
+    { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACCEPTABLE' },
+    { left: 'TmRL', right: 'FRL', difference: 3, classification: 'MODERATE' },
+    { left: 'BRL', right: 'IPRL', difference: 2, classification: 'MODERATE' },
   ],
   averageLevel: 3.5,
   characterization: {

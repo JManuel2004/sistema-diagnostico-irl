@@ -221,11 +221,11 @@ function resolverCampo(field: Field, facts: DiagnosticFacts): unknown {
       return facts.gaps;
     case 'criticalImbalances':
       return facts.imbalances
-        .filter((d) => d.classification === 'CRITICO')
+        .filter((d) => d.classification === 'CRITICAL')
         .map((d) => `${d.left}-${d.right}`);
     case 'moderateImbalances':
       return facts.imbalances
-        .filter((d) => d.classification === 'MODERADO')
+        .filter((d) => d.classification === 'MODERATE')
         .map((d) => `${d.left}-${d.right}`);
     case 'averageLevel':
       return facts.averageLevel;

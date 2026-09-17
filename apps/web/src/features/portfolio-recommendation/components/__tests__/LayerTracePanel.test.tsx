@@ -22,7 +22,7 @@ const APORTES = {
     details: [
       {
         pair: 'TRL-IPRL',
-        classification: 'CRITICO',
+        classification: 'CRITICAL',
         sourceLabel: 'secondary',
         value: 0.5,
       },

@@ -117,7 +117,7 @@ export class AffinityScorerService {
    *
    *   aporte = Σ  peso(clasificación) × max(intensidad[izq], intensidad[der])
    *
-   * sobre los seis pares fijos del marco. Los pares `ACEPTABLE` no aportan.
+   * sobre los seis pares fijos del marco. Los pares `ACCEPTABLE` no aportan.
    *
    * Se pondera en vez de contar por cobertura binaria porque el aporte
    * debe reflejar si el servicio *puede hacer algo* sobre ese
@@ -138,9 +138,9 @@ export class AffinityScorerService {
     const details = facts.imbalances
       .map((d) => {
         const peso =
-          d.classification === 'CRITICO'
+          d.classification === 'CRITICAL'
             ? p.criticalImbalanceWeight
-            : d.classification === 'MODERADO'
+            : d.classification === 'MODERATE'
               ? p.moderateImbalanceWeight
               : 0;
         const iIzq = intensidadDe(profile, d.left);

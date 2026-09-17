@@ -1,12 +1,12 @@
 import { DimensionCode } from '../../../../shared-kernel/domain/value-objects/dimension-code.js';
 import { InvariantViolationError } from '../../../../shared-kernel/domain/errors/invariant-violation.error.js';
 
-export type ImbalanceClassification = 'CRITICO' | 'MODERADO' | 'ACEPTABLE';
+export type ImbalanceClassification = 'CRITICAL' | 'MODERATE' | 'ACCEPTABLE';
 
 const CLASSIFICATIONS: readonly ImbalanceClassification[] = [
-  'CRITICO',
-  'MODERADO',
-  'ACEPTABLE',
+  'CRITICAL',
+  'MODERATE',
+  'ACCEPTABLE',
 ];
 
 export interface ImbalanceResultPersistence {

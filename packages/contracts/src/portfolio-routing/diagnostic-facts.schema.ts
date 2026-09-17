@@ -22,9 +22,9 @@ import { uuidSchema } from '../common/uuid.schema.js';
  * tiene que verse en lugar de pasar en silencio.
  */
 export const imbalanceFactClassificationSchema = z.enum([
-  'CRITICO',
-  'MODERADO',
-  'ACEPTABLE',
+  'CRITICAL',
+  'MODERATE',
+  'ACCEPTABLE',
 ]);
 
 export const imbalanceFactSchema = z.object({
