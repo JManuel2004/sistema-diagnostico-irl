@@ -15,16 +15,6 @@ import boundaries from 'eslint-plugin-boundaries';
  *       - `domain/` (and the shared kernel domain) bans everything.
  *       - `usecase/` and `application/` ban IO but allow the NestJS DI
  *         decorators. See the inline rationale on the second tier below.
- *
- * MIGRATION NOTE — the layer folders are being renamed module by module
- * (`application/` → `usecase/`, `interfaces/` → `application/`). Until all
- * seven modules have moved, both layouts coexist: a module that has not
- * migrated yet still keeps its use cases in `application/` and its
- * controllers in `interfaces/`. This config therefore recognises `usecase`,
- * `application` and `interfaces` at the same time, and `application`
- * temporarily allows the union of what both meanings need. The legacy
- * `interfaces` element and that widened allowance are removed once the last
- * module has migrated.
  */
 
 /** Framework packages. Banned outright in `domain/`. */
@@ -65,7 +55,6 @@ export default [
         { type: 'usecase', pattern: 'src/modules/*/usecase/**' },
         { type: 'application', pattern: 'src/modules/*/application/**' },
         { type: 'infrastructure', pattern: 'src/modules/*/infrastructure/**' },
-        { type: 'interfaces', pattern: 'src/modules/*/interfaces/**' },
         { type: 'shared-kernel', pattern: 'src/shared-kernel/**' },
         { type: 'config', pattern: 'src/config/**' },
         { type: 'infra-global', pattern: 'src/infrastructure/**' },
@@ -83,11 +72,10 @@ export default [
               allow: ['usecase', 'domain', 'shared-kernel'],
             },
             {
-              // Widened during the migration: in a migrated module this is
-              // the controller layer (allowed: usecase), in one that has not
-              // migrated it is still the use-case layer (allowed: domain).
+              // The controller layer: it depends on use cases, never on
+              // domain or infrastructure directly.
               from: 'application',
-              allow: ['application', 'usecase', 'domain', 'shared-kernel'],
+              allow: ['application', 'usecase', 'shared-kernel'],
             },
             {
               from: 'infrastructure',
@@ -98,10 +86,6 @@ export default [
                 'domain',
                 'shared-kernel',
               ],
-            },
-            {
-              from: 'interfaces',
-              allow: ['interfaces', 'application', 'usecase', 'shared-kernel'],
             },
             { from: 'shared-kernel', allow: ['shared-kernel'] },
           ],
@@ -138,10 +122,8 @@ export default [
     // so does the ban on the NestJS packages that have no business here
     // (`@nestjs/core`, `@nestjs/typeorm`, the platform adapters).
     //
-    // Both `usecase/` and `application/` are listed so the rule keeps
-    // applying through the folder migration: it covers the use cases
-    // wherever they currently live, and it is equally correct for the
-    // controller layer, which has no business importing IO either.
+    // Both `usecase/` (use cases) and `application/` (controllers) are
+    // listed: neither has any business importing IO directly.
     files: [
       'src/modules/*/usecase/**/*.ts',
       'src/modules/*/application/**/*.ts',
