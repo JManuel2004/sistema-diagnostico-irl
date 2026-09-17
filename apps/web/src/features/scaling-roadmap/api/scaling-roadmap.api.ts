@@ -5,7 +5,7 @@ export async function getScalingRoadmap(
   diagnosticId: string,
 ): Promise<RoadmapResponse> {
   const { data } = await http.get<unknown>(
-    `/diagnosticos/${diagnosticId}/roadmap`,
+    `/diagnostics/${diagnosticId}/roadmap`,
   );
   return roadmapResponseSchema.parse(data);
 }

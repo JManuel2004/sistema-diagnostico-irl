@@ -12,25 +12,25 @@ import { answerItemSchema } from '../questionnaire/answer.schema.js';
  * un nuevo estado, se hace primero la migración y luego este schema.
  *
  * Transiciones (lineales, no se saltan pasos):
- *   INICIADO
- *     → CON_CONSENTIMIENTO         (HU-05 / RF-03)
- *     → CON_INICIATIVA             (HU-06 / RF-04)
- *     → CUESTIONARIO_EN_CURSO      (HU-07)
- *     → CUESTIONARIO_COMPLETO      (HU-10 / RF-06)
- *     → PERFIL_GENERADO            (HU-11 / RF-07)
- *     → ANALISIS_PROFUNDO_DECLINADO | ANALISIS_PROFUNDO_EN_CURSO
- *          → ANALISIS_PROFUNDO_COMPLETO
+ *   STARTED
+ *     → WITH_CONSENT         (HU-05 / RF-03)
+ *     → WITH_INITIATIVE             (HU-06 / RF-04)
+ *     → QUESTIONNAIRE_IN_PROGRESS      (HU-07)
+ *     → QUESTIONNAIRE_COMPLETE      (HU-10 / RF-06)
+ *     → PROFILE_GENERATED            (HU-11 / RF-07)
+ *     → DEEP_ANALYSIS_DECLINED | DEEP_ANALYSIS_IN_PROGRESS
+ *          → DEEP_ANALYSIS_COMPLETE
  */
 export const DIAGNOSTIC_STATES = [
-  'INICIADO',
-  'CON_CONSENTIMIENTO',
-  'CON_INICIATIVA',
-  'CUESTIONARIO_EN_CURSO',
-  'CUESTIONARIO_COMPLETO',
-  'PERFIL_GENERADO',
-  'ANALISIS_PROFUNDO_DECLINADO',
-  'ANALISIS_PROFUNDO_EN_CURSO',
-  'ANALISIS_PROFUNDO_COMPLETO',
+  'STARTED',
+  'WITH_CONSENT',
+  'WITH_INITIATIVE',
+  'QUESTIONNAIRE_IN_PROGRESS',
+  'QUESTIONNAIRE_COMPLETE',
+  'PROFILE_GENERATED',
+  'DEEP_ANALYSIS_DECLINED',
+  'DEEP_ANALYSIS_IN_PROGRESS',
+  'DEEP_ANALYSIS_COMPLETE',
 ] as const;
 
 export const diagnosticStateSchema = z
@@ -75,7 +75,7 @@ export type DiagnosticSummary = z.infer<typeof diagnosticSummarySchema>;
  * Respuesta del endpoint que inicia un nuevo diagnóstico (HU-04).
  *
  * `POST /api/v1/diagnosticos` no requiere body (la identidad sale del
- * JWT). Devuelve el diagnóstico recién creado en estado `INICIADO`.
+ * JWT). Devuelve el diagnóstico recién creado en estado `STARTED`.
  */
 export const startDiagnosticResponseSchema = diagnosticSchema.describe(
   'Respuesta al iniciar un nuevo diagnóstico (HU-04)',

@@ -14,6 +14,12 @@ import { RoutingConfigurationVersion1747526400008 } from '../../../src/infrastru
 import { RoutingConfigurationDraft1747526400009 } from '../../../src/infrastructure/database/migrations/20260518009-RoutingConfigurationDraft.js';
 import { RecommendationResultAndTrace1747526400010 } from '../../../src/infrastructure/database/migrations/20260518010-RecommendationResultAndTrace.js';
 import { InitiativeCharacterization1747526400011 } from '../../../src/infrastructure/database/migrations/20260518011-InitiativeCharacterization.js';
+import { RoadmapDependencyGraph1747526400012 } from '../../../src/infrastructure/database/migrations/20260518012-RoadmapDependencyGraph.js';
+import { EnglishCatalogNaming1747526400013 } from '../../../src/infrastructure/database/migrations/20260518013-EnglishCatalogNaming.js';
+import { EnglishAnswerNaming1747526400014 } from '../../../src/infrastructure/database/migrations/20260518014-EnglishAnswerNaming.js';
+import { EnglishMaturityProfileNaming1747526400015 } from '../../../src/infrastructure/database/migrations/20260518015-EnglishMaturityProfileNaming.js';
+import { EnglishRoadmapGraphNaming1747526400016 } from '../../../src/infrastructure/database/migrations/20260518016-EnglishRoadmapGraphNaming.js';
+import { EnglishDiagnosticNaming1747526400017 } from '../../../src/infrastructure/database/migrations/20260518017-EnglishDiagnosticNaming.js';
 import { RecomendacionPortafolioOrm } from '../../../src/modules/portfolio-routing/infrastructure/persistence/recomendacion-portafolio.orm-entity.js';
 import { AlternativaRecomendacionOrm } from '../../../src/modules/portfolio-routing/infrastructure/persistence/alternativa-recomendacion.orm-entity.js';
 import { TrazaCapasOrm } from '../../../src/modules/portfolio-routing/infrastructure/persistence/traza-capas.orm-entity.js';
@@ -90,6 +96,12 @@ describe('Recomendación — persistencia (integration)', () => {
         RoutingConfigurationDraft1747526400009,
         RecommendationResultAndTrace1747526400010,
         InitiativeCharacterization1747526400011,
+        RoadmapDependencyGraph1747526400012,
+        EnglishCatalogNaming1747526400013,
+        EnglishAnswerNaming1747526400014,
+        EnglishMaturityProfileNaming1747526400015,
+        EnglishRoadmapGraphNaming1747526400016,
+        EnglishDiagnosticNaming1747526400017,
       ],
       migrationsTableName: 'typeorm_migrations',
     });
@@ -138,9 +150,9 @@ describe('Recomendación — persistencia (integration)', () => {
   beforeEach(async () => {
     diagnosticId = randomUUID();
     await dataSource.query(
-      `INSERT INTO irl_diagnostic.diagnostico
-         (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
-       VALUES ($1,'u','PERFIL_GENERADO','KTH-IRL-1.0')`,
+      `INSERT INTO irl_diagnostic.diagnostic
+         (id, keycloak_user_id, state, irl_framework_version)
+       VALUES ($1,'u','PROFILE_GENERATED','KTH-IRL-1.0')`,
       [diagnosticId],
     );
   });

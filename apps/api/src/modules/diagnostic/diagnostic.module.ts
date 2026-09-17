@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DiagnosticoOrm } from './infrastructure/persistence/diagnostico.orm-entity.js';
+import { DiagnosticOrm } from './infrastructure/persistence/diagnostic.orm-entity.js';
 import { TypeOrmDiagnosticRepository } from './infrastructure/persistence/typeorm-diagnostic.repository.js';
 import { DIAGNOSTIC_REPOSITORY } from './domain/ports/diagnostic.repository.port.js';
-import { DiagnosticController } from './interfaces/http/diagnostic.controller.js';
-import { FinalizeInitialDiagnosticUseCase } from './application/finalize-initial-diagnostic.use-case.js';
+import { DiagnosticController } from './application/http/diagnostic.controller.js';
+import { FinalizeInitialDiagnosticUseCase } from './usecase/finalize-initial-diagnostic.use-case.js';
 import { QuestionnaireModule } from '../questionnaire/questionnaire.module.js';
 import { MaturityProfileModule } from '../maturity-profile/maturity-profile.module.js';
 
 /**
- * `DiagnosticModule` — bounded context for the `Diagnostico` aggregate
+ * `DiagnosticModule` — bounded context for the `Diagnostic` aggregate
  * and the orchestrator that drives the diagnostic state machine.
  *
  * The orchestration use cases (`StartDiagnosticUseCase`,
@@ -25,7 +25,7 @@ import { MaturityProfileModule } from '../maturity-profile/maturity-profile.modu
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DiagnosticoOrm]),
+    TypeOrmModule.forFeature([DiagnosticOrm]),
     QuestionnaireModule,
     MaturityProfileModule,
   ],

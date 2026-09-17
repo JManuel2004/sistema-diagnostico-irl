@@ -17,12 +17,12 @@ import { ConflictError } from '../../../shared-kernel/domain/errors/conflict.err
 import { MaturityProfileCalculationError } from '../../maturity-profile/domain/errors/maturity-profile-calculation.error.js';
 
 const FINALIZABLE_STATES: readonly DiagnosticStateName[] = [
-  'CUESTIONARIO_EN_CURSO',
-  'CUESTIONARIO_COMPLETO',
-  'PERFIL_GENERADO',
-  'ANALISIS_PROFUNDO_DECLINADO',
-  'ANALISIS_PROFUNDO_EN_CURSO',
-  'ANALISIS_PROFUNDO_COMPLETO',
+  'QUESTIONNAIRE_IN_PROGRESS',
+  'QUESTIONNAIRE_COMPLETE',
+  'PROFILE_GENERATED',
+  'DEEP_ANALYSIS_DECLINED',
+  'DEEP_ANALYSIS_IN_PROGRESS',
+  'DEEP_ANALYSIS_COMPLETE',
 ];
 
 export interface FinalizeInitialDiagnosticCommand {
@@ -46,7 +46,7 @@ export class FinalizeInitialDiagnosticUseCase {
   ): Promise<MaturityProfileResponse> {
     const diagnostico = await this.diagnostics.findById(cmd.diagnosticId);
     if (!diagnostico) {
-      throw new NotFoundError('Diagnostico', cmd.diagnosticId);
+      throw new NotFoundError('Diagnostic', cmd.diagnosticId);
     }
 
     const current = diagnostico.state.value;
@@ -78,11 +78,11 @@ export class FinalizeInitialDiagnosticUseCase {
       })),
     });
 
-    if (diagnostico.state.canTransitionTo('CUESTIONARIO_COMPLETO')) {
-      diagnostico.transitionTo('CUESTIONARIO_COMPLETO');
+    if (diagnostico.state.canTransitionTo('QUESTIONNAIRE_COMPLETE')) {
+      diagnostico.transitionTo('QUESTIONNAIRE_COMPLETE');
     }
-    if (diagnostico.state.canTransitionTo('PERFIL_GENERADO')) {
-      diagnostico.transitionTo('PERFIL_GENERADO');
+    if (diagnostico.state.canTransitionTo('PROFILE_GENERATED')) {
+      diagnostico.transitionTo('PROFILE_GENERATED');
     }
 
     await this.diagnostics.save(diagnostico);

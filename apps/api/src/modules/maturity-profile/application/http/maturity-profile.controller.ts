@@ -4,7 +4,7 @@ import { GetMaturityProfileUseCase } from '../../usecase/get-maturity-profile.us
 import type { MaturityProfileResponse } from '@innlab/contracts';
 
 @ApiTags('profile')
-@Controller('diagnosticos/:id/profile')
+@Controller('diagnostics/:id/profile')
 export class MaturityProfileController {
   constructor(private readonly getProfile: GetMaturityProfileUseCase) {}
 

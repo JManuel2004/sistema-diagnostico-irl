@@ -20,10 +20,10 @@ import { toRoadmapResponse } from '../../usecase/map-roadmap-response.js';
  *
  * If the diagnostic has no computed profile, the use case lets the
  * `ConflictError` from `GetMaturityProfileUseCase` propagate → 409,
- * exactly like `GET /diagnosticos/:id/profile`.
+ * exactly like `GET /diagnostics/:id/profile`.
  */
 @ApiTags('roadmap')
-@Controller('diagnosticos/:id/roadmap')
+@Controller('diagnostics/:id/roadmap')
 export class RoadmapController {
   constructor(private readonly generate: GenerateScalingRoadmapUseCase) {}
 

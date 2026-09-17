@@ -31,7 +31,7 @@ const problema = {
   title: 'routing recommendation not generated',
   status: 409,
   detail: 'El diagnóstico X todavía no tiene recomendación de portafolio generada.',
-  instance: '/api/v1/diagnosticos/X/recomendacion',
+  instance: '/api/v1/diagnostics/X/recomendacion',
   code: 'ROUTING_RECOMMENDATION_NOT_GENERATED',
   correlationId: 'abc-123',
 };

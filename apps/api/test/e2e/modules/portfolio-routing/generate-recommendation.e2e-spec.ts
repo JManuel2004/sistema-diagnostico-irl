@@ -80,9 +80,9 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     // HU-06) no tiene endpoint. En cuanto exista, este bloque se sustituye
     // por las llamadas HTTP correspondientes.
     await dataSource.query(
-      `INSERT INTO irl_diagnostic.diagnostico
-         (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
-       VALUES ($1, 'usuario-e2e', 'CUESTIONARIO_EN_CURSO', 'KTH-IRL-1.0')`,
+      `INSERT INTO irl_diagnostic.diagnostic
+         (id, keycloak_user_id, state, irl_framework_version)
+       VALUES ($1, 'usuario-e2e', 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
       [diagnosticId],
     );
 
@@ -120,7 +120,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     }));
 
     await agent
-      .post(`/api/v1/diagnosticos/${diagnosticId}/finalizar-inicial`)
+      .post(`/api/v1/diagnostics/${diagnosticId}/finalize-initial`)
       .send({ answers })
       .expect(201);
   }, 60_000);
@@ -128,7 +128,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
   afterAll(async () => {
     if (dataSource?.isInitialized) {
       await dataSource.query(
-        `DELETE FROM irl_diagnostic.diagnostico WHERE id_diagnostico = $1`,
+        `DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`,
         [diagnosticId],
       );
     }
@@ -138,7 +138,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
 
   it('el perfil de partida es el de AgroConecta', async () => {
     const res = await agent
-      .get(`/api/v1/diagnosticos/${diagnosticId}/profile`)
+      .get(`/api/v1/diagnostics/${diagnosticId}/profile`)
       .expect(200);
 
     const perfil = res.body as {
@@ -159,7 +159,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
 
   it('POST /recomendacion devuelve Consultoría con sus dos alternativas', async () => {
     const res = await agent
-      .post(`/api/v1/diagnosticos/${diagnosticId}/recomendacion`)
+      .post(`/api/v1/diagnostics/${diagnosticId}/recomendacion`)
       .expect(201);
 
     const dto = recomendacionResponseSchema.parse(res.body);
@@ -176,7 +176,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
 
   it('la justificación cita el motivo declarado del ajuste que decidió el puesto', () => {
     return agent
-      .get(`/api/v1/diagnosticos/${diagnosticId}/recomendacion`)
+      .get(`/api/v1/diagnostics/${diagnosticId}/recomendacion`)
       .expect(200)
       .expect((res) => {
         const dto = recomendacionResponseSchema.parse(res.body);
@@ -186,7 +186,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
 
   it('GET /recomendacion/traza expone las tres capas y atribuye el resultado a E-01', async () => {
     const res = await agent
-      .get(`/api/v1/diagnosticos/${diagnosticId}/recomendacion/traza`)
+      .get(`/api/v1/diagnostics/${diagnosticId}/recomendacion/traza`)
       .expect(200);
 
     const traza = trazaCapasResponseSchema.parse(res.body);
@@ -232,7 +232,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
 
   it('regenerar la recomendación es idempotente y no acumula filas', async () => {
     await agent
-      .post(`/api/v1/diagnosticos/${diagnosticId}/recomendacion`)
+      .post(`/api/v1/diagnostics/${diagnosticId}/recomendacion`)
       .expect(201);
 
     const [{ count }] = await dataSource.query<{ count: string }[]>(
@@ -247,22 +247,22 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
   it('un diagnóstico sin recomendación generada devuelve 409, no 404', async () => {
     const otro = randomUUID();
     await dataSource.query(
-      `INSERT INTO irl_diagnostic.diagnostico
-         (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
-       VALUES ($1, 'usuario-e2e', 'CUESTIONARIO_EN_CURSO', 'KTH-IRL-1.0')`,
+      `INSERT INTO irl_diagnostic.diagnostic
+         (id, keycloak_user_id, state, irl_framework_version)
+       VALUES ($1, 'usuario-e2e', 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
       [otro],
     );
 
     try {
       const res = await agent
-        .get(`/api/v1/diagnosticos/${otro}/recomendacion`)
+        .get(`/api/v1/diagnostics/${otro}/recomendacion`)
         .expect(409);
       expect((res.body as { code: string }).code).toBe(
         'ROUTING_RECOMMENDATION_NOT_GENERATED',
       );
     } finally {
       await dataSource.query(
-        `DELETE FROM irl_diagnostic.diagnostico WHERE id_diagnostico = $1`,
+        `DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`,
         [otro],
       );
     }

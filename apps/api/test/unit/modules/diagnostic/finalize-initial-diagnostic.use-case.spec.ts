@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
-import { FinalizeInitialDiagnosticUseCase } from '../../../../src/modules/diagnostic/application/finalize-initial-diagnostic.use-case.js';
+import { FinalizeInitialDiagnosticUseCase } from '../../../../src/modules/diagnostic/usecase/finalize-initial-diagnostic.use-case.js';
 import type { DiagnosticRepositoryPort } from '../../../../src/modules/diagnostic/domain/ports/diagnostic.repository.port.js';
-import { Diagnostico } from '../../../../src/modules/diagnostic/domain/diagnostic.aggregate.js';
+import { Diagnostic } from '../../../../src/modules/diagnostic/domain/diagnostic.aggregate.js';
 import type { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/usecase/submit-questionnaire.use-case.js';
 import type { ComputeMaturityProfileUseCase } from '../../../../src/modules/maturity-profile/usecase/compute-maturity-profile.use-case.js';
 import type { AnswerSheetRepositoryPort } from '../../../../src/modules/questionnaire/domain/ports/answer-sheet.repository.port.js';
@@ -23,8 +23,8 @@ const ANSWERS = Array.from({ length: 48 }, (_, i) => ({
   value: 3,
 }));
 
-function diagnosticoIn(state: string): Diagnostico {
-  return Diagnostico.fromPersistence({
+function diagnosticoIn(state: string): Diagnostic {
+  return Diagnostic.fromPersistence({
     id: DIAGNOSTIC_ID,
     userId: 'usuario-demo',
     state,
@@ -77,7 +77,7 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
     submitQuestionnaire = { execute: jest.fn(() => Promise.resolve({
       diagnosticId: DIAGNOSTIC_ID,
       answersRecorded: 48,
-      state: 'CUESTIONARIO_COMPLETO' as const,
+      state: 'QUESTIONNAIRE_COMPLETE' as const,
     })) };
     computeProfile = { execute: jest.fn(() => Promise.resolve({ profile: aProfile(), imbalances: [] })) };
 
@@ -89,8 +89,8 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
     );
   });
 
-  it('submits answers, computes the profile, and transitions to PERFIL_GENERADO', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('CUESTIONARIO_EN_CURSO'));
+  it('submits answers, computes the profile, and transitions to PROFILE_GENERATED', async () => {
+    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS'));
 
     const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
 
@@ -105,23 +105,23 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
     });
     expect(diagnostics.save).toHaveBeenCalledTimes(1);
     const saved = diagnostics.save.mock.calls[0][0];
-    expect(saved.state.value).toBe('PERFIL_GENERADO');
+    expect(saved.state.value).toBe('PROFILE_GENERATED');
     expect(result.diagnosticId).toBe(DIAGNOSTIC_ID);
     expect(result.dimensionResults).toHaveLength(6);
   });
 
-  it('advances from CUESTIONARIO_COMPLETO to PERFIL_GENERADO', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('CUESTIONARIO_COMPLETO'));
+  it('advances from QUESTIONNAIRE_COMPLETE to PROFILE_GENERATED', async () => {
+    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('QUESTIONNAIRE_COMPLETE'));
 
     await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
 
     const saved = diagnostics.save.mock.calls[0][0];
-    expect(saved.state.value).toBe('PERFIL_GENERADO');
+    expect(saved.state.value).toBe('PROFILE_GENERATED');
   });
 
   it('loads a phase-2 diagnostic and finalizes without regressing state', async () => {
     diagnostics.findById.mockResolvedValueOnce(
-      diagnosticoIn('ANALISIS_PROFUNDO_EN_CURSO'),
+      diagnosticoIn('DEEP_ANALYSIS_IN_PROGRESS'),
     );
 
     const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
@@ -129,19 +129,19 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
     expect(submitQuestionnaire.execute).toHaveBeenCalledTimes(1);
     expect(computeProfile.execute).toHaveBeenCalledTimes(1);
     const saved = diagnostics.save.mock.calls[0][0];
-    expect(saved.state.value).toBe('ANALISIS_PROFUNDO_EN_CURSO');
+    expect(saved.state.value).toBe('DEEP_ANALYSIS_IN_PROGRESS');
     expect(result.diagnosticId).toBe(DIAGNOSTIC_ID);
   });
 
-  it('is idempotent when the diagnostic is already PERFIL_GENERADO', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('PERFIL_GENERADO'));
+  it('is idempotent when the diagnostic is already PROFILE_GENERATED', async () => {
+    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('PROFILE_GENERATED'));
 
     await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
 
     expect(submitQuestionnaire.execute).toHaveBeenCalledTimes(1);
     expect(computeProfile.execute).toHaveBeenCalledTimes(1);
     const saved = diagnostics.save.mock.calls[0][0];
-    expect(saved.state.value).toBe('PERFIL_GENERADO');
+    expect(saved.state.value).toBe('PROFILE_GENERATED');
   });
 
   it('throws NotFoundError when the diagnostic does not exist', async () => {
@@ -155,7 +155,7 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
   });
 
   it('rejects finalization from an earlier state', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('INICIADO'));
+    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('STARTED'));
 
     await expect(
       useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS }),
@@ -164,7 +164,7 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
   });
 
   it('does not transition state if computation fails', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('CUESTIONARIO_EN_CURSO'));
+    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS'));
     computeProfile.execute.mockRejectedValueOnce(new Error('calc failed'));
 
     await expect(
@@ -174,7 +174,7 @@ describe('FinalizeInitialDiagnosticUseCase', () => {
   });
 
   it('does not skip the linear state machine', () => {
-    const d = diagnosticoIn('CUESTIONARIO_EN_CURSO');
-    expect(() => d.transitionTo('PERFIL_GENERADO')).toThrow(InvariantViolationError);
+    const d = diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS');
+    expect(() => d.transitionTo('PROFILE_GENERATED')).toThrow(InvariantViolationError);
   });
 });

@@ -8,7 +8,7 @@ import RecommendationPage from '../RecommendationPage';
 import { renderWithClient } from '@/test/render-with-client';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
-const BASE = '*/diagnosticos/:id/recomendacion';
+const BASE = '*/diagnostics/:id/recomendacion';
 
 const server = setupServer();
 

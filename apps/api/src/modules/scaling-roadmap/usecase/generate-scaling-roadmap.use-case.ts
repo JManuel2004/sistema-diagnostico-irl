@@ -54,7 +54,7 @@ export class GenerateScalingRoadmapUseCase {
 
     // If the profile is not computed, `GetMaturityProfileUseCase`
     // throws `ConflictError('PROFILE_NOT_YET_COMPUTED')` → 409, same as
-    // `GET /diagnosticos/:id/profile`. It is left to propagate as-is
+    // `GET /diagnostics/:id/profile`. It is left to propagate as-is
     // rather than wrapped: same condition, same deserved response.
     const profile = await this.profiles.execute({
       diagnosticId: diagnosticId.value,

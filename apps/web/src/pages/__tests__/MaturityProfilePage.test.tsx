@@ -55,7 +55,7 @@ function renderPage() {
 describe('MaturityProfilePage', () => {
   it('muestra el botón "Generar recomendación" una vez cargado el perfil', async () => {
     server.use(
-      mswHttp.get('*/diagnosticos/:id/perfil', () =>
+      mswHttp.get('*/diagnostics/:id/profile', () =>
         HttpResponse.json(buildProfileFixture()),
       ),
     );
@@ -69,7 +69,7 @@ describe('MaturityProfilePage', () => {
 
   it('navega a /diagnosticos/:id/recomendacion al hacer click', async () => {
     server.use(
-      mswHttp.get('*/diagnosticos/:id/perfil', () =>
+      mswHttp.get('*/diagnostics/:id/profile', () =>
         HttpResponse.json(buildProfileFixture()),
       ),
     );
@@ -88,7 +88,7 @@ describe('MaturityProfilePage', () => {
 
   it('ofrece también el roadmap de escalamiento', async () => {
     server.use(
-      mswHttp.get('*/diagnosticos/:id/perfil', () =>
+      mswHttp.get('*/diagnostics/:id/profile', () =>
         HttpResponse.json(buildProfileFixture()),
       ),
     );
@@ -106,7 +106,7 @@ describe('MaturityProfilePage', () => {
 
   it('no muestra el botón mientras el perfil está cargando o si falla', async () => {
     server.use(
-      mswHttp.get('*/diagnosticos/:id/perfil', () =>
+      mswHttp.get('*/diagnostics/:id/profile', () =>
         HttpResponse.json({ message: 'Internal server error' }, { status: 500 }),
       ),
     );

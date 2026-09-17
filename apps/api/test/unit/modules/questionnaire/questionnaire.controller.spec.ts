@@ -18,7 +18,7 @@ describe('QuestionnaireController', () => {
       const expected = {
         diagnosticId: DIAGNOSTIC_ID,
         answersRecorded: 48,
-        state: 'CUESTIONARIO_COMPLETO',
+        state: 'QUESTIONNAIRE_COMPLETE',
       };
       mockUseCase.execute.mockResolvedValueOnce(expected as never);
 

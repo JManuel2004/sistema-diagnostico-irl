@@ -12,7 +12,7 @@ import { GetRecommendationTraceUseCase } from '../../application/get-recommendat
  * Superficie HTTP del enrutamiento al portafolio (RF-15).
  *
  * La generación es `POST` sobre un subrecurso, en línea con
- * `POST /diagnosticos/:id/finalizar-inicial`. Deliberadamente NO se
+ * `POST /diagnostics/:id/finalize-initial`. Deliberadamente NO se
  * integra dentro de ese endpoint: `finalizar-inicial` cierra la fase 1
  * (perfil de madurez) y la recomendación pertenece al análisis profundo,
  * que es un momento distinto del recorrido y una decisión que el usuario
@@ -22,7 +22,7 @@ import { GetRecommendationTraceUseCase } from '../../application/get-recommendat
  * INNLAB, no el líder de iniciativa.
  */
 @ApiTags('recomendacion')
-@Controller('diagnosticos/:id/recomendacion')
+@Controller('diagnostics/:id/recomendacion')
 export class RecomendacionController {
   constructor(
     private readonly generar: GenerateRecommendationUseCase,

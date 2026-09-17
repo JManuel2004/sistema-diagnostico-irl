@@ -35,7 +35,7 @@ describe('SubmitQuestionnaireUseCase', () => {
     expect(mockRepo.save).toHaveBeenCalledTimes(1);
     expect(result.diagnosticId).toBe(DIAGNOSTIC_ID);
     expect(result.answersRecorded).toBe(48);
-    expect(result.state).toBe('CUESTIONARIO_COMPLETO');
+    expect(result.state).toBe('QUESTIONNAIRE_COMPLETE');
   });
 
   it('throws for invalid diagnostic UUID', async () => {

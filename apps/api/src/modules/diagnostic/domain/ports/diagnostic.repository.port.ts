@@ -1,7 +1,7 @@
-import type { Diagnostico } from '../diagnostic.aggregate.js';
+import type { Diagnostic } from '../diagnostic.aggregate.js';
 
 /**
- * Repository port for the `Diagnostico` aggregate.
+ * Repository port for the `Diagnostic` aggregate.
  *
  * `save(diagnostico)` is an upsert keyed by `id_diagnostico`. The
  * adapter uses TypeORM's `save` (insert-or-update by primary key) so
@@ -16,8 +16,8 @@ import type { Diagnostico } from '../diagnostic.aggregate.js';
 export const DIAGNOSTIC_REPOSITORY = Symbol('DIAGNOSTIC_REPOSITORY');
 
 export interface DiagnosticRepositoryPort {
-  findById(id: string): Promise<Diagnostico | null>;
-  findLatestByUserId(userId: string): Promise<Diagnostico | null>;
-  findAllByUserId(userId: string): Promise<Diagnostico[]>;
-  save(diagnostico: Diagnostico): Promise<void>;
+  findById(id: string): Promise<Diagnostic | null>;
+  findLatestByUserId(userId: string): Promise<Diagnostic | null>;
+  findAllByUserId(userId: string): Promise<Diagnostic[]>;
+  save(diagnostico: Diagnostic): Promise<void>;
 }

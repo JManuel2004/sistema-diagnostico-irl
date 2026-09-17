@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
-import { DiagnosticController } from '../../../../src/modules/diagnostic/interfaces/http/diagnostic.controller.js';
-import type { FinalizeInitialDiagnosticUseCase } from '../../../../src/modules/diagnostic/application/finalize-initial-diagnostic.use-case.js';
+import { DiagnosticController } from '../../../../src/modules/diagnostic/application/http/diagnostic.controller.js';
+import type { FinalizeInitialDiagnosticUseCase } from '../../../../src/modules/diagnostic/usecase/finalize-initial-diagnostic.use-case.js';
 import type { MaturityProfileResponse } from '@innlab/contracts';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';

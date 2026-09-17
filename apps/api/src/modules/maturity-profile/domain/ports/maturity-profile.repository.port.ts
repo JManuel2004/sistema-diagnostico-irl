@@ -3,7 +3,7 @@ import type { MaturityProfile } from '../entities/maturity-profile.aggregate.js'
 /**
  * Repository port for the `MaturityProfile` aggregate.
  *
- * One `MaturityProfile` per `Diagnostico`. The aggregate is loaded by
+ * One `MaturityProfile` per `Diagnostic`. The aggregate is loaded by
  * `diagnosticId` because external modules know the diagnostic, not the
  * synthetic `dimension_result` row ids.
  *
@@ -47,8 +47,8 @@ export interface MaturityProfileRepositoryPort {
   /**
    * Hydrate the profile for `diagnosticId`, or `null` if it has not
    * been computed yet (the diagnostic exists but is still in state
-   * `CUESTIONARIO_COMPLETO` and hasn't transitioned to
-   * `PERFIL_GENERADO`).
+   * `QUESTIONNAIRE_COMPLETE` and hasn't transitioned to
+   * `PROFILE_GENERATED`).
    */
   findByDiagnosticId(diagnosticId: string): Promise<MaturityProfile | null>;
 }

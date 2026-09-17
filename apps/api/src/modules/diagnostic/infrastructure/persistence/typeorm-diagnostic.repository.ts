@@ -2,54 +2,54 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { DiagnosticRepositoryPort } from '../../domain/ports/diagnostic.repository.port.js';
-import { Diagnostico } from '../../domain/diagnostic.aggregate.js';
-import { DiagnosticoOrm } from './diagnostico.orm-entity.js';
+import { Diagnostic } from '../../domain/diagnostic.aggregate.js';
+import { DiagnosticOrm } from './diagnostic.orm-entity.js';
 
 /**
- * TypeORM-backed adapter for the `Diagnostico` aggregate.
+ * TypeORM-backed adapter for the `Diagnostic` aggregate.
  *
- * Mapping is symmetrical via `Diagnostico.fromPersistence` /
+ * Mapping is symmetrical via `Diagnostic.fromPersistence` /
  * `.toPersistence`. The aggregate owns its own state and timestamps;
  * the repository only translates row shapes.
  */
 @Injectable()
 export class TypeOrmDiagnosticRepository implements DiagnosticRepositoryPort {
   constructor(
-    @InjectRepository(DiagnosticoOrm)
-    private readonly orm: Repository<DiagnosticoOrm>,
+    @InjectRepository(DiagnosticOrm)
+    private readonly orm: Repository<DiagnosticOrm>,
   ) {}
 
-  async findById(id: string): Promise<Diagnostico | null> {
-    const row = await this.orm.findOne({ where: { idDiagnostico: id } });
+  async findById(id: string): Promise<Diagnostic | null> {
+    const row = await this.orm.findOne({ where: { id } });
     return row ? this.toDomain(row) : null;
   }
 
-  async findLatestByUserId(userId: string): Promise<Diagnostico | null> {
+  async findLatestByUserId(userId: string): Promise<Diagnostic | null> {
     const row = await this.orm.findOne({
       where: { keycloakUserId: userId },
-      order: { fechaInicio: 'DESC' },
+      order: { startedAt: 'DESC' },
     });
     return row ? this.toDomain(row) : null;
   }
 
-  async findAllByUserId(userId: string): Promise<Diagnostico[]> {
+  async findAllByUserId(userId: string): Promise<Diagnostic[]> {
     const rows = await this.orm.find({
       where: { keycloakUserId: userId },
-      order: { fechaInicio: 'DESC' },
+      order: { startedAt: 'DESC' },
     });
     return rows.map((r) => this.toDomain(r));
   }
 
-  async save(diagnostico: Diagnostico): Promise<void> {
-    const snapshot = diagnostico.toPersistence();
+  async save(diagnostic: Diagnostic): Promise<void> {
+    const snapshot = diagnostic.toPersistence();
     const existing = await this.orm.findOne({
-      where: { idDiagnostico: snapshot.id },
+      where: { id: snapshot.id },
     });
 
     if (existing) {
-      existing.estado = snapshot.state;
-      if (snapshot.state === 'PERFIL_GENERADO' && existing.fechaFinFase1 === null) {
-        existing.fechaFinFase1 = snapshot.updatedAt;
+      existing.state = snapshot.state;
+      if (snapshot.state === 'PROFILE_GENERATED' && existing.phase1CompletedAt === null) {
+        existing.phase1CompletedAt = snapshot.updatedAt;
       }
       await this.orm.save(existing);
       return;
@@ -57,21 +57,21 @@ export class TypeOrmDiagnosticRepository implements DiagnosticRepositoryPort {
 
     await this.orm.save(
       this.orm.create({
-        idDiagnostico: snapshot.id,
+        id: snapshot.id,
         keycloakUserId: snapshot.userId,
-        estado: snapshot.state,
-        fechaInicio: snapshot.createdAt,
+        state: snapshot.state,
+        startedAt: snapshot.createdAt,
       }),
     );
   }
 
-  private toDomain(row: DiagnosticoOrm): Diagnostico {
-    return Diagnostico.fromPersistence({
-      id: row.idDiagnostico,
+  private toDomain(row: DiagnosticOrm): Diagnostic {
+    return Diagnostic.fromPersistence({
+      id: row.id,
       userId: row.keycloakUserId,
-      state: row.estado,
-      createdAt: row.fechaInicio,
-      updatedAt: row.fechaInicio,
+      state: row.state,
+      createdAt: row.startedAt,
+      updatedAt: row.startedAt,
     });
   }
 }

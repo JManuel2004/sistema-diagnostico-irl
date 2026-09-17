@@ -4,6 +4,6 @@ import { maturityProfileResponseSchema, type MaturityProfileResponse } from '@in
 export async function getMaturityProfile(
   diagnosticId: string,
 ): Promise<MaturityProfileResponse> {
-  const { data } = await http.get<unknown>(`/diagnosticos/${diagnosticId}/perfil`);
+  const { data } = await http.get<unknown>(`/diagnostics/${diagnosticId}/profile`);
   return maturityProfileResponseSchema.parse(data);
 }

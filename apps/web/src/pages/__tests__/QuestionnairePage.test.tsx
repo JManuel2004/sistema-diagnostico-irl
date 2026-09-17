@@ -68,7 +68,7 @@ function buildProfileFixture(): unknown {
 
 function withFinalizeSuccess(): void {
   server.use(
-    mswHttp.post(`*/api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`, () =>
+    mswHttp.post(`*/api/v1/diagnostics/${DIAG_ID}/finalize-initial`, () =>
       HttpResponse.json(buildProfileFixture(), { status: 201 }),
     ),
   );
@@ -80,7 +80,7 @@ function withSubmitSuccess(): void {
 
 function withSubmitError(): void {
   server.use(
-    mswHttp.post(`*/api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`, () =>
+    mswHttp.post(`*/api/v1/diagnostics/${DIAG_ID}/finalize-initial`, () =>
       HttpResponse.json({ message: 'Internal server error' }, { status: 500 }),
     ),
   );
@@ -235,7 +235,7 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
     it('does NOT call the submission API when the questionnaire is incomplete', async () => {
       let postCalled = false;
       server.use(
-        mswHttp.post(`*/api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`, () => {
+        mswHttp.post(`*/api/v1/diagnostics/${DIAG_ID}/finalize-initial`, () => {
           postCalled = true;
           return HttpResponse.json({});
         }),
@@ -296,7 +296,7 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
       let capturedBody: { answers: unknown[] } | undefined;
       server.use(
         mswHttp.post(
-          `*/api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`,
+          `*/api/v1/diagnostics/${DIAG_ID}/finalize-initial`,
           async ({ request }) => {
             capturedBody = (await request.json()) as { answers: unknown[] };
             return HttpResponse.json(buildProfileFixture(), { status: 201 });
@@ -351,7 +351,7 @@ describe('QuestionnairePage — completeness validation (RF-06)', () => {
       let resolveSubmit!: () => void;
       server.use(
         mswHttp.post(
-          `*/api/v1/diagnosticos/${DIAG_ID}/finalizar-inicial`,
+          `*/api/v1/diagnostics/${DIAG_ID}/finalize-initial`,
           () =>
             new Promise<Response>((resolve) => {
               resolveSubmit = () =>

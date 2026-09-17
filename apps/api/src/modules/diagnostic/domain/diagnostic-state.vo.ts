@@ -3,17 +3,17 @@ import { InvariantViolationError } from '../../../shared-kernel/domain/errors/in
 /**
  * `DiagnosticState` — finite state machine for a single diagnostic.
  *
- * The states match the CHECK constraint on `irl_diagnostic.diagnostico`
- * (initial migration). Transitions are linear:
+ * The states match the CHECK constraint on `irl_diagnostic.diagnostic`.
+ * Transitions are linear:
  *
- *   INICIADO
- *     → CON_CONSENTIMIENTO   (RF-03 — consentimiento Ley 1581 registrado)
- *     → CON_INICIATIVA       (RF-04 — nombre, sector y descripción guardados)
- *     → CUESTIONARIO_EN_CURSO (RF-05 — cuestionario iniciado)
- *     → CUESTIONARIO_COMPLETO (RF-06 — 48 respuestas completas)
- *     → PERFIL_GENERADO      (RF-07/08 — niveles IRL y cuello de botella calculados)
- *     → ANALISIS_PROFUNDO_DECLINADO | ANALISIS_PROFUNDO_EN_CURSO
- *          → ANALISIS_PROFUNDO_COMPLETO
+ *   STARTED
+ *     → WITH_CONSENT               (RF-03 — Law 1581 consent recorded)
+ *     → WITH_INITIATIVE            (RF-04 — name, sector and description saved)
+ *     → QUESTIONNAIRE_IN_PROGRESS  (RF-05 — questionnaire started)
+ *     → QUESTIONNAIRE_COMPLETE     (RF-06 — all 48 answers in)
+ *     → PROFILE_GENERATED          (RF-07/08 — IRL levels and bottleneck computed)
+ *     → DEEP_ANALYSIS_DECLINED | DEEP_ANALYSIS_IN_PROGRESS
+ *          → DEEP_ANALYSIS_COMPLETE
  *
  * Each transition's *trigger* is feature work (a use case will call
  * `next()` or `assertCanTransitionTo()`). The state machine itself is
@@ -21,41 +21,41 @@ import { InvariantViolationError } from '../../../shared-kernel/domain/errors/in
  * the same legal moves.
  */
 export type DiagnosticStateName =
-  | 'INICIADO'
-  | 'CON_CONSENTIMIENTO'
-  | 'CON_INICIATIVA'
-  | 'CUESTIONARIO_EN_CURSO'
-  | 'CUESTIONARIO_COMPLETO'
-  | 'PERFIL_GENERADO'
-  | 'ANALISIS_PROFUNDO_DECLINADO'
-  | 'ANALISIS_PROFUNDO_EN_CURSO'
-  | 'ANALISIS_PROFUNDO_COMPLETO';
+  | 'STARTED'
+  | 'WITH_CONSENT'
+  | 'WITH_INITIATIVE'
+  | 'QUESTIONNAIRE_IN_PROGRESS'
+  | 'QUESTIONNAIRE_COMPLETE'
+  | 'PROFILE_GENERATED'
+  | 'DEEP_ANALYSIS_DECLINED'
+  | 'DEEP_ANALYSIS_IN_PROGRESS'
+  | 'DEEP_ANALYSIS_COMPLETE';
 
 export const DIAGNOSTIC_STATES: readonly DiagnosticStateName[] = [
-  'INICIADO',
-  'CON_CONSENTIMIENTO',
-  'CON_INICIATIVA',
-  'CUESTIONARIO_EN_CURSO',
-  'CUESTIONARIO_COMPLETO',
-  'PERFIL_GENERADO',
-  'ANALISIS_PROFUNDO_DECLINADO',
-  'ANALISIS_PROFUNDO_EN_CURSO',
-  'ANALISIS_PROFUNDO_COMPLETO',
+  'STARTED',
+  'WITH_CONSENT',
+  'WITH_INITIATIVE',
+  'QUESTIONNAIRE_IN_PROGRESS',
+  'QUESTIONNAIRE_COMPLETE',
+  'PROFILE_GENERATED',
+  'DEEP_ANALYSIS_DECLINED',
+  'DEEP_ANALYSIS_IN_PROGRESS',
+  'DEEP_ANALYSIS_COMPLETE',
 ];
 
 /** Adjacency map: `state → states it may transition to` (single step). */
 const TRANSITIONS: Readonly<
   Record<DiagnosticStateName, readonly DiagnosticStateName[]>
 > = {
-  INICIADO: ['CON_CONSENTIMIENTO'],
-  CON_CONSENTIMIENTO: ['CON_INICIATIVA'],
-  CON_INICIATIVA: ['CUESTIONARIO_EN_CURSO'],
-  CUESTIONARIO_EN_CURSO: ['CUESTIONARIO_COMPLETO'],
-  CUESTIONARIO_COMPLETO: ['PERFIL_GENERADO'],
-  PERFIL_GENERADO: ['ANALISIS_PROFUNDO_DECLINADO', 'ANALISIS_PROFUNDO_EN_CURSO'],
-  ANALISIS_PROFUNDO_DECLINADO: [],
-  ANALISIS_PROFUNDO_EN_CURSO: ['ANALISIS_PROFUNDO_COMPLETO'],
-  ANALISIS_PROFUNDO_COMPLETO: [],
+  STARTED: ['WITH_CONSENT'],
+  WITH_CONSENT: ['WITH_INITIATIVE'],
+  WITH_INITIATIVE: ['QUESTIONNAIRE_IN_PROGRESS'],
+  QUESTIONNAIRE_IN_PROGRESS: ['QUESTIONNAIRE_COMPLETE'],
+  QUESTIONNAIRE_COMPLETE: ['PROFILE_GENERATED'],
+  PROFILE_GENERATED: ['DEEP_ANALYSIS_DECLINED', 'DEEP_ANALYSIS_IN_PROGRESS'],
+  DEEP_ANALYSIS_DECLINED: [],
+  DEEP_ANALYSIS_IN_PROGRESS: ['DEEP_ANALYSIS_COMPLETE'],
+  DEEP_ANALYSIS_COMPLETE: [],
 };
 
 export class DiagnosticState {
@@ -71,7 +71,7 @@ export class DiagnosticState {
   }
 
   static initial(): DiagnosticState {
-    return new DiagnosticState('INICIADO');
+    return new DiagnosticState('STARTED');
   }
 
   equals(other: DiagnosticState): boolean {

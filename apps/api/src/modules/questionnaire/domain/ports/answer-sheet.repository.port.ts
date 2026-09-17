@@ -3,7 +3,7 @@ import type { AnswerSheet } from '../entities/answer-sheet.aggregate.js';
 /**
  * Repository port for `AnswerSheet` aggregates.
  *
- * One `AnswerSheet` per `Diagnostico`. The aggregate is loaded by
+ * One `AnswerSheet` per `Diagnostic`. The aggregate is loaded by
  * `diagnosticId` (never by `answerId`) because external modules know
  * the diagnostic, not the synthetic answer rows.
  *

@@ -41,13 +41,13 @@ export type MissingStatement = z.infer<typeof missingStatementSchema>;
 
 /**
  * Respuesta exitosa del envío. El backend transiciona el diagnóstico
- * a `CUESTIONARIO_COMPLETO` y devuelve un resumen.
+ * a `QUESTIONNAIRE_COMPLETE` y devuelve un resumen.
  */
 export const submitQuestionnaireResponseSchema = z
   .object({
     diagnosticId: uuidSchema,
     answersRecorded: z.number().int().min(0).max(48),
-    state: z.literal('CUESTIONARIO_COMPLETO').describe('Nuevo estado del diagnóstico'),
+    state: z.literal('QUESTIONNAIRE_COMPLETE').describe('Nuevo estado del diagnóstico'),
   })
   .describe('Respuesta al envío exitoso del cuestionario');
 

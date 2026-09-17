@@ -41,7 +41,7 @@ export class SubmitQuestionnaireUseCase {
     return {
       diagnosticId: diagnosticId.value,
       answersRecorded: sheet.answeredCount,
-      state: 'CUESTIONARIO_COMPLETO',
+      state: 'QUESTIONNAIRE_COMPLETE',
     };
   }
 }

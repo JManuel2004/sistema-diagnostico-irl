@@ -7,7 +7,7 @@ import ScalingRoadmapPage from '../ScalingRoadmapPage';
 import { renderWithClient } from '@/test/render-with-client';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
-const BASE = '*/diagnosticos/:id/roadmap';
+const BASE = '*/diagnostics/:id/roadmap';
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));

@@ -101,15 +101,15 @@ async function run(): Promise<void> {
       }
 
       await manager.query(
-        `INSERT INTO irl_diagnostic.diagnostico
-           (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
+        `INSERT INTO irl_diagnostic.diagnostic
+           (id, keycloak_user_id, state, irl_framework_version)
          VALUES ($1, $2, $3, $4)
-         ON CONFLICT (id_diagnostico) DO UPDATE
-           SET estado = EXCLUDED.estado`,
+         ON CONFLICT (id) DO UPDATE
+           SET state = EXCLUDED.state`,
         [
           'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
           'usuario-demo',
-          'CUESTIONARIO_EN_CURSO',
+          'QUESTIONNAIRE_IN_PROGRESS',
           'KTH-IRL-1.0',
         ],
       );

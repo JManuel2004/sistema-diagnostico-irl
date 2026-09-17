@@ -69,9 +69,9 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
     diagnosticId = randomUUID();
 
     await dataSource.query(
-      `INSERT INTO irl_diagnostic.diagnostico
-         (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
-       VALUES ($1, 'usuario-e2e-roadmap', 'CUESTIONARIO_EN_CURSO', 'KTH-IRL-1.0')`,
+      `INSERT INTO irl_diagnostic.diagnostic
+         (id, keycloak_user_id, state, irl_framework_version)
+       VALUES ($1, 'usuario-e2e-roadmap', 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
       [diagnosticId],
     );
 
@@ -90,7 +90,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
     }));
 
     await agent
-      .post(`/api/v1/diagnosticos/${diagnosticId}/finalizar-inicial`)
+      .post(`/api/v1/diagnostics/${diagnosticId}/finalize-initial`)
       .send({ answers })
       .expect(201);
   }, 60_000);
@@ -98,7 +98,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
   afterAll(async () => {
     if (dataSource?.isInitialized) {
       await dataSource.query(
-        `DELETE FROM irl_diagnostic.diagnostico WHERE id_diagnostico = $1`,
+        `DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`,
         [diagnosticId],
       );
     }
@@ -108,7 +108,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
 
   it('el perfil de partida es el de AgroConecta', async () => {
     const res = await agent
-      .get(`/api/v1/diagnosticos/${diagnosticId}/profile`)
+      .get(`/api/v1/diagnostics/${diagnosticId}/profile`)
       .expect(200);
 
     const perfil = res.body as {
@@ -123,7 +123,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
 
   it('GET /roadmap devuelve dos fases con el orden de dependencies esperado', async () => {
     const res = await agent
-      .get(`/api/v1/diagnosticos/${diagnosticId}/roadmap`)
+      .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
       .expect(200);
 
     const roadmap = roadmapResponseSchema.parse(res.body);
@@ -146,7 +146,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
 
   it('excluye Tecnología, Cliente y Equipo, y lo dice explícitamente', () => {
     return agent
-      .get(`/api/v1/diagnosticos/${diagnosticId}/roadmap`)
+      .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
       .expect(200)
       .expect((res) => {
         const roadmap = roadmapResponseSchema.parse(res.body);
@@ -168,7 +168,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
 
   it('lleva las tres dimensions intervenidas hasta el nivel 4', async () => {
     const res = await agent
-      .get(`/api/v1/diagnosticos/${diagnosticId}/roadmap`)
+      .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
       .expect(200);
     const roadmap = roadmapResponseSchema.parse(res.body);
 
@@ -190,7 +190,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
 
   it('expone qué desbloquea cada dimensión, para que el orden sea refutable', async () => {
     const res = await agent
-      .get(`/api/v1/diagnosticos/${diagnosticId}/roadmap`)
+      .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
       .expect(200);
     const roadmap = roadmapResponseSchema.parse(res.body);
 
@@ -206,17 +206,17 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
   it('un diagnóstico sin perfil calculado devuelve 409, no 404', async () => {
     const otro = randomUUID();
     await dataSource.query(
-      `INSERT INTO irl_diagnostic.diagnostico
-         (id_diagnostico, keycloak_user_id, estado, version_marco_irl)
-       VALUES ($1, 'usuario-e2e-roadmap', 'CUESTIONARIO_EN_CURSO', 'KTH-IRL-1.0')`,
+      `INSERT INTO irl_diagnostic.diagnostic
+         (id, keycloak_user_id, state, irl_framework_version)
+       VALUES ($1, 'usuario-e2e-roadmap', 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
       [otro],
     );
 
     try {
-      await agent.get(`/api/v1/diagnosticos/${otro}/roadmap`).expect(409);
+      await agent.get(`/api/v1/diagnostics/${otro}/roadmap`).expect(409);
     } finally {
       await dataSource.query(
-        `DELETE FROM irl_diagnostic.diagnostico WHERE id_diagnostico = $1`,
+        `DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`,
         [otro],
       );
     }

@@ -3,7 +3,7 @@ import { DiagnosticState } from './diagnostic-state.vo.js';
 import type { DiagnosticStateName } from './diagnostic-state.vo.js';
 
 /**
- * `Diagnostico` — aggregate root for a single diagnostic process.
+ * `Diagnostic` — aggregate root for a single diagnostic process.
  *
  * The aggregate carries the foundational fields and the state-machine
  * VO. Use-case-level transitions (`acceptTerms`, `registerInitiative`,
@@ -12,7 +12,7 @@ import type { DiagnosticStateName } from './diagnostic-state.vo.js';
  * emission. Stage 1 keeps the API surface minimal.
  *
  * Modules communicate by id only. Other modules never receive a
- * `Diagnostico` instance — they ask the orchestrator via the use
+ * `Diagnostic` instance — they ask the orchestrator via the use
  * cases that live here.
  */
 export interface DiagnosticPersistence {
@@ -23,7 +23,7 @@ export interface DiagnosticPersistence {
   readonly updatedAt: Date;
 }
 
-export class Diagnostico {
+export class Diagnostic {
   private constructor(
     public readonly id: Uuid,
     public readonly userId: string,
@@ -32,9 +32,9 @@ export class Diagnostico {
     private _updatedAt: Date,
   ) {}
 
-  /** Start a fresh diagnostic — the first state is `INICIADO`. */
-  static start(userId: string, now: Date = new Date()): Diagnostico {
-    return new Diagnostico(
+  /** Start a fresh diagnostic — the first state is `STARTED`. */
+  static start(userId: string, now: Date = new Date()): Diagnostic {
+    return new Diagnostic(
       Uuid.generate(),
       userId,
       DiagnosticState.initial(),
@@ -43,8 +43,8 @@ export class Diagnostico {
     );
   }
 
-  static fromPersistence(row: DiagnosticPersistence): Diagnostico {
-    return new Diagnostico(
+  static fromPersistence(row: DiagnosticPersistence): Diagnostic {
+    return new Diagnostic(
       Uuid.create(row.id),
       row.userId,
       DiagnosticState.create(row.state),

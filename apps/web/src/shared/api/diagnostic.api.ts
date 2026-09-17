@@ -6,7 +6,7 @@ export async function finalizeInitialDiagnostic(
   answers: { statementId: string; value: number }[],
 ): Promise<MaturityProfileResponse> {
   const { data } = await http.post<unknown>(
-    `/diagnosticos/${diagnosticId}/finalizar-inicial`,
+    `/diagnostics/${diagnosticId}/finalize-initial`,
     { answers },
   );
   return maturityProfileResponseSchema.parse(data);
