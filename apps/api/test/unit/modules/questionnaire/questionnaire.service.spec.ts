@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/application/submit-questionnaire.use-case.js';
+import { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/usecase/submit-questionnaire.use-case.js';
 import type { AnswerSheetRepositoryPort } from '../../../../src/modules/questionnaire/domain/ports/answer-sheet.repository.port.js';
 import { InvariantViolationError } from '../../../../src/shared-kernel/domain/errors/invariant-violation.error.js';
 

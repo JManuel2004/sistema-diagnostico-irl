@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
-import { QuestionnaireController } from '../../../../src/modules/questionnaire/interfaces/http/questionnaire.controller.js';
-import type { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/application/submit-questionnaire.use-case.js';
+import { QuestionnaireController } from '../../../../src/modules/questionnaire/application/http/questionnaire.controller.js';
+import type { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/usecase/submit-questionnaire.use-case.js';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 

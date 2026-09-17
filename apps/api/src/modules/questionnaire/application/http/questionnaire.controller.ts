@@ -1,6 +1,6 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
-import { SubmitQuestionnaireUseCase } from '../../application/submit-questionnaire.use-case.js';
+import { SubmitQuestionnaireUseCase } from '../../usecase/submit-questionnaire.use-case.js';
 
 /**
  * HTTP surface for the questionnaire (write-side).

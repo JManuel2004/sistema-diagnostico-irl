@@ -5,7 +5,7 @@ import {
   type DiagnosticRepositoryPort,
 } from '../domain/ports/diagnostic.repository.port.js';
 import type { DiagnosticStateName } from '../domain/diagnostic-state.vo.js';
-import { SubmitQuestionnaireUseCase } from '../../questionnaire/application/submit-questionnaire.use-case.js';
+import { SubmitQuestionnaireUseCase } from '../../questionnaire/usecase/submit-questionnaire.use-case.js';
 import {
   ANSWER_SHEET_REPOSITORY,
   type AnswerSheetRepositoryPort,

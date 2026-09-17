@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 import { FinalizeInitialDiagnosticUseCase } from '../../../../src/modules/diagnostic/application/finalize-initial-diagnostic.use-case.js';
 import type { DiagnosticRepositoryPort } from '../../../../src/modules/diagnostic/domain/ports/diagnostic.repository.port.js';
 import { Diagnostico } from '../../../../src/modules/diagnostic/domain/diagnostic.aggregate.js';
-import type { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/application/submit-questionnaire.use-case.js';
+import type { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/usecase/submit-questionnaire.use-case.js';
 import type { ComputeMaturityProfileUseCase } from '../../../../src/modules/maturity-profile/application/compute-maturity-profile.use-case.js';
 import type { AnswerSheetRepositoryPort } from '../../../../src/modules/questionnaire/domain/ports/answer-sheet.repository.port.js';
 import { AnswerSheet } from '../../../../src/modules/questionnaire/domain/entities/answer-sheet.aggregate.js';

@@ -3,8 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AnswerOrm } from './infrastructure/persistence/answer.orm-entity.js';
 import { TypeOrmAnswerSheetRepository } from './infrastructure/persistence/typeorm-answer-sheet.repository.js';
 import { ANSWER_SHEET_REPOSITORY } from './domain/ports/answer-sheet.repository.port.js';
-import { QuestionnaireController } from './interfaces/http/questionnaire.controller.js';
-import { SubmitQuestionnaireUseCase } from './application/submit-questionnaire.use-case.js';
+import { QuestionnaireController } from './application/http/questionnaire.controller.js';
+import { SubmitQuestionnaireUseCase } from './usecase/submit-questionnaire.use-case.js';
 
 @Module({
   imports: [TypeOrmModule.forFeature([AnswerOrm])],
