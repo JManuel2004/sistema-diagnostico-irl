@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { ResolveUserContextUseCase } from '../../application/resolve-user-context.use-case.js';
+import { ResolveUserContextUseCase } from '../../usecase/resolve-user-context.use-case.js';
 import { CurrentUser } from '../../infrastructure/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../domain/entities/authenticated-user.vo.js';
 

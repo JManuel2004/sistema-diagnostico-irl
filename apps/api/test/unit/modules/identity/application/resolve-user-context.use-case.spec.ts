@@ -1,6 +1,6 @@
  
 import { jest } from '@jest/globals';
-import { ResolveUserContextUseCase } from '../../../../../src/modules/identity/application/resolve-user-context.use-case.js';
+import { ResolveUserContextUseCase } from '../../../../../src/modules/identity/usecase/resolve-user-context.use-case.js';
 import type { UserContext } from '../../../../../src/modules/identity/domain/entities/user-context.vo.js';
 import type { UserContextCachePort } from '../../../../../src/modules/identity/domain/ports/user-context.cache.port.js';
 import type { UserContextPort } from '../../../../../src/modules/identity/domain/ports/user-context.repository.port.js';

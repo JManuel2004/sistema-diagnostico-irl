@@ -1,7 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
-import { ResolveUserContextUseCase } from './application/resolve-user-context.use-case.js';
+import { ResolveUserContextUseCase } from './usecase/resolve-user-context.use-case.js';
 import { USER_CONTEXT_CACHE } from './domain/ports/user-context.cache.port.js';
 import type { UserContextCachePort } from './domain/ports/user-context.cache.port.js';
 import { USER_CONTEXT_PORT } from './domain/ports/user-context.repository.port.js';
@@ -10,7 +10,7 @@ import { InMemoryUserContextCache } from './infrastructure/cache/in-memory-user-
 import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard.js';
 import { InnlabCoreHttpClient } from './infrastructure/http/innlab-core-http.client.js';
 import { CognitoJwtStrategy } from './infrastructure/strategies/cognito-jwt.strategy.js';
-import { MeController } from './interfaces/http/me.controller.js';
+import { MeController } from './application/http/me.controller.js';
 
 /**
  * Identity bounded context — the ecosystem session (HU-01 / RF-00).
