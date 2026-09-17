@@ -3,15 +3,15 @@ import type { Uuid } from '../../../../shared-kernel/domain/value-objects/uuid.v
 import { RoadmapCalculationError } from '../errors/roadmap.errors.js';
 
 /**
- * Una dimensión dentro de una fase: dónde está, a dónde tiene que
- * llegar, y a quién desbloquea al hacerlo.
+ * A dimension inside a phase: where it stands, where it has to get to,
+ * and what it unblocks by doing so.
  *
- * `enables` es la justificación legible de por qué esta dimensión va en
- * esta fase y no después. Que sea legible es deliberado: es lo único que
- * permite a un consultor **refutar** el orden propuesto. El sistema
- * puede validar que el grafo sea acíclico, pero no que sus aristas sean
- * ciertas; exponer el porqué es lo que convierte una afirmación
- * metodológica en algo discutible en vez de en una caja negra.
+ * `enables` is the readable justification of why this dimension belongs
+ * in this phase and not later. Being readable is deliberate: it is the
+ * only thing that lets a consultant **refute** the proposed order. The
+ * system can validate that the graph is acyclic, but not that its edges
+ * are true; exposing the why is what turns a methodological claim into
+ * something arguable instead of a black box.
  */
 export interface RoadmapDimensionTarget {
   readonly dimensionCode: DimensionCode;
@@ -21,8 +21,8 @@ export interface RoadmapDimensionTarget {
 }
 
 /**
- * Una fase del roadmap. Las dimensiones de una misma fase no dependen
- * entre sí y se trabajan **en paralelo**.
+ * A roadmap phase. Dimensions in the same phase do not depend on each
+ * other and are worked on **in parallel**.
  */
 export interface RoadmapPhase {
   readonly order: number;
@@ -30,18 +30,18 @@ export interface RoadmapPhase {
 }
 
 /**
- * `ScalingRoadmap` — raíz del agregado del roadmap de escalamiento (RF-14).
+ * `ScalingRoadmap` — aggregate root of the scaling roadmap (RF-14).
  *
- * Cubre **solo las dimensiones que hay que intervenir**, no las seis.
- * Esto contradice la letra de RF-14, que pide "exactamente seis bloques,
- * uno por dimensión": el enfoque de dependencias es incompatible con esa
- * redacción y el SRS tendrá que actualizarse. `dimensionsWithoutIntervention`
- * mitiga en parte el desajuste dejando explícito que las seis se
- * consideraron y por qué tres quedaron fuera — sin él, la ausencia de una
- * dimensión se leería como un olvido.
+ * Covers **only the dimensions that need work**, not all six. This
+ * contradicts the letter of RF-14, which asks for "exactly six blocks,
+ * one per dimension": the dependency approach is incompatible with that
+ * wording and the SRS will have to be updated.
+ * `dimensionsWithoutIntervention` partly mitigates the mismatch by
+ * making explicit that all six were considered and why three were left
+ * out — without it, a missing dimension would read as an oversight.
  *
- * Un roadmap vacío es un resultado válido: significa que la iniciativa
- * cumple el mínimo en todas partes. No es un error.
+ * An empty roadmap is a valid result: it means the initiative meets the
+ * minimum everywhere. It is not an error.
  */
 export class ScalingRoadmap {
   private constructor(
@@ -68,10 +68,10 @@ export class ScalingRoadmap {
         intervenidas.add(d.dimensionCode);
 
         if (d.targetLevel <= d.currentLevel) {
-          // Si una dimensión entró al roadmap, es porque algo la exige
-          // por encima de donde está. Una meta que no supera el nivel
-          // actual significa que el cierre incorporó una dimensión que
-          // no lo necesitaba.
+          // If a dimension entered the roadmap it is because something
+          // demands it above where it stands. A target that does not
+          // exceed the current level means the closure pulled in a
+          // dimension that did not need it.
           throw new RoadmapCalculationError(
             `La meta de '${d.dimensionCode}' (${d.targetLevel}) no supera su nivel actual ` +
               `(${d.currentLevel}); no habría nada que hacer en esa fase`,
@@ -102,7 +102,7 @@ export class ScalingRoadmap {
     );
   }
 
-  /** Un perfil que cumple el mínimo en las seis dimensiones. */
+  /** Un perfil que cumple el mínimo en las seis dimensions. */
   isEmpty(): boolean {
     return this.phases.length === 0;
   }

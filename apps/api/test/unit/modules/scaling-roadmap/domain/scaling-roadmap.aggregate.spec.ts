@@ -10,7 +10,7 @@ const crear = (phases: Parameters<typeof ScalingRoadmap.create>[0]['phases']) =>
   ScalingRoadmap.create({ diagnosticId: DIAG, phases, generatedAt: AHORA });
 
 describe('ScalingRoadmap', () => {
-  it('deriva las dimensiones sin intervención a partir de las que sí la tienen', () => {
+  it('deriva las dimensions sin intervención a partir de las que sí la tienen', () => {
     // Hacer explícito que las seis se consideraron: sin este campo, la
     // ausencia de una dimensión se leería como un olvido.
     const r = crear([

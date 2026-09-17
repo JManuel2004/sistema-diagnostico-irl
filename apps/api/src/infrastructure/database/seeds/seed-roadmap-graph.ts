@@ -2,36 +2,36 @@ import type { EntityManager } from 'typeorm';
 import { DIMENSION_DEPENDENCIES } from './data/dimension-dependencies.js';
 
 /**
- * Siembra el grafo de dependencias entre dimensiones (RF-14).
+ * Seeds the dependency graph between dimensions (RF-14).
  *
- * Las FKs se resuelven por subconsulta sobre `code`, no por id
- * literal: `dimension.id_dimension` es IDENTITY y su valor no es estable
- * entre entornos. Es el mismo patrón que usa la siembra de `statement`.
+ * The FKs are resolved by subquery on `code`, not by literal id:
+ * `dimension.id_dimension` is IDENTITY and its value is not stable
+ * across environments. Same pattern the `statement` seed uses.
  *
- * Idempotente por la clave natural `(origen, destino)`. El `DO UPDATE`
- * lista explícitamente las dos columnas mutables — omitir una haría que
- * el seed pareciera idempotente pero nunca actualizara ese valor tras el
- * primer INSERT, que es exactamente la forma del bug que arrastra
- * `dimension_result.is_bottleneck`.
+ * Idempotent by the natural key `(source, target)`. The `DO UPDATE`
+ * lists the two mutable columns explicitly — omitting one would make
+ * the seed look idempotent while never updating that value after the
+ * first INSERT, which is exactly the shape of the bug that
+ * `dimension_result.is_bottleneck` carries.
  *
- * El nivel mínimo esperado por dimensión se siembra en el paso de
- * `dimension`, no aquí: es una columna de esa tabla.
+ * The expected minimum level per dimension is seeded in the `dimension`
+ * step, not here: it is a column of that table.
  */
 export async function seedRoadmapGraph(
   manager: EntityManager,
-): Promise<{ aristas: number }> {
-  for (const arista of DIMENSION_DEPENDENCIES) {
+): Promise<{ edges: number }> {
+  for (const edge of DIMENSION_DEPENDENCIES) {
     await manager.query(
-      `INSERT INTO irl_catalog.dependencia_dimension
-         (id_dimension_origen, id_dimension_destino, nivel_minimo_requerido, activa)
+      `INSERT INTO irl_catalog.dimension_dependency
+         (id_dimension_source, id_dimension_target, minimum_required_level, is_active)
        SELECT o.id_dimension, d.id_dimension, $3, true
          FROM irl_catalog.dimension o, irl_catalog.dimension d
         WHERE o.code = $1 AND d.code = $2
-       ON CONFLICT (id_dimension_origen, id_dimension_destino) DO UPDATE
-         SET nivel_minimo_requerido = EXCLUDED.nivel_minimo_requerido,
-             activa                 = EXCLUDED.activa`,
-      [arista.origen, arista.destino, arista.nivelMinimoRequerido],
+       ON CONFLICT (id_dimension_source, id_dimension_target) DO UPDATE
+         SET minimum_required_level = EXCLUDED.minimum_required_level,
+             is_active              = EXCLUDED.is_active`,
+      [edge.source, edge.target, edge.minimumRequiredLevel],
     );
   }
-  return { aristas: DIMENSION_DEPENDENCIES.length };
+  return { edges: DIMENSION_DEPENDENCIES.length };
 }

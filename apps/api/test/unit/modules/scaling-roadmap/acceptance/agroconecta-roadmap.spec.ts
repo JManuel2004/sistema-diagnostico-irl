@@ -12,35 +12,35 @@ import { TargetLevelCalculatorService } from '../../../../../src/modules/scaling
  *
  * Corre el motor contra **la configuración que siembra el seed**: importa
  * `dimensions.ts` y `dimension-dependencies.ts` directamente, de modo que
- * si alguien cambia una arista, un nivel requerido o un mínimo esperado,
- * esta prueba lo detecta. Un grafo literal propio del test la habría
+ * si alguien cambia una edge, un nivel requerido o un mínimo esperado,
+ * esta prueba lo detecta. Un graph literal propio del test la habría
  * convertido en una prueba de sí misma.
  *
- * Los valores esperados se derivaron a mano del grafo y del perfil, no
+ * Los valores esperados se derivaron a mano del graph y del perfil, no
  * observando lo que produce el código:
  *
  *   perfil     TRL 6 · CRL 4 · BRL 3 · IPRL 1 · TmRL 5 · FRL 2
  *   mínimos    4 en las seis
  *
- *   foco       BRL (3<4) · IPRL (1<4) · FRL (2<4)
+ *   focus       BRL (3<4) · IPRL (1<4) · FRL (2<4)
  *              CRL queda fuera: está justo en 4, no por debajo.
  *
  *   cierre     no entra ningún habilitador —
  *              a BRL la habilitan TmRL(req 3, tiene 5) y CRL(req 4, tiene 4)
  *              a IPRL la habilita  TRL (req 4, tiene 6)
  *              a FRL  la habilitan CRL(req 4, tiene 4), IPRL(req 4) y BRL(req 3)
- *              IPRL ya está dentro; los demás cumplen. Cierre = foco.
+ *              IPRL ya está dentro; los demás cumplen. Cierre = focus.
  *
- *   subgrafo   IPRL→FRL y BRL→FRL. Las demás aristas salen del conjunto.
+ *   subgrafo   IPRL→FRL y BRL→FRL. Las demás edges salen del conjunto.
  *   capa 0     BRL, IPRL  (grado de entrada 0, en paralelo)
  *   capa 1     FRL        (dependía de las dos anteriores)
  *
- *   metas      BRL: max(4, exige FRL 3) = 4  → 3→4
+ *   targets      BRL: max(4, exige FRL 3) = 4  → 3→4
  *              IPRL:max(4, exige FRL 4) = 4  → 1→4
  *              FRL: max(4, sin sucesores) = 4 → 2→4
  */
 
-const PERFIL_AGROCONECTA: ReadonlyMap<DimensionCode, number> = new Map([
+const AGROCONECTA_PROFILE: ReadonlyMap<DimensionCode, number> = new Map([
   ['TRL', 6],
   ['CRL', 4],
   ['BRL', 3],
@@ -49,100 +49,100 @@ const PERFIL_AGROCONECTA: ReadonlyMap<DimensionCode, number> = new Map([
   ['FRL', 2],
 ]);
 
-function construirGrafoDelSeed(): DependencyGraph {
+function buildGraphFromSeed(): DependencyGraph {
   return DependencyGraph.create(
     DIMENSION_DEPENDENCIES.map((a) => ({
-      origen: a.origen as DimensionCode,
-      destino: a.destino as DimensionCode,
-      nivelMinimoRequerido: a.nivelMinimoRequerido,
+      source: a.source as DimensionCode,
+      target: a.target as DimensionCode,
+      minimumRequiredLevel: a.minimumRequiredLevel,
     })),
     DIMENSIONS.map((d) => ({
       dimension: d.code,
-      nivelMinimoEsperado: d.minimumExpectedLevel,
+      minimumExpectedLevel: d.minimumExpectedLevel,
     })),
   );
 }
 
-function evaluar(niveles: ReadonlyMap<DimensionCode, number>) {
-  const grafo = construirGrafoDelSeed();
-  const cerradura = new RoadmapClosureService().compute(niveles, grafo);
-  const capas = new TopologicalLayeringService().layer(cerradura, grafo);
-  const metas = new TargetLevelCalculatorService().compute(cerradura, grafo);
-  return { grafo, cerradura, capas, metas };
+function evaluate(levels: ReadonlyMap<DimensionCode, number>) {
+  const graph = buildGraphFromSeed();
+  const closure = new RoadmapClosureService().compute(levels, graph);
+  const layers = new TopologicalLayeringService().layer(closure, graph);
+  const targets = new TargetLevelCalculatorService().compute(closure, graph);
+  return { graph, closure, layers, targets };
 }
 
 describe('Aceptación — roadmap de escalamiento para AgroConecta', () => {
   describe('conjunto a intervenir', () => {
     it('es exactamente {BRL, IPRL, FRL}', () => {
-      const { cerradura } = evaluar(PERFIL_AGROCONECTA);
+      const { closure } = evaluate(AGROCONECTA_PROFILE);
 
-      expect([...cerradura].sort()).toEqual(['BRL', 'FRL', 'IPRL']);
+      expect([...closure].sort()).toEqual(['BRL', 'FRL', 'IPRL']);
     });
 
     it('excluye TRL, CRL y TmRL del roadmap', () => {
       // Tecnología y Equipo superan su mínimo; Cliente está justo en 4,
       // que es cumplir, no incumplir. Ninguna necesita intervención.
-      const { cerradura } = evaluar(PERFIL_AGROCONECTA);
+      const { closure } = evaluate(AGROCONECTA_PROFILE);
 
-      expect(cerradura.has('TRL')).toBe(false);
-      expect(cerradura.has('CRL')).toBe(false);
-      expect(cerradura.has('TmRL')).toBe(false);
+      expect(closure.has('TRL')).toBe(false);
+      expect(closure.has('CRL')).toBe(false);
+      expect(closure.has('TmRL')).toBe(false);
     });
 
-    it('no incorpora ningún habilitador: todos cumplen lo que sus aristas exigen', () => {
-      const { cerradura } = evaluar(PERFIL_AGROCONECTA);
-      const foco = ['BRL', 'IPRL', 'FRL'];
+    it('no incorpora ningún habilitador: todos cumplen lo que sus edges exigen', () => {
+      const { closure } = evaluate(AGROCONECTA_PROFILE);
+      const focus = ['BRL', 'IPRL', 'FRL'];
 
-      expect(cerradura.size).toBe(foco.length);
+      expect(closure.size).toBe(focus.length);
     });
   });
 
   describe('orden de fases', () => {
-    it('produce dos capas', () => {
-      const { capas } = evaluar(PERFIL_AGROCONECTA);
-      expect(capas).toHaveLength(2);
+    it('produce dos layers', () => {
+      const { layers } = evaluate(AGROCONECTA_PROFILE);
+      expect(layers).toHaveLength(2);
     });
 
     it('capa 0 lleva BRL e IPRL en paralelo', () => {
       // Ninguna depende de la otra dentro del conjunto, así que se
       // trabajan a la vez. El orden es el canónico del marco y existe
       // solo para que el resultado sea determinista.
-      const { capas } = evaluar(PERFIL_AGROCONECTA);
-      expect(capas[0]).toEqual(['BRL', 'IPRL']);
+      const { layers } = evaluate(AGROCONECTA_PROFILE);
+      expect(layers[0]).toEqual(['BRL', 'IPRL']);
     });
 
     it('capa 1 lleva FRL, que dependía de las dos anteriores', () => {
-      const { capas } = evaluar(PERFIL_AGROCONECTA);
-      expect(capas[1]).toEqual(['FRL']);
+      const { layers } = evaluate(AGROCONECTA_PROFILE);
+      expect(layers[1]).toEqual(['FRL']);
     });
   });
 
-  describe('metas por dimensión', () => {
+  describe('targets por dimensión', () => {
     it('lleva BRL de 3 a 4, IPRL de 1 a 4 y FRL de 2 a 4', () => {
-      const { metas } = evaluar(PERFIL_AGROCONECTA);
+      const { targets } = evaluate(AGROCONECTA_PROFILE);
 
-      expect(metas.get('BRL')).toBe(4);
-      expect(metas.get('IPRL')).toBe(4);
-      expect(metas.get('FRL')).toBe(4);
+      expect(targets.get('BRL')).toBe(4);
+      expect(targets.get('IPRL')).toBe(4);
+      expect(targets.get('FRL')).toBe(4);
     });
 
     it('toda meta supera el nivel actual', () => {
-      const { cerradura, metas } = evaluar(PERFIL_AGROCONECTA);
+      const { closure, targets } = evaluate(AGROCONECTA_PROFILE);
 
-      for (const d of cerradura) {
-        expect(metas.get(d)!).toBeGreaterThan(PERFIL_AGROCONECTA.get(d)!);
+      for (const d of closure) {
+        expect(targets.get(d)!).toBeGreaterThan(AGROCONECTA_PROFILE.get(d)!);
       }
     });
   });
 
-  describe('justificación de dependencias', () => {
+  describe('justificación de dependencies', () => {
     it('BRL e IPRL habilitan FRL; FRL no habilita a nadie del conjunto', () => {
-      const { grafo, cerradura } = evaluar(PERFIL_AGROCONECTA);
+      const { graph, closure } = evaluate(AGROCONECTA_PROFILE);
       const habilita = (d: DimensionCode) =>
-        grafo
+        graph
           .outgoingEdges(d)
-          .filter((e) => cerradura.has(e.destino))
-          .map((e) => e.destino);
+          .filter((e) => closure.has(e.target))
+          .map((e) => e.target);
 
       expect(habilita('BRL')).toEqual(['FRL']);
       expect(habilita('IPRL')).toEqual(['FRL']);
@@ -154,13 +154,13 @@ describe('Aceptación — roadmap de escalamiento para AgroConecta', () => {
     it('si CRL bajara a 3 entraría al roadmap y arrastraría el orden', () => {
       // Contraprueba de que CRL queda fuera por estar exactamente en su
       // mínimo, no porque el motor la ignore.
-      const conCrlBajo = new Map(PERFIL_AGROCONECTA).set('CRL', 3);
-      const { cerradura, capas } = evaluar(conCrlBajo);
+      const conCrlBajo = new Map(AGROCONECTA_PROFILE).set('CRL', 3);
+      const { closure, layers } = evaluate(conCrlBajo);
 
-      expect(cerradura.has('CRL')).toBe(true);
+      expect(closure.has('CRL')).toBe(true);
       // CRL habilita a BRL y a FRL, así que precede a ambas.
-      expect(capas[0]).toContain('CRL');
-      expect(capas[0]).not.toContain('BRL');
+      expect(layers[0]).toContain('CRL');
+      expect(layers[0]).not.toContain('BRL');
     });
 
     it('un perfil que cumple en las seis produce un roadmap vacío', () => {
@@ -172,10 +172,10 @@ describe('Aceptación — roadmap de escalamiento para AgroConecta', () => {
         ['TmRL', 5],
         ['FRL', 5],
       ]);
-      const { cerradura, capas } = evaluar(sano);
+      const { closure, layers } = evaluate(sano);
 
-      expect(cerradura.size).toBe(0);
-      expect(capas).toEqual([]);
+      expect(closure.size).toBe(0);
+      expect(layers).toEqual([]);
     });
   });
 });

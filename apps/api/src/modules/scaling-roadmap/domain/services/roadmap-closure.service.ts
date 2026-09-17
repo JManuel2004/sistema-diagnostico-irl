@@ -2,66 +2,65 @@ import type { DimensionCode } from '@innlab/contracts';
 import type { DependencyGraph } from '../value-objects/dependency-graph.vo.js';
 
 /**
- * Determina qué dimensiones hay que intervenir.
+ * Determines which dimensions have to be worked on.
  *
- * Servicio de dominio puro: sin IO, sin decoradores, sin framework.
+ * Pure domain service: no IO, no decorators, no framework.
  *
- * Arranca del **foco** —las dimensiones por debajo de su mínimo
- * esperado— y lo cierra hacia atrás: si una dimensión del conjunto tiene
- * un habilitador que no llega al nivel que esa arista exige, el
- * habilitador también entra, porque de nada sirve empujar una dimensión
- * cuyo prerrequisito sigue corto.
+ * Starts from the **focus** — the dimensions below their expected
+ * minimum — and closes it backwards: if a dimension in the set has an
+ * enabler that does not reach the level that edge requires, the enabler
+ * joins too, because pushing a dimension whose prerequisite is still
+ * short achieves nothing.
  *
- * ── Punto fijo, no una sola pasada ──────────────────────────────────
+ * ── Fixed point, not a single pass ──────────────────────────────────
  *
- * El cierre se calcula con lista de trabajo hasta que no entren nodos
- * nuevos, y esto es una corrección deliberada respecto del diseño
- * original del enfoque, que hacía una única pasada sobre el foco. Una
- * sola pasada es incorrecta en el caso general: si se incorpora un
- * habilitador `u` y `u` a su vez tiene un habilitador insuficiente `t`,
- * `t` nunca entraría y el orden de fases saldría incompleto —sin que
- * nada fallara de forma visible.
+ * The closure is computed with a worklist until no new nodes enter, and
+ * that is a deliberate correction to the original design of the
+ * approach, which made a single pass over the focus. A single pass is
+ * incorrect in the general case: if an enabler `u` joins and `u` in turn
+ * has an insufficient enabler `t`, `t` would never enter and the phase
+ * order would come out incomplete — without anything failing visibly.
  *
- * Con el grafo sembrado y el perfil de AgroConecta ambas versiones
- * coinciden (el cierre es igual al foco), así que la corrección no
- * cambia ese caso; evita un fallo latente frente a otros perfiles.
+ * With the seeded graph and the AgroConecta profile both versions agree
+ * (the closure equals the focus), so the correction does not change that
+ * case; it avoids a latent failure on other profiles.
  *
- * Termina siempre: cada dimensión entra a la cola a lo sumo una vez y
- * hay seis.
+ * Always terminates: each dimension enters the queue at most once and
+ * there are six.
  */
 export class RoadmapClosureService {
   compute(
-    niveles: ReadonlyMap<DimensionCode, number>,
-    grafo: DependencyGraph,
+    levels: ReadonlyMap<DimensionCode, number>,
+    graph: DependencyGraph,
   ): Set<DimensionCode> {
-    const cerradura = new Set<DimensionCode>();
-    const porRevisar: DimensionCode[] = [];
+    const closure = new Set<DimensionCode>();
+    const pending: DimensionCode[] = [];
 
-    for (const d of grafo.nodes()) {
-      const nivel = niveles.get(d);
-      if (nivel !== undefined && nivel < grafo.expectedMinimum(d)) {
-        cerradura.add(d);
-        porRevisar.push(d);
+    for (const d of graph.nodes()) {
+      const level = levels.get(d);
+      if (level !== undefined && level < graph.expectedMinimum(d)) {
+        closure.add(d);
+        pending.push(d);
       }
     }
 
-    while (porRevisar.length > 0) {
-      const destino = porRevisar.shift()!;
-      for (const arista of grafo.incomingEdges(destino)) {
-        const nivelOrigen = niveles.get(arista.origen);
-        if (nivelOrigen === undefined) continue;
+    while (pending.length > 0) {
+      const target = pending.shift()!;
+      for (const edge of graph.incomingEdges(target)) {
+        const sourceLevel = levels.get(edge.source);
+        if (sourceLevel === undefined) continue;
         if (
-          nivelOrigen < arista.nivelMinimoRequerido &&
-          !cerradura.has(arista.origen)
+          sourceLevel < edge.minimumRequiredLevel &&
+          !closure.has(edge.source)
         ) {
-          cerradura.add(arista.origen);
-          // El habilitador también necesita que se revisen SUS
-          // habilitadores: esto es lo que una sola pasada perdería.
-          porRevisar.push(arista.origen);
+          closure.add(edge.source);
+          // The enabler also needs ITS own enablers reviewed: this is
+          // what a single pass would miss.
+          pending.push(edge.source);
         }
       }
     }
 
-    return cerradura;
+    return closure;
   }
 }

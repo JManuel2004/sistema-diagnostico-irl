@@ -121,7 +121,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
     ).toEqual({ TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 });
   });
 
-  it('GET /roadmap devuelve dos fases con el orden de dependencias esperado', async () => {
+  it('GET /roadmap devuelve dos fases con el orden de dependencies esperado', async () => {
     const res = await agent
       .get(`/api/v1/diagnosticos/${diagnosticId}/roadmap`)
       .expect(200);
@@ -166,13 +166,13 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
       });
   });
 
-  it('lleva las tres dimensiones intervenidas hasta el nivel 4', async () => {
+  it('lleva las tres dimensions intervenidas hasta el nivel 4', async () => {
     const res = await agent
       .get(`/api/v1/diagnosticos/${diagnosticId}/roadmap`)
       .expect(200);
     const roadmap = roadmapResponseSchema.parse(res.body);
 
-    const metas = Object.fromEntries(
+    const targets = Object.fromEntries(
       roadmap.phases.flatMap((f) =>
         f.dimensions.map((d) => [
           d.dimensionCode,
@@ -181,7 +181,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
       ),
     );
 
-    expect(metas).toEqual({
+    expect(targets).toEqual({
       BRL: { de: 3, a: 4 },
       IPRL: { de: 1, a: 4 },
       FRL: { de: 2, a: 4 },

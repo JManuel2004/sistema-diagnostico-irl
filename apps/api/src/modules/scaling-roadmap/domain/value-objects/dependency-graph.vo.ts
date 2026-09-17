@@ -9,22 +9,22 @@ import type {
 } from '../ports/dependency-graph.repository.port.js';
 
 /**
- * El grafo dirigido de dependencias entre dimensiones, ya validado.
+ * The validated directed graph of dependencies between dimensions.
  *
- * Objeto de valor inmutable con constructor privado y factoría estática,
- * el mismo patrón que `EscalaCalibracion` en el enrutador: si existe una
- * instancia, sus invariantes se cumplen, y ningún consumidor tiene que
- * volver a comprobarlas.
+ * Immutable value object with a private constructor and a static
+ * factory, the same pattern as `EscalaCalibracion` in the router: if an
+ * instance exists its invariants hold, and no consumer has to re-check
+ * them.
  *
- * Lo que se valida al construir:
- *   - las seis dimensiones tienen un mínimo esperado declarado;
- *   - ninguna arista es reflexiva ni está duplicada;
- *   - todos los niveles caen en [1, 9];
- *   - el grafo es acíclico.
+ * What is validated on construction:
+ *   - all six dimensions have a declared expected minimum;
+ *   - no edge is reflexive or duplicated;
+ *   - every level falls in [1, 9];
+ *   - the graph is acyclic.
  *
- * La aciclicidad se comprueba aquí y no solo en la base porque la base
- * no puede verla: `UNIQUE (origen, destino)` impide duplicados, no que
- * A→B→C→A cierre un lazo.
+ * Acyclicity is checked here and not only in the database because the
+ * database cannot see it: `UNIQUE (source, target)` prevents duplicates,
+ * not A→B→C→A closing a loop.
  */
 export class DependencyGraph {
   private constructor(
@@ -47,39 +47,39 @@ export class DependencyGraph {
         );
       }
       DependencyGraph.assertNivelEnRango(
-        m.nivelMinimoEsperado,
+        m.minimumExpectedLevel,
         `nivel mínimo esperado de '${m.dimension}'`,
       );
-      porDimension.set(m.dimension, m.nivelMinimoEsperado);
+      porDimension.set(m.dimension, m.minimumExpectedLevel);
     }
 
     const faltantes = DIMENSION_CODES.filter((c) => !porDimension.has(c));
     if (faltantes.length > 0) {
       throw new RoadmapCalculationError(
-        `Faltan niveles mínimos esperados para: ${faltantes.join(', ')}. ` +
-          `El roadmap necesita un mínimo declarado por cada una de las seis dimensiones.`,
+        `Faltan levels mínimos esperados para: ${faltantes.join(', ')}. ` +
+          `El roadmap necesita un mínimo declarado por cada una de las seis dimensions.`,
         { faltantes },
       );
     }
 
     const vistas = new Set<string>();
     for (const e of edges) {
-      if (e.origen === e.destino) {
+      if (e.source === e.target) {
         throw new RoadmapCalculationError(
-          `Arista reflexiva: '${e.origen}' no puede depender de sí misma`,
-          { dimension: e.origen },
+          `Arista reflexiva: '${e.source}' no puede depender de sí misma`,
+          { dimension: e.source },
         );
       }
-      const clave = `${e.origen}->${e.destino}`;
+      const clave = `${e.source}->${e.target}`;
       if (vistas.has(clave)) {
         throw new RoadmapCalculationError(`Arista duplicada: ${clave}`, {
-          arista: clave,
+          edge: clave,
         });
       }
       vistas.add(clave);
       DependencyGraph.assertNivelEnRango(
-        e.nivelMinimoRequerido,
-        `nivel requerido de la arista ${clave}`,
+        e.minimumRequiredLevel,
+        `nivel requerido de la edge ${clave}`,
       );
     }
 
@@ -90,8 +90,8 @@ export class DependencyGraph {
       salientes.set(c, []);
     }
     for (const e of edges) {
-      entrantes.get(e.destino)?.push(e);
-      salientes.get(e.origen)?.push(e);
+      entrantes.get(e.target)?.push(e);
+      salientes.get(e.source)?.push(e);
     }
 
     DependencyGraph.assertAciclico(edges);
@@ -145,9 +145,9 @@ export class DependencyGraph {
   }
 
   /**
-   * Kahn sobre el grafo completo. Si al agotar los nodos sin aristas
-   * entrantes quedan nodos por procesar, esos nodos están en un ciclo o
-   * dependen de uno.
+   * Kahn over the whole graph. If nodes remain unprocessed once the
+   * nodes without incoming edges are exhausted, those nodes are in a
+   * cycle or depend on one.
    */
   private static assertAciclico(
     edges: readonly DependencyEdgeSnapshot[],
@@ -156,7 +156,7 @@ export class DependencyGraph {
       DIMENSION_CODES.map((c) => [c, 0]),
     );
     for (const e of edges) {
-      gradoEntrada.set(e.destino, (gradoEntrada.get(e.destino) ?? 0) + 1);
+      gradoEntrada.set(e.target, (gradoEntrada.get(e.target) ?? 0) + 1);
     }
 
     const restantes = new Set<DimensionCode>(DIMENSION_CODES);
@@ -167,8 +167,8 @@ export class DependencyGraph {
       for (const d of listos) {
         restantes.delete(d);
         for (const e of edges) {
-          if (e.origen === d && restantes.has(e.destino)) {
-            gradoEntrada.set(e.destino, (gradoEntrada.get(e.destino) ?? 1) - 1);
+          if (e.source === d && restantes.has(e.target)) {
+            gradoEntrada.set(e.target, (gradoEntrada.get(e.target) ?? 1) - 1);
           }
         }
       }

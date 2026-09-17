@@ -1,190 +1,190 @@
 import { DIMENSIONS } from './dimensions.js';
 
 /**
- * Grafo de dependencias entre dimensiones IRL — insumo del roadmap de
- * escalamiento (RF-14).
+ * Dependency graph between IRL dimensions — input to the scaling
+ * roadmap (RF-14).
  *
- * Una arista `origen → destino` con `nivelMinimoRequerido = n` afirma:
- * *"destino no puede progresar de forma sostenible mientras origen no
- * alcance el nivel n"*. El motor ordena topológicamente el subgrafo de
- * las dimensiones que hay que intervenir y produce las fases.
+ * An edge `source → target` with `minimumRequiredLevel = n` states:
+ * *"target cannot progress sustainably while source has not reached
+ * level n"*. The engine topologically orders the subgraph of the
+ * dimensions that need work and produces the phases.
  *
- * ⚠ LAS NUEVE ARISTAS SON HIPOTÉTICAS Y NO ESTÁN VALIDADAS POR INNLAB.
+ * ⚠ THE NINE EDGES ARE HYPOTHETICAL AND NOT VALIDATED BY INNLAB.
  *
- * Y esa validación importa más de lo que parece: el grafo codifica una
- * afirmación metodológica, y ninguna comprobación automática puede
- * juzgar si es correcta. Las guardas de este archivo verifican la
- * *forma* del grafo (que sea acíclico, sin aristas reflexivas ni
- * duplicadas, con niveles en rango); no verifican su *contenido*. Si una
- * arista estuviera mal declarada, el grafo seguiría siendo un DAG
- * válido, el seed pasaría, los tests seguirían en verde, y el sistema
- * ordenaría mal las fases con una justificación legible y equivocada.
+ * That validation matters more than it looks: the graph encodes a
+ * methodological claim, and no automated check can judge whether it is
+ * correct. The guards in this file verify the *shape* of the graph
+ * (acyclic, no reflexive or duplicated edges, levels in range); they do
+ * not verify its *content*. If an edge were wrongly declared, the graph
+ * would still be a valid DAG, the seed would pass, the tests would stay
+ * green, and the system would order the phases wrongly with a readable
+ * and mistaken justification.
  *
- * Por eso cada arista lleva abajo el razonamiento que la sustenta:
- * revisarlas con INNLAB debe ser una lectura, no una arqueología.
+ * That is why each edge carries the reasoning behind it below:
+ * reviewing them with INNLAB should be a read, not an excavation.
  */
 export interface DimensionDependencySeed {
-  readonly origen: string;
-  readonly destino: string;
-  readonly nivelMinimoRequerido: number;
-  /** Por qué se afirma esta dependencia. Para revisión con INNLAB. */
-  readonly razon: string;
+  readonly source: string;
+  readonly target: string;
+  readonly minimumRequiredLevel: number;
+  /** Why this dependency is claimed. For review with INNLAB. */
+  readonly reason: string;
 }
 
 export const DIMENSION_DEPENDENCIES: readonly DimensionDependencySeed[] = [
   {
-    origen: 'TmRL',
-    destino: 'TRL',
-    nivelMinimoRequerido: 3,
-    razon:
+    source: 'TmRL',
+    target: 'TRL',
+    minimumRequiredLevel: 3,
+    reason:
       'Sin un equipo con competencias técnicas mínimas no hay quien sostenga el desarrollo del producto.',
   },
   {
-    origen: 'TmRL',
-    destino: 'CRL',
-    nivelMinimoRequerido: 3,
-    razon:
+    source: 'TmRL',
+    target: 'CRL',
+    minimumRequiredLevel: 3,
+    reason:
       'La validación con clientes exige dedicación sostenida de alguien del equipo; sin equipo no hay descubrimiento.',
   },
   {
-    origen: 'TmRL',
-    destino: 'BRL',
-    nivelMinimoRequerido: 3,
-    razon:
+    source: 'TmRL',
+    target: 'BRL',
+    minimumRequiredLevel: 3,
+    reason:
       'Diseñar y probar un modelo de negocio requiere criterio y tiempo del equipo fundador.',
   },
   {
-    origen: 'TRL',
-    destino: 'CRL',
-    nivelMinimoRequerido: 3,
-    razon:
+    source: 'TRL',
+    target: 'CRL',
+    minimumRequiredLevel: 3,
+    reason:
       'No se puede validar la disposición a adoptar sin algo funcional que el cliente pueda usar.',
   },
   {
-    origen: 'TRL',
-    destino: 'IPRL',
-    nivelMinimoRequerido: 4,
-    razon:
+    source: 'TRL',
+    target: 'IPRL',
+    minimumRequiredLevel: 4,
+    reason:
       'Proteger propiedad intelectual exige que la solución técnica esté suficientemente definida para delimitar qué se protege.',
   },
   {
-    origen: 'CRL',
-    destino: 'BRL',
-    nivelMinimoRequerido: 4,
-    razon:
+    source: 'CRL',
+    target: 'BRL',
+    minimumRequiredLevel: 4,
+    reason:
       'Un modelo de negocio sin segmento de cliente validado se construye sobre supuestos, no sobre evidencia.',
   },
   {
-    origen: 'CRL',
-    destino: 'FRL',
-    nivelMinimoRequerido: 4,
-    razon:
+    source: 'CRL',
+    target: 'FRL',
+    minimumRequiredLevel: 4,
+    reason:
       'Ningún financiador evalúa favorablemente una iniciativa que no ha demostrado demanda.',
   },
   {
-    origen: 'IPRL',
-    destino: 'FRL',
-    nivelMinimoRequerido: 4,
-    razon:
+    source: 'IPRL',
+    target: 'FRL',
+    minimumRequiredLevel: 4,
+    reason:
       'La debida diligencia de inversión revisa la titularidad y la libertad de operación de los intangibles.',
   },
   {
-    origen: 'BRL',
-    destino: 'FRL',
-    nivelMinimoRequerido: 3,
-    razon:
+    source: 'BRL',
+    target: 'FRL',
+    minimumRequiredLevel: 3,
+    reason:
       'Sin proyecciones ni estructura de ingresos no hay cómo sustentar una solicitud de capital.',
   },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
-// Guardas en tiempo de import
+// Import-time guards
 // ─────────────────────────────────────────────────────────────────────────
 //
-// Siguen el precedente de `statements.ts`, que lanza al importarse si no
-// hay 48 afirmaciones. Convierten un error de configuración en un fallo
-// de arranque del seed en vez de un 500 frente a un usuario meses después.
+// They follow the precedent of `statements.ts`, which throws on import
+// if there are not 48 statements. They turn a configuration error into a
+// seed startup failure instead of a 500 in front of a user months later.
 
-const CODIGOS_VALIDOS = new Set(DIMENSIONS.map((d) => d.code as string));
+const VALID_CODES = new Set(DIMENSIONS.map((d) => d.code as string));
 
-for (const arista of DIMENSION_DEPENDENCIES) {
-  for (const [rol, codigo] of [
-    ['origen', arista.origen],
-    ['destino', arista.destino],
+for (const edge of DIMENSION_DEPENDENCIES) {
+  for (const [role, code] of [
+    ['source', edge.source],
+    ['target', edge.target],
   ] as const) {
-    if (!CODIGOS_VALIDOS.has(codigo)) {
+    if (!VALID_CODES.has(code)) {
       throw new Error(
-        `Dependencia inválida: '${codigo}' (${rol}) no es una dimensión del marco. ` +
-          `Válidas: ${[...CODIGOS_VALIDOS].join(', ')}. ` +
-          `Ojo con la eme minúscula de 'TmRL'.`,
+        `Invalid dependency: '${code}' (${role}) is not a framework dimension. ` +
+          `Valid ones: ${[...VALID_CODES].join(', ')}. ` +
+          `Mind the lowercase m in 'TmRL'.`,
       );
     }
   }
-  if (arista.origen === arista.destino) {
+  if (edge.source === edge.target) {
     throw new Error(
-      `Dependencia reflexiva: '${arista.origen}' no puede depender de sí misma`,
+      `Reflexive dependency: '${edge.source}' cannot depend on itself`,
     );
   }
   if (
-    arista.nivelMinimoRequerido < 1 ||
-    arista.nivelMinimoRequerido > 9 ||
-    !Number.isInteger(arista.nivelMinimoRequerido)
+    edge.minimumRequiredLevel < 1 ||
+    edge.minimumRequiredLevel > 9 ||
+    !Number.isInteger(edge.minimumRequiredLevel)
   ) {
     throw new Error(
-      `Nivel requerido fuera de [1,9] en ${arista.origen}→${arista.destino}: ` +
-        `${arista.nivelMinimoRequerido}`,
+      `Required level outside [1,9] in ${edge.source}→${edge.target}: ` +
+        `${edge.minimumRequiredLevel}`,
     );
   }
 }
 
-const pares = DIMENSION_DEPENDENCIES.map((a) => `${a.origen}->${a.destino}`);
-const duplicados = pares.filter((p, i) => pares.indexOf(p) !== i);
-if (duplicados.length > 0) {
+const pairs = DIMENSION_DEPENDENCIES.map((a) => `${a.source}->${a.target}`);
+const duplicates = pairs.filter((p, i) => pairs.indexOf(p) !== i);
+if (duplicates.length > 0) {
   throw new Error(
-    `Dependencias duplicadas: ${[...new Set(duplicados)].join(', ')}`,
+    `Duplicated dependencies: ${[...new Set(duplicates)].join(', ')}`,
   );
 }
 
 /**
- * La guarda que más vale: el grafo declarado tiene que ser acíclico.
+ * The guard that matters most: the declared graph has to be acyclic.
  *
- * Se resuelve con el mismo algoritmo de capas del motor (Kahn), pero
- * escrito aquí de forma independiente y a propósito: si el motor tuviera
- * un fallo en la detección de ciclos, una guarda que lo reutilizara
- * heredaría ese mismo fallo y no detectaría nada.
+ * It is solved with the same layering algorithm as the engine (Kahn),
+ * but written here independently and on purpose: if the engine had a
+ * bug in its cycle detection, a guard that reused it would inherit that
+ * same bug and detect nothing.
  */
-const gradoEntrada = new Map<string, number>(
-  [...CODIGOS_VALIDOS].map((c) => [c, 0]),
+const inDegree = new Map<string, number>(
+  [...VALID_CODES].map((c) => [c, 0]),
 );
 for (const a of DIMENSION_DEPENDENCIES) {
-  gradoEntrada.set(a.destino, (gradoEntrada.get(a.destino) ?? 0) + 1);
+  inDegree.set(a.target, (inDegree.get(a.target) ?? 0) + 1);
 }
 
-const restantes = new Set(CODIGOS_VALIDOS);
-let progreso = true;
-while (restantes.size > 0 && progreso) {
-  const sinEntrada = [...restantes].filter((d) => gradoEntrada.get(d) === 0);
-  progreso = sinEntrada.length > 0;
-  for (const d of sinEntrada) {
-    restantes.delete(d);
+const remaining = new Set(VALID_CODES);
+let progress = true;
+while (remaining.size > 0 && progress) {
+  const withoutIncoming = [...remaining].filter((d) => inDegree.get(d) === 0);
+  progress = withoutIncoming.length > 0;
+  for (const d of withoutIncoming) {
+    remaining.delete(d);
     for (const a of DIMENSION_DEPENDENCIES) {
-      if (a.origen === d && restantes.has(a.destino)) {
-        gradoEntrada.set(a.destino, (gradoEntrada.get(a.destino) ?? 1) - 1);
+      if (a.source === d && remaining.has(a.target)) {
+        inDegree.set(a.target, (inDegree.get(a.target) ?? 1) - 1);
       }
     }
   }
 }
 
-if (restantes.size > 0) {
+if (remaining.size > 0) {
   throw new Error(
-    `El grafo de dependencias tiene un ciclo. Dimensiones implicadas: ` +
-      `${[...restantes].sort().join(', ')}. ` +
-      `Un ciclo hace imposible ordenar las fases del roadmap.`,
+    `The dependency graph has a cycle. Dimensions involved: ` +
+      `${[...remaining].sort().join(', ')}. ` +
+      `A cycle makes ordering the roadmap phases impossible.`,
   );
 }
 
 if (DIMENSION_DEPENDENCIES.length !== 9) {
   throw new Error(
-    `Se esperaban 9 dependencias declaradas; hay ${DIMENSION_DEPENDENCIES.length}`,
+    `Expected 9 declared dependencies; there are ${DIMENSION_DEPENDENCIES.length}`,
   );
 }

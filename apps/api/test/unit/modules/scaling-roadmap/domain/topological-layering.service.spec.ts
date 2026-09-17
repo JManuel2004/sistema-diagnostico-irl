@@ -5,66 +5,66 @@ import { TopologicalLayeringService } from '../../../../../src/modules/scaling-r
 import { DependencyGraphCycleError } from '../../../../../src/modules/scaling-roadmap/domain/errors/roadmap.errors.js';
 
 const DIMS: DimensionCode[] = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'];
-const minimos = DIMS.map((d) => ({ dimension: d, nivelMinimoEsperado: 4 }));
+const minimos = DIMS.map((d) => ({ dimension: d, minimumExpectedLevel: 4 }));
 const e = (o: DimensionCode, d: DimensionCode, req = 3) => ({
-  origen: o,
-  destino: d,
-  nivelMinimoRequerido: req,
+  source: o,
+  target: d,
+  minimumRequiredLevel: req,
 });
 const service = new TopologicalLayeringService();
 
 describe('TopologicalLayeringService', () => {
-  it('coloca en la capa 0 las dimensiones sin dependencias internas', () => {
+  it('coloca en la capa 0 las dimensions sin dependencies internas', () => {
     const g = DependencyGraph.create([e('BRL', 'FRL'), e('IPRL', 'FRL')], minimos);
-    const capas = service.layer(new Set<DimensionCode>(['BRL', 'IPRL', 'FRL']), g);
-    expect(capas).toEqual([['BRL', 'IPRL'], ['FRL']]);
+    const layers = service.layer(new Set<DimensionCode>(['BRL', 'IPRL', 'FRL']), g);
+    expect(layers).toEqual([['BRL', 'IPRL'], ['FRL']]);
   });
 
-  it('ignora aristas cuyo origen queda fuera del conjunto', () => {
-    // CRL habilita a FRL pero no hay que intervenir CRL; esa arista no
+  it('ignora edges cuyo source queda fuera del conjunto', () => {
+    // CRL habilita a FRL pero no hay que intervenir CRL; esa edge no
     // debe retrasar a FRL, o una dimensión ya sana bloquearía el plan.
     const g = DependencyGraph.create([e('CRL', 'FRL')], minimos);
-    const capas = service.layer(new Set<DimensionCode>(['FRL']), g);
-    expect(capas).toEqual([['FRL']]);
+    const layers = service.layer(new Set<DimensionCode>(['FRL']), g);
+    expect(layers).toEqual([['FRL']]);
   });
 
-  it('ignora aristas cuyo destino queda fuera del conjunto', () => {
+  it('ignora edges cuyo target queda fuera del conjunto', () => {
     const g = DependencyGraph.create([e('BRL', 'CRL')], minimos);
-    const capas = service.layer(new Set<DimensionCode>(['BRL']), g);
-    expect(capas).toEqual([['BRL']]);
+    const layers = service.layer(new Set<DimensionCode>(['BRL']), g);
+    expect(layers).toEqual([['BRL']]);
   });
 
   it('ordena dentro de la capa por el orden canónico del marco', () => {
     // Determinismo, no prioridad: sin esto el orden dependería del
     // recorrido del Set y los tests serían inestables.
     const g = DependencyGraph.create([], minimos);
-    const capas = service.layer(
+    const layers = service.layer(
       new Set<DimensionCode>(['FRL', 'TRL', 'IPRL', 'CRL']),
       g,
     );
-    expect(capas).toEqual([['TRL', 'CRL', 'IPRL', 'FRL']]);
+    expect(layers).toEqual([['TRL', 'CRL', 'IPRL', 'FRL']]);
   });
 
-  it('produce una cadena de capas unitarias cuando todo es secuencial', () => {
+  it('produce una cadena de layers unitarias cuando todo es secuencial', () => {
     const g = DependencyGraph.create(
       [e('TmRL', 'TRL'), e('TRL', 'CRL'), e('CRL', 'BRL')],
       minimos,
     );
-    const capas = service.layer(
+    const layers = service.layer(
       new Set<DimensionCode>(['TmRL', 'TRL', 'CRL', 'BRL']),
       g,
     );
-    expect(capas).toEqual([['TmRL'], ['TRL'], ['CRL'], ['BRL']]);
+    expect(layers).toEqual([['TmRL'], ['TRL'], ['CRL'], ['BRL']]);
   });
 
-  it('un conjunto vacío produce cero capas', () => {
+  it('un conjunto vacío produce cero layers', () => {
     const g = DependencyGraph.create([e('BRL', 'FRL')], minimos);
     expect(service.layer(new Set<DimensionCode>(), g)).toEqual([]);
   });
 
   it('lanza con los nodos implicados si el subgrafo tuviera un ciclo', () => {
     // Red de seguridad. `DependencyGraph.create()` ya rechaza ciclos, así
-    // que hay que construir el grafo sin ellos y forzar la condición
+    // que hay que construir el graph sin ellos y forzar la condición
     // sobre el servicio directamente.
     const grafoFalso = {
       allEdges: () => [e('BRL', 'FRL'), e('FRL', 'BRL')],

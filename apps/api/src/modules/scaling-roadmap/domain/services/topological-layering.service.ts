@@ -3,70 +3,70 @@ import type { DependencyGraph } from '../value-objects/dependency-graph.vo.js';
 import { DependencyGraphCycleError } from '../errors/roadmap.errors.js';
 
 /**
- * Ordena en capas las dimensiones a intervenir.
+ * Orders the dimensions to work on into layers.
  *
- * Kahn por capas sobre el **subgrafo inducido** por la cerradura: las
- * aristas cuyo origen o destino queda fuera del conjunto se ignoran, no
- * se arrastran. Sin esa restricción, una dependencia de una dimensión
- * que ya cumple su mínimo bloquearía indefinidamente a la que sí hay que
- * intervenir.
+ * Kahn by layers over the **subgraph induced** by the closure: edges
+ * whose source or target falls outside the set are ignored, not dragged
+ * along. Without that restriction, a dependency on a dimension that
+ * already meets its minimum would block the one that does need work
+ * indefinitely.
  *
- * Las dimensiones de una misma capa **se trabajan en paralelo**: no hay
- * dependencia entre ellas. El orden dentro de la capa es el canónico del
- * marco, y existe solo para que el resultado sea determinista y los
- * tests reproducibles. No es una prioridad, y quien lo renderice como
- * lista numerada estará comunicando una jerarquía que el sistema no
- * calculó.
+ * Dimensions in the same layer **are worked on in parallel**: there is
+ * no dependency between them. The order within a layer is the framework's
+ * canonical one, and exists only so the result is deterministic and the
+ * tests reproducible. It is not a priority, and whoever renders it as a
+ * numbered list will be communicating a hierarchy the system never
+ * computed.
  *
- * Servicio de dominio puro.
+ * Pure domain service.
  */
 export class TopologicalLayeringService {
   layer(
-    cerradura: ReadonlySet<DimensionCode>,
-    grafo: DependencyGraph,
+    closure: ReadonlySet<DimensionCode>,
+    graph: DependencyGraph,
   ): DimensionCode[][] {
-    const restantes = new Set(cerradura);
+    const remaining = new Set(closure);
 
-    // Solo aristas internas al subgrafo inducido.
-    const aristasInternas = grafo
+    // Only edges internal to the induced subgraph.
+    const internalEdges = graph
       .allEdges()
-      .filter((e) => cerradura.has(e.origen) && cerradura.has(e.destino));
+      .filter((e) => closure.has(e.source) && closure.has(e.target));
 
-    const gradoEntrada = new Map<DimensionCode, number>(
-      [...cerradura].map((d) => [d, 0]),
+    const inDegree = new Map<DimensionCode, number>(
+      [...closure].map((d) => [d, 0]),
     );
-    for (const e of aristasInternas) {
-      // `destino` está en la cerradura por el filtro de arriba, así que la
-      // clave existe: no hay caso de ausencia que contemplar.
-      gradoEntrada.set(e.destino, gradoEntrada.get(e.destino)! + 1);
+    for (const e of internalEdges) {
+      // `target` is in the closure because of the filter above, so the
+      // key exists: there is no absent case to handle.
+      inDegree.set(e.target, inDegree.get(e.target)! + 1);
     }
 
-    const capas: DimensionCode[][] = [];
+    const layers: DimensionCode[][] = [];
 
-    while (restantes.size > 0) {
-      const capa = [...restantes].filter((d) => gradoEntrada.get(d) === 0);
+    while (remaining.size > 0) {
+      const layer = [...remaining].filter((d) => inDegree.get(d) === 0);
 
-      if (capa.length === 0) {
-        // Red de seguridad. `DependencyGraph.create()` ya rechazó los
-        // ciclos, así que llegar aquí significa que algo dejó pasar uno;
-        // fallar con los nodos implicados es preferible a devolver un
-        // roadmap incompleto que parecería correcto.
-        throw new DependencyGraphCycleError([...restantes]);
+      if (layer.length === 0) {
+        // Safety net. `DependencyGraph.create()` already rejected cycles,
+        // so reaching here means something let one through; failing with
+        // the nodes involved is preferable to returning an incomplete
+        // roadmap that would look correct.
+        throw new DependencyGraphCycleError([...remaining]);
       }
 
-      capa.sort(
+      layer.sort(
         (a, b) => DIMENSION_CODES.indexOf(a) - DIMENSION_CODES.indexOf(b),
       );
-      capas.push(capa);
+      layers.push(layer);
 
-      for (const d of capa) restantes.delete(d);
-      for (const e of aristasInternas) {
-        if (capa.includes(e.origen) && restantes.has(e.destino)) {
-          gradoEntrada.set(e.destino, gradoEntrada.get(e.destino)! - 1);
+      for (const d of layer) remaining.delete(d);
+      for (const e of internalEdges) {
+        if (layer.includes(e.source) && remaining.has(e.target)) {
+          inDegree.set(e.target, inDegree.get(e.target)! - 1);
         }
       }
     }
 
-    return capas;
+    return layers;
   }
 }

@@ -1,32 +1,31 @@
 import type { DimensionCode } from '@innlab/contracts';
 
 /**
- * Puerto de lectura del grafo de dependencias.
+ * Read port for the dependency graph.
  *
- * Solo lectura, sin métodos de escritura, igual que
- * `IrlCatalogRepositoryPort`: los catálogos no se modifican desde la
- * aplicación, se siembran.
+ * Read-only, with no write methods, just like `IrlCatalogRepositoryPort`:
+ * catalogs are not modified from the application, they are seeded.
  */
 export const DEPENDENCY_GRAPH_REPOSITORY = Symbol(
   'DEPENDENCY_GRAPH_REPOSITORY',
 );
 
-/** Una arista activa del grafo, con códigos ya resueltos. */
+/** An active edge of the graph, with its codes already resolved. */
 export interface DependencyEdgeSnapshot {
-  readonly origen: DimensionCode;
-  readonly destino: DimensionCode;
-  readonly nivelMinimoRequerido: number;
+  readonly source: DimensionCode;
+  readonly target: DimensionCode;
+  readonly minimumRequiredLevel: number;
 }
 
-/** El nivel que se espera que una dimensión alcance. */
+/** The level a dimension is expected to reach. */
 export interface DimensionMinimumSnapshot {
   readonly dimension: DimensionCode;
-  readonly nivelMinimoEsperado: number;
+  readonly minimumExpectedLevel: number;
 }
 
 export interface DependencyGraphRepositoryPort {
-  /** Solo las aristas con `activa = true`. */
+  /** Only the edges with `is_active = true`. */
   findActiveEdges(): Promise<DependencyEdgeSnapshot[]>;
-  /** Un mínimo por cada una de las seis dimensiones. */
+  /** One minimum for each of the six dimensions. */
   findExpectedMinimums(): Promise<DimensionMinimumSnapshot[]>;
 }

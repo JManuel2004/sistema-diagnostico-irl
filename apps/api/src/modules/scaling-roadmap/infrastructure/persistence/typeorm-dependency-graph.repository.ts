@@ -7,64 +7,64 @@ import type {
   DependencyGraphRepositoryPort,
   DimensionMinimumSnapshot,
 } from '../../domain/ports/dependency-graph.repository.port.js';
-import { DependenciaDimensionOrm } from './dependencia-dimension.orm-entity.js';
+import { DimensionDependencyOrm } from './dimension-dependency.orm-entity.js';
 import { DimensionOrm } from '../../../irl-catalog/infrastructure/persistence/entities/dimension.orm-entity.js';
 
 /**
- * Adaptador de lectura del grafo sobre `irl_catalog`.
+ * Read adapter for the graph over `irl_catalog`.
  *
- * Traduce los ids enteros de `dependencia_dimension` a códigos de
- * dimensión antes de cruzar la frontera del dominio: el motor razona en
- * `TRL`/`CRL`/…, nunca en claves primarias, que además son IDENTITY y no
- * son estables entre entornos.
+ * Translates the integer ids of `dimension_dependency` into dimension
+ * codes before crossing the domain boundary: the engine reasons in
+ * `TRL`/`CRL`/…, never in primary keys, which are IDENTITY and not
+ * stable across environments.
  */
 @Injectable()
 export class TypeOrmDependencyGraphRepository
   implements DependencyGraphRepositoryPort
 {
   constructor(
-    @InjectRepository(DependenciaDimensionOrm)
-    private readonly dependencias: Repository<DependenciaDimensionOrm>,
+    @InjectRepository(DimensionDependencyOrm)
+    private readonly dependencies: Repository<DimensionDependencyOrm>,
     @InjectRepository(DimensionOrm)
-    private readonly dimensiones: Repository<DimensionOrm>,
+    private readonly dimensions: Repository<DimensionOrm>,
   ) {}
 
   async findActiveEdges(): Promise<DependencyEdgeSnapshot[]> {
-    const [filas, codigoPorId] = await Promise.all([
-      // Solo las activas: una arista desactivada sigue en la tabla pero
-      // no participa del cálculo.
-      this.dependencias.find({ where: { activa: true } }),
-      this.codigoPorId(),
+    const [rows, codeById] = await Promise.all([
+      // Active ones only: a disabled edge stays in the table but takes
+      // no part in the computation.
+      this.dependencies.find({ where: { isActive: true } }),
+      this.codeById(),
     ]);
 
-    return filas.flatMap((f) => {
-      const origen = codigoPorId.get(f.idDimensionOrigen);
-      const destino = codigoPorId.get(f.idDimensionDestino);
-      // Las FKs garantizan que ambos existan; el filtro es defensa en
-      // profundidad frente a una fila huérfana tras una restauración.
-      if (!origen || !destino) return [];
+    return rows.flatMap((f) => {
+      const source = codeById.get(f.idDimensionSource);
+      const target = codeById.get(f.idDimensionTarget);
+      // The FKs guarantee both exist; the filter is defence in depth
+      // against an orphan row after a restore.
+      if (!source || !target) return [];
       return [
         {
-          origen,
-          destino,
-          nivelMinimoRequerido: f.nivelMinimoRequerido,
+          source,
+          target,
+          minimumRequiredLevel: f.minimumRequiredLevel,
         },
       ];
     });
   }
 
   async findExpectedMinimums(): Promise<DimensionMinimumSnapshot[]> {
-    const filas = await this.dimensiones.find({ order: { sequence: 'ASC' } });
-    return filas.map((d) => ({
+    const rows = await this.dimensions.find({ order: { sequence: 'ASC' } });
+    return rows.map((d) => ({
       dimension: d.code as DimensionCode,
-      nivelMinimoEsperado: d.minimumExpectedLevel,
+      minimumExpectedLevel: d.minimumExpectedLevel,
     }));
   }
 
-  private async codigoPorId(): Promise<ReadonlyMap<number, DimensionCode>> {
-    const filas = await this.dimensiones.find();
+  private async codeById(): Promise<ReadonlyMap<number, DimensionCode>> {
+    const rows = await this.dimensions.find();
     return new Map(
-      filas.map((d) => [d.idDimension, d.code as DimensionCode] as const),
+      rows.map((d) => [d.idDimension, d.code as DimensionCode] as const),
     );
   }
 }

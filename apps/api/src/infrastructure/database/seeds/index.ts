@@ -30,7 +30,7 @@ loadEnv({ path: '.env' });
 async function run(): Promise<void> {
   await dataSource.initialize();
   let routing = { versionPublicada: false };
-  let roadmap = { aristas: 0 };
+  let roadmap = { edges: 0 };
   try {
     await dataSource.transaction(async (manager) => {
       for (const d of DIMENSIONS) {
@@ -149,7 +149,7 @@ async function run(): Promise<void> {
     console.log(
       `Seed complete — ${dimCount} dimensions, ${afCount} statements, ${rcCount} conversion ranges, ` +
         `${parCount} dimension pairs, ${svcCount} portfolio services, ${fichaCount} ordinal profiles, ` +
-        `${roadmap.aristas} roadmap dependency edges in irl_catalog. Routing configuration v1: ` +
+        `${roadmap.edges} roadmap dependency edges in irl_catalog. Routing configuration v1: ` +
         `${routing.versionPublicada ? 'published' : 'already present, left untouched'}.`,
     );
   } finally {

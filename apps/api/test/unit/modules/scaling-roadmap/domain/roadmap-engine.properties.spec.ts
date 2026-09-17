@@ -11,45 +11,45 @@ import { TargetLevelCalculatorService } from '../../../../../src/modules/scaling
  *
  * Los DAG se generan por construcción y no por rechazo: se fija el orden
  * canónico de `DIMENSION_CODES` como orden topológico y solo se admiten
- * aristas que van de un índice menor a uno mayor. Así cualquier
- * subconjunto de esas aristas es acíclico y el generador no descarta
+ * edges que van de un índice menor a uno mayor. Así cualquier
+ * subconjunto de esas edges es acíclico y el generador no descarta
  * casos, que es lo que haría lento e irregular un `fc.pre()`.
  */
-const closure = new RoadmapClosureService();
-const layering = new TopologicalLayeringService();
-const targets = new TargetLevelCalculatorService();
+const closureService = new RoadmapClosureService();
+const layeringService = new TopologicalLayeringService();
+const targetService = new TargetLevelCalculatorService();
 
-const PARES_ACICLICOS: [DimensionCode, DimensionCode][] = [];
+const ACYCLIC_PAIRS: [DimensionCode, DimensionCode][] = [];
 for (let i = 0; i < DIMENSION_CODES.length; i += 1) {
   for (let j = i + 1; j < DIMENSION_CODES.length; j += 1) {
-    PARES_ACICLICOS.push([DIMENSION_CODES[i], DIMENSION_CODES[j]]);
+    ACYCLIC_PAIRS.push([DIMENSION_CODES[i], DIMENSION_CODES[j]]);
   }
 }
 
-const arbGrafo = fc
+const arbGraph = fc
   .tuple(
-    fc.subarray(PARES_ACICLICOS),
+    fc.subarray(ACYCLIC_PAIRS),
     fc.array(fc.integer({ min: 1, max: 9 }), {
-      minLength: PARES_ACICLICOS.length,
-      maxLength: PARES_ACICLICOS.length,
+      minLength: ACYCLIC_PAIRS.length,
+      maxLength: ACYCLIC_PAIRS.length,
     }),
     fc.array(fc.integer({ min: 1, max: 9 }), { minLength: 6, maxLength: 6 }),
   )
-  .map(([pares, reqs, mins]) =>
+  .map(([pairs, reqs, mins]) =>
     DependencyGraph.create(
-      pares.map(([origen, destino], i) => ({
-        origen,
-        destino,
-        nivelMinimoRequerido: reqs[i % reqs.length],
+      pairs.map(([source, target], i) => ({
+        source,
+        target,
+        minimumRequiredLevel: reqs[i % reqs.length],
       })),
       DIMENSION_CODES.map((d, i) => ({
         dimension: d,
-        nivelMinimoEsperado: mins[i],
+        minimumExpectedLevel: mins[i],
       })),
     ),
   );
 
-const arbPerfil = fc
+const arbProfile = fc
   .array(fc.integer({ min: 1, max: 9 }), { minLength: 6, maxLength: 6 })
   .map(
     (ns) =>
@@ -59,20 +59,20 @@ const arbPerfil = fc
   );
 
 describe('Propiedades del motor de roadmap', () => {
-  it('ninguna dimensión aparece en una capa anterior a la de un predecesor suyo', () => {
+  it('ninguna dimensión aparece en una layer anterior a la de un predecesor suyo', () => {
     // Es la propiedad que define un orden topológico correcto: si u
     // habilita a v y ambos se intervienen, u no puede ir después.
     fc.assert(
-      fc.property(arbGrafo, arbPerfil, (grafo, niveles) => {
-        const cerradura = closure.compute(niveles, grafo);
-        const capas = layering.layer(cerradura, grafo);
+      fc.property(arbGraph, arbProfile, (graph, levels) => {
+        const closure = closureService.compute(levels, graph);
+        const layers = layeringService.layer(closure, graph);
 
-        const capaDe = new Map<DimensionCode, number>();
-        capas.forEach((capa, i) => capa.forEach((d) => capaDe.set(d, i)));
+        const layerOf = new Map<DimensionCode, number>();
+        layers.forEach((layer, i) => layer.forEach((d) => layerOf.set(d, i)));
 
-        for (const e of grafo.allEdges()) {
-          if (!cerradura.has(e.origen) || !cerradura.has(e.destino)) continue;
-          expect(capaDe.get(e.origen)!).toBeLessThan(capaDe.get(e.destino)!);
+        for (const e of graph.allEdges()) {
+          if (!closure.has(e.source) || !closure.has(e.target)) continue;
+          expect(layerOf.get(e.source)!).toBeLessThan(layerOf.get(e.target)!);
         }
       }),
       { numRuns: 300 },
@@ -83,40 +83,40 @@ describe('Propiedades del motor de roadmap', () => {
     // Si esto se violara, habría una fase sin nada que hacer, y sería
     // señal de que el cierre incorporó una dimensión que no lo requería.
     fc.assert(
-      fc.property(arbGrafo, arbPerfil, (grafo, niveles) => {
-        const cerradura = closure.compute(niveles, grafo);
-        const metas = targets.compute(cerradura, grafo);
+      fc.property(arbGraph, arbProfile, (graph, levels) => {
+        const closure = closureService.compute(levels, graph);
+        const targets = targetService.compute(closure, graph);
 
-        for (const d of cerradura) {
-          expect(metas.get(d)!).toBeGreaterThan(niveles.get(d)!);
+        for (const d of closure) {
+          expect(targets.get(d)!).toBeGreaterThan(levels.get(d)!);
         }
       }),
       { numRuns: 300 },
     );
   });
 
-  it('las capas son una partición exacta del conjunto a intervenir', () => {
+  it('las layers son una partición exacta del conjunto a intervenir', () => {
     fc.assert(
-      fc.property(arbGrafo, arbPerfil, (grafo, niveles) => {
-        const cerradura = closure.compute(niveles, grafo);
-        const capas = layering.layer(cerradura, grafo);
-        const planas = capas.flat();
+      fc.property(arbGraph, arbProfile, (graph, levels) => {
+        const closure = closureService.compute(levels, graph);
+        const layers = layeringService.layer(closure, graph);
+        const planas = layers.flat();
 
-        expect(planas).toHaveLength(cerradura.size);
-        expect(new Set(planas).size).toBe(cerradura.size);
-        for (const d of planas) expect(cerradura.has(d)).toBe(true);
+        expect(planas).toHaveLength(closure.size);
+        expect(new Set(planas).size).toBe(closure.size);
+        for (const d of planas) expect(closure.has(d)).toBe(true);
       }),
       { numRuns: 300 },
     );
   });
 
-  it('el cierre contiene siempre al foco', () => {
+  it('el cierre contiene siempre al focus', () => {
     fc.assert(
-      fc.property(arbGrafo, arbPerfil, (grafo, niveles) => {
-        const cerradura = closure.compute(niveles, grafo);
+      fc.property(arbGraph, arbProfile, (graph, levels) => {
+        const closure = closureService.compute(levels, graph);
         for (const d of DIMENSION_CODES) {
-          if (niveles.get(d)! < grafo.expectedMinimum(d)) {
-            expect(cerradura.has(d)).toBe(true);
+          if (levels.get(d)! < graph.expectedMinimum(d)) {
+            expect(closure.has(d)).toBe(true);
           }
         }
       }),
@@ -126,9 +126,9 @@ describe('Propiedades del motor de roadmap', () => {
 
   it('el motor es determinista', () => {
     fc.assert(
-      fc.property(arbGrafo, arbPerfil, (grafo, niveles) => {
-        const a = layering.layer(closure.compute(niveles, grafo), grafo);
-        const b = layering.layer(closure.compute(niveles, grafo), grafo);
+      fc.property(arbGraph, arbProfile, (graph, levels) => {
+        const a = layeringService.layer(closureService.compute(levels, graph), graph);
+        const b = layeringService.layer(closureService.compute(levels, graph), graph);
         expect(a).toEqual(b);
       }),
       { numRuns: 200 },
