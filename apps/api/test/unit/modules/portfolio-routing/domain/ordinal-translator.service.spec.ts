@@ -1,65 +1,65 @@
 import { describe, expect, it } from '@jest/globals';
 import type { DimensionCode } from '@innlab/contracts';
 import { OrdinalTranslatorService } from '../../../../../src/modules/portfolio-routing/domain/services/ordinal-translator.service.js';
-import { EscalaCalibracion } from '../../../../../src/modules/portfolio-routing/domain/value-objects/escala-calibracion.vo.js';
-import type { FichaOrdinal } from '../../../../../src/modules/portfolio-routing/domain/value-objects/ficha-ordinal.vo.js';
+import { CalibrationScale } from '../../../../../src/modules/portfolio-routing/domain/value-objects/calibration-scale.vo.js';
+import type { OrdinalProfile } from '../../../../../src/modules/portfolio-routing/domain/value-objects/ordinal-profile.vo.js';
 
-const escala = EscalaCalibracion.create([
-  { etiqueta: 'principal', valor: 1.0, orden: 1 },
-  { etiqueta: 'secundario', valor: 0.5, orden: 2 },
-  { etiqueta: 'no_aplica', valor: 0.0, orden: 3 },
+const scale = CalibrationScale.create([
+  { label: 'primary', value: 1.0, order: 1 },
+  { label: 'secondary', value: 0.5, order: 2 },
+  { label: 'not_applicable', value: 0.0, order: 3 },
 ]);
 
-const ficha: FichaOrdinal = {
-  idServicio: 1,
-  nombreServicio: 'Consultoría',
-  nivelMin: 4,
-  nivelMax: 9,
-  etapasPertinentes: ['validacion'],
-  intensidades: new Map<DimensionCode, string>([
-    ['CRL', 'principal'],
-    ['IPRL', 'secundario'],
-    ['TRL', 'no_aplica'],
+const profile: OrdinalProfile = {
+  idService: 1,
+  serviceName: 'Consultoría',
+  minLevel: 4,
+  maxLevel: 9,
+  relevantStages: ['validacion'],
+  intensities: new Map<DimensionCode, string>([
+    ['CRL', 'primary'],
+    ['IPRL', 'secondary'],
+    ['TRL', 'not_applicable'],
   ]),
 };
 
 const translator = new OrdinalTranslatorService();
 
 describe('OrdinalTranslatorService', () => {
-  it('resuelve cada etiqueta a su valor numérico', () => {
-    const [resultado] = translator.translate([ficha], escala);
-    expect(resultado.intensidades.get('CRL')).toBe(1.0);
-    expect(resultado.intensidades.get('IPRL')).toBe(0.5);
-    expect(resultado.intensidades.get('TRL')).toBe(0.0);
+  it('resuelve cada label a su value numérico', () => {
+    const [resultado] = translator.translate([profile], scale);
+    expect(resultado.intensities.get('CRL')).toBe(1.0);
+    expect(resultado.intensities.get('IPRL')).toBe(0.5);
+    expect(resultado.intensities.get('TRL')).toBe(0.0);
   });
 
-  it('conserva la etiqueta original junto al valor', () => {
+  it('conserva la label original junto al value', () => {
     // Sin esto la explicación al usuario tendría que hablar en números,
     // que es exactamente lo que la escala ordinal existe para evitar.
-    const [resultado] = translator.translate([ficha], escala);
-    expect(resultado.etiquetas.get('CRL')).toBe('principal');
+    const [resultado] = translator.translate([profile], scale);
+    expect(resultado.labels.get('CRL')).toBe('primary');
   });
 
   it('es determinista: dos traducciones iguales producen lo mismo', () => {
-    const a = translator.translate([ficha], escala);
-    const b = translator.translate([ficha], escala);
-    expect([...a[0].intensidades]).toEqual([...b[0].intensidades]);
+    const a = translator.translate([profile], scale);
+    const b = translator.translate([profile], scale);
+    expect([...a[0].intensities]).toEqual([...b[0].intensities]);
   });
 
-  it('propaga el fallo si una ficha usa una etiqueta ausente en la escala', () => {
-    const rota: FichaOrdinal = {
-      ...ficha,
-      intensidades: new Map<DimensionCode, string>([['CRL', 'critico']]),
+  it('propaga el fallo si una profile usa una label ausente en la scale', () => {
+    const rota: OrdinalProfile = {
+      ...profile,
+      intensities: new Map<DimensionCode, string>([['CRL', 'critico']]),
     };
-    expect(() => translator.translate([rota], escala)).toThrow(
-      /no existe en la escala/,
+    expect(() => translator.translate([rota], scale)).toThrow(
+      /no existe en la scale/,
     );
   });
 
   it('conserva rango y etapas sin alterarlos', () => {
-    const [resultado] = translator.translate([ficha], escala);
-    expect(resultado.nivelMin).toBe(4);
-    expect(resultado.nivelMax).toBe(9);
-    expect(resultado.etapasPertinentes).toEqual(['validacion']);
+    const [resultado] = translator.translate([profile], scale);
+    expect(resultado.minLevel).toBe(4);
+    expect(resultado.maxLevel).toBe(9);
+    expect(resultado.relevantStages).toEqual(['validacion']);
   });
 });

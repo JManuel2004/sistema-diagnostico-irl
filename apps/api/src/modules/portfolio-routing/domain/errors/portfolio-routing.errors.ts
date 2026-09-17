@@ -14,8 +14,8 @@ export class NoActiveConfigurationError extends DomainError {
 
   constructor(details?: Record<string, unknown>) {
     super(
-      'No hay una versión de configuración de enrutamiento vigente. ' +
-        'Publique una versión antes de generar recomendaciones.',
+      'No hay una versión de configuración de enrutamiento active. ' +
+        'Publique una versión antes de generar recommendations.',
     );
     this.details = details;
   }
@@ -47,7 +47,7 @@ export class RecommendationNotGeneratedError extends DomainError {
 }
 
 /**
- * Un predicado no compila: campo desconocido, operador no admitido en el
+ * Un predicate no compila: campo desconocido, operador no admitido en el
  * modo, o forma malformada. Se lanza al configurar, no al evaluar.
  */
 export class PredicateCompilationError extends DomainError {

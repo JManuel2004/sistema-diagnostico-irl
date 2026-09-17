@@ -15,7 +15,7 @@ import { ApiError } from '@/shared/api/http';
  *
  * Si la recomendación aún no existe el backend responde 409 con
  * `ROUTING_RECOMMENDATION_NOT_GENERATED`; eso no es un fallo sino el
- * estado inicial. Quien llega a esta ruta lo hace porque quiere ver la
+ * state inicial. Quien llega a esta ruta lo hace porque quiere ver la
  * recomendación de portafolio, así que la página la genera automáticamente
  * en vez de exigir un click adicional — no hay ninguna otra razón para
  * visitar esta URL. Distinguir ese 409 de un error real depende del
@@ -25,12 +25,12 @@ export default function RecommendationPage(): JSX.Element {
   const { id: diagnosticId } = useParams<{ id: string }>();
   const [trazaSolicitada, setTrazaSolicitada] = useState(false);
 
-  const { data: recomendacion, error, isPending } = useRecommendation(diagnosticId);
+  const { data: recommendation, error, isPending } = useRecommendation(diagnosticId);
   const generar = useGenerateRecommendation(diagnosticId);
   const { mutate: generarRecomendacion, isIdle: generarEsIdle } = generar;
   // Al regenerar, la mutación invalida la traza, así que si el panel está
-  // abierto se refresca solo. No hace falta cerrarlo ni sincronizar estado.
-  const traza = useRecommendationTrace(diagnosticId, trazaSolicitada);
+  // abierto se refresca solo. No hace falta cerrarlo ni sincronizar state.
+  const trace = useRecommendationTrace(diagnosticId, trazaSolicitada);
 
   const noGenerada =
     error instanceof ApiError &&
@@ -58,7 +58,7 @@ export default function RecommendationPage(): JSX.Element {
         </h1>
         <p className="text-muted-foreground mt-3 max-w-prose text-base leading-relaxed">
           A partir de tu perfil de madurez, el sistema identifica cuál de los
-          servicios de INNLAB corresponde mejor al estado actual de la iniciativa.
+          services de INNLAB corresponde mejor al state actual de la iniciativa.
         </p>
       </header>
 
@@ -81,7 +81,7 @@ export default function RecommendationPage(): JSX.Element {
           <p className="text-critical mt-1 text-sm">
             {error instanceof ApiError &&
             error.code === 'ROUTING_NO_ACTIVE_CONFIGURATION'
-              ? 'No hay una configuración de enrutamiento vigente. Contacta al equipo de INNLAB.'
+              ? 'No hay una configuración de enrutamiento active. Contacta al equipo de INNLAB.'
               : error instanceof ApiError &&
                   error.code === 'ROUTING_PROFILE_NOT_COMPUTED'
                 ? 'Este diagnóstico aún no tiene un perfil de madurez calculado.'
@@ -98,18 +98,18 @@ export default function RecommendationPage(): JSX.Element {
           <p className="text-critical text-sm font-semibold">
             {generar.error instanceof ApiError &&
             generar.error.code === 'ROUTING_NO_ACTIVE_CONFIGURATION'
-              ? 'No hay una configuración de enrutamiento vigente. Contacta al equipo de INNLAB.'
+              ? 'No hay una configuración de enrutamiento active. Contacta al equipo de INNLAB.'
               : 'No fue posible generar la recomendación. Intenta de nuevo en unos minutos.'}
           </p>
         </div>
       )}
 
-      {recomendacion && (
+      {recommendation && (
         <>
-          <RecommendationSummary recomendacion={recomendacion} />
+          <RecommendationSummary recommendation={recommendation} />
           <LayerTracePanel
-            traza={traza.data}
-            isLoading={traza.isFetching}
+            trace={trace.data}
+            isLoading={trace.isFetching}
             onOpen={() => setTrazaSolicitada(true)}
           />
         </>

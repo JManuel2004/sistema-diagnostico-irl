@@ -1,13 +1,13 @@
 import type { EntityManager } from 'typeorm';
 import { createHash } from 'node:crypto';
 import {
-  ESCALA_CALIBRACION,
+  CALIBRATION_SCALE,
   ETAPAS,
-  FICHAS,
-  PARAMETROS_SCORING,
-  REGLAS_ELEGIBILIDAD,
-  REGLAS_EXCEPCION,
-  SERVICIOS,
+  ORDINAL_PROFILES,
+  SCORING_PARAMETERS,
+  ELIGIBILITY_RULES,
+  EXCEPTION_RULES,
+  SERVICES,
 } from './data/portfolio-routing.js';
 
 /**
@@ -26,14 +26,14 @@ import {
  */
 export async function seedPortfolioRouting(
   manager: EntityManager,
-): Promise<{ versionPublicada: boolean }> {
+): Promise<{ versionPublished: boolean }> {
   // ── Catálogos base (idempotentes por clave natural) ──────────────────
-  for (const s of SERVICIOS) {
+  for (const s of SERVICES) {
     await manager.query(
-      `INSERT INTO irl_catalog.servicio_portafolio (nombre, descripcion, activo)
+      `INSERT INTO irl_catalog.portfolio_service (name, description, is_active)
        VALUES ($1, $2, true)
-       ON CONFLICT (nombre) DO UPDATE SET descripcion = EXCLUDED.descripcion`,
-      [s.nombre, s.descripcion],
+       ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description`,
+      [s.name, s.description],
     );
   }
 
@@ -49,167 +49,159 @@ export async function seedPortfolioRouting(
 
   // ── ¿Ya hay una versión vigente? ─────────────────────────────────────
   //
-  // Publicar una segunda violaría `ux_version_unica_vigente`, y
+  // Publicar una segunda violaría `ux_configuration_version_single_active`, y
   // sobrescribir la existente rompería la inmutabilidad de la que ya
   // pueda estar referenciada por recomendaciones emitidas.
-  const [vigente] = await manager.query<{ numero: number }[]>(
-    `SELECT numero FROM irl_catalog.version_configuracion WHERE estado = 'VIGENTE'`,
+  const [active] = await manager.query<{ number: number }[]>(
+    `SELECT number FROM irl_catalog.configuration_version WHERE state = 'ACTIVE'`,
   );
-  if (vigente) {
-    return { versionPublicada: false };
+  if (active) {
+    return { versionPublished: false };
   }
 
-  const AUTOR = 'seed-inicial';
+  const AUTHOR = 'seed-inicial';
 
   // ── Snapshot de calibración ──────────────────────────────────────────
-  const [{ id_snapshot_calibracion: idCalibracion }] = await manager.query<
-    { id_snapshot_calibracion: string }[]
-  >(
-    `INSERT INTO irl_catalog.snapshot_calibracion (numero, autor_id, comentario, estado)
-     VALUES (1, $1, $2, 'PUBLICADO')
-     RETURNING id_snapshot_calibracion`,
-    [AUTOR, 'Escala ordinal inicial — valores hipotéticos pendientes de INNLAB'],
+  const [{ id: idCalibration }] = await manager.query<{ id: string }[]>(
+    `INSERT INTO irl_catalog.calibration_snapshot (number, author_id, comment, state)
+     VALUES (1, $1, $2, 'PUBLISHED')
+     RETURNING id`,
+    [AUTHOR, 'Escala ordinal inicial — valores hipotéticos pendientes de INNLAB'],
   );
 
-  for (const p of ESCALA_CALIBRACION) {
+  for (const p of CALIBRATION_SCALE) {
     await manager.query(
-      `INSERT INTO irl_catalog.valor_etiqueta_calibracion
-         (id_snapshot_calibracion, etiqueta, valor_numerico, orden_monotonia)
+      `INSERT INTO irl_catalog.calibration_label_value
+         (id_calibration_snapshot, label, numeric_value, monotonicity_order)
        VALUES ($1, $2, $3, $4)`,
-      [idCalibracion, p.etiqueta, p.valor, p.orden],
+      [idCalibration, p.label, p.value, p.order],
     );
   }
 
   // ── Snapshot de parámetros ───────────────────────────────────────────
-  const P = PARAMETROS_SCORING;
-  const [{ id_snapshot_parametros: idParametros }] = await manager.query<
-    { id_snapshot_parametros: string }[]
-  >(
-    `INSERT INTO irl_catalog.snapshot_parametros
-       (numero, autor_id, comentario, peso_cuello_botella, peso_brecha,
-        peso_desequilibrio_moderado, peso_desequilibrio_critico,
-        peso_afinidad_etapa, penalizacion_fuera_rango, umbral_minimo,
-        n_alternativas, estado)
-     VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'PUBLICADO')
-     RETURNING id_snapshot_parametros`,
+  const P = SCORING_PARAMETERS;
+  const [{ id: idParameters }] = await manager.query<{ id: string }[]>(
+    `INSERT INTO irl_catalog.parameters_snapshot
+       (number, author_id, comment, bottleneck_weight, gap_weight,
+        moderate_imbalance_weight, critical_imbalance_weight,
+        stage_affinity_weight, out_of_range_penalty, minimum_threshold,
+        alternatives_count, state)
+     VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'PUBLISHED')
+     RETURNING id`,
     [
-      AUTOR,
+      AUTHOR,
       'Pesos iniciales — valores hipotéticos pendientes de INNLAB',
-      P.pesoCuelloBotella,
-      P.pesoBrecha,
-      P.pesoDesequilibrioModerado,
-      P.pesoDesequilibrioCritico,
-      P.pesoAfinidadEtapa,
-      P.penalizacionFueraRango,
-      P.umbralMinimo,
-      P.nAlternativas,
+      P.bottleneckWeight,
+      P.gapWeight,
+      P.moderateImbalanceWeight,
+      P.criticalImbalanceWeight,
+      P.stageAffinityWeight,
+      P.outOfRangePenalty,
+      P.minimumThreshold,
+      P.alternativesCount,
     ],
   );
 
   // ── Versión ──────────────────────────────────────────────────────────
-  const [{ id_version_configuracion: idVersion }] = await manager.query<
-    { id_version_configuracion: string }[]
-  >(
-    `INSERT INTO irl_catalog.version_configuracion
-       (numero, autor_id, comentario, id_snapshot_calibracion,
-        id_snapshot_parametros, estado)
-     VALUES (1, $1, $2, $3, $4, 'VIGENTE')
-     RETURNING id_version_configuracion`,
+  const [{ id: idVersion }] = await manager.query<{ id: string }[]>(
+    `INSERT INTO irl_catalog.configuration_version
+       (number, author_id, comment, id_calibration_snapshot,
+        id_parameters_snapshot, state)
+     VALUES (1, $1, $2, $3, $4, 'ACTIVE')
+     RETURNING id`,
     [
-      AUTOR,
+      AUTHOR,
       'Configuración inicial del motor de enrutamiento (provisional)',
-      idCalibracion,
-      idParametros,
+      idCalibration,
+      idParameters,
     ],
   );
 
-  // ── Fichas ordinales + intensidades ──────────────────────────────────
-  for (const ficha of FICHAS) {
-    const etapas = ficha.etapasPertinentes.join(',');
-    const [{ id_ficha_publicada: idFicha }] = await manager.query<
-      { id_ficha_publicada: string }[]
-    >(
-      `INSERT INTO irl_catalog.ficha_ordinal_publicada
-         (id_version_configuracion, id_servicio, nivel_min, nivel_max,
-          etapas_pertinentes, hash_ficha)
-       SELECT $1, s.id_servicio, $3, $4, $5, $6
-         FROM irl_catalog.servicio_portafolio s
-        WHERE s.nombre = $2
-       RETURNING id_ficha_publicada`,
+  // ── Fichas ordinales + intensities ──────────────────────────────────
+  for (const profile of ORDINAL_PROFILES) {
+    const stages = profile.relevantStages.join(',');
+    const [{ id: idProfile }] = await manager.query<{ id: string }[]>(
+      `INSERT INTO irl_catalog.published_ordinal_profile
+         (id_configuration_version, id_service, min_level, max_level,
+          relevant_stages, profile_hash)
+       SELECT $1, s.id, $3, $4, $5, $6
+         FROM irl_catalog.portfolio_service s
+        WHERE s.name = $2
+       RETURNING id`,
       [
         idVersion,
-        ficha.servicio,
-        ficha.nivelMin,
-        ficha.nivelMax,
-        etapas,
-        hash({ ...ficha }),
+        profile.service,
+        profile.minLevel,
+        profile.maxLevel,
+        stages,
+        hash({ ...profile }),
       ],
     );
 
-    for (const [dimension, etiqueta] of Object.entries(ficha.intensidades)) {
+    for (const [dimension, label] of Object.entries(profile.intensities)) {
       await manager.query(
-        `INSERT INTO irl_catalog.intensidad_ordinal_publicada
-           (id_ficha_publicada, id_dimension, etiqueta)
+        `INSERT INTO irl_catalog.published_ordinal_intensity
+           (id_ordinal_profile, id_dimension, label)
          SELECT $1, d.id_dimension, $3
            FROM irl_catalog.dimension d
           WHERE d.code = $2`,
-        [idFicha, dimension, etiqueta],
+        [idProfile, dimension, label],
       );
     }
   }
 
   // ── Reglas de elegibilidad ───────────────────────────────────────────
-  for (const regla of REGLAS_ELEGIBILIDAD) {
+  for (const rule of ELIGIBILITY_RULES) {
     await manager.query(
-      `INSERT INTO irl_catalog.regla_elegibilidad_publicada
-         (id_version_configuracion, id_servicio, predicado, arbol_expresion,
-          mensaje_exclusion, hash_regla)
-       SELECT $1, s.id_servicio, $3::jsonb, $4::jsonb, $5, $6
-         FROM irl_catalog.servicio_portafolio s
-        WHERE s.nombre = $2`,
+      `INSERT INTO irl_catalog.published_eligibility_rule
+         (id_configuration_version, id_service, predicate, expression_tree,
+          exclusion_message, rule_hash)
+       SELECT $1, s.id, $3::jsonb, $4::jsonb, $5, $6
+         FROM irl_catalog.portfolio_service s
+        WHERE s.name = $2`,
       [
         idVersion,
-        regla.servicio,
-        JSON.stringify(regla.predicado),
-        JSON.stringify(regla.predicado),
-        regla.mensajeExclusion,
-        hash(regla),
+        rule.service,
+        JSON.stringify(rule.predicate),
+        JSON.stringify(rule.predicate),
+        rule.exclusionMessage,
+        hash(rule),
       ],
     );
   }
 
   // ── Reglas de excepción ──────────────────────────────────────────────
-  for (const regla of REGLAS_EXCEPCION) {
+  for (const rule of EXCEPTION_RULES) {
     await manager.query(
-      `INSERT INTO irl_catalog.regla_excepcion_publicada
-         (id_version_configuracion, codigo, predicado, arbol_expresion, accion,
-          id_servicio_objetivo, posiciones, motivo_declarado, prioridad_orden,
-          hash_regla)
-       SELECT $1, $2, $3::jsonb, $4::jsonb, $5, s.id_servicio, $7, $8, $9, $10
-         FROM irl_catalog.servicio_portafolio s
-        WHERE s.nombre = $6`,
+      `INSERT INTO irl_catalog.published_exception_rule
+         (id_configuration_version, code, predicate, expression_tree, action,
+          id_target_service, positions, declared_reason, priority_order,
+          rule_hash)
+       SELECT $1, $2, $3::jsonb, $4::jsonb, $5, s.id, $7, $8, $9, $10
+         FROM irl_catalog.portfolio_service s
+        WHERE s.name = $6`,
       [
         idVersion,
-        regla.codigo,
-        JSON.stringify(regla.predicado),
-        JSON.stringify(regla.predicado),
-        regla.accion,
-        regla.servicioObjetivo,
-        regla.posiciones,
-        regla.motivoDeclarado,
-        regla.prioridadOrden,
-        hash(regla),
+        rule.code,
+        JSON.stringify(rule.predicate),
+        JSON.stringify(rule.predicate),
+        rule.action,
+        rule.targetService,
+        rule.positions,
+        rule.declaredReason,
+        rule.priorityOrder,
+        hash(rule),
       ],
     );
   }
 
-  return { versionPublicada: true };
+  return { versionPublished: true };
 }
 
 /**
  * Huella del artefacto publicado. Sirve para detectar si dos versiones
  * comparten una ficha o regla idéntica sin compararlas campo a campo.
  */
-function hash(valor: unknown): string {
-  return createHash('sha256').update(JSON.stringify(valor)).digest('hex');
+function hash(value: unknown): string {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }

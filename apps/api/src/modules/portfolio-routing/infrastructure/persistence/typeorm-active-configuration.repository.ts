@@ -4,25 +4,25 @@ import { Repository } from 'typeorm';
 import type { DimensionCode } from '@innlab/contracts';
 import type {
   ActiveConfigurationRepositoryPort,
-  ConfiguracionResuelta,
+  ResolvedConfiguration,
 } from '../../domain/ports/active-configuration.repository.port.js';
-import { EscalaCalibracion } from '../../domain/value-objects/escala-calibracion.vo.js';
-import type { FichaOrdinal } from '../../domain/value-objects/ficha-ordinal.vo.js';
-import type { ReglaElegibilidadCompilada } from '../../domain/services/eligibility-filter.service.js';
+import { CalibrationScale } from '../../domain/value-objects/calibration-scale.vo.js';
+import type { OrdinalProfile } from '../../domain/value-objects/ordinal-profile.vo.js';
+import type { CompiledEligibilityRule } from '../../domain/services/eligibility-filter.service.js';
 import type {
-  AccionExcepcion,
-  ReglaExcepcionCompilada,
+  ExceptionAction,
+  CompiledExceptionRule,
 } from '../../domain/services/exception-engine.service.js';
 import { PredicateCompilerService } from '../../domain/services/predicate-compiler.service.js';
-import { VersionConfiguracionOrm } from './version-configuracion.orm-entity.js';
-import { SnapshotCalibracionOrm } from './snapshot-calibracion.orm-entity.js';
-import { ValorEtiquetaCalibracionOrm } from './valor-etiqueta-calibracion.orm-entity.js';
-import { SnapshotParametrosOrm } from './snapshot-parametros.orm-entity.js';
-import { FichaOrdinalPublicadaOrm } from './ficha-ordinal-publicada.orm-entity.js';
-import { IntensidadOrdinalPublicadaOrm } from './intensidad-ordinal-publicada.orm-entity.js';
-import { ReglaElegibilidadPublicadaOrm } from './regla-elegibilidad-publicada.orm-entity.js';
-import { ReglaExcepcionPublicadaOrm } from './regla-excepcion-publicada.orm-entity.js';
-import { ServicioPortafolioOrm } from './servicio-portafolio.orm-entity.js';
+import { ConfigurationVersionOrm } from './configuration-version.orm-entity.js';
+import { CalibrationSnapshotOrm } from './calibration-snapshot.orm-entity.js';
+import { CalibrationLabelValueOrm } from './calibration-label-value.orm-entity.js';
+import { ParametersSnapshotOrm } from './parameters-snapshot.orm-entity.js';
+import { PublishedOrdinalProfileOrm } from './published-ordinal-profile.orm-entity.js';
+import { PublishedOrdinalIntensityOrm } from './published-ordinal-intensity.orm-entity.js';
+import { PublishedEligibilityRuleOrm } from './published-eligibility-rule.orm-entity.js';
+import { PublishedExceptionRuleOrm } from './published-exception-rule.orm-entity.js';
+import { PortfolioServiceOrm } from './portfolio-service.orm-entity.js';
 import { DimensionOrm } from '../../../irl-catalog/infrastructure/persistence/entities/dimension.orm-entity.js';
 
 /**
@@ -32,7 +32,7 @@ import { DimensionOrm } from '../../../irl-catalog/infrastructure/persistence/en
  * almacenado sea válido. Una versión publicada es inmutable, así que en
  * teoría bastaría con compilarla al publicar; en la práctica, una
  * restauración de base de datos o una edición manual pueden dejar un
- * predicado corrupto, y prefiero que eso falle al cargar la
+ * predicate corrupto, y prefiero que eso falle al cargar la
  * configuración antes que a mitad de una evaluación.
  */
 @Injectable()
@@ -42,158 +42,158 @@ export class TypeOrmActiveConfigurationRepository
   private readonly compiler = new PredicateCompilerService();
 
   constructor(
-    @InjectRepository(VersionConfiguracionOrm)
-    private readonly versiones: Repository<VersionConfiguracionOrm>,
-    @InjectRepository(SnapshotCalibracionOrm)
-    private readonly calibraciones: Repository<SnapshotCalibracionOrm>,
-    @InjectRepository(ValorEtiquetaCalibracionOrm)
-    private readonly etiquetas: Repository<ValorEtiquetaCalibracionOrm>,
-    @InjectRepository(SnapshotParametrosOrm)
-    private readonly parametros: Repository<SnapshotParametrosOrm>,
-    @InjectRepository(FichaOrdinalPublicadaOrm)
-    private readonly fichas: Repository<FichaOrdinalPublicadaOrm>,
-    @InjectRepository(IntensidadOrdinalPublicadaOrm)
-    private readonly intensidades: Repository<IntensidadOrdinalPublicadaOrm>,
-    @InjectRepository(ReglaElegibilidadPublicadaOrm)
-    private readonly elegibilidad: Repository<ReglaElegibilidadPublicadaOrm>,
-    @InjectRepository(ReglaExcepcionPublicadaOrm)
-    private readonly excepciones: Repository<ReglaExcepcionPublicadaOrm>,
-    @InjectRepository(ServicioPortafolioOrm)
-    private readonly servicios: Repository<ServicioPortafolioOrm>,
+    @InjectRepository(ConfigurationVersionOrm)
+    private readonly versions: Repository<ConfigurationVersionOrm>,
+    @InjectRepository(CalibrationSnapshotOrm)
+    private readonly calibrations: Repository<CalibrationSnapshotOrm>,
+    @InjectRepository(CalibrationLabelValueOrm)
+    private readonly labels: Repository<CalibrationLabelValueOrm>,
+    @InjectRepository(ParametersSnapshotOrm)
+    private readonly parameters: Repository<ParametersSnapshotOrm>,
+    @InjectRepository(PublishedOrdinalProfileOrm)
+    private readonly profiles: Repository<PublishedOrdinalProfileOrm>,
+    @InjectRepository(PublishedOrdinalIntensityOrm)
+    private readonly intensities: Repository<PublishedOrdinalIntensityOrm>,
+    @InjectRepository(PublishedEligibilityRuleOrm)
+    private readonly eligibility: Repository<PublishedEligibilityRuleOrm>,
+    @InjectRepository(PublishedExceptionRuleOrm)
+    private readonly exceptions: Repository<PublishedExceptionRuleOrm>,
+    @InjectRepository(PortfolioServiceOrm)
+    private readonly services: Repository<PortfolioServiceOrm>,
     @InjectRepository(DimensionOrm)
-    private readonly dimensiones: Repository<DimensionOrm>,
+    private readonly dimensions: Repository<DimensionOrm>,
   ) {}
 
-  async loadActive(): Promise<ConfiguracionResuelta | null> {
-    const version = await this.versiones.findOne({
-      where: { estado: 'VIGENTE' },
+  async loadActive(): Promise<ResolvedConfiguration | null> {
+    const version = await this.versions.findOne({
+      where: { state: 'ACTIVE' },
     });
-    return version ? this.resolver(version) : null;
+    return version ? this.resolve(version) : null;
   }
 
-  async loadByVersion(numero: number): Promise<ConfiguracionResuelta | null> {
-    const version = await this.versiones.findOne({ where: { numero } });
-    return version ? this.resolver(version) : null;
+  async loadByVersion(number: number): Promise<ResolvedConfiguration | null> {
+    const version = await this.versions.findOne({ where: { number } });
+    return version ? this.resolve(version) : null;
   }
 
-  private async resolver(
-    version: VersionConfiguracionOrm,
-  ): Promise<ConfiguracionResuelta> {
+  private async resolve(
+    version: ConfigurationVersionOrm,
+  ): Promise<ResolvedConfiguration> {
     const [
-      calibracion,
-      peldanos,
+      calibration,
+      tiers,
       params,
-      fichasRows,
+      profileRows,
       elegRows,
       excRows,
-      serviciosRows,
+      serviceRows,
       dimRows,
     ] = await Promise.all([
-      this.calibraciones.findOneByOrFail({
-        idSnapshotCalibracion: version.idSnapshotCalibracion,
+      this.calibrations.findOneByOrFail({
+        idCalibrationSnapshot: version.idCalibrationSnapshot,
       }),
-      this.etiquetas.find({
-        where: { idSnapshotCalibracion: version.idSnapshotCalibracion },
-        order: { ordenMonotonia: 'ASC' },
+      this.labels.find({
+        where: { idCalibrationSnapshot: version.idCalibrationSnapshot },
+        order: { monotonicityOrder: 'ASC' },
       }),
-      this.parametros.findOneByOrFail({
-        idSnapshotParametros: version.idSnapshotParametros,
+      this.parameters.findOneByOrFail({
+        idParametersSnapshot: version.idParametersSnapshot,
       }),
-      this.fichas.find({
-        where: { idVersionConfiguracion: version.idVersionConfiguracion },
+      this.profiles.find({
+        where: { idConfigurationVersion: version.idConfigurationVersion },
       }),
-      this.elegibilidad.find({
-        where: { idVersionConfiguracion: version.idVersionConfiguracion },
+      this.eligibility.find({
+        where: { idConfigurationVersion: version.idConfigurationVersion },
       }),
-      this.excepciones.find({
-        where: { idVersionConfiguracion: version.idVersionConfiguracion },
-        order: { prioridadOrden: 'ASC' },
+      this.exceptions.find({
+        where: { idConfigurationVersion: version.idConfigurationVersion },
+        order: { priorityOrder: 'ASC' },
       }),
-      this.servicios.find(),
-      this.dimensiones.find(),
+      this.services.find(),
+      this.dimensions.find(),
     ]);
 
-    const nombrePorServicio = new Map(
-      serviciosRows.map((s) => [s.idServicio, s.nombre] as const),
+    const nameByService = new Map(
+      serviceRows.map((s) => [s.idService, s.name] as const),
     );
-    const codigoPorDimension = new Map(
+    const codeByDimension = new Map(
       dimRows.map((d) => [d.idDimension, d.code as DimensionCode] as const),
     );
 
-    const intensidadesRows = await this.intensidades.find({
-      where: fichasRows.map((f) => ({ idFichaPublicada: f.idFichaPublicada })),
+    const intensityRows = await this.intensities.find({
+      where: profileRows.map((f) => ({ idOrdinalProfile: f.idOrdinalProfile })),
     });
-    const intensidadesPorFicha = new Map<string, IntensidadOrdinalPublicadaOrm[]>();
-    for (const row of intensidadesRows) {
-      const lista = intensidadesPorFicha.get(row.idFichaPublicada) ?? [];
-      lista.push(row);
-      intensidadesPorFicha.set(row.idFichaPublicada, lista);
+    const intensitiesByProfile = new Map<string, PublishedOrdinalIntensityOrm[]>();
+    for (const row of intensityRows) {
+      const list = intensitiesByProfile.get(row.idOrdinalProfile) ?? [];
+      list.push(row);
+      intensitiesByProfile.set(row.idOrdinalProfile, list);
     }
 
-    const fichas: FichaOrdinal[] = fichasRows.map((f) => {
-      const intensidades = new Map<DimensionCode, string>();
-      for (const i of intensidadesPorFicha.get(f.idFichaPublicada) ?? []) {
-        const codigo = codigoPorDimension.get(i.idDimension);
-        if (codigo) intensidades.set(codigo, i.etiqueta);
+    const profiles: OrdinalProfile[] = profileRows.map((f) => {
+      const intensities = new Map<DimensionCode, string>();
+      for (const i of intensitiesByProfile.get(f.idOrdinalProfile) ?? []) {
+        const code = codeByDimension.get(i.idDimension);
+        if (code) intensities.set(code, i.label);
       }
       return {
-        idServicio: f.idServicio,
-        nombreServicio: nombrePorServicio.get(f.idServicio) ?? String(f.idServicio),
-        nivelMin: f.nivelMin,
-        nivelMax: f.nivelMax,
+        idService: f.idService,
+        serviceName: nameByService.get(f.idService) ?? String(f.idService),
+        minLevel: f.minLevel,
+        maxLevel: f.maxLevel,
         // Lista separada por comas; `filter` descarta el caso de cadena vacía.
-        etapasPertinentes: f.etapasPertinentes
+        relevantStages: f.relevantStages
           .split(',')
           .map((e) => e.trim())
           .filter((e) => e.length > 0),
-        intensidades,
+        intensities,
       };
     });
 
-    const reglasElegibilidad: ReglaElegibilidadCompilada[] = elegRows.map((r) => ({
-      idRegla: r.idReglaEligPublicada,
-      idServicio: r.idServicio,
-      expresion: this.compiler.compile(r.predicado, 'BOOLEANO'),
-      mensajeExclusion: r.mensajeExclusion,
+    const eligibilityRules: CompiledEligibilityRule[] = elegRows.map((r) => ({
+      idRegla: r.id,
+      idService: r.idService,
+      expresion: this.compiler.compile(r.predicate, 'BOOLEAN'),
+      exclusionMessage: r.exclusionMessage,
     }));
 
-    const reglasExcepcion: ReglaExcepcionCompilada[] = excRows.map((r) => ({
-      codigo: r.codigo,
-      prioridadOrden: r.prioridadOrden,
-      expresion: this.compiler.compile(r.predicado, 'CON_GRADO'),
-      accion: r.accion as AccionExcepcion,
-      idServicioObjetivo: r.idServicioObjetivo,
-      posiciones: r.posiciones,
-      motivoDeclarado: r.motivoDeclarado,
+    const exceptionRules: CompiledExceptionRule[] = excRows.map((r) => ({
+      code: r.code,
+      priorityOrder: r.priorityOrder,
+      expresion: this.compiler.compile(r.predicate, 'WITH_DEGREE'),
+      action: r.action as ExceptionAction,
+      idTargetService: r.idTargetService,
+      positions: r.positions,
+      declaredReason: r.declaredReason,
     }));
 
     return {
-      idVersionConfiguracion: version.idVersionConfiguracion,
-      numeroVersion: version.numero,
-      idSnapshotCalibracion: calibracion.idSnapshotCalibracion,
-      numeroSnapshotCalibracion: calibracion.numero,
-      idSnapshotParametros: params.idSnapshotParametros,
-      numeroSnapshotParametros: params.numero,
-      escala: EscalaCalibracion.create(
-        peldanos.map((p) => ({
-          etiqueta: p.etiqueta,
-          valor: p.valorNumerico,
-          orden: p.ordenMonotonia,
+      idConfigurationVersion: version.idConfigurationVersion,
+      versionNumber: version.number,
+      idCalibrationSnapshot: calibration.idCalibrationSnapshot,
+      calibrationSnapshotNumber: calibration.number,
+      idParametersSnapshot: params.idParametersSnapshot,
+      parametersSnapshotNumber: params.number,
+      scale: CalibrationScale.create(
+        tiers.map((p) => ({
+          label: p.label,
+          value: p.numericValue,
+          order: p.monotonicityOrder,
         })),
       ),
-      parametros: {
-        pesoCuelloBotella: params.pesoCuelloBotella,
-        pesoBrecha: params.pesoBrecha,
-        pesoDesequilibrioModerado: params.pesoDesequilibrioModerado,
-        pesoDesequilibrioCritico: params.pesoDesequilibrioCritico,
-        pesoAfinidadEtapa: params.pesoAfinidadEtapa,
-        penalizacionFueraRango: params.penalizacionFueraRango,
-        umbralMinimo: params.umbralMinimo,
-        nAlternativas: params.nAlternativas,
+      parameters: {
+        bottleneckWeight: params.bottleneckWeight,
+        gapWeight: params.gapWeight,
+        moderateImbalanceWeight: params.moderateImbalanceWeight,
+        criticalImbalanceWeight: params.criticalImbalanceWeight,
+        stageAffinityWeight: params.stageAffinityWeight,
+        outOfRangePenalty: params.outOfRangePenalty,
+        minimumThreshold: params.minimumThreshold,
+        alternativesCount: params.alternativesCount,
       },
-      fichas,
-      reglasElegibilidad,
-      reglasExcepcion,
+      profiles,
+      eligibilityRules,
+      exceptionRules,
     };
   }
 }

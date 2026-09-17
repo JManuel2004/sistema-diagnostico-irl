@@ -1,279 +1,279 @@
 import { describe, expect, it } from '@jest/globals';
-import type { HechosDiagnostico } from '@innlab/contracts';
+import type { DiagnosticFacts } from '@innlab/contracts';
 import {
   ExceptionEngineService,
-  type ReglaExcepcionCompilada,
+  type CompiledExceptionRule,
 } from '../../../../../src/modules/portfolio-routing/domain/services/exception-engine.service.js';
-import type { CandidatoPuntuado } from '../../../../../src/modules/portfolio-routing/domain/value-objects/candidato-puntuado.vo.js';
+import type { ScoredCandidate } from '../../../../../src/modules/portfolio-routing/domain/value-objects/scored-candidate.vo.js';
 import { PredicateCompilerService } from '../../../../../src/modules/portfolio-routing/domain/services/predicate-compiler.service.js';
 
 const compiler = new PredicateCompilerService();
 const engine = new ExceptionEngineService();
 
-const HECHOS: HechosDiagnostico = {
+const FACTS: DiagnosticFacts = {
   diagnosticId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-  nivelPorDimension: { TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 },
-  cuellosBotella: ['IPRL'],
-  brechas: ['BRL', 'IPRL', 'FRL'],
-  desequilibrios: [
-    { izquierda: 'TRL', derecha: 'IPRL', diferencia: 5, clasificacion: 'CRITICO' },
-    { izquierda: 'TRL', derecha: 'CRL', diferencia: 2, clasificacion: 'MODERADO' },
-    { izquierda: 'TRL', derecha: 'BRL', diferencia: 3, clasificacion: 'MODERADO' },
-    { izquierda: 'CRL', derecha: 'BRL', diferencia: 1, clasificacion: 'ACEPTABLE' },
-    { izquierda: 'TmRL', derecha: 'FRL', diferencia: 3, clasificacion: 'MODERADO' },
-    { izquierda: 'BRL', derecha: 'IPRL', diferencia: 2, clasificacion: 'MODERADO' },
+  levelByDimension: { TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 },
+  bottlenecks: ['IPRL'],
+  gaps: ['BRL', 'IPRL', 'FRL'],
+  imbalances: [
+    { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICO' },
+    { left: 'TRL', right: 'CRL', difference: 2, classification: 'MODERADO' },
+    { left: 'TRL', right: 'BRL', difference: 3, classification: 'MODERADO' },
+    { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACEPTABLE' },
+    { left: 'TmRL', right: 'FRL', difference: 3, classification: 'MODERADO' },
+    { left: 'BRL', right: 'IPRL', difference: 2, classification: 'MODERADO' },
   ],
-  nivelPromedio: 3.5,
-  caracterizacion: {
-    etapa: 'validacion',
+  averageLevel: 3.5,
+  characterization: {
+    stage: 'validacion',
     sector: null,
-    tamanoEquipo: 3,
-    vinculacionAcademica: false,
+    teamSize: 3,
+    academicLinkage: false,
   },
 };
 
-const SIN_APORTES: CandidatoPuntuado['aportes'] = {
-  cuelloBotella: { valor: 0, detalle: [] },
-  brechas: { valor: 0, detalle: [] },
-  desequilibrios: { valor: 0, detalle: [] },
-  afinidadEtapa: { valor: 0, coincide: false },
-  penalizacionRango: { valor: 0, aplicada: false },
+const SIN_APORTES: ScoredCandidate['contributions'] = {
+  bottleneck: { value: 0, details: [] },
+  gaps: { value: 0, details: [] },
+  imbalances: { value: 0, details: [] },
+  stageAffinity: { value: 0, matches: false },
+  rangePenalty: { value: 0, applied: false },
 };
 
 /** Ranking de cinco servicios, ids 1..5, puntajes descendentes. */
-const RANKING: CandidatoPuntuado[] = [1, 2, 3, 4, 5].map((id) => ({
-  idServicio: id,
-  nombreServicio: `S${id}`,
-  aportes: SIN_APORTES,
+const RANKING: ScoredCandidate[] = [1, 2, 3, 4, 5].map((id) => ({
+  idService: id,
+  serviceName: `S${id}`,
+  contributions: SIN_APORTES,
   total: 10 - id,
 }));
 
-function regla(
-  over: Partial<ReglaExcepcionCompilada> & { codigo: string },
-): ReglaExcepcionCompilada {
+function rule(
+  over: Partial<CompiledExceptionRule> & { code: string },
+): CompiledExceptionRule {
   return {
-    prioridadOrden: 1,
-    // Predicado que siempre se cumple con estos hechos.
+    priorityOrder: 1,
+    // Predicate que siempre se cumple con estos hechos.
     expresion: compiler.compile(
-      { campo: 'cuelloBotella', op: 'contiene', valor: 'IPRL' },
-      'CON_GRADO',
+      { field: 'bottleneck', op: 'contains', value: 'IPRL' },
+      'WITH_DEGREE',
     ),
-    accion: 'FORZAR',
-    idServicioObjetivo: 3,
-    posiciones: null,
-    motivoDeclarado: 'motivo',
+    action: 'FORCE',
+    idTargetService: 3,
+    positions: null,
+    declaredReason: 'reason',
     ...over,
   };
 }
 
-const nombres = (r: readonly CandidatoPuntuado[]) =>
-  r.map((c) => c.nombreServicio);
+const names = (r: readonly ScoredCandidate[]) =>
+  r.map((c) => c.serviceName);
 
 describe('ExceptionEngineService', () => {
   describe('acciones', () => {
     it('FORZAR lleva el objetivo al primer puesto', () => {
       const { rankingPost } = engine.apply(
         RANKING,
-        [regla({ codigo: 'E-A', accion: 'FORZAR', idServicioObjetivo: 4 })],
-        HECHOS,
+        [rule({ code: 'E-A', action: 'FORCE', idTargetService: 4 })],
+        FACTS,
       );
-      expect(nombres(rankingPost)).toEqual(['S4', 'S1', 'S2', 'S3', 'S5']);
+      expect(names(rankingPost)).toEqual(['S4', 'S1', 'S2', 'S3', 'S5']);
     });
 
     it('VETAR retira el objetivo del ranking', () => {
       const { rankingPost } = engine.apply(
         RANKING,
         [
-          regla({
-            codigo: 'E-A',
-            accion: 'VETAR',
-            idServicioObjetivo: 2,
-            posiciones: null,
+          rule({
+            code: 'E-A',
+            action: 'VETO',
+            idTargetService: 2,
+            positions: null,
           }),
         ],
-        HECHOS,
+        FACTS,
       );
-      expect(nombres(rankingPost)).toEqual(['S1', 'S3', 'S4', 'S5']);
+      expect(names(rankingPost)).toEqual(['S1', 'S3', 'S4', 'S5']);
     });
 
-    it('PROMOVER sube el objetivo tantas posiciones como indique', () => {
+    it('PROMOVER sube el objetivo tantas positions como indique', () => {
       const { rankingPost } = engine.apply(
         RANKING,
         [
-          regla({
-            codigo: 'E-A',
-            accion: 'PROMOVER',
-            idServicioObjetivo: 4,
-            posiciones: 2,
+          rule({
+            code: 'E-A',
+            action: 'PROMOTE',
+            idTargetService: 4,
+            positions: 2,
           }),
         ],
-        HECHOS,
+        FACTS,
       );
-      expect(nombres(rankingPost)).toEqual(['S1', 'S4', 'S2', 'S3', 'S5']);
+      expect(names(rankingPost)).toEqual(['S1', 'S4', 'S2', 'S3', 'S5']);
     });
 
-    it('DEGRADAR baja el objetivo tantas posiciones como indique', () => {
+    it('DEGRADAR baja el objetivo tantas positions como indique', () => {
       const { rankingPost } = engine.apply(
         RANKING,
         [
-          regla({
-            codigo: 'E-A',
-            accion: 'DEGRADAR',
-            idServicioObjetivo: 1,
-            posiciones: 2,
+          rule({
+            code: 'E-A',
+            action: 'DEMOTE',
+            idTargetService: 1,
+            positions: 2,
           }),
         ],
-        HECHOS,
+        FACTS,
       );
-      expect(nombres(rankingPost)).toEqual(['S2', 'S3', 'S1', 'S4', 'S5']);
+      expect(names(rankingPost)).toEqual(['S2', 'S3', 'S1', 'S4', 'S5']);
     });
   });
 
   describe('saturación en los extremos', () => {
-    it('promover más posiciones de las disponibles deja el primer puesto', () => {
+    it('promover más positions de las disponibles deja el primer puesto', () => {
       const { rankingPost } = engine.apply(
         RANKING,
         [
-          regla({
-            codigo: 'E-A',
-            accion: 'PROMOVER',
-            idServicioObjetivo: 3,
-            posiciones: 99,
+          rule({
+            code: 'E-A',
+            action: 'PROMOTE',
+            idTargetService: 3,
+            positions: 99,
           }),
         ],
-        HECHOS,
+        FACTS,
       );
-      expect(nombres(rankingPost)).toEqual(['S3', 'S1', 'S2', 'S4', 'S5']);
+      expect(names(rankingPost)).toEqual(['S3', 'S1', 'S2', 'S4', 'S5']);
     });
 
-    it('degradar más posiciones de las disponibles deja el último puesto', () => {
+    it('degradar más positions de las disponibles deja el último puesto', () => {
       const { rankingPost } = engine.apply(
         RANKING,
         [
-          regla({
-            codigo: 'E-A',
-            accion: 'DEGRADAR',
-            idServicioObjetivo: 2,
-            posiciones: 99,
+          rule({
+            code: 'E-A',
+            action: 'DEMOTE',
+            idTargetService: 2,
+            positions: 99,
           }),
         ],
-        HECHOS,
+        FACTS,
       );
-      expect(nombres(rankingPost)).toEqual(['S1', 'S3', 'S4', 'S5', 'S2']);
+      expect(names(rankingPost)).toEqual(['S1', 'S3', 'S4', 'S5', 'S2']);
     });
 
-    it('promover al que ya es primero no lo mueve y lo dice en el efecto', () => {
-      const { activadas } = engine.apply(
+    it('promover al que ya es primero no lo mueve y lo dice en el effect', () => {
+      const { applied } = engine.apply(
         RANKING,
         [
-          regla({
-            codigo: 'E-A',
-            accion: 'PROMOVER',
-            idServicioObjetivo: 1,
-            posiciones: 3,
+          rule({
+            code: 'E-A',
+            action: 'PROMOTE',
+            idTargetService: 1,
+            positions: 3,
           }),
         ],
-        HECHOS,
+        FACTS,
       );
-      expect(activadas[0].efecto).toContain('ya estaba en el extremo');
+      expect(applied[0].effect).toContain('ya estaba en el extremo');
     });
   });
 
-  describe('cascada y orden', () => {
-    it('aplica las excepciones en orden de prioridad ascendente', () => {
+  describe('cascada y order', () => {
+    it('aplica las exceptions en order de prioridad ascendente', () => {
       // La segunda opera sobre el ranking que dejó la primera, no sobre el
       // original: es lo que hace que el orden importe de verdad.
-      const { rankingPost, activadas } = engine.apply(
+      const { rankingPost, applied } = engine.apply(
         RANKING,
         [
-          regla({
-            codigo: 'E-SEGUNDA',
-            prioridadOrden: 2,
-            accion: 'FORZAR',
-            idServicioObjetivo: 5,
+          rule({
+            code: 'E-SEGUNDA',
+            priorityOrder: 2,
+            action: 'FORCE',
+            idTargetService: 5,
           }),
-          regla({
-            codigo: 'E-PRIMERA',
-            prioridadOrden: 1,
-            accion: 'FORZAR',
-            idServicioObjetivo: 4,
+          rule({
+            code: 'E-PRIMERA',
+            priorityOrder: 1,
+            action: 'FORCE',
+            idTargetService: 4,
           }),
         ],
-        HECHOS,
+        FACTS,
       );
-      expect(activadas.map((e) => e.codigo)).toEqual(['E-PRIMERA', 'E-SEGUNDA']);
-      expect(nombres(rankingPost)[0]).toBe('S5');
+      expect(applied.map((e) => e.code)).toEqual(['E-PRIMERA', 'E-SEGUNDA']);
+      expect(names(rankingPost)[0]).toBe('S5');
     });
 
     it('registra el ranking antes y después de cada excepción por separado', () => {
       // Sin este detalle una recomendación cuestionada meses después no se
       // puede atribuir al ajuste concreto que la produjo.
-      const { activadas } = engine.apply(
+      const { applied } = engine.apply(
         RANKING,
         [
-          regla({ codigo: 'E-1', prioridadOrden: 1, idServicioObjetivo: 3 }),
-          regla({ codigo: 'E-2', prioridadOrden: 2, idServicioObjetivo: 5 }),
+          rule({ code: 'E-1', priorityOrder: 1, idTargetService: 3 }),
+          rule({ code: 'E-2', priorityOrder: 2, idTargetService: 5 }),
         ],
-        HECHOS,
+        FACTS,
       );
-      expect(nombres(activadas[0].rankingAntes)[0]).toBe('S1');
-      expect(nombres(activadas[0].rankingDespues)[0]).toBe('S3');
-      expect(nombres(activadas[1].rankingAntes)[0]).toBe('S3');
-      expect(nombres(activadas[1].rankingDespues)[0]).toBe('S5');
+      expect(names(applied[0].rankingBefore)[0]).toBe('S1');
+      expect(names(applied[0].rankingAfter)[0]).toBe('S3');
+      expect(names(applied[1].rankingBefore)[0]).toBe('S3');
+      expect(names(applied[1].rankingAfter)[0]).toBe('S5');
     });
   });
 
   describe('descartes', () => {
     it('descarta la excepción cuya condición no se cumple', () => {
-      const { activadas, descartadas, rankingPost } = engine.apply(
+      const { applied, discarded, rankingPost } = engine.apply(
         RANKING,
         [
-          regla({
-            codigo: 'E-A',
+          rule({
+            code: 'E-A',
             expresion: compiler.compile(
-              { campo: 'cuelloBotella', op: 'contiene', valor: 'TRL' },
-              'CON_GRADO',
+              { field: 'bottleneck', op: 'contains', value: 'TRL' },
+              'WITH_DEGREE',
             ),
           }),
         ],
-        HECHOS,
+        FACTS,
       );
-      expect(activadas).toHaveLength(0);
-      expect(descartadas[0].codigo).toBe('E-A');
-      expect(nombres(rankingPost)).toEqual(nombres(RANKING));
+      expect(applied).toHaveLength(0);
+      expect(discarded[0].code).toBe('E-A');
+      expect(names(rankingPost)).toEqual(names(RANKING));
     });
 
-    it('descarta con motivo explícito si el objetivo no está en el ranking', () => {
+    it('descarta con reason explícito si el objetivo no está en el ranking', () => {
       // Es el conflicto entre capas —forzar un servicio que la capa 1
       // excluyó— que el validador debe detectar al configurar. En
       // evaluación no puede reventar, pero tampoco pasar inadvertido.
-      const { descartadas } = engine.apply(
+      const { discarded } = engine.apply(
         RANKING,
-        [regla({ codigo: 'E-A', idServicioObjetivo: 99 })],
-        HECHOS,
+        [rule({ code: 'E-A', idTargetService: 99 })],
+        FACTS,
       );
-      expect(descartadas[0].razon).toContain('no está en el ranking');
+      expect(discarded[0].reason).toContain('no está en el ranking');
     });
 
     it('un ranking vacío no rompe el motor', () => {
-      const { rankingPost, descartadas } = engine.apply(
+      const { rankingPost, discarded } = engine.apply(
         [],
-        [regla({ codigo: 'E-A' })],
-        HECHOS,
+        [rule({ code: 'E-A' })],
+        FACTS,
       );
       expect(rankingPost).toEqual([]);
-      expect(descartadas).toHaveLength(1);
+      expect(discarded).toHaveLength(1);
     });
   });
 
-  it('sin excepciones configuradas devuelve el ranking intacto', () => {
-    const { rankingPost, activadas, descartadas } = engine.apply(
+  it('sin exceptions configuradas devuelve el ranking intacto', () => {
+    const { rankingPost, applied, discarded } = engine.apply(
       RANKING,
       [],
-      HECHOS,
+      FACTS,
     );
-    expect(nombres(rankingPost)).toEqual(nombres(RANKING));
-    expect(activadas).toHaveLength(0);
-    expect(descartadas).toHaveLength(0);
+    expect(names(rankingPost)).toEqual(names(RANKING));
+    expect(applied).toHaveLength(0);
+    expect(discarded).toHaveLength(0);
   });
 });

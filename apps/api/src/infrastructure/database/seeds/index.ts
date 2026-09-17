@@ -29,7 +29,7 @@ loadEnv({ path: '.env' });
  */
 async function run(): Promise<void> {
   await dataSource.initialize();
-  let routing = { versionPublicada: false };
+  let routing = { versionPublished: false };
   let roadmap = { edges: 0 };
   try {
     await dataSource.transaction(async (manager) => {
@@ -150,7 +150,7 @@ async function run(): Promise<void> {
       `Seed complete — ${dimCount} dimensions, ${afCount} statements, ${rcCount} conversion ranges, ` +
         `${parCount} dimension pairs, ${svcCount} portfolio services, ${fichaCount} ordinal profiles, ` +
         `${roadmap.edges} roadmap dependency edges in irl_catalog. Routing configuration v1: ` +
-        `${routing.versionPublicada ? 'published' : 'already present, left untouched'}.`,
+        `${routing.versionPublished ? 'published' : 'already present, left untouched'}.`,
     );
   } finally {
     await dataSource.destroy();

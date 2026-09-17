@@ -1,9 +1,9 @@
 import { useState, type JSX } from 'react';
 import { AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
-import type { TrazaCapasResponse } from '@innlab/contracts';
+import type { LayerTraceResponse } from '@innlab/contracts';
 
 interface Props {
-  readonly traza: TrazaCapasResponse | undefined;
+  readonly trace: LayerTraceResponse | undefined;
   readonly isLoading: boolean;
   readonly onOpen: () => void;
 }
@@ -27,7 +27,7 @@ interface Props {
  *     objetivo sin serlo, y esa es exactamente la confusión que la traza
  *     existe para impedir.
  */
-export function LayerTracePanel({ traza, isLoading, onOpen }: Props): JSX.Element {
+export function LayerTracePanel({ trace, isLoading, onOpen }: Props): JSX.Element {
   const [abierto, setAbierto] = useState(false);
 
   function alternar(): void {
@@ -43,7 +43,7 @@ export function LayerTracePanel({ traza, isLoading, onOpen }: Props): JSX.Elemen
           type="button"
           onClick={alternar}
           aria-expanded={abierto}
-          aria-controls="traza-capas"
+          aria-controls="trace-layers"
           className="text-foreground flex w-full items-center gap-2 px-5 py-4 text-left text-sm font-semibold"
         >
           {abierto ? (
@@ -58,14 +58,14 @@ export function LayerTracePanel({ traza, isLoading, onOpen }: Props): JSX.Elemen
         </button>
       </h2>
 
-      <div id="traza-capas" hidden={!abierto} className="px-5 pb-6">
+      <div id="trace-layers" hidden={!abierto} className="px-5 pb-6">
         {isLoading && (
-          <p className="text-muted-foreground text-sm">Cargando la traza…</p>
+          <p className="text-muted-foreground text-sm">Cargando la trace…</p>
         )}
 
-        {traza && (
+        {trace && (
           <div className="flex flex-col gap-6">
-            {traza.ajustadoPorExcepcion && (
+            {trace.adjustedByException && (
               <p
                 role="status"
                 className="border-moderate/30 bg-moderate/5 text-moderate flex items-start gap-2 rounded-md border p-3 text-sm"
@@ -78,28 +78,28 @@ export function LayerTracePanel({ traza, isLoading, onOpen }: Props): JSX.Elemen
               </p>
             )}
 
-            {traza.caracterizacionIncompleta.length > 0 && (
+            {trace.incompleteCharacterization.length > 0 && (
               <p className="text-muted-foreground border-border rounded-md border border-dashed p-3 text-xs leading-relaxed">
                 La iniciativa no tiene registrados{' '}
-                {traza.caracterizacionIncompleta.join(', ')}. El cálculo los trató
+                {trace.incompleteCharacterization.join(', ')}. El cálculo los trató
                 como ausentes, así que la recomendación es menos precisa de lo que
                 podría ser.
               </p>
             )}
 
             <Bloque titulo="1 · Servicios descartados">
-              {traza.excluidosCapa1.length === 0 ? (
+              {trace.layer1Excluded.length === 0 ? (
                 <p className="text-muted-foreground text-sm">
-                  Ningún servicio quedó excluido.
+                  Ningún service quedó excluido.
                 </p>
               ) : (
                 <ul className="flex flex-col gap-2">
-                  {traza.excluidosCapa1.map((e) => (
-                    <li key={e.idServicio} className="text-sm">
-                      <span className="text-foreground font-medium">{e.nombre}</span>
+                  {trace.layer1Excluded.map((e) => (
+                    <li key={e.idService} className="text-sm">
+                      <span className="text-foreground font-medium">{e.name}</span>
                       <span className="text-muted-foreground">
                         {' '}
-                        — {e.mensajeExclusion}
+                        — {e.exclusionMessage}
                       </span>
                     </li>
                   ))}
@@ -109,14 +109,14 @@ export function LayerTracePanel({ traza, isLoading, onOpen }: Props): JSX.Elemen
 
             <Bloque titulo="2 · Orden según el cálculo">
               <ol className="flex flex-col gap-3">
-                {traza.rankingPreExcepcion.map((r) => (
-                  <li key={r.idServicio} className="text-sm">
+                {trace.rankingBeforeExceptions.map((r) => (
+                  <li key={r.idService} className="text-sm">
                     <span className="text-foreground font-medium">
-                      {r.posicion}. {r.nombre}
+                      {r.position}. {r.name}
                     </span>
-                    {r.aportes && (
+                    {r.contributions && (
                       <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                        {describirAportes(r.aportes)}
+                        {describirAportes(r.contributions)}
                       </p>
                     )}
                   </li>
@@ -125,38 +125,38 @@ export function LayerTracePanel({ traza, isLoading, onOpen }: Props): JSX.Elemen
             </Bloque>
 
             <Bloque titulo="3 · Ajustes puntuales">
-              {traza.excepcionesActivadas.length === 0 ? (
+              {trace.appliedExceptions.length === 0 ? (
                 <p className="text-muted-foreground text-sm">
-                  No se aplicó ningún ajuste: el orden es el del cálculo.
+                  No se aplicó ningún ajuste: el order es el del cálculo.
                 </p>
               ) : (
                 <ul className="flex flex-col gap-4">
-                  {traza.excepcionesActivadas.map((e) => (
-                    <li key={e.codigo} className="text-sm">
+                  {trace.appliedExceptions.map((e) => (
+                    <li key={e.code} className="text-sm">
                       <p className="text-foreground font-medium">
-                        {e.codigo} · {e.accion} {e.servicioObjetivo}
+                        {e.code} · {e.action} {e.targetService}
                       </p>
                       <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                        {e.motivoDeclarado}
+                        {e.declaredReason}
                       </p>
                       <p className="text-muted-foreground mt-1 text-xs italic">
-                        {e.efecto}
+                        {e.effect}
                       </p>
                     </li>
                   ))}
                 </ul>
               )}
 
-              {traza.excepcionesDescartadas.length > 0 && (
+              {trace.discardedExceptions.length > 0 && (
                 <details className="mt-4">
                   <summary className="text-muted-foreground cursor-pointer text-xs">
-                    {traza.excepcionesDescartadas.length} ajuste(s) evaluados y no
+                    {trace.discardedExceptions.length} ajuste(s) evaluados y no
                     aplicados
                   </summary>
                   <ul className="mt-2 flex flex-col gap-1">
-                    {traza.excepcionesDescartadas.map((e) => (
-                      <li key={e.codigo} className="text-muted-foreground text-xs">
-                        <span className="font-medium">{e.codigo}</span> — {e.razon}
+                    {trace.discardedExceptions.map((e) => (
+                      <li key={e.code} className="text-muted-foreground text-xs">
+                        <span className="font-medium">{e.code}</span> — {e.reason}
                       </li>
                     ))}
                   </ul>
@@ -165,10 +165,10 @@ export function LayerTracePanel({ traza, isLoading, onOpen }: Props): JSX.Elemen
             </Bloque>
 
             <p className="text-muted-foreground border-border border-t pt-4 text-xs">
-              Versión de configuración {traza.versionConfiguracion} · calibración{' '}
-              {traza.snapshotCalibracion} · parámetros {traza.snapshotParametros}.
+              Versión de configuración {trace.configurationVersion} · calibración{' '}
+              {trace.calibrationSnapshot} · parámetros {trace.parametersSnapshot}.
               Evaluado el{' '}
-              {new Date(traza.evaluadoEn).toLocaleString('es-CO', {
+              {new Date(trace.evaluatedAt).toLocaleString('es-CO', {
                 dateStyle: 'long',
                 timeStyle: 'short',
               })}
@@ -203,45 +203,45 @@ function Bloque({
  * los `no_aplica` alargaría la explicación sin añadir información.
  */
 function describirAportes(
-  aportes: NonNullable<TrazaCapasResponse['rankingPreExcepcion'][number]['aportes']>,
+  contributions: NonNullable<LayerTraceResponse['rankingBeforeExceptions'][number]['contributions']>,
 ): string {
   const partes: string[] = [];
 
-  const cuello = aportes.cuelloBotella.detalle.filter(
-    (d) => d.etiquetaOrigen !== 'no_aplica',
+  const cuello = contributions.bottleneck.details.filter(
+    (d) => d.sourceLabel !== 'not_applicable',
   );
   if (cuello.length > 0) {
     partes.push(
       `atiende la dimensión más rezagada (${cuello
-        .map((d) => `${d.dimension}: ${d.etiquetaOrigen}`)
+        .map((d) => `${d.dimension}: ${d.sourceLabel}`)
         .join(', ')})`,
     );
   }
 
-  const brechas = aportes.brechas.detalle.filter(
-    (d) => d.etiquetaOrigen !== 'no_aplica',
+  const gaps = contributions.gaps.details.filter(
+    (d) => d.sourceLabel !== 'not_applicable',
   );
-  if (brechas.length > 0) {
+  if (gaps.length > 0) {
     partes.push(
-      `cubre brechas en ${brechas
-        .map((d) => `${d.dimension} (${d.etiquetaOrigen})`)
+      `cubre gaps en ${gaps
+        .map((d) => `${d.dimension} (${d.sourceLabel})`)
         .join(', ')}`,
     );
   }
 
-  if (aportes.desequilibrios.detalle.length > 0) {
+  if (contributions.imbalances.details.length > 0) {
     partes.push(
-      `incide en desequilibrios ${aportes.desequilibrios.detalle
-        .map((d) => d.par)
+      `incide en imbalances ${contributions.imbalances.details
+        .map((d) => d.pair)
         .join(', ')}`,
     );
   }
 
-  if (aportes.afinidadEtapa.coincide) {
-    partes.push('encaja con la etapa de la iniciativa');
+  if (contributions.stageAffinity.matches) {
+    partes.push('encaja con la stage de la iniciativa');
   }
 
-  if (aportes.penalizacionRango.aplicada) {
+  if (contributions.rangePenalty.applied) {
     partes.push('penalizado por estar fuera de su rango de madurez habitual');
   }
 

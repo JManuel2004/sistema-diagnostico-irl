@@ -1,133 +1,133 @@
 import { describe, expect, it } from '@jest/globals';
-import type { DimensionCode, HechosDiagnostico } from '@innlab/contracts';
+import type { DimensionCode, DiagnosticFacts } from '@innlab/contracts';
 import {
   EligibilityFilterService,
-  type ReglaElegibilidadCompilada,
+  type CompiledEligibilityRule,
 } from '../../../../../src/modules/portfolio-routing/domain/services/eligibility-filter.service.js';
-import type { FichaNumerica } from '../../../../../src/modules/portfolio-routing/domain/value-objects/ficha-ordinal.vo.js';
+import type { NumericProfile } from '../../../../../src/modules/portfolio-routing/domain/value-objects/ordinal-profile.vo.js';
 import { PredicateCompilerService } from '../../../../../src/modules/portfolio-routing/domain/services/predicate-compiler.service.js';
 
 const compiler = new PredicateCompilerService();
 const filtro = new EligibilityFilterService();
 
-const HECHOS: HechosDiagnostico = {
+const FACTS: DiagnosticFacts = {
   diagnosticId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-  nivelPorDimension: { TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 },
-  cuellosBotella: ['IPRL'],
-  brechas: ['BRL', 'IPRL', 'FRL'],
-  desequilibrios: [],
-  nivelPromedio: 3.5,
-  caracterizacion: {
-    etapa: 'validacion',
+  levelByDimension: { TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 },
+  bottlenecks: ['IPRL'],
+  gaps: ['BRL', 'IPRL', 'FRL'],
+  imbalances: [],
+  averageLevel: 3.5,
+  characterization: {
+    stage: 'validacion',
     sector: null,
-    tamanoEquipo: 1,
-    vinculacionAcademica: false,
+    teamSize: 1,
+    academicLinkage: false,
   },
-} as unknown as HechosDiagnostico;
+} as unknown as DiagnosticFacts;
 
-function ficha(id: number, nombre: string): FichaNumerica {
+function profile(id: number, name: string): NumericProfile {
   return {
-    idServicio: id,
-    nombreServicio: nombre,
-    nivelMin: 1,
-    nivelMax: 9,
-    etapasPertinentes: ['validacion'],
-    intensidades: new Map<DimensionCode, number>(),
-    etiquetas: new Map<DimensionCode, string>(),
+    idService: id,
+    serviceName: name,
+    minLevel: 1,
+    maxLevel: 9,
+    relevantStages: ['validacion'],
+    intensities: new Map<DimensionCode, number>(),
+    labels: new Map<DimensionCode, string>(),
   };
 }
 
-const FICHAS = [ficha(1, 'Formación'), ficha(2, 'Retos'), ficha(3, 'Grado')];
+const ORDINAL_PROFILES = [profile(1, 'Formación'), profile(2, 'Retos'), profile(3, 'Grado')];
 
-function regla(
-  idServicio: number,
-  predicado: unknown,
+function rule(
+  idService: number,
+  predicate: unknown,
   mensaje: string,
   idRegla = 'R',
-): ReglaElegibilidadCompilada {
+): CompiledEligibilityRule {
   return {
     idRegla,
-    idServicio,
-    expresion: compiler.compile(predicado, 'BOOLEANO'),
-    mensajeExclusion: mensaje,
+    idService,
+    expresion: compiler.compile(predicate, 'BOOLEAN'),
+    exclusionMessage: mensaje,
   };
 }
 
 describe('EligibilityFilterService', () => {
-  it('un servicio sin reglas asociadas es elegible por defecto', () => {
-    const { elegibles, excluidos } = filtro.filter(FICHAS, [], HECHOS);
-    expect(elegibles).toHaveLength(3);
-    expect(excluidos).toHaveLength(0);
+  it('un service sin rules asociadas es elegible por defecto', () => {
+    const { eligible, excluded } = filtro.filter(ORDINAL_PROFILES, [], FACTS);
+    expect(eligible).toHaveLength(3);
+    expect(excluded).toHaveLength(0);
   });
 
-  it('excluye el servicio cuya regla se cumple y reporta su mensaje', () => {
-    const reglas = [
-      regla(
+  it('excluye el service cuya rule se cumple y reporta su mensaje', () => {
+    const rules = [
+      rule(
         2,
-        { campo: 'caracterizacion.tamanoEquipo', op: '=', valor: 1 },
+        { field: 'characterization.teamSize', op: '=', value: 1 },
         'Retos requiere al menos 2 personas',
       ),
     ];
-    const { elegibles, excluidos } = filtro.filter(FICHAS, reglas, HECHOS);
+    const { eligible, excluded } = filtro.filter(ORDINAL_PROFILES, rules, FACTS);
 
-    expect(elegibles.map((f) => f.nombreServicio)).toEqual([
+    expect(eligible.map((f) => f.serviceName)).toEqual([
       'Formación',
       'Grado',
     ]);
-    expect(excluidos).toEqual([
+    expect(excluded).toEqual([
       {
-        idServicio: 2,
-        nombre: 'Retos',
-        mensajeExclusion: 'Retos requiere al menos 2 personas',
+        idService: 2,
+        name: 'Retos',
+        exclusionMessage: 'Retos requiere al menos 2 personas',
       },
     ]);
   });
 
   it('no excluye cuando la condición no se cumple', () => {
-    const reglas = [
-      regla(
+    const rules = [
+      rule(
         2,
-        { campo: 'caracterizacion.tamanoEquipo', op: '=', valor: 9 },
+        { field: 'characterization.teamSize', op: '=', value: 9 },
         'no aplica',
       ),
     ];
-    const { excluidos } = filtro.filter(FICHAS, reglas, HECHOS);
-    expect(excluidos).toHaveLength(0);
+    const { excluded } = filtro.filter(ORDINAL_PROFILES, rules, FACTS);
+    expect(excluded).toHaveLength(0);
   });
 
-  it('con varias reglas sobre un servicio, reporta la primera que se cumple', () => {
-    // El motivo mostrado debe ser el de la regla que efectivamente lo dejó
+  it('con varias rules sobre un service, reporta la primera que se cumple', () => {
+    // El reason mostrado debe ser el de la regla que efectivamente lo dejó
     // fuera, no un mensaje genérico.
-    const reglas = [
-      regla(3, { campo: 'brechas', op: 'contiene', valor: 'TRL' }, 'primera', 'R1'),
-      regla(3, { campo: 'brechas', op: 'contiene', valor: 'IPRL' }, 'segunda', 'R2'),
+    const rules = [
+      rule(3, { field: 'gaps', op: 'contains', value: 'TRL' }, 'primera', 'R1'),
+      rule(3, { field: 'gaps', op: 'contains', value: 'IPRL' }, 'segunda', 'R2'),
     ];
-    const { excluidos } = filtro.filter(FICHAS, reglas, HECHOS);
-    expect(excluidos[0].mensajeExclusion).toBe('segunda');
+    const { excluded } = filtro.filter(ORDINAL_PROFILES, rules, FACTS);
+    expect(excluded[0].exclusionMessage).toBe('segunda');
   });
 
-  it('una regla solo afecta al servicio al que está asociada', () => {
-    const reglas = [
-      regla(
+  it('una rule solo afecta al service al que está asociada', () => {
+    const rules = [
+      rule(
         3,
-        { campo: 'caracterizacion.vinculacionAcademica', op: '=', valor: false },
+        { field: 'characterization.academicLinkage', op: '=', value: false },
         'requiere vinculación',
       ),
     ];
-    const { elegibles, excluidos } = filtro.filter(FICHAS, reglas, HECHOS);
-    expect(excluidos.map((e) => e.nombre)).toEqual(['Grado']);
-    expect(elegibles.map((f) => f.nombreServicio)).toEqual([
+    const { eligible, excluded } = filtro.filter(ORDINAL_PROFILES, rules, FACTS);
+    expect(excluded.map((e) => e.name)).toEqual(['Grado']);
+    expect(eligible.map((f) => f.serviceName)).toEqual([
       'Formación',
       'Retos',
     ]);
   });
 
-  it('puede excluir todos los servicios', () => {
-    const reglas = FICHAS.map((f) =>
-      regla(f.idServicio, { campo: 'brechas', op: 'contiene', valor: 'IPRL' }, 'fuera'),
+  it('puede excluir todos los services', () => {
+    const rules = ORDINAL_PROFILES.map((f) =>
+      rule(f.idService, { field: 'gaps', op: 'contains', value: 'IPRL' }, 'fuera'),
     );
-    const { elegibles, excluidos } = filtro.filter(FICHAS, reglas, HECHOS);
-    expect(elegibles).toHaveLength(0);
-    expect(excluidos).toHaveLength(3);
+    const { eligible, excluded } = filtro.filter(ORDINAL_PROFILES, rules, FACTS);
+    expect(eligible).toHaveLength(0);
+    expect(excluded).toHaveLength(3);
   });
 });

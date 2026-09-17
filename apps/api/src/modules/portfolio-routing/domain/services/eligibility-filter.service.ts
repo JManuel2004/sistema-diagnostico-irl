@@ -1,6 +1,6 @@
-import type { HechosDiagnostico } from '@innlab/contracts';
-import type { FichaNumerica } from '../value-objects/ficha-ordinal.vo.js';
-import type { ArbolExpresion } from './predicate-compiler.service.js';
+import type { DiagnosticFacts } from '@innlab/contracts';
+import type { NumericProfile } from '../value-objects/ordinal-profile.vo.js';
+import type { ExpressionTree } from './predicate-compiler.service.js';
 import { evaluarExpresion } from './predicate-compiler.service.js';
 
 /**
@@ -8,7 +8,7 @@ import { evaluarExpresion } from './predicate-compiler.service.js';
  *
  * Una regla de elegibilidad expresa imposibilidad, no preferencia: si se
  * cumple, el servicio queda fuera y ya no compite. No resta puntos, no
- * baja posiciones. Esa distinción es la razón de que el compilador
+ * baja positions. Esa distinción es la razón de que el compilador
  * rechace operadores de comparación numérica en modo `BOOLEANO`: en el
  * momento en que una exclusión admite grado, deja de ser un filtro y
  * pertenece a la capa 2.
@@ -17,53 +17,53 @@ import { evaluarExpresion } from './predicate-compiler.service.js';
  *
  * Servicio puro, sin IO ni decoradores.
  */
-export interface ReglaElegibilidadCompilada {
+export interface CompiledEligibilityRule {
   readonly idRegla: string;
-  readonly idServicio: number;
-  readonly expresion: ArbolExpresion;
-  readonly mensajeExclusion: string;
+  readonly idService: number;
+  readonly expresion: ExpressionTree;
+  readonly exclusionMessage: string;
 }
 
-export interface ServicioExcluido {
-  readonly idServicio: number;
-  readonly nombre: string;
-  readonly mensajeExclusion: string;
+export interface ExcludedService {
+  readonly idService: number;
+  readonly name: string;
+  readonly exclusionMessage: string;
 }
 
-export interface ResultadoElegibilidad {
-  readonly elegibles: readonly FichaNumerica[];
-  readonly excluidos: readonly ServicioExcluido[];
+export interface EligibilityResult {
+  readonly eligible: readonly NumericProfile[];
+  readonly excluded: readonly ExcludedService[];
 }
 
 export class EligibilityFilterService {
   filter(
-    fichas: readonly FichaNumerica[],
-    reglas: readonly ReglaElegibilidadCompilada[],
-    hechos: HechosDiagnostico,
-  ): ResultadoElegibilidad {
-    const elegibles: FichaNumerica[] = [];
-    const excluidos: ServicioExcluido[] = [];
+    profiles: readonly NumericProfile[],
+    rules: readonly CompiledEligibilityRule[],
+    facts: DiagnosticFacts,
+  ): EligibilityResult {
+    const eligible: NumericProfile[] = [];
+    const excluded: ExcludedService[] = [];
 
-    for (const ficha of fichas) {
-      const aplicables = reglas.filter((r) => r.idServicio === ficha.idServicio);
+    for (const profile of profiles) {
+      const aplicables = rules.filter((r) => r.idService === profile.idService);
       // La primera regla que se cumple excluye; el mensaje que se reporta
-      // es el suyo, para que el motivo mostrado sea el que efectivamente
+      // es el suyo, para que el reason mostrado sea el que efectivamente
       // dejó fuera al servicio.
       const disparada = aplicables.find((r) =>
-        evaluarExpresion(r.expresion, hechos),
+        evaluarExpresion(r.expresion, facts),
       );
 
       if (disparada) {
-        excluidos.push({
-          idServicio: ficha.idServicio,
-          nombre: ficha.nombreServicio,
-          mensajeExclusion: disparada.mensajeExclusion,
+        excluded.push({
+          idService: profile.idService,
+          name: profile.serviceName,
+          exclusionMessage: disparada.exclusionMessage,
         });
       } else {
-        elegibles.push(ficha);
+        eligible.push(profile);
       }
     }
 
-    return { elegibles, excluidos };
+    return { eligible, excluded };
   }
 }

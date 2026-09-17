@@ -1,16 +1,16 @@
-import type { HechosDiagnostico } from '@innlab/contracts';
-import type { CandidatoPuntuado } from '../value-objects/candidato-puntuado.vo.js';
-import type { ArbolExpresion } from './predicate-compiler.service.js';
+import type { DiagnosticFacts } from '@innlab/contracts';
+import type { ScoredCandidate } from '../value-objects/scored-candidate.vo.js';
+import type { ExpressionTree } from './predicate-compiler.service.js';
 import { evaluarExpresion } from './predicate-compiler.service.js';
 
 /**
  * Capa 3 — ajustes puntuales sobre el ranking calculado.
  *
  * Aquí es donde el centro interviene deliberadamente: forzar un servicio,
- * vetarlo, promoverlo o degradarlo unas posiciones cuando el cálculo, por
+ * vetarlo, promoverlo o degradarlo unas positions cuando el cálculo, por
  * correcto que sea, no captura una consideración de criterio.
  *
- * Las excepciones se recorren en orden `prioridadOrden` ascendente. Ese
+ * Las excepciones se recorren en orden `priorityOrder` ascendente. Ese
  * orden es único dentro de una versión por restricción de base de datos,
  * así que la cascada es total y determinista: no hay empates que resolver
  * ni dependencia del orden en que la base devuelva las filas.
@@ -28,78 +28,78 @@ import { evaluarExpresion } from './predicate-compiler.service.js';
  *   - registra también las descartadas y por qué, para que "no pasó nada"
  *     sea una afirmación verificable y no una ausencia de información.
  */
-export type AccionExcepcion = 'FORZAR' | 'VETAR' | 'PROMOVER' | 'DEGRADAR';
+export type ExceptionAction = 'FORCE' | 'VETO' | 'PROMOTE' | 'DEMOTE';
 
-export interface ReglaExcepcionCompilada {
-  readonly codigo: string;
-  readonly prioridadOrden: number;
-  readonly expresion: ArbolExpresion;
-  readonly accion: AccionExcepcion;
-  readonly idServicioObjetivo: number;
-  readonly posiciones: number | null;
-  readonly motivoDeclarado: string;
+export interface CompiledExceptionRule {
+  readonly code: string;
+  readonly priorityOrder: number;
+  readonly expresion: ExpressionTree;
+  readonly action: ExceptionAction;
+  readonly idTargetService: number;
+  readonly positions: number | null;
+  readonly declaredReason: string;
 }
 
-export interface ExcepcionAplicada {
-  readonly codigo: string;
-  readonly orden: number;
-  readonly accion: AccionExcepcion;
-  readonly servicioObjetivo: string;
-  readonly motivoDeclarado: string;
-  readonly rankingAntes: readonly CandidatoPuntuado[];
-  readonly rankingDespues: readonly CandidatoPuntuado[];
-  readonly efecto: string;
+export interface AppliedException {
+  readonly code: string;
+  readonly order: number;
+  readonly action: ExceptionAction;
+  readonly targetService: string;
+  readonly declaredReason: string;
+  readonly rankingBefore: readonly ScoredCandidate[];
+  readonly rankingAfter: readonly ScoredCandidate[];
+  readonly effect: string;
 }
 
-export interface ExcepcionDescartada {
-  readonly codigo: string;
-  readonly orden: number;
-  readonly razon: string;
+export interface DiscardedException {
+  readonly code: string;
+  readonly order: number;
+  readonly reason: string;
 }
 
-export interface ResultadoExcepciones {
-  readonly rankingPost: readonly CandidatoPuntuado[];
-  readonly activadas: readonly ExcepcionAplicada[];
-  readonly descartadas: readonly ExcepcionDescartada[];
+export interface ExceptionResult {
+  readonly rankingPost: readonly ScoredCandidate[];
+  readonly applied: readonly AppliedException[];
+  readonly discarded: readonly DiscardedException[];
 }
 
 export class ExceptionEngineService {
   apply(
-    rankingPre: readonly CandidatoPuntuado[],
-    excepciones: readonly ReglaExcepcionCompilada[],
-    hechos: HechosDiagnostico,
-  ): ResultadoExcepciones {
-    const activadas: ExcepcionAplicada[] = [];
-    const descartadas: ExcepcionDescartada[] = [];
-    let ranking: CandidatoPuntuado[] = [...rankingPre];
+    rankingPre: readonly ScoredCandidate[],
+    exceptions: readonly CompiledExceptionRule[],
+    facts: DiagnosticFacts,
+  ): ExceptionResult {
+    const applied: AppliedException[] = [];
+    const discarded: DiscardedException[] = [];
+    let ranking: ScoredCandidate[] = [...rankingPre];
 
-    const enOrden = [...excepciones].sort(
-      (a, b) => a.prioridadOrden - b.prioridadOrden,
+    const enOrden = [...exceptions].sort(
+      (a, b) => a.priorityOrder - b.priorityOrder,
     );
 
-    for (const regla of enOrden) {
-      if (!evaluarExpresion(regla.expresion, hechos)) {
-        descartadas.push({
-          codigo: regla.codigo,
-          orden: regla.prioridadOrden,
-          razon: 'La condición no se cumple para este diagnóstico',
+    for (const rule of enOrden) {
+      if (!evaluarExpresion(rule.expresion, facts)) {
+        discarded.push({
+          code: rule.code,
+          order: rule.priorityOrder,
+          reason: 'La condición no se cumple para este diagnóstico',
         });
         continue;
       }
 
       const indice = ranking.findIndex(
-        (c) => c.idServicio === regla.idServicioObjetivo,
+        (c) => c.idService === rule.idTargetService,
       );
 
       if (indice === -1) {
         // El objetivo no está en el ranking: quedó excluido en la capa 1 o
-        // vetado por una excepción anterior. Se descarta con motivo
+        // vetado por una excepción anterior. Se descarta con reason
         // explícito en vez de fallar en silencio — es justo el conflicto
         // entre capas que el validador debe detectar al configurar.
-        descartadas.push({
-          codigo: regla.codigo,
-          orden: regla.prioridadOrden,
-          razon:
+        discarded.push({
+          code: rule.code,
+          order: rule.priorityOrder,
+          reason:
             'La condición se cumple, pero el servicio objetivo no está en el ranking ' +
             '(excluido por elegibilidad o vetado por una excepción anterior)',
         });
@@ -107,65 +107,65 @@ export class ExceptionEngineService {
       }
 
       const antes = [...ranking];
-      const { siguiente, efecto } = this.aplicarAccion(ranking, indice, regla);
+      const { siguiente, effect } = this.aplicarAccion(ranking, indice, rule);
       ranking = siguiente;
 
-      activadas.push({
-        codigo: regla.codigo,
-        orden: regla.prioridadOrden,
-        accion: regla.accion,
-        servicioObjetivo: antes[indice].nombreServicio,
-        motivoDeclarado: regla.motivoDeclarado,
-        rankingAntes: antes,
-        rankingDespues: [...ranking],
-        efecto,
+      applied.push({
+        code: rule.code,
+        order: rule.priorityOrder,
+        action: rule.action,
+        targetService: antes[indice].serviceName,
+        declaredReason: rule.declaredReason,
+        rankingBefore: antes,
+        rankingAfter: [...ranking],
+        effect,
       });
     }
 
-    return { rankingPost: ranking, activadas, descartadas };
+    return { rankingPost: ranking, applied, discarded };
   }
 
   private aplicarAccion(
-    ranking: readonly CandidatoPuntuado[],
+    ranking: readonly ScoredCandidate[],
     indice: number,
-    regla: ReglaExcepcionCompilada,
-  ): { siguiente: CandidatoPuntuado[]; efecto: string } {
-    const lista = [...ranking];
-    const [objetivo] = lista.splice(indice, 1);
-    const nombre = objetivo.nombreServicio;
+    rule: CompiledExceptionRule,
+  ): { siguiente: ScoredCandidate[]; effect: string } {
+    const list = [...ranking];
+    const [objetivo] = list.splice(indice, 1);
+    const name = objetivo.serviceName;
 
-    switch (regla.accion) {
-      case 'FORZAR': {
-        lista.unshift(objetivo);
+    switch (rule.action) {
+      case 'FORCE': {
+        list.unshift(objetivo);
         return {
-          siguiente: lista,
-          efecto:
+          siguiente: list,
+          effect:
             indice === 0
-              ? `${nombre} ya ocupaba el puesto 1; la excepción lo fija explícitamente`
-              : `${nombre} pasa del puesto ${indice + 1} al puesto 1`,
+              ? `${name} ya ocupaba el puesto 1; la excepción lo fija explícitamente`
+              : `${name} pasa del puesto ${indice + 1} al puesto 1`,
         };
       }
-      case 'VETAR': {
+      case 'VETO': {
         return {
-          siguiente: lista,
-          efecto: `${nombre} se retira del ranking (estaba en el puesto ${indice + 1})`,
+          siguiente: list,
+          effect: `${name} se retira del ranking (estaba en el puesto ${indice + 1})`,
         };
       }
-      case 'PROMOVER':
-      case 'DEGRADAR': {
-        const salto = regla.posiciones ?? 0;
-        const delta = regla.accion === 'PROMOVER' ? -salto : salto;
+      case 'PROMOTE':
+      case 'DEMOTE': {
+        const salto = rule.positions ?? 0;
+        const delta = rule.action === 'PROMOTE' ? -salto : salto;
         // Saturación en los extremos: promover 3 desde el puesto 2 deja
         // el puesto 1, no un índice negativo.
-        const destino = Math.max(0, Math.min(lista.length, indice + delta));
-        lista.splice(destino, 0, objetivo);
-        const verbo = regla.accion === 'PROMOVER' ? 'sube' : 'baja';
+        const destino = Math.max(0, Math.min(list.length, indice + delta));
+        list.splice(destino, 0, objetivo);
+        const verbo = rule.action === 'PROMOTE' ? 'sube' : 'baja';
         return {
-          siguiente: lista,
-          efecto:
+          siguiente: list,
+          effect:
             destino === indice
-              ? `${nombre} se mantiene en el puesto ${indice + 1} (ya estaba en el extremo)`
-              : `${nombre} ${verbo} del puesto ${indice + 1} al puesto ${destino + 1}`,
+              ? `${name} se mantiene en el puesto ${indice + 1} (ya estaba en el extremo)`
+              : `${name} ${verbo} del puesto ${indice + 1} al puesto ${destino + 1}`,
         };
       }
     }

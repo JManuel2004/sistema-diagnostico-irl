@@ -8,7 +8,7 @@ import RecommendationPage from '../RecommendationPage';
 import { renderWithClient } from '@/test/render-with-client';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
-const BASE = '*/diagnostics/:id/recomendacion';
+const BASE = '*/diagnostics/:id/recommendation';
 
 const server = setupServer();
 
@@ -18,15 +18,15 @@ afterAll(() => server.close());
 
 const RECOMENDACION = {
   diagnosticId: DIAGNOSTIC_ID,
-  resultadoTipo: 'RECOMENDACION' as const,
-  principal: { idServicio: 3, nombre: 'Consultoría', posicion: 1, puntaje: 5.55 },
-  justificacion: 'Atiende el riesgo legal más urgente del perfil.',
-  motivoSinRecomendacion: null,
-  alternativas: [
-    { idServicio: 2, nombre: 'Mentoría', posicion: 2, puntaje: 3.8 },
+  resultType: 'RECOMMENDATION' as const,
+  primary: { idService: 3, name: 'Consultoría', position: 1, score: 5.55 },
+  justification: 'Atiende el riesgo legal más urgente del perfil.',
+  noRecommendationReason: null,
+  alternatives: [
+    { idService: 2, name: 'Mentoría', position: 2, score: 3.8 },
   ],
-  versionConfiguracion: 1,
-  generadaEn: '2026-09-07T14:30:00.000Z',
+  configurationVersion: 1,
+  generatedAt: '2026-09-07T14:30:00.000Z',
 };
 
 function problema(code: string, status: number, detail: string) {
@@ -44,10 +44,10 @@ function problema(code: string, status: number, detail: string) {
 
 function renderPage() {
   return renderWithClient(
-    <MemoryRouter initialEntries={[`/diagnosticos/${DIAGNOSTIC_ID}/recomendacion`]}>
+    <MemoryRouter initialEntries={[`/diagnosticos/${DIAGNOSTIC_ID}/recommendation`]}>
       <Routes>
         <Route
-          path="/diagnosticos/:id/recomendacion"
+          path="/diagnosticos/:id/recommendation"
           element={<RecommendationPage />}
         />
       </Routes>
@@ -69,7 +69,7 @@ describe('RecommendationPage', () => {
 
   it('genera la recomendación automáticamente cuando todavía no existe', async () => {
     // 409 con ROUTING_RECOMMENDATION_NOT_GENERATED no es un error: es el
-    // estado inicial. Quien llega a esta ruta quiere ver la recomendación,
+    // state inicial. Quien llega a esta ruta quiere ver la recomendación,
     // así que la página la dispara sola — no hay botón que pulsar.
     server.use(
       mswHttp.get(BASE, () =>
@@ -93,7 +93,7 @@ describe('RecommendationPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('muestra un estado de carga mientras la generación está en curso', async () => {
+  it('muestra un state de carga mientras la generación está en curso', async () => {
     let resolvePost!: () => void;
     server.use(
       mswHttp.get(BASE, () =>
@@ -131,7 +131,7 @@ describe('RecommendationPage', () => {
         return problema(
           'ROUTING_NO_ACTIVE_CONFIGURATION',
           409,
-          'No hay versión vigente.',
+          'No hay versión active.',
         );
       }),
     );
@@ -140,7 +140,7 @@ describe('RecommendationPage', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('alert').textContent).toContain(
-        'No hay una configuración de enrutamiento vigente',
+        'No hay una configuración de enrutamiento active',
       );
     });
 
@@ -150,13 +150,13 @@ describe('RecommendationPage', () => {
     expect(intentosDePost).toBe(1);
   });
 
-  it('distingue la falta de configuración vigente de un error genérico', async () => {
+  it('distingue la falta de configuración active de un error genérico', async () => {
     server.use(
       mswHttp.get(BASE, () =>
         problema(
           'ROUTING_NO_ACTIVE_CONFIGURATION',
           409,
-          'No hay versión vigente.',
+          'No hay versión active.',
         ),
       ),
     );
@@ -165,7 +165,7 @@ describe('RecommendationPage', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('alert').textContent).toContain(
-        'No hay una configuración de enrutamiento vigente',
+        'No hay una configuración de enrutamiento active',
       );
     });
   });
@@ -186,25 +186,25 @@ describe('RecommendationPage', () => {
     });
   });
 
-  it('carga la traza solo cuando se despliega el panel', async () => {
+  it('carga la trace solo cuando se despliega el panel', async () => {
     let pedidosDeTraza = 0;
     server.use(
-      mswHttp.get(`${BASE}/traza`, () => {
+      mswHttp.get(`${BASE}/trace`, () => {
         pedidosDeTraza += 1;
         return HttpResponse.json({
           diagnosticId: DIAGNOSTIC_ID,
-          excluidosCapa1: [],
-          rankingPreExcepcion: [],
-          excepcionesActivadas: [],
-          excepcionesDescartadas: [],
-          rankingPostExcepcion: [],
-          ajustadoPorExcepcion: false,
-          caracterizacionIncompleta: [],
-          versionConfiguracion: 1,
-          snapshotCalibracion: 1,
-          snapshotParametros: 1,
-          hashHechos: 'a'.repeat(64),
-          evaluadoEn: '2026-09-07T14:30:00.000Z',
+          layer1Excluded: [],
+          rankingBeforeExceptions: [],
+          appliedExceptions: [],
+          discardedExceptions: [],
+          rankingAfterExceptions: [],
+          adjustedByException: false,
+          incompleteCharacterization: [],
+          configurationVersion: 1,
+          calibrationSnapshot: 1,
+          parametersSnapshot: 1,
+          factsHash: 'a'.repeat(64),
+          evaluatedAt: '2026-09-07T14:30:00.000Z',
         });
       }),
       mswHttp.get(BASE, () => HttpResponse.json(RECOMENDACION)),

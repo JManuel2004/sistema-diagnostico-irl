@@ -1,4 +1,4 @@
-import type { Caracterizacion } from '@innlab/contracts';
+import type { Characterization } from '@innlab/contracts';
 
 /**
  * Puerto de lectura de la caracterización de la iniciativa.
@@ -24,5 +24,5 @@ export interface InitiativeCharacterizationPort {
    * campos en `null` cuando no hay iniciativa registrada, que hoy es el
    * caso siempre.
    */
-  findByDiagnosticId(diagnosticId: string): Promise<Caracterizacion>;
+  findByDiagnosticId(diagnosticId: string): Promise<Characterization>;
 }

@@ -36,10 +36,10 @@ export * from './diagnostic/consent.schema.js';
 export * from './initiative/initiative.schema.js';
 
 // ── portfolio routing ─────────────────────────────────────────────────
-export * from './portfolio-routing/predicado.schema.js';
-export * from './portfolio-routing/hechos-diagnostico.schema.js';
-export * from './portfolio-routing/recomendacion-response.schema.js';
-export * from './portfolio-routing/traza-capas.schema.js';
+export * from './portfolio-routing/predicate.schema.js';
+export * from './portfolio-routing/diagnostic-facts.schema.js';
+export * from './portfolio-routing/recommendation-response.schema.js';
+export * from './portfolio-routing/layer-trace.schema.js';
 
 // ── scaling roadmap ───────────────────────────────────────────────────
 export * from './scaling-roadmap/roadmap-response.schema.js';

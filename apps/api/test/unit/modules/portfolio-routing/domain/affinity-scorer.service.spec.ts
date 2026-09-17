@@ -1,75 +1,75 @@
 import { describe, expect, it } from '@jest/globals';
 import fc from 'fast-check';
-import type { DimensionCode, HechosDiagnostico } from '@innlab/contracts';
+import type { DimensionCode, DiagnosticFacts } from '@innlab/contracts';
 import { AffinityScorerService } from '../../../../../src/modules/portfolio-routing/domain/services/affinity-scorer.service.js';
-import type { FichaNumerica } from '../../../../../src/modules/portfolio-routing/domain/value-objects/ficha-ordinal.vo.js';
-import type { ParametrosScoring } from '../../../../../src/modules/portfolio-routing/domain/value-objects/parametros-scoring.vo.js';
+import type { NumericProfile } from '../../../../../src/modules/portfolio-routing/domain/value-objects/ordinal-profile.vo.js';
+import type { ScoringParameters } from '../../../../../src/modules/portfolio-routing/domain/value-objects/scoring-parameters.vo.js';
 
 const DIMS: DimensionCode[] = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'];
 const VALORES_ESCALA = [0.0, 0.2, 0.5, 1.0];
 
-const PARAMS: ParametrosScoring = {
-  pesoCuelloBotella: 3.0,
-  pesoBrecha: 1.5,
-  pesoDesequilibrioModerado: 0.5,
-  pesoDesequilibrioCritico: 1.0,
-  pesoAfinidadEtapa: 0.8,
-  penalizacionFueraRango: 2.0,
-  umbralMinimo: 2.5,
-  nAlternativas: 2,
+const PARAMS: ScoringParameters = {
+  bottleneckWeight: 3.0,
+  gapWeight: 1.5,
+  moderateImbalanceWeight: 0.5,
+  criticalImbalanceWeight: 1.0,
+  stageAffinityWeight: 0.8,
+  outOfRangePenalty: 2.0,
+  minimumThreshold: 2.5,
+  alternativesCount: 2,
 };
 
 const scorer = new AffinityScorerService();
 
-function ficha(
-  intensidades: Partial<Record<DimensionCode, number>>,
-  overrides: Partial<FichaNumerica> = {},
-): FichaNumerica {
+function profile(
+  intensities: Partial<Record<DimensionCode, number>>,
+  overrides: Partial<NumericProfile> = {},
+): NumericProfile {
   const mapa = new Map<DimensionCode, number>(
-    DIMS.map((d) => [d, intensidades[d] ?? 0]),
+    DIMS.map((d) => [d, intensities[d] ?? 0]),
   );
-  const etiquetas = new Map<DimensionCode, string>(
-    DIMS.map((d) => [d, etiquetaPara(intensidades[d] ?? 0)]),
+  const labels = new Map<DimensionCode, string>(
+    DIMS.map((d) => [d, etiquetaPara(intensities[d] ?? 0)]),
   );
   return {
-    idServicio: 1,
-    nombreServicio: 'Servicio',
-    nivelMin: 1,
-    nivelMax: 9,
-    etapasPertinentes: ['validacion'],
-    intensidades: mapa,
-    etiquetas,
+    idService: 1,
+    serviceName: 'Servicio',
+    minLevel: 1,
+    maxLevel: 9,
+    relevantStages: ['validacion'],
+    intensities: mapa,
+    labels,
     ...overrides,
   };
 }
 
 function etiquetaPara(v: number): string {
-  if (v === 1.0) return 'principal';
-  if (v === 0.5) return 'secundario';
+  if (v === 1.0) return 'primary';
+  if (v === 0.5) return 'secondary';
   if (v === 0.2) return 'marginal';
-  return 'no_aplica';
+  return 'not_applicable';
 }
 
-function hechos(overrides: Partial<HechosDiagnostico> = {}): HechosDiagnostico {
+function facts(overrides: Partial<DiagnosticFacts> = {}): DiagnosticFacts {
   return {
     diagnosticId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    nivelPorDimension: { TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 },
-    cuellosBotella: ['IPRL'],
-    brechas: ['BRL', 'IPRL', 'FRL'],
-    desequilibrios: [
-      { izquierda: 'TRL', derecha: 'CRL', diferencia: 2, clasificacion: 'MODERADO' },
-      { izquierda: 'TRL', derecha: 'BRL', diferencia: 3, clasificacion: 'MODERADO' },
-      { izquierda: 'CRL', derecha: 'BRL', diferencia: 1, clasificacion: 'ACEPTABLE' },
-      { izquierda: 'TmRL', derecha: 'FRL', diferencia: 3, clasificacion: 'MODERADO' },
-      { izquierda: 'BRL', derecha: 'IPRL', diferencia: 2, clasificacion: 'MODERADO' },
-      { izquierda: 'TRL', derecha: 'IPRL', diferencia: 5, clasificacion: 'CRITICO' },
+    levelByDimension: { TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 },
+    bottlenecks: ['IPRL'],
+    gaps: ['BRL', 'IPRL', 'FRL'],
+    imbalances: [
+      { left: 'TRL', right: 'CRL', difference: 2, classification: 'MODERADO' },
+      { left: 'TRL', right: 'BRL', difference: 3, classification: 'MODERADO' },
+      { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACEPTABLE' },
+      { left: 'TmRL', right: 'FRL', difference: 3, classification: 'MODERADO' },
+      { left: 'BRL', right: 'IPRL', difference: 2, classification: 'MODERADO' },
+      { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICO' },
     ],
-    nivelPromedio: 3.5,
-    caracterizacion: {
-      etapa: 'validacion',
+    averageLevel: 3.5,
+    characterization: {
+      stage: 'validacion',
       sector: null,
-      tamanoEquipo: 3,
-      vinculacionAcademica: false,
+      teamSize: 3,
+      academicLinkage: false,
     },
     ...overrides,
   };
@@ -77,141 +77,141 @@ function hechos(overrides: Partial<HechosDiagnostico> = {}): HechosDiagnostico {
 
 describe('AffinityScorerService', () => {
   describe('cuello de botella', () => {
-    it('multiplica el peso por la intensidad en la dimensión rezagada', () => {
-      const [c] = scorer.score([ficha({ IPRL: 0.5 })], hechos(), PARAMS);
-      expect(c.aportes.cuelloBotella.valor).toBeCloseTo(1.5, 3);
+    it('multiplica el peso por la intensity en la dimensión rezagada', () => {
+      const [c] = scorer.score([profile({ IPRL: 0.5 })], facts(), PARAMS);
+      expect(c.contributions.bottleneck.value).toBeCloseTo(1.5, 3);
     });
 
-    it('promedia las intensidades cuando varias dimensiones empatan en el mínimo', () => {
+    it('promedia las intensities cuando varias dimensions empatan en el mínimo', () => {
       // Promediar trata el empate simétricamente. Tomar el mínimo sería
       // más conservador y el máximo más generoso; ambas romperían esa
       // simetría sin una razón de negocio que lo justifique.
       const [c] = scorer.score(
-        [ficha({ IPRL: 1.0, FRL: 0.0 })],
-        hechos({ cuellosBotella: ['IPRL', 'FRL'] }),
+        [profile({ IPRL: 1.0, FRL: 0.0 })],
+        facts({ bottlenecks: ['IPRL', 'FRL'] }),
         PARAMS,
       );
-      expect(c.aportes.cuelloBotella.valor).toBeCloseTo(3.0 * 0.5, 3);
+      expect(c.contributions.bottleneck.value).toBeCloseTo(3.0 * 0.5, 3);
     });
 
-    it('registra la etiqueta ordinal de cada dimensión empatada', () => {
+    it('registra la label ordinal de cada dimensión empatada', () => {
       const [c] = scorer.score(
-        [ficha({ IPRL: 1.0, FRL: 0.2 })],
-        hechos({ cuellosBotella: ['IPRL', 'FRL'] }),
+        [profile({ IPRL: 1.0, FRL: 0.2 })],
+        facts({ bottlenecks: ['IPRL', 'FRL'] }),
         PARAMS,
       );
-      expect(c.aportes.cuelloBotella.detalle).toEqual([
-        { dimension: 'IPRL', etiquetaOrigen: 'principal', valor: 1.0 },
-        { dimension: 'FRL', etiquetaOrigen: 'marginal', valor: 0.2 },
+      expect(c.contributions.bottleneck.details).toEqual([
+        { dimension: 'IPRL', sourceLabel: 'primary', value: 1.0 },
+        { dimension: 'FRL', sourceLabel: 'marginal', value: 0.2 },
       ]);
     });
   });
 
-  describe('brechas', () => {
-    it('suma las intensidades sobre las dimensiones en brecha', () => {
+  describe('gaps', () => {
+    it('suma las intensities sobre las dimensions en brecha', () => {
       const [c] = scorer.score(
-        [ficha({ BRL: 1.0, IPRL: 0.5, FRL: 0.5 })],
-        hechos(),
+        [profile({ BRL: 1.0, IPRL: 0.5, FRL: 0.5 })],
+        facts(),
         PARAMS,
       );
-      expect(c.aportes.brechas.valor).toBeCloseTo(1.5 * 2.0, 3);
+      expect(c.contributions.gaps.value).toBeCloseTo(1.5 * 2.0, 3);
     });
 
-    it('un perfil sin brechas no aporta por este término', () => {
+    it('un perfil sin gaps no aporta por este término', () => {
       const [c] = scorer.score(
-        [ficha({ BRL: 1.0 })],
-        hechos({ brechas: [] }),
+        [profile({ BRL: 1.0 })],
+        facts({ gaps: [] }),
         PARAMS,
       );
-      expect(c.aportes.brechas.valor).toBe(0);
+      expect(c.contributions.gaps.value).toBe(0);
     });
   });
 
-  describe('desequilibrios', () => {
-    it('pondera el peso del par por la intensidad dominante de sus dos dimensiones', () => {
+  describe('imbalances', () => {
+    it('pondera el peso del pair por la intensity dominante de sus dos dimensions', () => {
       const [c] = scorer.score(
-        [ficha({ TRL: 0.0, IPRL: 0.5 })],
-        hechos({
-          desequilibrios: [
-            { izquierda: 'TRL', derecha: 'IPRL', diferencia: 5, clasificacion: 'CRITICO' },
+        [profile({ TRL: 0.0, IPRL: 0.5 })],
+        facts({
+          imbalances: [
+            { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICO' },
           ],
         }),
         PARAMS,
       );
-      expect(c.aportes.desequilibrios.valor).toBeCloseTo(1.0 * 0.5, 3);
+      expect(c.contributions.imbalances.value).toBeCloseTo(1.0 * 0.5, 3);
     });
 
     it('ignora los pares aceptables', () => {
       const [c] = scorer.score(
-        [ficha({ CRL: 1.0, BRL: 1.0 })],
-        hechos({
-          desequilibrios: [
-            { izquierda: 'CRL', derecha: 'BRL', diferencia: 1, clasificacion: 'ACEPTABLE' },
+        [profile({ CRL: 1.0, BRL: 1.0 })],
+        facts({
+          imbalances: [
+            { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACEPTABLE' },
           ],
         }),
         PARAMS,
       );
-      expect(c.aportes.desequilibrios.valor).toBe(0);
+      expect(c.contributions.imbalances.value).toBe(0);
     });
 
-    it('no aporta si el servicio no atiende ninguna dimensión del par', () => {
+    it('no aporta si el service no atiende ninguna dimensión del pair', () => {
       // Con cobertura binaria este servicio habría puntuado igual que uno
       // que sí aborda el desequilibrio, premiando tener ficha ancha en vez
       // de ser pertinente.
       const [c] = scorer.score(
-        [ficha({ TmRL: 1.0 })],
-        hechos({
-          desequilibrios: [
-            { izquierda: 'TRL', derecha: 'IPRL', diferencia: 5, clasificacion: 'CRITICO' },
+        [profile({ TmRL: 1.0 })],
+        facts({
+          imbalances: [
+            { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICO' },
           ],
         }),
         PARAMS,
       );
-      expect(c.aportes.desequilibrios.valor).toBe(0);
+      expect(c.contributions.imbalances.value).toBe(0);
     });
   });
 
-  describe('afinidad de etapa y penalización de rango', () => {
-    it('aporta cuando la etapa del perfil está entre las pertinentes', () => {
-      const [c] = scorer.score([ficha({})], hechos(), PARAMS);
-      expect(c.aportes.afinidadEtapa.coincide).toBe(true);
-      expect(c.aportes.afinidadEtapa.valor).toBeCloseTo(0.8, 3);
+  describe('afinidad de stage y penalización de rango', () => {
+    it('aporta cuando la stage del perfil está entre las pertinentes', () => {
+      const [c] = scorer.score([profile({})], facts(), PARAMS);
+      expect(c.contributions.stageAffinity.matches).toBe(true);
+      expect(c.contributions.stageAffinity.value).toBeCloseTo(0.8, 3);
     });
 
-    it('una etapa sin registrar no coincide con ninguna', () => {
+    it('una stage sin registrar no matches con ninguna', () => {
       const [c] = scorer.score(
-        [ficha({})],
-        hechos({
-          caracterizacion: {
-            etapa: null,
+        [profile({})],
+        facts({
+          characterization: {
+            stage: null,
             sector: null,
-            tamanoEquipo: null,
-            vinculacionAcademica: null,
+            teamSize: null,
+            academicLinkage: null,
           },
         }),
         PARAMS,
       );
-      expect(c.aportes.afinidadEtapa.coincide).toBe(false);
-      expect(c.aportes.afinidadEtapa.valor).toBe(0);
+      expect(c.contributions.stageAffinity.matches).toBe(false);
+      expect(c.contributions.stageAffinity.value).toBe(0);
     });
 
-    it('penaliza cuando el nivel promedio queda fuera de la banda del servicio', () => {
+    it('penaliza cuando el nivel promedio queda fuera de la banda del service', () => {
       const [c] = scorer.score(
-        [ficha({}, { nivelMin: 4, nivelMax: 9 })],
-        hechos({ nivelPromedio: 3.5 }),
+        [profile({}, { minLevel: 4, maxLevel: 9 })],
+        facts({ averageLevel: 3.5 }),
         PARAMS,
       );
-      expect(c.aportes.penalizacionRango.aplicada).toBe(true);
-      expect(c.aportes.penalizacionRango.valor).toBeCloseTo(2.0, 3);
+      expect(c.contributions.rangePenalty.applied).toBe(true);
+      expect(c.contributions.rangePenalty.value).toBeCloseTo(2.0, 3);
     });
 
     it('no penaliza en los extremos de la banda, que son inclusivos', () => {
       const [enMin] = scorer.score(
-        [ficha({}, { nivelMin: 3.5 as unknown as number, nivelMax: 9 })],
-        hechos({ nivelPromedio: 3.5 }),
+        [profile({}, { minLevel: 3.5 as unknown as number, maxLevel: 9 })],
+        facts({ averageLevel: 3.5 }),
         PARAMS,
       );
-      expect(enMin.aportes.penalizacionRango.aplicada).toBe(false);
+      expect(enMin.contributions.rangePenalty.applied).toBe(false);
     });
   });
 
@@ -222,27 +222,27 @@ describe('AffinityScorerService', () => {
       ) as Record<DimensionCode, fc.Arbitrary<number>>,
     );
 
-    it('el total es exactamente la suma de aportes menos la penalización', () => {
+    it('el total es exactamente la suma de contributions menos la penalización', () => {
       fc.assert(
-        fc.property(arbIntensidades, (intensidades) => {
+        fc.property(arbIntensidades, (intensities) => {
           const [c] = scorer.score(
-            [ficha(intensidades)],
-            hechos(),
+            [profile(intensities)],
+            facts(),
             PARAMS,
           );
           const esperado =
-            c.aportes.cuelloBotella.valor +
-            c.aportes.brechas.valor +
-            c.aportes.desequilibrios.valor +
-            c.aportes.afinidadEtapa.valor -
-            c.aportes.penalizacionRango.valor;
+            c.contributions.bottleneck.value +
+            c.contributions.gaps.value +
+            c.contributions.imbalances.value +
+            c.contributions.stageAffinity.value -
+            c.contributions.rangePenalty.value;
           expect(c.total).toBeCloseTo(esperado, 3);
         }),
         { numRuns: 200 },
       );
     });
 
-    it('el puntaje no decrece al aumentar la intensidad en el cuello de botella', () => {
+    it('el score no decrece al aumentar la intensity en el cuello de botella', () => {
       fc.assert(
         fc.property(
           arbIntensidades,
@@ -253,13 +253,13 @@ describe('AffinityScorerService', () => {
             const conBajo = { ...base, IPRL: bajo };
             const conAlto = { ...base, IPRL: alto };
             const [a] = scorer.score(
-              [ficha(conBajo)],
-              hechos(),
+              [profile(conBajo)],
+              facts(),
               PARAMS,
             );
             const [b] = scorer.score(
-              [ficha(conAlto)],
-              hechos(),
+              [profile(conAlto)],
+              facts(),
               PARAMS,
             );
             expect(b.total).toBeGreaterThanOrEqual(a.total - 1e-9);
@@ -269,26 +269,26 @@ describe('AffinityScorerService', () => {
       );
     });
 
-    it('un servicio que no atiende ninguna dimensión solo puede aportar por etapa', () => {
+    it('un service que no atiende ninguna dimensión solo puede aportar por stage', () => {
       const [c] = scorer.score(
-        [ficha(Object.fromEntries(DIMS.map((d) => [d, 0])))],
-        hechos(),
+        [profile(Object.fromEntries(DIMS.map((d) => [d, 0])))],
+        facts(),
         PARAMS,
       );
-      expect(c.aportes.cuelloBotella.valor).toBe(0);
-      expect(c.aportes.brechas.valor).toBe(0);
-      expect(c.aportes.desequilibrios.valor).toBe(0);
-      expect(c.total).toBeCloseTo(PARAMS.pesoAfinidadEtapa, 3);
+      expect(c.contributions.bottleneck.value).toBe(0);
+      expect(c.contributions.gaps.value).toBe(0);
+      expect(c.contributions.imbalances.value).toBe(0);
+      expect(c.total).toBeCloseTo(PARAMS.stageAffinityWeight, 3);
     });
 
-    it('el puntaje es determinista', () => {
+    it('el score es determinista', () => {
       fc.assert(
-        fc.property(arbIntensidades, (intensidades) => {
-          const f = ficha(
-            intensidades,
+        fc.property(arbIntensidades, (intensities) => {
+          const f = profile(
+            intensities,
           );
-          const [a] = scorer.score([f], hechos(), PARAMS);
-          const [b] = scorer.score([f], hechos(), PARAMS);
+          const [a] = scorer.score([f], facts(), PARAMS);
+          const [b] = scorer.score([f], facts(), PARAMS);
           expect(a.total).toBe(b.total);
         }),
         { numRuns: 100 },

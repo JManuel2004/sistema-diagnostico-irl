@@ -9,8 +9,8 @@ import request from 'supertest';
 import nock from 'nock';
 import { randomUUID } from 'node:crypto';
 import {
-  recomendacionResponseSchema,
-  trazaCapasResponseSchema,
+  recommendationResponseSchema,
+  layerTraceResponseSchema,
 } from '@innlab/contracts';
 import { AppModule } from '../../../../src/app.module.js';
 import { configureApp } from '../../../../src/infrastructure/http/configure-app.js';
@@ -35,7 +35,7 @@ import { authenticateAgainst } from '../../support/authenticated-app.js';
  *   BRL  suma 16 → 2.000 → IRL 3      FRL  suma 12 → 1.500 → IRL 2
  */
 
-const RESPUESTAS_POR_DIMENSION: Record<string, number[]> = {
+const ANSWERS_BY_DIMENSION: Record<string, number[]> = {
   TRL: [4, 3, 3, 3, 3, 3, 3, 3],
   CRL: [3, 2, 2, 2, 2, 2, 3, 3],
   BRL: [2, 2, 2, 2, 2, 2, 2, 2],
@@ -116,7 +116,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
 
     const answers = statements.map((a) => ({
       statementId: String(a.id_statement),
-      value: RESPUESTAS_POR_DIMENSION[a.code][a.sequence - 1],
+      value: ANSWERS_BY_DIMENSION[a.code][a.sequence - 1],
     }));
 
     await agent
@@ -157,47 +157,47 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     });
   });
 
-  it('POST /recomendacion devuelve Consultoría con sus dos alternativas', async () => {
+  it('POST /recommendation devuelve Consultoría con sus dos alternatives', async () => {
     const res = await agent
-      .post(`/api/v1/diagnostics/${diagnosticId}/recomendacion`)
+      .post(`/api/v1/diagnostics/${diagnosticId}/recommendation`)
       .expect(201);
 
-    const dto = recomendacionResponseSchema.parse(res.body);
+    const dto = recommendationResponseSchema.parse(res.body);
 
-    expect(dto.resultadoTipo).toBe('RECOMENDACION');
-    expect(dto.principal?.nombre).toBe('Consultoría');
-    expect(dto.principal?.puntaje).toBeCloseTo(5.55, 3);
-    expect(dto.alternativas.map((a) => a.nombre)).toEqual([
+    expect(dto.resultType).toBe('RECOMMENDATION');
+    expect(dto.primary?.name).toBe('Consultoría');
+    expect(dto.primary?.score).toBeCloseTo(5.55, 3);
+    expect(dto.alternatives.map((a) => a.name)).toEqual([
       'Mentoría',
       'Proyectos Integradores',
     ]);
-    expect(dto.alternativas.map((a) => a.posicion)).toEqual([2, 3]);
+    expect(dto.alternatives.map((a) => a.position)).toEqual([2, 3]);
   });
 
-  it('la justificación cita el motivo declarado del ajuste que decidió el puesto', () => {
+  it('la justificación cita el reason declarado del ajuste que decidió el puesto', () => {
     return agent
-      .get(`/api/v1/diagnostics/${diagnosticId}/recomendacion`)
+      .get(`/api/v1/diagnostics/${diagnosticId}/recommendation`)
       .expect(200)
       .expect((res) => {
-        const dto = recomendacionResponseSchema.parse(res.body);
-        expect(dto.justificacion).toContain('riesgo legal crítico');
+        const dto = recommendationResponseSchema.parse(res.body);
+        expect(dto.justification).toContain('riesgo legal crítico');
       });
   });
 
-  it('GET /recomendacion/traza expone las tres capas y atribuye el resultado a E-01', async () => {
+  it('GET /recommendation/trace expone las tres layers y atribuye el resultado a E-01', async () => {
     const res = await agent
-      .get(`/api/v1/diagnostics/${diagnosticId}/recomendacion/traza`)
+      .get(`/api/v1/diagnostics/${diagnosticId}/recommendation/trace`)
       .expect(200);
 
-    const traza = trazaCapasResponseSchema.parse(res.body);
+    const trace = layerTraceResponseSchema.parse(res.body);
 
     // Capa 1
-    expect(traza.excluidosCapa1.map((e) => e.nombre)).toEqual([
+    expect(trace.layer1Excluded.map((e) => e.name)).toEqual([
       'Proyectos de Grado',
     ]);
 
     // Capa 2 — el ranking del cálculo puro, antes de cualquier ajuste
-    expect(traza.rankingPreExcepcion.map((r) => r.nombre)).toEqual([
+    expect(trace.rankingBeforeExceptions.map((r) => r.name)).toEqual([
       'Consultoría',
       'Mentoría',
       'Proyectos Integradores',
@@ -206,39 +206,39 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     ]);
 
     // Capa 3 — qué ajuste se activó, cuál no, y por qué
-    expect(traza.excepcionesActivadas.map((e) => e.codigo)).toEqual(['E-01']);
-    expect(traza.excepcionesDescartadas.map((e) => e.codigo)).toEqual([
+    expect(trace.appliedExceptions.map((e) => e.code)).toEqual(['E-01']);
+    expect(trace.discardedExceptions.map((e) => e.code)).toEqual([
       'E-02',
       'E-03',
     ]);
-    expect(traza.excepcionesActivadas[0].rankingAntes[0].nombre).toBe(
+    expect(trace.appliedExceptions[0].rankingBefore[0].name).toBe(
       'Consultoría',
     );
-    expect(traza.excepcionesActivadas[0].rankingDespues[0].nombre).toBe(
+    expect(trace.appliedExceptions[0].rankingAfter[0].name).toBe(
       'Consultoría',
     );
 
     // Consultoría ganó el cálculo y además fue fijada: el resultado NO se
     // debe a que un ajuste desplazara al ganador.
-    expect(traza.ajustadoPorExcepcion).toBe(false);
+    expect(trace.adjustedByException).toBe(false);
 
     // La caracterización está completa en este caso, así que no hay
     // degradación silenciosa que anotar.
-    expect(traza.caracterizacionIncompleta).toEqual([]);
+    expect(trace.incompleteCharacterization).toEqual([]);
 
-    expect(traza.versionConfiguracion).toBe(1);
-    expect(traza.hashHechos).toHaveLength(64);
+    expect(trace.configurationVersion).toBe(1);
+    expect(trace.factsHash).toHaveLength(64);
   });
 
   it('regenerar la recomendación es idempotente y no acumula filas', async () => {
     await agent
-      .post(`/api/v1/diagnostics/${diagnosticId}/recomendacion`)
+      .post(`/api/v1/diagnostics/${diagnosticId}/recommendation`)
       .expect(201);
 
     const [{ count }] = await dataSource.query<{ count: string }[]>(
       `SELECT COUNT(*)::text AS count
-         FROM irl_diagnostic.recomendacion_portafolio
-        WHERE id_diagnostico = $1`,
+         FROM irl_diagnostic.portfolio_recommendation
+        WHERE id_diagnostic = $1`,
       [diagnosticId],
     );
     expect(count).toBe('1');
@@ -255,7 +255,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
 
     try {
       const res = await agent
-        .get(`/api/v1/diagnostics/${otro}/recomendacion`)
+        .get(`/api/v1/diagnostics/${otro}/recommendation`)
         .expect(409);
       expect((res.body as { code: string }).code).toBe(
         'ROUTING_RECOMMENDATION_NOT_GENERATED',

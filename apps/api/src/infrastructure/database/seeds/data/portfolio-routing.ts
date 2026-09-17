@@ -11,7 +11,7 @@
  * vigente y para que la prueba de aceptación tenga un caso reproducible.
  *
  * Antes de producción hay que reemplazar: los seis servicios, las 36
- * intensidades ordinales, los rangos de nivel, las etapas pertinentes,
+ * intensities ordinales, los rangos de nivel, las etapas pertinentes,
  * los ocho pesos, y las reglas de elegibilidad y excepción. La estructura
  * puede quedarse; los números no.
  *
@@ -27,40 +27,40 @@
 // omite "retos en el aula". La contradicción está en el SRS y no se
 // resuelve aquí; se siembran los seis de SA-02 porque el caso los usa.
 
-export interface ServicioSeed {
-  readonly nombre: string;
-  readonly descripcion: string;
+export interface ServiceSeed {
+  readonly name: string;
+  readonly description: string;
 }
 
-export const SERVICIOS: readonly ServicioSeed[] = [
+export const SERVICES: readonly ServiceSeed[] = [
   {
-    nombre: 'Formación',
-    descripcion:
+    name: 'Formación',
+    description:
       'Programas formativos abiertos para cerrar vacíos de conocimiento del equipo.',
   },
   {
-    nombre: 'Mentoría',
-    descripcion:
+    name: 'Mentoría',
+    description:
       'Acompañamiento 1:1 con un mentor especializado en la dimensión más débil.',
   },
   {
-    nombre: 'Consultoría',
-    descripcion:
+    name: 'Consultoría',
+    description:
       'Asesoría experta focalizada en un frente concreto: legal, comercial o de modelo de negocio.',
   },
   {
-    nombre: 'Retos en el Aula',
-    descripcion:
+    name: 'Retos en el Aula',
+    description:
       'Vinculación de la iniciativa a cursos de pregrado como reto real para estudiantes.',
   },
   {
-    nombre: 'Proyectos Integradores',
-    descripcion:
+    name: 'Proyectos Integradores',
+    description:
       'Desarrollo técnico guiado por equipos de estudiantes en proyectos de curso integrador.',
   },
   {
-    nombre: 'Proyectos de Grado',
-    descripcion:
+    name: 'Proyectos de Grado',
+    description:
       'Trabajo de grado dirigido sobre un problema específico de la iniciativa.',
   },
 ];
@@ -87,152 +87,152 @@ export const ETAPAS: readonly EtapaSeed[] = [
 //
 // `orden` expresa la monotonía: 1 es el peldaño más alto. Los valores
 // deben ser estrictamente decrecientes en ese orden, invariante que
-// comprueba `EscalaCalibracion.create()` porque es una propiedad del
+// comprueba `CalibrationScale.create()` porque es una propiedad del
 // conjunto y ninguna restricción de fila puede expresarla.
 
-export interface PeldanoSeed {
-  readonly etiqueta: string;
-  readonly valor: number;
-  readonly orden: number;
+export interface ScaleTierSeed {
+  readonly label: string;
+  readonly value: number;
+  readonly order: number;
 }
 
-export const ESCALA_CALIBRACION: readonly PeldanoSeed[] = [
-  { etiqueta: 'principal', valor: 1.0, orden: 1 },
-  { etiqueta: 'secundario', valor: 0.5, orden: 2 },
-  { etiqueta: 'marginal', valor: 0.2, orden: 3 },
-  { etiqueta: 'no_aplica', valor: 0.0, orden: 4 },
+export const CALIBRATION_SCALE: readonly ScaleTierSeed[] = [
+  { label: 'primary', value: 1.0, order: 1 },
+  { label: 'secondary', value: 0.5, order: 2 },
+  { label: 'marginal', value: 0.2, order: 3 },
+  { label: 'not_applicable', value: 0.0, order: 4 },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
 // Pesos globales
 // ─────────────────────────────────────────────────────────────────────────
 
-export const PARAMETROS_SCORING = {
+export const SCORING_PARAMETERS = {
   /** El problema más agudo pesa el triple que una brecha ordinaria. */
-  pesoCuelloBotella: 3.0,
+  bottleneckWeight: 3.0,
   /** Cada dimensión en brecha suma proporcionalmente a la intensidad. */
-  pesoBrecha: 1.5,
+  gapWeight: 1.5,
   /** Desequilibrios de 2–3 niveles: desalineación, no bloqueo. */
-  pesoDesequilibrioModerado: 0.5,
+  moderateImbalanceWeight: 0.5,
   /** Desequilibrios de más de 3 niveles: bloquean el avance. */
-  pesoDesequilibrioCritico: 1.0,
+  criticalImbalanceWeight: 1.0,
   /** La etapa refina la recomendación, no la decide. */
-  pesoAfinidadEtapa: 0.8,
+  stageAffinityWeight: 0.8,
   /** Operar fuera de la banda de madurez del servicio cuesta 2 puntos. */
-  penalizacionFueraRango: 2.0,
+  outOfRangePenalty: 2.0,
   /** Por debajo de esto, el sistema prefiere no recomendar. */
-  umbralMinimo: 2.5,
-  /** Cuántas alternativas acompañan a la recomendación principal. */
-  nAlternativas: 2,
+  minimumThreshold: 2.5,
+  /** Cuántas alternatives acompañan a la recomendación principal. */
+  alternativesCount: 2,
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────
 // Fichas ordinales — 6 servicios × 6 dimensiones
 // ─────────────────────────────────────────────────────────────────────────
 
-export type EtiquetaOrdinal =
-  | 'principal'
-  | 'secundario'
+export type OrdinalLabel =
+  | 'primary'
+  | 'secondary'
   | 'marginal'
-  | 'no_aplica';
+  | 'not_applicable';
 
-export interface FichaSeed {
-  readonly servicio: string;
-  readonly nivelMin: number;
-  readonly nivelMax: number;
-  readonly etapasPertinentes: readonly string[];
-  readonly intensidades: Readonly<Record<string, EtiquetaOrdinal>>;
+export interface OrdinalProfileSeed {
+  readonly service: string;
+  readonly minLevel: number;
+  readonly maxLevel: number;
+  readonly relevantStages: readonly string[];
+  readonly intensities: Readonly<Record<string, OrdinalLabel>>;
 }
 
-export const FICHAS: readonly FichaSeed[] = [
+export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
   {
-    servicio: 'Formación',
-    nivelMin: 1,
-    nivelMax: 5,
-    etapasPertinentes: ['idea', 'validacion'],
-    intensidades: {
+    service: 'Formación',
+    minLevel: 1,
+    maxLevel: 5,
+    relevantStages: ['idea', 'validacion'],
+    intensities: {
       TRL: 'marginal',
-      CRL: 'secundario',
-      BRL: 'secundario',
-      IPRL: 'no_aplica',
-      TmRL: 'principal',
-      FRL: 'no_aplica',
+      CRL: 'secondary',
+      BRL: 'secondary',
+      IPRL: 'not_applicable',
+      TmRL: 'primary',
+      FRL: 'not_applicable',
     },
   },
   {
-    servicio: 'Mentoría',
-    nivelMin: 1,
-    nivelMax: 6,
-    etapasPertinentes: ['idea', 'validacion'],
-    intensidades: {
-      TRL: 'no_aplica',
-      CRL: 'principal',
-      BRL: 'secundario',
-      IPRL: 'no_aplica',
-      TmRL: 'principal',
-      FRL: 'secundario',
+    service: 'Mentoría',
+    minLevel: 1,
+    maxLevel: 6,
+    relevantStages: ['idea', 'validacion'],
+    intensities: {
+      TRL: 'not_applicable',
+      CRL: 'primary',
+      BRL: 'secondary',
+      IPRL: 'not_applicable',
+      TmRL: 'primary',
+      FRL: 'secondary',
     },
   },
   {
     // Rango alto: la asesoría estratégica requiere cierta madurez previa
     // para ser útil.
-    servicio: 'Consultoría',
-    nivelMin: 4,
-    nivelMax: 9,
-    etapasPertinentes: ['validacion', 'crecimiento'],
-    intensidades: {
-      TRL: 'no_aplica',
-      CRL: 'principal',
-      BRL: 'principal',
-      IPRL: 'secundario',
-      TmRL: 'no_aplica',
-      FRL: 'secundario',
+    service: 'Consultoría',
+    minLevel: 4,
+    maxLevel: 9,
+    relevantStages: ['validacion', 'crecimiento'],
+    intensities: {
+      TRL: 'not_applicable',
+      CRL: 'primary',
+      BRL: 'primary',
+      IPRL: 'secondary',
+      TmRL: 'not_applicable',
+      FRL: 'secondary',
     },
   },
   {
-    servicio: 'Retos en el Aula',
-    nivelMin: 2,
-    nivelMax: 8,
-    etapasPertinentes: ['validacion', 'crecimiento'],
-    intensidades: {
-      TRL: 'secundario',
-      CRL: 'secundario',
-      BRL: 'secundario',
-      IPRL: 'no_aplica',
+    service: 'Retos en el Aula',
+    minLevel: 2,
+    maxLevel: 8,
+    relevantStages: ['validacion', 'crecimiento'],
+    intensities: {
+      TRL: 'secondary',
+      CRL: 'secondary',
+      BRL: 'secondary',
+      IPRL: 'not_applicable',
       TmRL: 'marginal',
-      FRL: 'no_aplica',
+      FRL: 'not_applicable',
     },
   },
   {
     // Más apropiados temprano, cuando la iniciativa aún necesita
     // desarrollo técnico guiado.
-    servicio: 'Proyectos Integradores',
-    nivelMin: 1,
-    nivelMax: 5,
-    etapasPertinentes: ['idea', 'validacion'],
-    intensidades: {
-      TRL: 'principal',
-      CRL: 'no_aplica',
-      BRL: 'no_aplica',
-      IPRL: 'no_aplica',
-      TmRL: 'secundario',
-      FRL: 'no_aplica',
+    service: 'Proyectos Integradores',
+    minLevel: 1,
+    maxLevel: 5,
+    relevantStages: ['idea', 'validacion'],
+    intensities: {
+      TRL: 'primary',
+      CRL: 'not_applicable',
+      BRL: 'not_applicable',
+      IPRL: 'not_applicable',
+      TmRL: 'secondary',
+      FRL: 'not_applicable',
     },
   },
   {
     // Cubren casi todo el rango porque se adaptan: investigación
     // temprana, validación de viabilidad o aceleración.
-    servicio: 'Proyectos de Grado',
-    nivelMin: 1,
-    nivelMax: 7,
-    etapasPertinentes: ['idea', 'validacion', 'crecimiento'],
-    intensidades: {
-      TRL: 'no_aplica',
+    service: 'Proyectos de Grado',
+    minLevel: 1,
+    maxLevel: 7,
+    relevantStages: ['idea', 'validacion', 'crecimiento'],
+    intensities: {
+      TRL: 'not_applicable',
       CRL: 'marginal',
-      BRL: 'no_aplica',
-      IPRL: 'no_aplica',
-      TmRL: 'principal',
-      FRL: 'no_aplica',
+      BRL: 'not_applicable',
+      IPRL: 'not_applicable',
+      TmRL: 'primary',
+      FRL: 'not_applicable',
     },
   },
 ];
@@ -242,34 +242,34 @@ export const FICHAS: readonly FichaSeed[] = [
 // ─────────────────────────────────────────────────────────────────────────
 //
 // Expresan imposibilidad, no preferencia. Por eso no pueden comparar
-// `nivelPromedio` ni magnitudes: el compilador en modo BOOLEANO rechaza
+// `averageLevel` ni magnitudes: el compilador en modo BOOLEAN rechaza
 // los operadores de orden, así que una condición de grado no puede
 // colarse a este filtro ni por descuido.
 
-export interface ReglaElegibilidadSeed {
-  readonly codigo: string;
-  readonly servicio: string;
-  readonly predicado: unknown;
-  readonly mensajeExclusion: string;
+export interface EligibilityRuleSeed {
+  readonly code: string;
+  readonly service: string;
+  readonly predicate: unknown;
+  readonly exclusionMessage: string;
 }
 
-export const REGLAS_ELEGIBILIDAD: readonly ReglaElegibilidadSeed[] = [
+export const ELIGIBILITY_RULES: readonly EligibilityRuleSeed[] = [
   {
-    codigo: 'ELG-01',
-    servicio: 'Proyectos de Grado',
-    predicado: {
-      campo: 'caracterizacion.vinculacionAcademica',
+    code: 'ELG-01',
+    service: 'Proyectos de Grado',
+    predicate: {
+      field: 'characterization.academicLinkage',
       op: '=',
-      valor: false,
+      value: false,
     },
-    mensajeExclusion:
+    exclusionMessage:
       'Proyectos de Grado requieren vinculación académica confirmada con la universidad.',
   },
   {
-    codigo: 'ELG-02',
-    servicio: 'Retos en el Aula',
-    predicado: { campo: 'caracterizacion.tamanoEquipo', op: '=', valor: 1 },
-    mensajeExclusion:
+    code: 'ELG-02',
+    service: 'Retos en el Aula',
+    predicate: { field: 'characterization.teamSize', op: '=', value: 1 },
+    exclusionMessage:
       'Retos en el Aula requiere al menos 2 personas en el equipo para dinámicas colaborativas.',
   },
 ];
@@ -278,77 +278,77 @@ export const REGLAS_ELEGIBILIDAD: readonly ReglaElegibilidadSeed[] = [
 // Capa 3 — ajustes puntuales
 // ─────────────────────────────────────────────────────────────────────────
 //
-// El orden importa y es total: `prioridadOrden` es único dentro de una
+// El orden importa y es total: `priorityOrder` es único dentro de una
 // versión por restricción de base de datos. E-01 se evalúa primero y
 // puede forzar un servicio al puesto 1; E-02 y E-03 siguen evaluándose
 // después, pero sobre el ranking que E-01 ya dejó.
 
-export interface ReglaExcepcionSeed {
-  readonly codigo: string;
-  readonly prioridadOrden: number;
-  readonly predicado: unknown;
-  readonly accion: 'FORZAR' | 'VETAR' | 'PROMOVER' | 'DEGRADAR';
-  readonly servicioObjetivo: string;
-  readonly posiciones: number | null;
-  readonly motivoDeclarado: string;
+export interface ExceptionRuleSeed {
+  readonly code: string;
+  readonly priorityOrder: number;
+  readonly predicate: unknown;
+  readonly action: 'FORCE' | 'VETO' | 'PROMOTE' | 'DEMOTE';
+  readonly targetService: string;
+  readonly positions: number | null;
+  readonly declaredReason: string;
 }
 
-export const REGLAS_EXCEPCION: readonly ReglaExcepcionSeed[] = [
+export const EXCEPTION_RULES: readonly ExceptionRuleSeed[] = [
   {
-    codigo: 'E-01',
-    prioridadOrden: 1,
-    predicado: {
-      op: 'y',
-      operandos: [
-        { campo: 'cuelloBotella', op: 'contiene', valor: 'IPRL' },
-        { campo: 'desequilibriosCriticos', op: 'contiene', valor: 'TRL-IPRL' },
+    code: 'E-01',
+    priorityOrder: 1,
+    predicate: {
+      op: 'and',
+      operands: [
+        { field: 'bottleneck', op: 'contains', value: 'IPRL' },
+        { field: 'criticalImbalances', op: 'contains', value: 'TRL-IPRL' },
       ],
     },
-    accion: 'FORZAR',
-    servicioObjetivo: 'Consultoría',
-    posiciones: null,
-    motivoDeclarado:
+    action: 'FORCE',
+    targetService: 'Consultoría',
+    positions: null,
+    declaredReason:
       'Un riesgo legal crítico en paralelo con desequilibrio tecnológico requiere ' +
       'asesoría legal especializada como primer paso, antes de cualquier intervención ' +
       'de otra naturaleza.',
   },
   {
-    codigo: 'E-02',
-    prioridadOrden: 2,
-    predicado: {
-      op: 'y',
-      operandos: [
-        { campo: 'brechas', op: 'conteo>=', valor: 3 },
+    code: 'E-02',
+    priorityOrder: 2,
+    predicate: {
+      op: 'and',
+      operands: [
+        { field: 'gaps', op: 'count>=', value: 3 },
         {
-          op: 'no',
-          operandos: [
-            { campo: 'cuelloBotella', op: 'contiene', valor: 'IPRL' },
+          op: 'not',
+          operands: [
+            { field: 'bottleneck', op: 'contains', value: 'IPRL' },
           ],
         },
       ],
     },
-    accion: 'PROMOVER',
-    servicioObjetivo: 'Retos en el Aula',
-    posiciones: 2,
-    motivoDeclarado:
-      'Un perfil débil de forma generalizada en múltiples dimensiones se beneficia de ' +
+    action: 'PROMOTE',
+    targetService: 'Retos en el Aula',
+    positions: 2,
+    declaredReason:
+      'Un perfil débil de forma generalizada en múltiples dimensions se beneficia de ' +
       'exposición amplia a estudiantes; pero cede ante urgencias legales o técnicas puntuales.',
   },
   {
-    codigo: 'E-03',
-    prioridadOrden: 3,
-    predicado: {
-      op: 'y',
-      operandos: [
-        { campo: 'desequilibriosCriticos', op: 'contiene', valor: 'CRL-BRL' },
-        { campo: 'nivelPromedio', op: '<', valor: 3 },
+    code: 'E-03',
+    priorityOrder: 3,
+    predicate: {
+      op: 'and',
+      operands: [
+        { field: 'criticalImbalances', op: 'contains', value: 'CRL-BRL' },
+        { field: 'averageLevel', op: '<', value: 3 },
       ],
     },
-    accion: 'PROMOVER',
-    servicioObjetivo: 'Mentoría',
-    posiciones: 1,
-    motivoDeclarado:
+    action: 'PROMOTE',
+    targetService: 'Mentoría',
+    positions: 1,
+    declaredReason:
       'Cuando la separación cliente-modelo es crítica en una iniciativa muy temprana, ' +
-      'mentoría 1:1 abre el diálogo antes que servicios masivos.',
+      'mentoría 1:1 abre el diálogo antes que services masivos.',
   },
 ];

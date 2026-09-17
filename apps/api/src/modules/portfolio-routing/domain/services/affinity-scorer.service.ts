@@ -1,63 +1,63 @@
-import type { DimensionCode, HechosDiagnostico } from '@innlab/contracts';
-import type { FichaNumerica } from '../value-objects/ficha-ordinal.vo.js';
-import type { ParametrosScoring } from '../value-objects/parametros-scoring.vo.js';
-import type { CandidatoPuntuado } from '../value-objects/candidato-puntuado.vo.js';
+import type { DimensionCode, DiagnosticFacts } from '@innlab/contracts';
+import type { NumericProfile } from '../value-objects/ordinal-profile.vo.js';
+import type { ScoringParameters } from '../value-objects/scoring-parameters.vo.js';
+import type { ScoredCandidate } from '../value-objects/scored-candidate.vo.js';
 
 /**
  * Capa 2 — el cálculo de afinidad.
  *
  * Puro y determinista: los mismos hechos, fichas y parámetros producen
- * siempre el mismo puntaje. Es lo que permite que la traza sea
+ * siempre el mismo score. Es lo que permite que la traza sea
  * reproducible meses después y que el simulador prometa algo real.
  *
- *   puntaje = aporte_cuello_botella
+ *   score = aporte_cuello_botella
  *           + aporte_brechas
  *           + aporte_desequilibrios
  *           + aporte_afinidad_etapa
  *           − penalizacion_rango
  *
- * Cada término se registra por separado **junto con la etiqueta ordinal
- * que lo originó**. Guardar la etiqueta al lado del número es lo que
+ * Cada término se registra por separado **junto con la label ordinal
+ * que lo originó**. Guardar la label al lado del número es lo que
  * permite explicar sin exponer la calibración: la justificación puede
  * decir "porque este servicio es *principal* en Modelo de Negocio" en vez
  * de "porque aportó 1.50".
  */
 export class AffinityScorerService {
   score(
-    elegibles: readonly FichaNumerica[],
-    hechos: HechosDiagnostico,
-    parametros: ParametrosScoring,
-  ): CandidatoPuntuado[] {
-    return elegibles.map((ficha) => this.puntuar(ficha, hechos, parametros));
+    eligible: readonly NumericProfile[],
+    facts: DiagnosticFacts,
+    parameters: ScoringParameters,
+  ): ScoredCandidate[] {
+    return eligible.map((profile) => this.puntuar(profile, facts, parameters));
   }
 
   private puntuar(
-    ficha: FichaNumerica,
-    hechos: HechosDiagnostico,
-    p: ParametrosScoring,
-  ): CandidatoPuntuado {
-    const cuelloBotella = this.aporteCuelloBotella(ficha, hechos, p);
-    const brechas = this.aporteBrechas(ficha, hechos, p);
-    const desequilibrios = this.aporteDesequilibrios(ficha, hechos, p);
-    const afinidadEtapa = this.aporteAfinidadEtapa(ficha, hechos, p);
-    const penalizacionRango = this.penalizacionRango(ficha, hechos, p);
+    profile: NumericProfile,
+    facts: DiagnosticFacts,
+    p: ScoringParameters,
+  ): ScoredCandidate {
+    const bottleneck = this.aporteCuelloBotella(profile, facts, p);
+    const gaps = this.aporteBrechas(profile, facts, p);
+    const imbalances = this.aporteDesequilibrios(profile, facts, p);
+    const stageAffinity = this.aporteAfinidadEtapa(profile, facts, p);
+    const rangePenalty = this.rangePenalty(profile, facts, p);
 
     const total =
-      cuelloBotella.valor +
-      brechas.valor +
-      desequilibrios.valor +
-      afinidadEtapa.valor -
-      penalizacionRango.valor;
+      bottleneck.value +
+      gaps.value +
+      imbalances.value +
+      stageAffinity.value -
+      rangePenalty.value;
 
     return {
-      idServicio: ficha.idServicio,
-      nombreServicio: ficha.nombreServicio,
-      aportes: {
-        cuelloBotella,
-        brechas,
-        desequilibrios,
-        afinidadEtapa,
-        penalizacionRango,
+      idService: profile.idService,
+      serviceName: profile.serviceName,
+      contributions: {
+        bottleneck,
+        gaps,
+        imbalances,
+        stageAffinity,
+        rangePenalty,
       },
       total: redondear(total),
     };
@@ -67,49 +67,49 @@ export class AffinityScorerService {
    * El problema más agudo pesa más que una brecha ordinaria.
    *
    * Con empate (varias dimensiones comparten el mínimo IRL) se promedian
-   * las intensidades del servicio en todas ellas. Promediar trata el
+   * las intensities del servicio en todas ellas. Promediar trata el
    * empate simétricamente: valora igual la capacidad del servicio en cada
    * dimensión empatada. Tomar el mínimo sería más conservador y el máximo
    * más generoso; ambas rompen esa simetría.
    */
   private aporteCuelloBotella(
-    ficha: FichaNumerica,
-    hechos: HechosDiagnostico,
-    p: ParametrosScoring,
+    profile: NumericProfile,
+    facts: DiagnosticFacts,
+    p: ScoringParameters,
   ) {
-    const cuellos = hechos.cuellosBotella;
-    const detalle = cuellos.map((dim) => ({
+    const cuellos = facts.bottlenecks;
+    const details = cuellos.map((dim) => ({
       dimension: dim,
-      etiquetaOrigen: etiquetaDe(ficha, dim),
-      valor: intensidadDe(ficha, dim),
+      sourceLabel: etiquetaDe(profile, dim),
+      value: intensidadDe(profile, dim),
     }));
     const promedio =
       cuellos.length === 0
         ? 0
-        : detalle.reduce((acc, d) => acc + d.valor, 0) / cuellos.length;
+        : details.reduce((acc, d) => acc + d.value, 0) / cuellos.length;
 
-    return { valor: redondear(p.pesoCuelloBotella * promedio), detalle };
+    return { value: redondear(p.bottleneckWeight * promedio), details };
   }
 
   /**
-   * Se **suman** las intensidades sobre las dimensiones en brecha, no se
+   * Se **suman** las intensities sobre las dimensiones en brecha, no se
    * promedian: un servicio que cubre tres brechas debe puntuar más que
    * uno que cubre una, siempre que lo haga de forma significativa. Si el
-   * efecto resulta excesivo, la corrección es bajar `pesoBrecha`, no
+   * efecto resulta excesivo, la corrección es bajar `gapWeight`, no
    * cambiar la forma del término.
    */
   private aporteBrechas(
-    ficha: FichaNumerica,
-    hechos: HechosDiagnostico,
-    p: ParametrosScoring,
+    profile: NumericProfile,
+    facts: DiagnosticFacts,
+    p: ScoringParameters,
   ) {
-    const detalle = hechos.brechas.map((dim) => ({
+    const details = facts.gaps.map((dim) => ({
       dimension: dim,
-      etiquetaOrigen: etiquetaDe(ficha, dim),
-      valor: intensidadDe(ficha, dim),
+      sourceLabel: etiquetaDe(profile, dim),
+      value: intensidadDe(profile, dim),
     }));
-    const suma = detalle.reduce((acc, d) => acc + d.valor, 0);
-    return { valor: redondear(p.pesoBrecha * suma), detalle };
+    const suma = details.reduce((acc, d) => acc + d.value, 0);
+    return { value: redondear(p.gapWeight * suma), details };
   }
 
   /**
@@ -131,32 +131,32 @@ export class AffinityScorerService {
    * ambos lo computaría dos veces.
    */
   private aporteDesequilibrios(
-    ficha: FichaNumerica,
-    hechos: HechosDiagnostico,
-    p: ParametrosScoring,
+    profile: NumericProfile,
+    facts: DiagnosticFacts,
+    p: ScoringParameters,
   ) {
-    const detalle = hechos.desequilibrios
+    const details = facts.imbalances
       .map((d) => {
         const peso =
-          d.clasificacion === 'CRITICO'
-            ? p.pesoDesequilibrioCritico
-            : d.clasificacion === 'MODERADO'
-              ? p.pesoDesequilibrioModerado
+          d.classification === 'CRITICO'
+            ? p.criticalImbalanceWeight
+            : d.classification === 'MODERADO'
+              ? p.moderateImbalanceWeight
               : 0;
-        const iIzq = intensidadDe(ficha, d.izquierda);
-        const iDer = intensidadDe(ficha, d.derecha);
-        const dominante = iIzq >= iDer ? d.izquierda : d.derecha;
+        const iIzq = intensidadDe(profile, d.left);
+        const iDer = intensidadDe(profile, d.right);
+        const dominante = iIzq >= iDer ? d.left : d.right;
         return {
-          par: `${d.izquierda}-${d.derecha}`,
-          clasificacion: d.clasificacion,
-          etiquetaOrigen: etiquetaDe(ficha, dominante),
-          valor: redondear(peso * Math.max(iIzq, iDer)),
+          pair: `${d.left}-${d.right}`,
+          classification: d.classification,
+          sourceLabel: etiquetaDe(profile, dominante),
+          value: redondear(peso * Math.max(iIzq, iDer)),
         };
       })
-      .filter((d) => d.valor > 0);
+      .filter((d) => d.value > 0);
 
-    const suma = detalle.reduce((acc, d) => acc + d.valor, 0);
-    return { valor: redondear(suma), detalle };
+    const suma = details.reduce((acc, d) => acc + d.value, 0);
+    return { value: redondear(suma), details };
   }
 
   /**
@@ -164,13 +164,13 @@ export class AffinityScorerService {
    * ninguna: la ausencia de caracterización no debe regalar puntos.
    */
   private aporteAfinidadEtapa(
-    ficha: FichaNumerica,
-    hechos: HechosDiagnostico,
-    p: ParametrosScoring,
+    profile: NumericProfile,
+    facts: DiagnosticFacts,
+    p: ScoringParameters,
   ) {
-    const etapa = hechos.caracterizacion.etapa;
-    const coincide = etapa !== null && ficha.etapasPertinentes.includes(etapa);
-    return { valor: coincide ? redondear(p.pesoAfinidadEtapa) : 0, coincide };
+    const stage = facts.characterization.stage;
+    const matches = stage !== null && profile.relevantStages.includes(stage);
+    return { value: matches ? redondear(p.stageAffinityWeight) : 0, matches };
   }
 
   /**
@@ -178,27 +178,27 @@ export class AffinityScorerService {
    * Comparación booleana contra el nivel promedio: dentro o fuera, sin
    * gradiente en el borde.
    */
-  private penalizacionRango(
-    ficha: FichaNumerica,
-    hechos: HechosDiagnostico,
-    p: ParametrosScoring,
+  private rangePenalty(
+    profile: NumericProfile,
+    facts: DiagnosticFacts,
+    p: ScoringParameters,
   ) {
     const fuera =
-      hechos.nivelPromedio < ficha.nivelMin ||
-      hechos.nivelPromedio > ficha.nivelMax;
+      facts.averageLevel < profile.minLevel ||
+      facts.averageLevel > profile.maxLevel;
     return {
-      valor: fuera ? redondear(p.penalizacionFueraRango) : 0,
-      aplicada: fuera,
+      value: fuera ? redondear(p.outOfRangePenalty) : 0,
+      applied: fuera,
     };
   }
 }
 
-function intensidadDe(ficha: FichaNumerica, dim: DimensionCode): number {
-  return ficha.intensidades.get(dim) ?? 0;
+function intensidadDe(profile: NumericProfile, dim: DimensionCode): number {
+  return profile.intensities.get(dim) ?? 0;
 }
 
-function etiquetaDe(ficha: FichaNumerica, dim: DimensionCode): string {
-  return ficha.etiquetas.get(dim) ?? 'no_aplica';
+function etiquetaDe(profile: NumericProfile, dim: DimensionCode): string {
+  return profile.labels.get(dim) ?? 'not_applicable';
 }
 
 /**
@@ -207,6 +207,6 @@ function etiquetaDe(ficha: FichaNumerica, dim: DimensionCode): string {
  * el valor calculado y el releído de la base de datos difieran, lo que
  * rompería la comprobación de reproducibilidad.
  */
-function redondear(valor: number): number {
-  return Math.round(valor * 1000) / 1000;
+function redondear(value: number): number {
+  return Math.round(value * 1000) / 1000;
 }

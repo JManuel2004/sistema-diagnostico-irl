@@ -1,128 +1,128 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { TrazaCapasResponse } from '@innlab/contracts';
+import type { LayerTraceResponse } from '@innlab/contracts';
 import { LayerTracePanel } from '../LayerTracePanel';
 import { RecommendationSummary } from '../RecommendationSummary';
 
 const APORTES = {
-  cuelloBotella: {
-    valor: 1.5,
-    detalle: [{ dimension: 'IPRL', etiquetaOrigen: 'secundario', valor: 0.5 }],
+  bottleneck: {
+    value: 1.5,
+    details: [{ dimension: 'IPRL', sourceLabel: 'secondary', value: 0.5 }],
   },
-  brechas: {
-    valor: 3,
-    detalle: [
-      { dimension: 'BRL', etiquetaOrigen: 'principal', valor: 1 },
-      { dimension: 'FRL', etiquetaOrigen: 'no_aplica', valor: 0 },
+  gaps: {
+    value: 3,
+    details: [
+      { dimension: 'BRL', sourceLabel: 'primary', value: 1 },
+      { dimension: 'FRL', sourceLabel: 'not_applicable', value: 0 },
     ],
   },
-  desequilibrios: {
-    valor: 2.25,
-    detalle: [
+  imbalances: {
+    value: 2.25,
+    details: [
       {
-        par: 'TRL-IPRL',
-        clasificacion: 'CRITICO',
-        etiquetaOrigen: 'secundario',
-        valor: 0.5,
+        pair: 'TRL-IPRL',
+        classification: 'CRITICO',
+        sourceLabel: 'secondary',
+        value: 0.5,
       },
     ],
   },
-  afinidadEtapa: { valor: 0.8, coincide: true },
-  penalizacionRango: { valor: 2, aplicada: true },
+  stageAffinity: { value: 0.8, matches: true },
+  rangePenalty: { value: 2, applied: true },
 };
 
-function traza(over: Partial<TrazaCapasResponse> = {}): TrazaCapasResponse {
+function trace(over: Partial<LayerTraceResponse> = {}): LayerTraceResponse {
   return {
     diagnosticId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    excluidosCapa1: [
+    layer1Excluded: [
       {
-        idServicio: 6,
-        nombre: 'Proyectos de Grado',
-        mensajeExclusion: 'Requieren vinculación académica confirmada.',
+        idService: 6,
+        name: 'Proyectos de Grado',
+        exclusionMessage: 'Requieren vinculación académica confirmada.',
       },
     ],
-    rankingPreExcepcion: [
+    rankingBeforeExceptions: [
       {
-        posicion: 1,
-        idServicio: 3,
-        nombre: 'Consultoría',
-        puntaje: 5.55,
-        aportes: APORTES,
+        position: 1,
+        idService: 3,
+        name: 'Consultoría',
+        score: 5.55,
+        contributions: APORTES,
       },
     ],
-    excepcionesActivadas: [
+    appliedExceptions: [
       {
-        codigo: 'E-01',
-        orden: 1,
-        accion: 'FORZAR',
-        servicioObjetivo: 'Consultoría',
-        motivoDeclarado: 'Un riesgo legal crítico requiere asesoría especializada.',
-        rankingAntes: [],
-        rankingDespues: [],
-        efecto: 'Consultoría ya ocupaba el puesto 1',
+        code: 'E-01',
+        order: 1,
+        action: 'FORCE',
+        targetService: 'Consultoría',
+        declaredReason: 'Un riesgo legal crítico requiere asesoría especializada.',
+        rankingBefore: [],
+        rankingAfter: [],
+        effect: 'Consultoría ya ocupaba el puesto 1',
       },
     ],
-    excepcionesDescartadas: [
-      { codigo: 'E-02', orden: 2, razon: 'La condición no se cumple' },
+    discardedExceptions: [
+      { code: 'E-02', order: 2, reason: 'La condición no se cumple' },
     ],
-    rankingPostExcepcion: [],
-    ajustadoPorExcepcion: false,
-    caracterizacionIncompleta: [],
-    versionConfiguracion: 1,
-    snapshotCalibracion: 1,
-    snapshotParametros: 1,
-    hashHechos: 'a'.repeat(64),
-    evaluadoEn: '2026-09-07T14:30:00.000Z',
+    rankingAfterExceptions: [],
+    adjustedByException: false,
+    incompleteCharacterization: [],
+    configurationVersion: 1,
+    calibrationSnapshot: 1,
+    parametersSnapshot: 1,
+    factsHash: 'a'.repeat(64),
+    evaluatedAt: '2026-09-07T14:30:00.000Z',
     ...over,
   };
 }
 
 describe('LayerTracePanel', () => {
-  it('arranca colapsado y no pide la traza hasta que se abre', () => {
+  it('arranca colapsado y no pide la trace hasta que se abre', () => {
     const onOpen = vi.fn();
-    render(<LayerTracePanel traza={undefined} isLoading={false} onOpen={onOpen} />);
+    render(<LayerTracePanel trace={undefined} isLoading={false} onOpen={onOpen} />);
 
     expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'false');
     expect(onOpen).not.toHaveBeenCalled();
   });
 
-  it('avisa al abrirse para que la traza se cargue solo entonces', async () => {
+  it('avisa al abrirse para que la trace se cargue solo entonces', async () => {
     const onOpen = vi.fn();
-    render(<LayerTracePanel traza={undefined} isLoading={false} onOpen={onOpen} />);
+    render(<LayerTracePanel trace={undefined} isLoading={false} onOpen={onOpen} />);
 
     await userEvent.click(screen.getByRole('button'));
     expect(onOpen).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('explica los aportes en vocabulario ordinal, sin exponer los puntajes', async () => {
-    render(<LayerTracePanel traza={traza()} isLoading={false} onOpen={vi.fn()} />);
+  it('explica los contributions en vocabulario ordinal, sin exponer los puntajes', async () => {
+    render(<LayerTracePanel trace={trace()} isLoading={false} onOpen={vi.fn()} />);
     await userEvent.click(screen.getByRole('button'));
 
-    const panel = document.getElementById('traza-capas')!;
-    expect(panel.textContent).toContain('IPRL: secundario');
-    expect(panel.textContent).toContain('BRL (principal)');
+    const panel = document.getElementById('trace-layers')!;
+    expect(panel.textContent).toContain('IPRL: secondary');
+    expect(panel.textContent).toContain('BRL (primary)');
     // El número de la calibración es un detalle interno: mostrarlo
     // desplazaría la conversación al valor en vez de a la recomendación.
     expect(panel.textContent).not.toContain('5.55');
     expect(panel.textContent).not.toContain('1.5');
   });
 
-  it('omite las dimensiones que el servicio no atiende', async () => {
-    render(<LayerTracePanel traza={traza()} isLoading={false} onOpen={vi.fn()} />);
+  it('omite las dimensions que el service no atiende', async () => {
+    render(<LayerTracePanel trace={trace()} isLoading={false} onOpen={vi.fn()} />);
     await userEvent.click(screen.getByRole('button'));
 
-    expect(document.getElementById('traza-capas')!.textContent).not.toContain(
+    expect(document.getElementById('trace-layers')!.textContent).not.toContain(
       'FRL',
     );
   });
 
-  it('muestra el motivo declarado del ajuste que se aplicó', async () => {
-    render(<LayerTracePanel traza={traza()} isLoading={false} onOpen={vi.fn()} />);
+  it('muestra el reason declarado del ajuste que se aplicó', async () => {
+    render(<LayerTracePanel trace={trace()} isLoading={false} onOpen={vi.fn()} />);
     await userEvent.click(screen.getByRole('button'));
 
-    expect(screen.getByText(/E-01 · FORZAR Consultoría/)).toBeInTheDocument();
+    expect(screen.getByText(/E-01 · FORCE Consultoría/)).toBeInTheDocument();
     expect(
       screen.getByText(/riesgo legal crítico requiere asesoría/),
     ).toBeInTheDocument();
@@ -133,7 +133,7 @@ describe('LayerTracePanel', () => {
     // objetivo sin serlo.
     render(
       <LayerTracePanel
-        traza={traza({ ajustadoPorExcepcion: true })}
+        trace={trace({ adjustedByException: true })}
         isLoading={false}
         onOpen={vi.fn()}
       />,
@@ -145,8 +145,8 @@ describe('LayerTracePanel', () => {
     );
   });
 
-  it('no muestra ese aviso cuando el servicio ganó el cálculo', async () => {
-    render(<LayerTracePanel traza={traza()} isLoading={false} onOpen={vi.fn()} />);
+  it('no muestra ese aviso cuando el service ganó el cálculo', async () => {
+    render(<LayerTracePanel trace={trace()} isLoading={false} onOpen={vi.fn()} />);
     await userEvent.click(screen.getByRole('button'));
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
@@ -155,7 +155,7 @@ describe('LayerTracePanel', () => {
   it('señala cuando faltaron datos de caracterización', async () => {
     render(
       <LayerTracePanel
-        traza={traza({ caracterizacionIncompleta: ['etapa', 'tamanoEquipo'] })}
+        trace={trace({ incompleteCharacterization: ['stage', 'teamSize'] })}
         isLoading={false}
         onOpen={vi.fn()}
       />,
@@ -163,7 +163,7 @@ describe('LayerTracePanel', () => {
     await userEvent.click(screen.getByRole('button'));
 
     expect(
-      screen.getByText(/no tiene registrados etapa, tamanoEquipo/),
+      screen.getByText(/no tiene registrados stage, teamSize/),
     ).toBeInTheDocument();
   });
 });
@@ -171,26 +171,26 @@ describe('LayerTracePanel', () => {
 describe('RecommendationSummary', () => {
   const base = {
     diagnosticId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    versionConfiguracion: 1,
-    generadaEn: '2026-09-07T14:30:00.000Z',
+    configurationVersion: 1,
+    generatedAt: '2026-09-07T14:30:00.000Z',
   } as const;
 
-  it('presenta el servicio y su justificación sin mostrar puntajes', () => {
+  it('presenta el service y su justificación sin mostrar puntajes', () => {
     render(
       <RecommendationSummary
-        recomendacion={{
+        recommendation={{
           ...base,
-          resultadoTipo: 'RECOMENDACION',
-          principal: {
-            idServicio: 3,
-            nombre: 'Consultoría',
-            posicion: 1,
-            puntaje: 5.55,
+          resultType: 'RECOMMENDATION',
+          primary: {
+            idService: 3,
+            name: 'Consultoría',
+            position: 1,
+            score: 5.55,
           },
-          justificacion: 'Atiende el riesgo legal más urgente del perfil.',
-          motivoSinRecomendacion: null,
-          alternativas: [
-            { idServicio: 2, nombre: 'Mentoría', posicion: 2, puntaje: 3.8 },
+          justification: 'Atiende el riesgo legal más urgente del perfil.',
+          noRecommendationReason: null,
+          alternatives: [
+            { idService: 2, name: 'Mentoría', position: 2, score: 3.8 },
           ],
         }}
       />,
@@ -208,14 +208,14 @@ describe('RecommendationSummary', () => {
   it('explica el caso sin recomendación en vez de mostrar una vacía', () => {
     render(
       <RecommendationSummary
-        recomendacion={{
+        recommendation={{
           ...base,
-          resultadoTipo: 'SIN_RECOMENDACION',
-          principal: null,
-          justificacion: null,
-          motivoSinRecomendacion:
-            'Ningún servicio alcanzó la pertinencia mínima para este perfil.',
-          alternativas: [],
+          resultType: 'NO_RECOMMENDATION',
+          primary: null,
+          justification: null,
+          noRecommendationReason:
+            'Ningún service alcanzó la pertinencia mínima para este perfil.',
+          alternatives: [],
         }}
       />,
     );

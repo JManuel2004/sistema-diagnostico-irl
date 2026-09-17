@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import type { HechosDiagnostico } from '@innlab/contracts';
+import type { DiagnosticFacts } from '@innlab/contracts';
 import {
   PredicateCompilerService,
   evaluarExpresion,
@@ -8,37 +8,37 @@ import { PredicateCompilationError } from '../../../../../src/modules/portfolio-
 
 const compiler = new PredicateCompilerService();
 
-const HECHOS: HechosDiagnostico = {
+const FACTS: DiagnosticFacts = {
   diagnosticId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-  nivelPorDimension: { TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 },
-  cuellosBotella: ['IPRL'],
-  brechas: ['BRL', 'IPRL', 'FRL'],
-  desequilibrios: [
-    { izquierda: 'TRL', derecha: 'CRL', diferencia: 2, clasificacion: 'MODERADO' },
-    { izquierda: 'TRL', derecha: 'BRL', diferencia: 3, clasificacion: 'MODERADO' },
-    { izquierda: 'CRL', derecha: 'BRL', diferencia: 1, clasificacion: 'ACEPTABLE' },
-    { izquierda: 'TmRL', derecha: 'FRL', diferencia: 3, clasificacion: 'MODERADO' },
-    { izquierda: 'BRL', derecha: 'IPRL', diferencia: 2, clasificacion: 'MODERADO' },
-    { izquierda: 'TRL', derecha: 'IPRL', diferencia: 5, clasificacion: 'CRITICO' },
+  levelByDimension: { TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 },
+  bottlenecks: ['IPRL'],
+  gaps: ['BRL', 'IPRL', 'FRL'],
+  imbalances: [
+    { left: 'TRL', right: 'CRL', difference: 2, classification: 'MODERADO' },
+    { left: 'TRL', right: 'BRL', difference: 3, classification: 'MODERADO' },
+    { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACEPTABLE' },
+    { left: 'TmRL', right: 'FRL', difference: 3, classification: 'MODERADO' },
+    { left: 'BRL', right: 'IPRL', difference: 2, classification: 'MODERADO' },
+    { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICO' },
   ],
-  nivelPromedio: 3.5,
-  caracterizacion: {
-    etapa: 'validacion',
+  averageLevel: 3.5,
+  characterization: {
+    stage: 'validacion',
     sector: null,
-    tamanoEquipo: 3,
-    vinculacionAcademica: false,
+    teamSize: 3,
+    academicLinkage: false,
   },
 };
 
 describe('PredicateCompilerService', () => {
   describe('separación de modos', () => {
-    it('rechaza un operador de grado en modo BOOLEANO', () => {
+    it('rechaza un operador de grado en modo BOOLEAN', () => {
       // Es la garantía estructural de que una condición de grado no puede
       // colarse al filtro duro de elegibilidad.
       expect(() =>
         compiler.compile(
-          { campo: 'nivelPromedio', op: '<', valor: 3 },
-          'BOOLEANO',
+          { field: 'averageLevel', op: '<', value: 3 },
+          'BOOLEAN',
         ),
       ).toThrow(PredicateCompilationError);
     });
@@ -46,23 +46,23 @@ describe('PredicateCompilerService', () => {
     it('admite el mismo operador en modo CON_GRADO', () => {
       expect(() =>
         compiler.compile(
-          { campo: 'nivelPromedio', op: '<', valor: 3 },
-          'CON_GRADO',
+          { field: 'averageLevel', op: '<', value: 3 },
+          'WITH_DEGREE',
         ),
       ).not.toThrow();
     });
 
-    it('admite igualdad y pertenencia en modo BOOLEANO', () => {
+    it('admite igualdad y pertenencia en modo BOOLEAN', () => {
       expect(() =>
         compiler.compile(
-          { campo: 'caracterizacion.tamanoEquipo', op: '=', valor: 1 },
-          'BOOLEANO',
+          { field: 'characterization.teamSize', op: '=', value: 1 },
+          'BOOLEAN',
         ),
       ).not.toThrow();
       expect(() =>
         compiler.compile(
-          { campo: 'cuelloBotella', op: 'contiene', valor: 'IPRL' },
-          'BOOLEANO',
+          { field: 'bottleneck', op: 'contains', value: 'IPRL' },
+          'BOOLEAN',
         ),
       ).not.toThrow();
     });
@@ -75,8 +75,8 @@ describe('PredicateCompilerService', () => {
       // compilar en vez de interpretar.
       expect(() =>
         compiler.compile(
-          { campo: 'nivelDeMadurezInventado', op: '=', valor: 3 },
-          'CON_GRADO',
+          { field: 'nivelDeMadurezInventado', op: '=', value: 3 },
+          'WITH_DEGREE',
         ),
       ).toThrow(/Campo desconocido/);
     });
@@ -84,8 +84,8 @@ describe('PredicateCompilerService', () => {
     it('rechaza un operador de pertenencia sobre un campo escalar', () => {
       expect(() =>
         compiler.compile(
-          { campo: 'nivelPromedio', op: 'contiene', valor: 'IPRL' },
-          'CON_GRADO',
+          { field: 'averageLevel', op: 'contains', value: 'IPRL' },
+          'WITH_DEGREE',
         ),
       ).toThrow(/requiere un campo de colección/);
     });
@@ -93,8 +93,8 @@ describe('PredicateCompilerService', () => {
     it('rechaza una comparación de orden sobre un campo no numérico', () => {
       expect(() =>
         compiler.compile(
-          { campo: 'caracterizacion.etapa', op: '>=', valor: 3 },
-          'CON_GRADO',
+          { field: 'characterization.stage', op: '>=', value: 3 },
+          'WITH_DEGREE',
         ),
       ).toThrow(/requiere un campo numérico/);
     });
@@ -102,14 +102,14 @@ describe('PredicateCompilerService', () => {
     it('rechaza un valor de tipo incompatible con el operador', () => {
       expect(() =>
         compiler.compile(
-          { campo: 'brechas', op: 'conteo>=', valor: 'tres' },
-          'CON_GRADO',
+          { field: 'gaps', op: 'count>=', value: 'tres' },
+          'WITH_DEGREE',
         ),
       ).toThrow(/requiere un valor numérico/);
     });
 
     it('rechaza un nodo sin operador', () => {
-      expect(() => compiler.compile({ campo: 'brechas' }, 'CON_GRADO')).toThrow(
+      expect(() => compiler.compile({ field: 'gaps' }, 'WITH_DEGREE')).toThrow(
         /falta el operador/,
       );
     });
@@ -118,28 +118,28 @@ describe('PredicateCompilerService', () => {
       expect(() =>
         compiler.compile(
           {
-            op: 'no',
-            operandos: [
-              { campo: 'cuelloBotella', op: 'contiene', valor: 'IPRL' },
-              { campo: 'brechas', op: 'contiene', valor: 'FRL' },
+            op: 'not',
+            operands: [
+              { field: 'bottleneck', op: 'contains', value: 'IPRL' },
+              { field: 'gaps', op: 'contains', value: 'FRL' },
             ],
           },
-          'CON_GRADO',
+          'WITH_DEGREE',
         ),
       ).toThrow(/exactamente un operando/);
     });
 
-    it('rechaza un compuesto sin operandos', () => {
+    it('rechaza un compuesto sin operands', () => {
       expect(() =>
-        compiler.compile({ op: 'y', operandos: [] }, 'CON_GRADO'),
+        compiler.compile({ op: 'and', operands: [] }, 'WITH_DEGREE'),
       ).toThrow(/al menos un operando/);
     });
 
 it('rechaza un nodo que no es un objeto', () => {
-      expect(() => compiler.compile('cuelloBotella', 'CON_GRADO')).toThrow(
+      expect(() => compiler.compile('bottleneck', 'WITH_DEGREE')).toThrow(
         /se esperaba un objeto/,
       );
-      expect(() => compiler.compile(null, 'CON_GRADO')).toThrow(
+      expect(() => compiler.compile(null, 'WITH_DEGREE')).toThrow(
         /se esperaba un objeto/,
       );
     });
@@ -147,8 +147,8 @@ it('rechaza un nodo que no es un objeto', () => {
     it('rechaza un operador que no existe en el DSL', () => {
       expect(() =>
         compiler.compile(
-          { campo: 'nivelPromedio', op: 'entre', valor: 3 },
-          'CON_GRADO',
+          { field: 'averageLevel', op: 'entre', value: 3 },
+          'WITH_DEGREE',
         ),
       ).toThrow(/Operador desconocido/);
     });
@@ -156,8 +156,8 @@ it('rechaza un nodo que no es un objeto', () => {
     it('rechaza un valor no textual para un operador de pertenencia', () => {
       expect(() =>
         compiler.compile(
-          { campo: 'brechas', op: 'contiene', valor: 3 },
-          'CON_GRADO',
+          { field: 'gaps', op: 'contains', value: 3 },
+          'WITH_DEGREE',
         ),
       ).toThrow(/requiere un valor de texto/);
     });
@@ -166,72 +166,72 @@ it('rechaza un nodo que no es un objeto', () => {
       expect(() =>
         compiler.compile(
           {
-            op: 'y',
-            operandos: [
-              { campo: 'cuelloBotella', op: 'contiene', valor: 'IPRL' },
-              { op: 'o', operandos: [{ campo: 'inexistente', op: '=', valor: 1 }] },
+            op: 'and',
+            operands: [
+              { field: 'bottleneck', op: 'contains', value: 'IPRL' },
+              { op: 'or', operands: [{ field: 'inexistente', op: '=', value: 1 }] },
             ],
           },
-          'CON_GRADO',
+          'WITH_DEGREE',
         ),
-      ).toThrow(/raíz\.y\[1\]\.o\[0\]/);
+      ).toThrow(/root\.and\[1\]\.or\[0\]/);
     });
   });
 
   describe('evaluación', () => {
-    const compilarYEvaluar = (p: unknown, hechos = HECHOS) =>
-      evaluarExpresion(compiler.compile(p, 'CON_GRADO'), hechos);
+    const compilarYEvaluar = (p: unknown, facts = FACTS) =>
+      evaluarExpresion(compiler.compile(p, 'WITH_DEGREE'), facts);
 
     it('resuelve pertenencia sobre el cuello de botella', () => {
       expect(
-        compilarYEvaluar({ campo: 'cuelloBotella', op: 'contiene', valor: 'IPRL' }),
+        compilarYEvaluar({ field: 'bottleneck', op: 'contains', value: 'IPRL' }),
       ).toBe(true);
       expect(
-        compilarYEvaluar({ campo: 'cuelloBotella', op: 'contiene', valor: 'TRL' }),
+        compilarYEvaluar({ field: 'bottleneck', op: 'contains', value: 'TRL' }),
       ).toBe(false);
     });
 
-    it('resuelve el conteo de brechas', () => {
+    it('resuelve el conteo de gaps', () => {
       expect(
-        compilarYEvaluar({ campo: 'brechas', op: 'conteo>=', valor: 3 }),
+        compilarYEvaluar({ field: 'gaps', op: 'count>=', value: 3 }),
       ).toBe(true);
       expect(
-        compilarYEvaluar({ campo: 'brechas', op: 'conteo>=', valor: 4 }),
+        compilarYEvaluar({ field: 'gaps', op: 'count>=', value: 4 }),
       ).toBe(false);
     });
 
-    it('deriva los pares en desequilibrio crítico a partir de los hechos', () => {
+    it('deriva los pares en desequilibrio crítico a partir de los facts', () => {
       expect(
         compilarYEvaluar({
-          campo: 'desequilibriosCriticos',
-          op: 'contiene',
-          valor: 'TRL-IPRL',
+          field: 'criticalImbalances',
+          op: 'contains',
+          value: 'TRL-IPRL',
         }),
       ).toBe(true);
       expect(
         compilarYEvaluar({
-          campo: 'desequilibriosCriticos',
-          op: 'contiene',
-          valor: 'CRL-BRL',
+          field: 'criticalImbalances',
+          op: 'contains',
+          value: 'CRL-BRL',
         }),
       ).toBe(false);
     });
 
     it('resuelve un nivel dimensional concreto', () => {
       expect(
-        compilarYEvaluar({ campo: 'nivelPorDimension.IPRL', op: '<=', valor: 2 }),
+        compilarYEvaluar({ field: 'levelByDimension.IPRL', op: '<=', value: 2 }),
       ).toBe(true);
     });
 
     it('combina con y / o / no', () => {
       expect(
         compilarYEvaluar({
-          op: 'y',
-          operandos: [
-            { campo: 'cuelloBotella', op: 'contiene', valor: 'IPRL' },
+          op: 'and',
+          operands: [
+            { field: 'bottleneck', op: 'contains', value: 'IPRL' },
             {
-              op: 'no',
-              operandos: [{ campo: 'brechas', op: 'contiene', valor: 'TRL' }],
+              op: 'not',
+              operands: [{ field: 'gaps', op: 'contains', value: 'TRL' }],
             },
           ],
         }),
@@ -239,10 +239,10 @@ it('rechaza un nodo que no es un objeto', () => {
 
       expect(
         compilarYEvaluar({
-          op: 'o',
-          operandos: [
-            { campo: 'cuelloBotella', op: 'contiene', valor: 'TRL' },
-            { campo: 'nivelPromedio', op: '>', valor: 3 },
+          op: 'or',
+          operands: [
+            { field: 'bottleneck', op: 'contains', value: 'TRL' },
+            { field: 'averageLevel', op: '>', value: 3 },
           ],
         }),
       ).toBe(true);
@@ -254,43 +254,43 @@ it('rechaza un nodo que no es un objeto', () => {
       // donde se esconde un fallo silencioso: devuelve `false` para todo y
       // la regla parece no cumplirse nunca.
       it.each([
-        [{ campo: 'cuelloBotella', op: 'no_contiene', valor: 'TRL' }, true],
-        [{ campo: 'cuelloBotella', op: 'no_contiene', valor: 'IPRL' }, false],
-        [{ campo: 'brechas', op: 'conteo<=', valor: 3 }, true],
-        [{ campo: 'brechas', op: 'conteo<=', valor: 2 }, false],
-        [{ campo: 'brechas', op: 'conteo=', valor: 3 }, true],
-        [{ campo: 'brechas', op: 'conteo=', valor: 4 }, false],
-        [{ campo: 'nivelPromedio', op: '>=', valor: 3.5 }, true],
-        [{ campo: 'nivelPromedio', op: '>=', valor: 4 }, false],
-        [{ campo: 'nivelPromedio', op: '>', valor: 3 }, true],
-        [{ campo: 'nivelPromedio', op: '>', valor: 3.5 }, false],
-        [{ campo: 'nivelPorDimension.TRL', op: '=', valor: 6 }, true],
-        [{ campo: 'nivelPorDimension.TRL', op: '!=', valor: 6 }, false],
-        [{ campo: 'caracterizacion.etapa', op: '!=', valor: 'idea' }, true],
-        [{ campo: 'caracterizacion.sector', op: '=', valor: null }, true],
+        [{ field: 'bottleneck', op: 'not_contains', value: 'TRL' }, true],
+        [{ field: 'bottleneck', op: 'not_contains', value: 'IPRL' }, false],
+        [{ field: 'gaps', op: 'count<=', value: 3 }, true],
+        [{ field: 'gaps', op: 'count<=', value: 2 }, false],
+        [{ field: 'gaps', op: 'count=', value: 3 }, true],
+        [{ field: 'gaps', op: 'count=', value: 4 }, false],
+        [{ field: 'averageLevel', op: '>=', value: 3.5 }, true],
+        [{ field: 'averageLevel', op: '>=', value: 4 }, false],
+        [{ field: 'averageLevel', op: '>', value: 3 }, true],
+        [{ field: 'averageLevel', op: '>', value: 3.5 }, false],
+        [{ field: 'levelByDimension.TRL', op: '=', value: 6 }, true],
+        [{ field: 'levelByDimension.TRL', op: '!=', value: 6 }, false],
+        [{ field: 'characterization.stage', op: '!=', value: 'idea' }, true],
+        [{ field: 'characterization.sector', op: '=', value: null }, true],
         [
-          { campo: 'desequilibriosModerados', op: 'contiene', valor: 'TRL-CRL' },
+          { field: 'moderateImbalances', op: 'contains', value: 'TRL-CRL' },
           true,
         ],
         [
-          { campo: 'desequilibriosModerados', op: 'contiene', valor: 'TRL-IPRL' },
+          { field: 'moderateImbalances', op: 'contains', value: 'TRL-IPRL' },
           false,
         ],
       ] as [Record<string, unknown>, boolean][])(
         'evalúa %j como %s',
-        (predicado, esperado) => {
-          expect(compilarYEvaluar(predicado)).toBe(esperado);
+        (predicate, esperado) => {
+          expect(compilarYEvaluar(predicate)).toBe(esperado);
         },
       );
 
       it('un nivel dimensional inexistente resuelve a null y no cumple', () => {
         const sinTrl = {
-          ...HECHOS,
-          nivelPorDimension: { CRL: 4 },
-        } as unknown as HechosDiagnostico;
+          ...FACTS,
+          levelByDimension: { CRL: 4 },
+        } as unknown as DiagnosticFacts;
         expect(
           compilarYEvaluar(
-            { campo: 'nivelPorDimension.TRL', op: '>=', valor: 1 },
+            { field: 'levelByDimension.TRL', op: '>=', value: 1 },
             sinTrl,
           ),
         ).toBe(false);
@@ -298,13 +298,13 @@ it('rechaza un nodo que no es un objeto', () => {
     });
 
     describe('datos ausentes', () => {
-      const sinCaracterizacion: HechosDiagnostico = {
-        ...HECHOS,
-        caracterizacion: {
-          etapa: null,
+      const sinCaracterizacion: DiagnosticFacts = {
+        ...FACTS,
+        characterization: {
+          stage: null,
           sector: null,
-          tamanoEquipo: null,
-          vinculacionAcademica: null,
+          teamSize: null,
+          academicLinkage: null,
         },
       };
 
@@ -314,7 +314,7 @@ it('rechaza un nodo que no es un objeto', () => {
         // que nadie configuró para él.
         expect(
           compilarYEvaluar(
-            { campo: 'caracterizacion.tamanoEquipo', op: '<', valor: 2 },
+            { field: 'characterization.teamSize', op: '<', value: 2 },
             sinCaracterizacion,
           ),
         ).toBe(false);
@@ -323,7 +323,7 @@ it('rechaza un nodo que no es un objeto', () => {
       it('una igualdad contra un dato ausente es falsa', () => {
         expect(
           compilarYEvaluar(
-            { campo: 'caracterizacion.vinculacionAcademica', op: '=', valor: false },
+            { field: 'characterization.academicLinkage', op: '=', value: false },
             sinCaracterizacion,
           ),
         ).toBe(false);
