@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { GetMaturityProfileUseCase } from '../../../../../src/modules/maturity-profile/application/get-maturity-profile.use-case.js';
+import { GetMaturityProfileUseCase } from '../../../../../src/modules/maturity-profile/usecase/get-maturity-profile.use-case.js';
 import type { MaturityProfileRepositoryPort } from '../../../../../src/modules/maturity-profile/domain/ports/maturity-profile.repository.port.js';
 import type { ImbalanceRepositoryPort } from '../../../../../src/modules/maturity-profile/domain/ports/imbalance.repository.port.js';
 import { MaturityProfile } from '../../../../../src/modules/maturity-profile/domain/entities/maturity-profile.aggregate.js';

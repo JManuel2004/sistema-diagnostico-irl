@@ -12,7 +12,7 @@ import { DIMENSION_DEPENDENCIES } from './data/dimension-dependencies.js';
  * lista explícitamente las dos columnas mutables — omitir una haría que
  * el seed pareciera idempotente pero nunca actualizara ese valor tras el
  * primer INSERT, que es exactamente la forma del bug que arrastra
- * `resultado_dimension.es_cuello_botella`.
+ * `dimension_result.is_bottleneck`.
  *
  * El nivel mínimo esperado por dimensión se siembra en el paso de
  * `dimension`, no aquí: es una columna de esa tabla.

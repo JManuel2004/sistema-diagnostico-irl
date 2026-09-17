@@ -3,7 +3,7 @@ import { FinalizeInitialDiagnosticUseCase } from '../../../../src/modules/diagno
 import type { DiagnosticRepositoryPort } from '../../../../src/modules/diagnostic/domain/ports/diagnostic.repository.port.js';
 import { Diagnostico } from '../../../../src/modules/diagnostic/domain/diagnostic.aggregate.js';
 import type { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/usecase/submit-questionnaire.use-case.js';
-import type { ComputeMaturityProfileUseCase } from '../../../../src/modules/maturity-profile/application/compute-maturity-profile.use-case.js';
+import type { ComputeMaturityProfileUseCase } from '../../../../src/modules/maturity-profile/usecase/compute-maturity-profile.use-case.js';
 import type { AnswerSheetRepositoryPort } from '../../../../src/modules/questionnaire/domain/ports/answer-sheet.repository.port.js';
 import { AnswerSheet } from '../../../../src/modules/questionnaire/domain/entities/answer-sheet.aggregate.js';
 import { MaturityProfile } from '../../../../src/modules/maturity-profile/domain/entities/maturity-profile.aggregate.js';

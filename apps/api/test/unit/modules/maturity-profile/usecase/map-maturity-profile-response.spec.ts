@@ -1,4 +1,4 @@
-import { toMaturityProfileResponse } from '../../../../../src/modules/maturity-profile/application/map-maturity-profile-response.js';
+import { toMaturityProfileResponse } from '../../../../../src/modules/maturity-profile/usecase/map-maturity-profile-response.js';
 import { MaturityProfile } from '../../../../../src/modules/maturity-profile/domain/entities/maturity-profile.aggregate.js';
 import { DimensionResult } from '../../../../../src/modules/maturity-profile/domain/value-objects/dimension-result.vo.js';
 import { DimensionCode } from '../../../../../src/shared-kernel/domain/value-objects/dimension-code.js';

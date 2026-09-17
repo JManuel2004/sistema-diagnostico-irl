@@ -4,14 +4,14 @@ import { Repository } from 'typeorm';
 import type { MaturityProfileRepositoryPort } from '../../domain/ports/maturity-profile.repository.port.js';
 import { MaturityProfile } from '../../domain/entities/maturity-profile.aggregate.js';
 import { MaturityProfileCalculationError } from '../../domain/errors/maturity-profile-calculation.error.js';
-import { ResultadoDimensionOrm } from './resultado-dimension.orm-entity.js';
+import { DimensionResultOrm } from './dimension-result.orm-entity.js';
 import { DimensionOrm } from '../../../irl-catalog/infrastructure/persistence/entities/dimension.orm-entity.js';
 
 @Injectable()
 export class TypeOrmMaturityProfileRepository implements MaturityProfileRepositoryPort {
   constructor(
-    @InjectRepository(ResultadoDimensionOrm)
-    private readonly orm: Repository<ResultadoDimensionOrm>,
+    @InjectRepository(DimensionResultOrm)
+    private readonly orm: Repository<DimensionResultOrm>,
     @InjectRepository(DimensionOrm)
     private readonly dimensions: Repository<DimensionOrm>,
   ) {}
@@ -34,21 +34,21 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
       return {
         idDiagnostico: snapshot.diagnosticId,
         idDimension,
-        promedioLikert: r.averageLikert,
-        nivelIrl: r.irlLevel,
-        enEstadoCritico: gapCodes.has(r.dimensionCode),
-        esCuelloBotella: false,
-        fechaCalculo: snapshot.computedAt,
+        likertAverage: r.averageLikert,
+        irlLevel: r.irlLevel,
+        inCriticalState: gapCodes.has(r.dimensionCode),
+        isBottleneck: false,
+        computedAt: snapshot.computedAt,
       };
     });
 
     await this.orm
       .createQueryBuilder()
       .insert()
-      .into(ResultadoDimensionOrm)
+      .into(DimensionResultOrm)
       .values(rows)
       .orUpdate(
-        ['promedio_likert', 'nivel_irl', 'en_estado_critico', 'fecha_calculo'],
+        ['likert_average', 'irl_level', 'in_critical_state', 'computed_at'],
         ['id_diagnostico', 'id_dimension'],
       )
       .execute();
@@ -66,7 +66,7 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
 
     return MaturityProfile.fromPersistence({
       diagnosticId,
-      computedAt: rows[0].fechaCalculo,
+      computedAt: rows[0].computedAt,
       dimensionResults: rows.map((row) => {
         const code = codeById.get(row.idDimension);
         if (code === undefined) {
@@ -77,8 +77,8 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
         }
         return {
           dimensionCode: code,
-          averageLikert: row.promedioLikert,
-          irlLevel: row.nivelIrl,
+          averageLikert: row.likertAverage,
+          irlLevel: row.irlLevel,
         };
       }),
     });

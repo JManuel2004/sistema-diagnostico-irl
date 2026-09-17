@@ -6,14 +6,14 @@ import {
   ImbalanceResult,
   type ImbalanceClassification,
 } from '../../domain/value-objects/imbalance-result.vo.js';
-import { AnalisisDesequilibrioOrm } from './analisis-desequilibrio.orm-entity.js';
+import { ImbalanceAnalysisOrm } from './imbalance-analysis.orm-entity.js';
 import { DimensionPairOrm } from '../../../irl-catalog/infrastructure/persistence/entities/dimension-pair.orm-entity.js';
 
 @Injectable()
 export class TypeOrmImbalanceRepository implements ImbalanceRepositoryPort {
   constructor(
-    @InjectRepository(AnalisisDesequilibrioOrm)
-    private readonly orm: Repository<AnalisisDesequilibrioOrm>,
+    @InjectRepository(ImbalanceAnalysisOrm)
+    private readonly orm: Repository<ImbalanceAnalysisOrm>,
     @InjectRepository(DimensionPairOrm)
     private readonly pairs: Repository<DimensionPairOrm>,
   ) {}
@@ -21,7 +21,7 @@ export class TypeOrmImbalanceRepository implements ImbalanceRepositoryPort {
   async findByDiagnosticId(diagnosticId: string): Promise<ImbalanceResult[]> {
     const rows = await this.orm.find({
       where: { idDiagnostico: diagnosticId },
-      order: { idPar: 'ASC' },
+      order: { idPair: 'ASC' },
     });
     if (rows.length === 0) return [];
 
@@ -30,16 +30,16 @@ export class TypeOrmImbalanceRepository implements ImbalanceRepositoryPort {
 
     const results: ImbalanceResult[] = [];
     for (const row of rows) {
-      const pair = pairById.get(row.idPar);
+      const pair = pairById.get(row.idPair);
       if (!pair) continue;
       const [leftCode = '', rightCode = ''] = pair.pairCode.split('-');
       results.push(
         ImbalanceResult.fromPersistence({
-          pairId: row.idPar,
+          pairId: row.idPair,
           leftCode,
           rightCode,
-          difference: row.diferenciaNiveles,
-          classification: row.clasificacion as ImbalanceClassification,
+          difference: row.levelDifference,
+          classification: row.classification as ImbalanceClassification,
         }),
       );
     }
@@ -49,17 +49,17 @@ export class TypeOrmImbalanceRepository implements ImbalanceRepositoryPort {
   async save(diagnosticId: string, results: readonly ImbalanceResult[]): Promise<void> {
     const rows = results.map((r) => ({
       idDiagnostico: diagnosticId,
-      idPar: r.pairId,
-      diferenciaNiveles: r.difference,
-      clasificacion: r.classification,
+      idPair: r.pairId,
+      levelDifference: r.difference,
+      classification: r.classification,
     }));
 
     await this.orm
       .createQueryBuilder()
       .insert()
-      .into(AnalisisDesequilibrioOrm)
+      .into(ImbalanceAnalysisOrm)
       .values(rows)
-      .orUpdate(['diferencia_niveles', 'clasificacion'], ['id_diagnostico', 'id_par'])
+      .orUpdate(['level_difference', 'classification'], ['id_diagnostico', 'id_pair'])
       .execute();
   }
 }

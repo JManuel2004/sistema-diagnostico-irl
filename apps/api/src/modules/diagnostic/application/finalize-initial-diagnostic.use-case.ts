@@ -10,8 +10,8 @@ import {
   ANSWER_SHEET_REPOSITORY,
   type AnswerSheetRepositoryPort,
 } from '../../questionnaire/domain/ports/answer-sheet.repository.port.js';
-import { ComputeMaturityProfileUseCase } from '../../maturity-profile/application/compute-maturity-profile.use-case.js';
-import { toMaturityProfileResponse } from '../../maturity-profile/application/map-maturity-profile-response.js';
+import { ComputeMaturityProfileUseCase } from '../../maturity-profile/usecase/compute-maturity-profile.use-case.js';
+import { toMaturityProfileResponse } from '../../maturity-profile/usecase/map-maturity-profile-response.js';
 import { NotFoundError } from '../../../shared-kernel/domain/errors/not-found.error.js';
 import { ConflictError } from '../../../shared-kernel/domain/errors/conflict.error.js';
 import { MaturityProfileCalculationError } from '../../maturity-profile/domain/errors/maturity-profile-calculation.error.js';

@@ -5,11 +5,11 @@ import type { MaturityProfile } from '../entities/maturity-profile.aggregate.js'
  *
  * One `MaturityProfile` per `Diagnostico`. The aggregate is loaded by
  * `diagnosticId` because external modules know the diagnostic, not the
- * synthetic `resultado_dimension` row ids.
+ * synthetic `dimension_result` row ids.
  *
  * Atomicity contract (DIAGIRL-34 acceptance criterion "no guarda
  * resultados parciales"): `save(profile)` MUST persist all six
- * `resultado_dimension` rows inside a single database transaction. If
+ * `dimension_result` rows inside a single database transaction. If
  * any row write fails the whole save is rolled back — the database
  * never exposes a partial profile.
  *
@@ -20,7 +20,7 @@ import type { MaturityProfile } from '../entities/maturity-profile.aggregate.js'
  * fully consistent.
  *
  * DIAGIRL-35 (bottleneck) and DIAGIRL-38 (imbalance) need to update the
- * boolean flags (`es_cuello_botella`, `en_estado_critico`) on individual
+ * boolean flags (`is_bottleneck`, `in_critical_state`) on individual
  * rows. Those features will extend this port with targeted update
  * methods (e.g. `markBottleneck(diagnosticId, dimensionCode)`) — they
  * do NOT round-trip the whole aggregate.
@@ -33,10 +33,10 @@ export interface MaturityProfileRepositoryPort {
   /**
    * Atomically persist the six `DimensionResult` rows backing `profile`.
    *
-   * Replace-all semantics: any prior `resultado_dimension` rows for the
+   * Replace-all semantics: any prior `dimension_result` rows for the
    * same `diagnosticId` are overwritten in the same transaction.
-   * `en_estado_critico` is written from the IRL gap threshold
-   * (`CRITICAL_IRL_THRESHOLD`). `es_cuello_botella` remains derived
+   * `in_critical_state` is written from the IRL gap threshold
+   * (`CRITICAL_IRL_THRESHOLD`). `is_bottleneck` remains derived
    * in the aggregate until a dedicated persist lands.
    *
    * @throws when the underlying transaction fails; the caller maps it

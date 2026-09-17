@@ -13,7 +13,7 @@ import {
   type RoadmapPhase,
 } from '../domain/entities/scaling-roadmap.aggregate.js';
 import { RoadmapCalculationError } from '../domain/errors/roadmap.errors.js';
-import { GetMaturityProfileUseCase } from '../../maturity-profile/application/get-maturity-profile.use-case.js';
+import { GetMaturityProfileUseCase } from '../../maturity-profile/usecase/get-maturity-profile.use-case.js';
 import { Uuid } from '../../../shared-kernel/domain/value-objects/uuid.vo.js';
 
 export interface GenerateScalingRoadmapCommand {
@@ -33,7 +33,7 @@ export interface GenerateScalingRoadmapCommand {
  *
  * Nota sobre los niveles: se toman de `dimensionResults[].irlLevel`, que
  * es correcto y está verificado. Deliberadamente **no** se consumen
- * `resultado_dimension.es_cuello_botella` ni `en_estado_critico`: la
+ * `dimension_result.is_bottleneck` ni `in_critical_state`: la
  * primera se persiste siempre en `false` y la segunda guarda una
  * semántica distinta de la del SRS. Este enfoque no las necesita, y esa
  * independencia es una de sus ventajas reales.

@@ -108,7 +108,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
 
   it('el perfil de partida es el de AgroConecta', async () => {
     const res = await agent
-      .get(`/api/v1/diagnosticos/${diagnosticId}/perfil`)
+      .get(`/api/v1/diagnosticos/${diagnosticId}/profile`)
       .expect(200);
 
     const perfil = res.body as {

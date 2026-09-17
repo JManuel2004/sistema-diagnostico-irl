@@ -26,7 +26,7 @@ import {
   NoActiveConfigurationError,
   ProfileNotComputedError,
 } from '../domain/errors/portfolio-routing.errors.js';
-import { GetMaturityProfileUseCase } from '../../maturity-profile/application/get-maturity-profile.use-case.js';
+import { GetMaturityProfileUseCase } from '../../maturity-profile/usecase/get-maturity-profile.use-case.js';
 import { Uuid } from '../../../shared-kernel/domain/value-objects/uuid.vo.js';
 import { toRecomendacionResponse } from './map-recomendacion-response.js';
 
@@ -123,8 +123,8 @@ export class GenerateRecommendationUseCase {
    * Arma los hechos del diagnóstico.
    *
    * El cuello de botella y las brechas se toman del perfil calculado, no
-   * de las columnas `es_cuello_botella` / `en_estado_critico` de
-   * `resultado_dimension`: la primera se persiste siempre en `false` y la
+   * de las columnas `is_bottleneck` / `in_critical_state` de
+   * `dimension_result`: la primera se persiste siempre en `false` y la
    * segunda guarda una semántica distinta de la del SRS. Derivarlas del
    * agregado evita depender de columnas cuyo significado está en disputa.
    */

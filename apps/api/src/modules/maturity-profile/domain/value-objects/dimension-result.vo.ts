@@ -61,7 +61,7 @@ export class DimensionResult {
     );
   }
 
-  /** Hydrate from a persisted `resultado_dimension` row. */
+  /** Hydrate from a persisted `dimension_result` row. */
   static fromPersistence(row: DimensionResultPersistence): DimensionResult {
     return DimensionResult.create({
       dimensionCode: DimensionCode.create(row.dimensionCode),
