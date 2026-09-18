@@ -57,9 +57,12 @@ describe('GetMaturityProfileUseCase', () => {
     profiles.findByDiagnosticId.mockResolvedValueOnce(aProfile());
     imbalances.findByDiagnosticId.mockResolvedValueOnce(STORED_PAIRS);
 
-    const dto = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
 
     expect(imbalances.findByDiagnosticId).toHaveBeenCalledWith(DIAGNOSTIC_ID);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected ok result');
+    const dto = result.value;
     expect(dto.imbalances).toHaveLength(6);
     expect(dto.imbalances?.find((p) => p.left === 'TRL' && p.right === 'IPRL')).toEqual({
       left: 'TRL',
@@ -75,17 +78,21 @@ describe('GetMaturityProfileUseCase', () => {
     profiles.findByDiagnosticId.mockResolvedValueOnce(aProfile());
     imbalances.findByDiagnosticId.mockResolvedValueOnce([]);
 
-    const dto = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
 
-    expect(dto.imbalances).toBeUndefined();
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.value.imbalances).toBeUndefined();
   });
 
-  it('throws when the profile has not been computed', async () => {
+  it('returns an err result when the profile has not been computed', async () => {
     profiles.findByDiagnosticId.mockResolvedValueOnce(null);
 
-    await expect(useCase.execute({ diagnosticId: DIAGNOSTIC_ID })).rejects.toBeInstanceOf(
-      ConflictError,
-    );
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected err result');
+    expect(result.error).toBeInstanceOf(ConflictError);
     expect(imbalances.findByDiagnosticId).not.toHaveBeenCalled();
   });
 });

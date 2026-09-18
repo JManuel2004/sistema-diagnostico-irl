@@ -5,6 +5,7 @@ import { CurrentUser } from '../../../../shared/identity/infrastructure/decorato
 import type { AuthenticatedUser } from '../../../../shared/identity/domain/entities/authenticated-user.vo.js';
 import { RecordConsentUseCase } from '../../application/use-cases/record-consent.use-case.js';
 import { GetConsentUseCase } from '../../application/use-cases/get-consent.use-case.js';
+import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
 
 /**
  * HTTP surface for privacy consent, Law 1581 (RF-03 / HU-05).
@@ -24,21 +25,23 @@ export class ConsentController {
 
   @Post()
   @ApiCreatedResponse({ description: 'Consent recorded for this diagnostic' })
-  recordConsent(
+  async recordConsent(
     @Param('id') diagnosticId: string,
     @Body() body: { version: string },
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ConsentRecord> {
-    return this.record.execute({
-      diagnosticId,
-      keycloakUserId: user.id,
-      version: body.version,
-    });
+    return unwrapResult(
+      await this.record.execute({
+        diagnosticId,
+        keycloakUserId: user.id,
+        version: body.version,
+      }),
+    );
   }
 
   @Get()
   @ApiOkResponse({ description: 'Consent recorded for this diagnostic' })
-  getConsent(@Param('id') diagnosticId: string): Promise<ConsentRecord> {
-    return this.get.execute(diagnosticId);
+  async getConsent(@Param('id') diagnosticId: string): Promise<ConsentRecord> {
+    return unwrapResult(await this.get.execute(diagnosticId));
   }
 }

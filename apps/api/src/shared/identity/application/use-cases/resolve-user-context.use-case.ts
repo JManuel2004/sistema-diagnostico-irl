@@ -21,6 +21,14 @@ export interface ResolveUserContextQuery {
  * may not import `@nestjs/common` (enforced by `no-restricted-imports`
  * in `eslint.config.mjs`). `IdentityModule` wires it with a factory
  * provider instead.
+ *
+ * Not converted to `Result<T, E>` during that adoption
+ * (`convenciones-objetivo.md` §2): this use case has no business-outcome
+ * check of its own — its only failure path is whatever `UserContextPort`
+ * throws when INNLAB Core is unreachable or does not know the user,
+ * which is an infrastructure failure, not an anticipable outcome of this
+ * use case's own logic. It is left to propagate unwrapped, same as
+ * before.
  */
 export class ResolveUserContextUseCase
   implements UseCase<ResolveUserContextQuery, UserContext>

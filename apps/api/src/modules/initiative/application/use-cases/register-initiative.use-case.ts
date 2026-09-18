@@ -11,6 +11,7 @@ import {
 import { Initiative } from '../../domain/entities/initiative.aggregate.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
+import { Result } from '../../../../shared/kernel/domain/result.js';
 
 export interface RegisterInitiativeCommand {
   diagnosticId: string;
@@ -32,6 +33,10 @@ export interface RegisterInitiativeCommand {
  * Registering twice for the same diagnostic replaces the previous
  * record — `InitiativeRepositoryPort.save` upserts by `diagnosticId`,
  * there is no separate "update" use case.
+ *
+ * An unknown `sectorId` is a normal, expected outcome — the client sent
+ * a stale or invalid catalog id — not an exceptional condition
+ * (`convenciones-objetivo.md` §2, "Adopción de Result<T, E>").
  */
 @Injectable()
 export class RegisterInitiativeUseCase {
@@ -42,10 +47,12 @@ export class RegisterInitiativeUseCase {
     private readonly catalog: InitiativeCatalogPort,
   ) {}
 
-  async execute(cmd: RegisterInitiativeCommand): Promise<InitiativeResponse> {
+  async execute(
+    cmd: RegisterInitiativeCommand,
+  ): Promise<Result<InitiativeResponse, NotFoundError>> {
     const sector = await this.catalog.findSectorById(cmd.sectorId);
     if (!sector) {
-      throw new NotFoundError('Sector', cmd.sectorId);
+      return Result.err(new NotFoundError('Sector', cmd.sectorId));
     }
 
     const diagnosticId = Uuid.create(cmd.diagnosticId);
@@ -59,12 +66,12 @@ export class RegisterInitiativeUseCase {
 
     await this.initiatives.save(initiative);
 
-    return {
+    return Result.ok({
       id: initiative.id.value,
       diagnosticId: initiative.diagnosticId.value,
       name: initiative.name,
       sector: { id: sector.id, name: sector.name },
       description: initiative.shortDescription,
-    };
+    });
   }
 }

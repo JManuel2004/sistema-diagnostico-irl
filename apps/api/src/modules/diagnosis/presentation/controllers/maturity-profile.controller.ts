@@ -1,6 +1,7 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { GetMaturityProfileUseCase } from '../../application/use-cases/get-maturity-profile.use-case.js';
+import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
 import type { MaturityProfileResponse } from '@innlab/contracts';
 
 @ApiTags('profile')
@@ -12,7 +13,7 @@ export class MaturityProfileController {
   @ApiOkResponse({
     description: 'Perfil de madurez persistido',
   })
-  get(@Param('id') diagnosticId: string): Promise<MaturityProfileResponse> {
-    return this.getProfile.execute({ diagnosticId });
+  async get(@Param('id') diagnosticId: string): Promise<MaturityProfileResponse> {
+    return unwrapResult(await this.getProfile.execute({ diagnosticId }));
   }
 }

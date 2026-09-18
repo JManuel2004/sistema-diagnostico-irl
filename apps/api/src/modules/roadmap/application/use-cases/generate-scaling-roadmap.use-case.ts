@@ -15,6 +15,8 @@ import {
 import { RoadmapCalculationError } from '../../domain/exceptions/roadmap.errors.js';
 import { GetMaturityProfileUseCase } from '../../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
+import { Result } from '../../../../shared/kernel/domain/result.js';
+import type { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
 
 export interface GenerateScalingRoadmapCommand {
   diagnosticId: string;
@@ -49,16 +51,23 @@ export class GenerateScalingRoadmapUseCase {
     private readonly targets: TargetLevelCalculatorService,
   ) {}
 
-  async execute(cmd: GenerateScalingRoadmapCommand): Promise<ScalingRoadmap> {
+  async execute(
+    cmd: GenerateScalingRoadmapCommand,
+  ): Promise<Result<ScalingRoadmap, ConflictError>> {
     const diagnosticId = Uuid.create(cmd.diagnosticId);
 
-    // If the profile is not computed, `GetMaturityProfileUseCase`
-    // throws `ConflictError('PROFILE_NOT_YET_COMPUTED')` → 409, same as
-    // `GET /diagnostics/:id/profile`. It is left to propagate as-is
-    // rather than wrapped: same condition, same deserved response.
-    const profile = await this.profiles.execute({
+    // If the profile is not computed, `GetMaturityProfileUseCase` returns
+    // `Result.err(ConflictError('PROFILE_NOT_YET_COMPUTED'))` → 409, same
+    // as `GET /diagnostics/:id/profile`. Propagated as this use case's
+    // own `Result.err` rather than unwrapped further: same condition,
+    // same deserved response.
+    const resultado = await this.profiles.execute({
       diagnosticId: diagnosticId.value,
     });
+    if (!resultado.ok) {
+      return Result.err(resultado.error);
+    }
+    const profile = resultado.value;
 
     if (profile.dimensionResults.length !== 6) {
       throw new RoadmapCalculationError(
@@ -97,10 +106,12 @@ export class GenerateScalingRoadmapUseCase {
       })),
     }));
 
-    return ScalingRoadmap.create({
-      diagnosticId,
-      phases,
-      generatedAt: new Date(),
-    });
+    return Result.ok(
+      ScalingRoadmap.create({
+        diagnosticId,
+        phases,
+        generatedAt: new Date(),
+      }),
+    );
   }
 }

@@ -1,6 +1,7 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { SubmitQuestionnaireUseCase } from '../../application/use-cases/submit-questionnaire.use-case.js';
+import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
 
 /**
  * HTTP surface for the questionnaire (write-side).
@@ -15,10 +16,12 @@ export class QuestionnaireController {
 
   @Post()
   @ApiCreatedResponse({ description: 'Respuestas registradas exitosamente' })
-  submitQuestionnaire(
+  async submitQuestionnaire(
     @Param('id') diagnosticId: string,
     @Body() body: { answers: { statementId: string; value: number }[] },
   ) {
-    return this.submit.execute({ diagnosticId, answers: body.answers });
+    return unwrapResult(
+      await this.submit.execute({ diagnosticId, answers: body.answers }),
+    );
   }
 }

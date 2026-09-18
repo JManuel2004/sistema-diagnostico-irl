@@ -15,6 +15,7 @@ import { Uuid } from '../../../../../../src/shared/kernel/domain/value-objects/u
 import { NotFoundError } from '../../../../../../src/shared/kernel/domain/errors/not-found.error.js';
 import { ConflictError } from '../../../../../../src/shared/kernel/domain/errors/conflict.error.js';
 import { InvariantViolationError } from '../../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
+import { Result } from '../../../../../../src/shared/kernel/domain/result.js';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
@@ -74,11 +75,11 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
       findByDiagnosticId: jest.fn(() => Promise.resolve(anAnswerSheet())),
       save: jest.fn(() => Promise.resolve(undefined)),
     };
-    submitQuestionnaire = { execute: jest.fn(() => Promise.resolve({
+    submitQuestionnaire = { execute: jest.fn(() => Promise.resolve(Result.ok({
       diagnosticId: DIAGNOSTIC_ID,
       answersRecorded: 48,
       state: 'QUESTIONNAIRE_COMPLETE' as const,
-    })) };
+    }))) };
     computeProfile = { execute: jest.fn(() => Promise.resolve({ profile: aProfile(), imbalances: [] })) };
 
     useCase = new FinalizeInitialDiagnosisUseCase(
@@ -106,8 +107,10 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
     expect(diagnostics.save).toHaveBeenCalledTimes(1);
     const saved = diagnostics.save.mock.calls[0][0];
     expect(saved.state.value).toBe('PROFILE_GENERATED');
-    expect(result.diagnosticId).toBe(DIAGNOSTIC_ID);
-    expect(result.dimensionResults).toHaveLength(6);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.value.diagnosticId).toBe(DIAGNOSTIC_ID);
+    expect(result.value.dimensionResults).toHaveLength(6);
   });
 
   it('advances from QUESTIONNAIRE_COMPLETE to PROFILE_GENERATED', async () => {
@@ -130,7 +133,9 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
     expect(computeProfile.execute).toHaveBeenCalledTimes(1);
     const saved = diagnostics.save.mock.calls[0][0];
     expect(saved.state.value).toBe('DEEP_ANALYSIS_IN_PROGRESS');
-    expect(result.diagnosticId).toBe(DIAGNOSTIC_ID);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.value.diagnosticId).toBe(DIAGNOSTIC_ID);
   });
 
   it('is idempotent when the diagnostic is already PROFILE_GENERATED', async () => {
@@ -144,23 +149,41 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
     expect(saved.state.value).toBe('PROFILE_GENERATED');
   });
 
-  it('throws NotFoundError when the diagnostic does not exist', async () => {
+  it('returns an err result when the diagnostic does not exist', async () => {
     diagnostics.findById.mockResolvedValueOnce(null);
 
-    await expect(
-      useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS }),
-    ).rejects.toBeInstanceOf(NotFoundError);
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected err result');
+    expect(result.error).toBeInstanceOf(NotFoundError);
     expect(submitQuestionnaire.execute).not.toHaveBeenCalled();
     expect(computeProfile.execute).not.toHaveBeenCalled();
   });
 
-  it('rejects finalization from an earlier state', async () => {
+  it('returns an err result when finalizing from an earlier state', async () => {
     diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('STARTED'));
 
-    await expect(
-      useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS }),
-    ).rejects.toBeInstanceOf(ConflictError);
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected err result');
+    expect(result.error).toBeInstanceOf(ConflictError);
     expect(submitQuestionnaire.execute).not.toHaveBeenCalled();
+  });
+
+  it('propagates the questionnaire submission error without computing a profile', async () => {
+    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS'));
+    const submissionError = new InvariantViolationError('incomplete submission');
+    submitQuestionnaire.execute.mockResolvedValueOnce(Result.err(submissionError));
+
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected err result');
+    expect(result.error).toBe(submissionError);
+    expect(computeProfile.execute).not.toHaveBeenCalled();
+    expect(diagnostics.save).not.toHaveBeenCalled();
   });
 
   it('does not transition state if computation fails', async () => {

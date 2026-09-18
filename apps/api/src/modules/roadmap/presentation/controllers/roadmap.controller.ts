@@ -3,6 +3,7 @@ import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { RoadmapResponse } from '@innlab/contracts';
 import { GenerateScalingRoadmapUseCase } from '../../application/use-cases/generate-scaling-roadmap.use-case.js';
 import { toRoadmapResponse } from '../../application/dtos/map-roadmap-response.js';
+import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
 
 /**
  * HTTP surface for the scaling roadmap (RF-14).
@@ -18,9 +19,9 @@ import { toRoadmapResponse } from '../../application/dtos/map-roadmap-response.j
  * roadmap neither calls the router nor depends on it. The frontend
  * composes both.
  *
- * If the diagnostic has no computed profile, the use case lets the
- * `ConflictError` from `GetMaturityProfileUseCase` propagate → 409,
- * exactly like `GET /diagnostics/:id/profile`.
+ * If the diagnostic has no computed profile, the use case's `Result.err`
+ * (a `ConflictError`, propagated from `GetMaturityProfileUseCase`)
+ * unwraps to a 409, exactly like `GET /diagnostics/:id/profile`.
  */
 @ApiTags('roadmap')
 @Controller('diagnostics/:id/roadmap')
@@ -34,6 +35,8 @@ export class RoadmapController {
       'meets the expected minimum in all six dimensions.',
   })
   async get(@Param('id') diagnosticId: string): Promise<RoadmapResponse> {
-    return toRoadmapResponse(await this.generate.execute({ diagnosticId }));
+    return toRoadmapResponse(
+      unwrapResult(await this.generate.execute({ diagnosticId })),
+    );
   }
 }

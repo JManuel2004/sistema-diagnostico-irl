@@ -7,6 +7,7 @@ import {
 import { Consent } from '../../domain/entities/consent.entity.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
+import { Result } from '../../../../shared/kernel/domain/result.js';
 
 /**
  * Current version of the privacy-consent text (Law 1581, RF-03).
@@ -34,7 +35,9 @@ export interface RecordConsentCommand {
  * request, so there is no "decline" path to model here. The version the
  * client sends must match `CURRENT_TERMS_VERSION`; a stale client
  * (showing an outdated text) is rejected with `ConflictError` rather
- * than silently accepted, per the contract's own documented rule.
+ * than silently accepted, per the contract's own documented rule. That
+ * mismatch is a normal, expected outcome — not an exceptional condition
+ * (`convenciones-objetivo.md` §2, "Adopción de Result<T, E>").
  */
 @Injectable()
 export class RecordConsentUseCase {
@@ -43,11 +46,15 @@ export class RecordConsentUseCase {
     private readonly consents: ConsentRepositoryPort,
   ) {}
 
-  async execute(cmd: RecordConsentCommand): Promise<ConsentRecord> {
+  async execute(
+    cmd: RecordConsentCommand,
+  ): Promise<Result<ConsentRecord, ConflictError>> {
     if (cmd.version !== CURRENT_TERMS_VERSION) {
-      throw new ConflictError(
-        `Terms version mismatch: client sent '${cmd.version}', current is '${CURRENT_TERMS_VERSION}'`,
-        { sent: cmd.version, current: CURRENT_TERMS_VERSION },
+      return Result.err(
+        new ConflictError(
+          `Terms version mismatch: client sent '${cmd.version}', current is '${CURRENT_TERMS_VERSION}'`,
+          { sent: cmd.version, current: CURRENT_TERMS_VERSION },
+        ),
       );
     }
 
@@ -61,10 +68,10 @@ export class RecordConsentUseCase {
 
     await this.consents.save(consent);
 
-    return {
+    return Result.ok({
       diagnosticId: consent.diagnosticId.value,
       version: consent.termsVersion,
       acceptedAt: consent.acceptedAt.toISOString(),
-    };
+    });
   }
 }

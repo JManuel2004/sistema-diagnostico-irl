@@ -23,6 +23,17 @@ import type { ProblemDetails } from '../problem-details.js';
  *
  * Errors that do not fit that hierarchy map by their stable `code` — see
  * `STATUS_BY_CODE` at the bottom of this file.
+ *
+ * Since the `Result<T, E>` adoption (`convenciones-objetivo.md` §2), most
+ * `DomainError`s that reach here no longer come from a use case throwing
+ * directly — they come from `shared/kernel/application/unwrap-result.ts`
+ * rethrowing a use case's `Result.err`, one layer higher in
+ * `presentation/`. This filter's mapping table is unaffected either way:
+ * it only ever sees a thrown `DomainError`, regardless of which layer
+ * threw it. Its remaining direct callers are use cases whose failure is
+ * genuinely exceptional (infrastructure, a bug) rather than an
+ * anticipable business outcome, which stay outside `Result`'s scope by
+ * design.
  */
 @Catch(DomainError)
 export class DomainExceptionFilter implements ExceptionFilter {

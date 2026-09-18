@@ -33,9 +33,11 @@ describe('SubmitQuestionnaireUseCase', () => {
     });
 
     expect(mockRepo.save).toHaveBeenCalledTimes(1);
-    expect(result.diagnosticId).toBe(DIAGNOSTIC_ID);
-    expect(result.answersRecorded).toBe(48);
-    expect(result.state).toBe('QUESTIONNAIRE_COMPLETE');
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.value.diagnosticId).toBe(DIAGNOSTIC_ID);
+    expect(result.value.answersRecorded).toBe(48);
+    expect(result.value.state).toBe('QUESTIONNAIRE_COMPLETE');
   });
 
   it('throws for invalid diagnostic UUID', async () => {
@@ -70,7 +72,9 @@ describe('SubmitQuestionnaireUseCase', () => {
       answers,
     });
 
-    expect(result.answersRecorded).toBe(48);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.value.answersRecorded).toBe(48);
     const savedSheet = mockRepo.save.mock.calls[0][0];
     expect(savedSheet.getAnswer('1')?.value.value).toBe(5);
   });
@@ -81,9 +85,11 @@ describe('SubmitQuestionnaireUseCase', () => {
       value: 3,
     }));
 
-    await expect(
-      useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers }),
-    ).rejects.toThrow(InvariantViolationError);
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected err result');
+    expect(result.error).toBeInstanceOf(InvariantViolationError);
     expect(mockRepo.save).not.toHaveBeenCalled();
   });
 
@@ -93,9 +99,11 @@ describe('SubmitQuestionnaireUseCase', () => {
       value: 3,
     }));
 
-    await expect(
-      useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers }),
-    ).rejects.toThrow(InvariantViolationError);
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected err result');
+    expect(result.error).toBeInstanceOf(InvariantViolationError);
     expect(mockRepo.save).not.toHaveBeenCalled();
   });
 });

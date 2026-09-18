@@ -7,6 +7,7 @@ import type {
 import { GenerateRecommendationUseCase } from '../../application/use-cases/generate-recommendation.use-case.js';
 import { GetRecommendationUseCase } from '../../application/use-cases/get-recommendation.use-case.js';
 import { GetRecommendationTraceUseCase } from '../../application/use-cases/get-recommendation-trace.use-case.js';
+import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
 
 /**
  * Superficie HTTP del enrutamiento al portafolio (RF-15).
@@ -35,21 +36,21 @@ export class RecommendationController {
     description:
       'Recomendación de portafolio generada y persistida junto con su trace por layers',
   })
-  generate(@Param('id') diagnosticId: string): Promise<RecommendationResponse> {
-    return this.generar.execute({ diagnosticId });
+  async generate(@Param('id') diagnosticId: string): Promise<RecommendationResponse> {
+    return unwrapResult(await this.generar.execute({ diagnosticId }));
   }
 
   @Get()
   @ApiOkResponse({ description: 'Recomendación de portafolio persistida' })
-  get(@Param('id') diagnosticId: string): Promise<RecommendationResponse> {
-    return this.obtener.execute({ diagnosticId });
+  async get(@Param('id') diagnosticId: string): Promise<RecommendationResponse> {
+    return unwrapResult(await this.obtener.execute({ diagnosticId }));
   }
 
   @Get('trace')
   @ApiOkResponse({
     description: 'Traza por layers de la evaluación — audiencia INNLAB',
   })
-  getTrace(@Param('id') diagnosticId: string): Promise<LayerTraceResponse> {
-    return this.obtenerTraza.execute({ diagnosticId });
+  async getTrace(@Param('id') diagnosticId: string): Promise<LayerTraceResponse> {
+    return unwrapResult(await this.obtenerTraza.execute({ diagnosticId }));
   }
 }

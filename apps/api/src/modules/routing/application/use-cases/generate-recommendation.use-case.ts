@@ -28,6 +28,7 @@ import {
 } from '../../domain/exceptions/routing.errors.js';
 import { GetMaturityProfileUseCase } from '../../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
+import { Result } from '../../../../shared/kernel/domain/result.js';
 import { toRecomendacionResponse } from '../dtos/map-recommendation-response.js';
 
 export interface GenerateRecommendationCommand {
@@ -61,15 +62,23 @@ export class GenerateRecommendationUseCase {
 
   async execute(
     cmd: GenerateRecommendationCommand,
-  ): Promise<RecommendationResponse> {
+  ): Promise<
+    Result<RecommendationResponse, NoActiveConfigurationError | ProfileNotComputedError>
+  > {
     const diagnosticId = Uuid.create(cmd.diagnosticId);
 
     const config = await this.configuration.load();
     if (!config) {
-      throw new NoActiveConfigurationError({ diagnosticId: diagnosticId.value });
+      return Result.err(
+        new NoActiveConfigurationError({ diagnosticId: diagnosticId.value }),
+      );
     }
 
-    const facts = await this.construirHechos(diagnosticId.value);
+    const hechos = await this.construirHechos(diagnosticId.value);
+    if (!hechos.ok) {
+      return Result.err(hechos.error);
+    }
+    const facts = hechos.value;
 
     // ── Capa 0: traducir el vocabulario ordinal a números ──────────────
     const fichasNumericas = this.traductor.translate(config.profiles, config.scale);
@@ -113,7 +122,7 @@ export class GenerateRecommendationUseCase {
 
     await this.recommendations.save(recommendation);
 
-    return toRecomendacionResponse(recommendation);
+    return Result.ok(toRecomendacionResponse(recommendation));
   }
 
   /**
@@ -127,14 +136,12 @@ export class GenerateRecommendationUseCase {
    */
   private async construirHechos(
     diagnosticId: string,
-  ): Promise<DiagnosticFacts> {
-    const perfil = await this.perfiles
-      .execute({ diagnosticId })
-      .catch(() => null);
-
-    if (!perfil) {
-      throw new ProfileNotComputedError(diagnosticId);
+  ): Promise<Result<DiagnosticFacts, ProfileNotComputedError>> {
+    const resultado = await this.perfiles.execute({ diagnosticId });
+    if (!resultado.ok) {
+      return Result.err(new ProfileNotComputedError(diagnosticId));
     }
+    const perfil = resultado.value;
 
     const characterization =
       await this.caracterizaciones.findByDiagnosticId(diagnosticId);
@@ -146,7 +153,7 @@ export class GenerateRecommendationUseCase {
     const niveles = perfil.dimensionResults.map((r) => r.irlLevel);
     const averageLevel = niveles.reduce((a, b) => a + b, 0) / niveles.length;
 
-    return {
+    return Result.ok({
       diagnosticId,
       levelByDimension,
       bottlenecks: perfil.bottleneck.dimensions,
@@ -166,7 +173,7 @@ export class GenerateRecommendationUseCase {
       })),
       averageLevel,
       characterization,
-    };
+    });
   }
 }
 

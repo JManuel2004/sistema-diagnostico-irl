@@ -29,6 +29,16 @@ export interface ComputeMaturityProfileCommand {
   answers: { statementId: string; value: number }[];
 }
 
+/**
+ * Not converted to `Result<T, E>` (`convenciones-objetivo.md` §2): both
+ * its failure paths — a caller passing the wrong answer count, or an
+ * answer referencing a statement the catalog does not have — are system
+ * defects reachable only if an upstream invariant already broke (`Answer
+ * SheetPort` promising 48 complete answers, the catalog and the
+ * questionnaire disagreeing on statement ids), not anticipable business
+ * outcomes of a well-formed request. `MaturityProfileCalculationError`
+ * maps to 500 for exactly that reason. Stays a thrown exception.
+ */
 @Injectable()
 export class ComputeMaturityProfileUseCase {
   constructor(

@@ -9,7 +9,13 @@ import {
   type InitiativeCatalogPort,
 } from '../../domain/repositories/initiative-catalog.port.js';
 import { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
+import { Result } from '../../../../shared/kernel/domain/result.js';
 
+/**
+ * "No initiative registered yet" is a normal, expected outcome, not an
+ * exceptional condition (`convenciones-objetivo.md` §2, "Adopción de
+ * Result<T, E>").
+ */
 @Injectable()
 export class GetInitiativeUseCase {
   constructor(
@@ -19,20 +25,22 @@ export class GetInitiativeUseCase {
     private readonly catalog: InitiativeCatalogPort,
   ) {}
 
-  async execute(diagnosticId: string): Promise<InitiativeResponse> {
+  async execute(
+    diagnosticId: string,
+  ): Promise<Result<InitiativeResponse, NotFoundError>> {
     const initiative = await this.initiatives.findByDiagnosticId(diagnosticId);
     if (!initiative) {
-      throw new NotFoundError('Initiative', diagnosticId);
+      return Result.err(new NotFoundError('Initiative', diagnosticId));
     }
 
     const sector = await this.catalog.findSectorById(initiative.sectorId);
 
-    return {
+    return Result.ok({
       id: initiative.id.value,
       diagnosticId: initiative.diagnosticId.value,
       name: initiative.name,
       sector: sector ?? { id: initiative.sectorId, name: '' },
       description: initiative.shortDescription,
-    };
+    });
   }
 }

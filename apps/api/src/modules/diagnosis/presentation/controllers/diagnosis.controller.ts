@@ -1,6 +1,7 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { FinalizeInitialDiagnosisUseCase } from '../../application/use-cases/finalize-initial-diagnosis.use-case.js';
+import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
 import type { MaturityProfileResponse } from '@innlab/contracts';
 
 /**
@@ -25,13 +26,15 @@ export class DiagnosisController {
     description:
       'Cuestionario persistido, perfil calculado y diagnóstico en PROFILE_GENERATED',
   })
-  finalize(
+  async finalize(
     @Param('id') diagnosticId: string,
     @Body() body: { answers: { statementId: string; value: number }[] },
   ): Promise<MaturityProfileResponse> {
-    return this.finalizeInitial.execute({
-      diagnosticId,
-      answers: body.answers,
-    });
+    return unwrapResult(
+      await this.finalizeInitial.execute({
+        diagnosticId,
+        answers: body.answers,
+      }),
+    );
   }
 }

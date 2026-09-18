@@ -14,7 +14,9 @@ import { ComputeMaturityProfileUseCase } from './compute-maturity-profile.use-ca
 import { toMaturityProfileResponse } from '../dtos/map-maturity-profile-response.js';
 import { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
 import { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
+import type { InvariantViolationError } from '../../../../shared/kernel/domain/errors/invariant-violation.error.js';
 import { MaturityProfileCalculationError } from '../../domain/exceptions/maturity-profile-calculation.error.js';
+import { Result } from '../../../../shared/kernel/domain/result.js';
 
 const FINALIZABLE_STATES: readonly DiagnosisStateName[] = [
   'QUESTIONNAIRE_IN_PROGRESS',
@@ -30,6 +32,17 @@ export interface FinalizeInitialDiagnosticCommand {
   answers: { statementId: string; value: number }[];
 }
 
+/**
+ * The diagnostic not existing, being in the wrong state to finalize, or
+ * the questionnaire submission being incomplete are all normal, expected
+ * outcomes of this orchestration — not exceptional conditions — so they
+ * come back as `Result.err` (`convenciones-objetivo.md` §2, "Adopción de
+ * Result<T, E>"). `MaturityProfileCalculationError` is deliberately NOT
+ * part of that: a missing answer sheet at this point, or `ComputeMaturity
+ * ProfileUseCase` itself failing, are system defects (this method already
+ * validated the questionnaire was submitted), not business outcomes, and
+ * stay thrown exceptions the same as before this adoption.
+ */
 @Injectable()
 export class FinalizeInitialDiagnosisUseCase {
   constructor(
@@ -43,24 +56,31 @@ export class FinalizeInitialDiagnosisUseCase {
 
   async execute(
     cmd: FinalizeInitialDiagnosticCommand,
-  ): Promise<MaturityProfileResponse> {
+  ): Promise<
+    Result<MaturityProfileResponse, NotFoundError | ConflictError | InvariantViolationError>
+  > {
     const diagnostico = await this.diagnostics.findById(cmd.diagnosticId);
     if (!diagnostico) {
-      throw new NotFoundError('Diagnosis', cmd.diagnosticId);
+      return Result.err(new NotFoundError('Diagnosis', cmd.diagnosticId));
     }
 
     const current = diagnostico.state.value;
     if (!FINALIZABLE_STATES.includes(current)) {
-      throw new ConflictError(
-        `Diagnosis cannot be finalized from state ${current}`,
-        { diagnosticId: cmd.diagnosticId, state: current },
+      return Result.err(
+        new ConflictError(
+          `Diagnosis cannot be finalized from state ${current}`,
+          { diagnosticId: cmd.diagnosticId, state: current },
+        ),
       );
     }
 
-    await this.submitQuestionnaire.execute({
+    const submission = await this.submitQuestionnaire.execute({
       diagnosticId: cmd.diagnosticId,
       answers: cmd.answers,
     });
+    if (!submission.ok) {
+      return Result.err(submission.error);
+    }
 
     const sheet = await this.answerSheets.findByDiagnosticId(cmd.diagnosticId);
     if (!sheet) {
@@ -87,6 +107,6 @@ export class FinalizeInitialDiagnosisUseCase {
 
     await this.diagnostics.save(diagnostico);
 
-    return toMaturityProfileResponse(profile, imbalances);
+    return Result.ok(toMaturityProfileResponse(profile, imbalances));
   }
 }
