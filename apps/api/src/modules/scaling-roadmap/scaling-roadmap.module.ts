@@ -15,7 +15,7 @@ import { DiagnosisModule } from '../diagnosis/diagnosis.module.js';
  * `ScalingRoadmapModule` — bounded context for the scaling roadmap
  * (RF-14).
  *
- * Structurally symmetric to `PortfolioRoutingModule`: its own controller
+ * Structurally symmetric to `RoutingModule`: its own controller
  * and an import of `DiagnosisModule` to read the profile through
  * its read use case, never reaching into its tables. This is a conscious
  * deviation from the plan, which proposed hanging the endpoint off

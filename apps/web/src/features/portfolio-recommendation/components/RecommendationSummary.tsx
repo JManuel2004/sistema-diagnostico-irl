@@ -97,8 +97,7 @@ export function RecommendationSummary({ recommendation }: Props): JSX.Element {
             dateStyle: 'long',
             timeStyle: 'short',
           })}{' '}
-          con la versión {recommendation.configurationVersion} del criterio de
-          enrutamiento de INNLAB.
+          con el criterio de enrutamiento vigente de INNLAB.
         </span>
       </p>
     </section>

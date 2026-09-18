@@ -18,6 +18,11 @@ import { uuidSchema } from '../common/uuid.schema.js';
  * en Modelo de Negocio" y no "porque aportó 1.50". El vocabulario ordinal
  * es el que entiende el equipo de negocio; el número es un detalle de
  * implementación de la calibración.
+ *
+ * Ya no lleva `configurationVersion`/`calibrationSnapshot`/
+ * `parametersSnapshot`: el esquema de versionado de configuración se
+ * retiró (backlog 5.6) — hay una sola configuración vigente, sin
+ * historial de versiones que numerar.
  */
 export const dimensionContributionSchema = z.object({
   dimension: z.string(),
@@ -97,9 +102,6 @@ export const layerTraceResponseSchema = z
      */
     adjustedByException: z.boolean(),
     incompleteCharacterization: z.array(z.string()),
-    configurationVersion: z.number().int().positive(),
-    calibrationSnapshot: z.number().int().positive(),
-    parametersSnapshot: z.number().int().positive(),
     factsHash: z.string(),
     evaluatedAt: z.string().datetime(),
   })

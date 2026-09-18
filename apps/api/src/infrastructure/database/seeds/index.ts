@@ -3,7 +3,7 @@ import dataSource from '../data-source.js';
 import { CONVERSION_RANGES } from './data/conversion-ranges.js';
 import { DIMENSIONS } from './data/dimensions.js';
 import { STATEMENTS } from './data/statements.js';
-import { seedPortfolioRouting } from './seed-portfolio-routing.js';
+import { seedRouting } from './seed-routing.js';
 import { seedRoadmapGraph } from './seed-roadmap-graph.js';
 
 loadEnv({ path: '.env.local' });
@@ -29,7 +29,7 @@ loadEnv({ path: '.env' });
  */
 async function run(): Promise<void> {
   await dataSource.initialize();
-  let routing = { versionPublished: false };
+  let routing = { configurationSeeded: false };
   let roadmap = { edges: 0 };
   try {
     await dataSource.transaction(async (manager) => {
@@ -114,11 +114,10 @@ async function run(): Promise<void> {
         ],
       );
 
-      // Catálogo de enrutamiento + publicación de la versión 1. Va dentro
-      // de la misma transacción: una versión con fichas pero sin reglas de
-      // excepción haría que el motor arrancase y diera resultados
-      // silenciosamente incompletos.
-      routing = await seedPortfolioRouting(manager);
+      // Catálogo de enrutamiento. Va dentro de la misma transacción: una
+      // configuración con fichas pero sin reglas de excepción haría que
+      // el motor arrancase y diera resultados silenciosamente incompletos.
+      routing = await seedRouting(manager);
 
       // Grafo de dependencias del roadmap. Va después de `dimension`
       // porque resuelve sus FKs por subconsulta sobre `code`.
@@ -139,18 +138,18 @@ async function run(): Promise<void> {
     );
 
     const [{ count: svcCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.servicio_portafolio`,
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.portfolio_service`,
     );
     const [{ count: fichaCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.ficha_ordinal_publicada`,
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.published_ordinal_profile`,
     );
 
     // eslint-disable-next-line no-console
     console.log(
       `Seed complete — ${dimCount} dimensions, ${afCount} statements, ${rcCount} conversion ranges, ` +
         `${parCount} dimension pairs, ${svcCount} portfolio services, ${fichaCount} ordinal profiles, ` +
-        `${roadmap.edges} roadmap dependency edges in irl_catalog. Routing configuration v1: ` +
-        `${routing.versionPublished ? 'published' : 'already present, left untouched'}.`,
+        `${roadmap.edges} roadmap dependency edges in irl_catalog. Routing configuration: ` +
+        `${routing.configurationSeeded ? 'seeded' : 'already present, left untouched'}.`,
     );
   } finally {
     await dataSource.destroy();

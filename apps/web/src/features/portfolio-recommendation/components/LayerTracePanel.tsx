@@ -165,8 +165,6 @@ export function LayerTracePanel({ trace, isLoading, onOpen }: Props): JSX.Elemen
             </Bloque>
 
             <p className="text-muted-foreground border-border border-t pt-4 text-xs">
-              Versión de configuración {trace.configurationVersion} · calibración{' '}
-              {trace.calibrationSnapshot} · parámetros {trace.parametersSnapshot}.
               Evaluado el{' '}
               {new Date(trace.evaluatedAt).toLocaleString('es-CO', {
                 dateStyle: 'long',

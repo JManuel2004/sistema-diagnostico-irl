@@ -10,7 +10,7 @@ import { InvariantViolationError } from '../../../../shared/kernel/domain/errors
  * `diagnosticId`, enforced at the database by `uq_initiative_diagnostic`.
  *
  * `stageId`, `teamSize` and `academicLinkage` are the characterisation
- * fields the routing engine reads (`portfolio-routing`, via
+ * fields the routing engine reads (`routing/`, via
  * `GetInitiativeCharacterizationUseCase`). They stay optional here for
  * the same reason they are nullable at the database: registering an
  * initiative (this aggregate) and characterising it are two different

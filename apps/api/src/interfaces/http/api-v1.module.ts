@@ -4,7 +4,7 @@ import { HealthController } from './health.controller.js';
 import { IdentityModule } from '../../shared/identity/identity.module.js';
 import { DiagnosisModule } from '../../modules/diagnosis/diagnosis.module.js';
 import { InitiativeModule } from '../../modules/initiative/initiative.module.js';
-import { PortfolioRoutingModule } from '../../modules/portfolio-routing/portfolio-routing.module.js';
+import { RoutingModule } from '../../modules/routing/routing.module.js';
 import { ScalingRoadmapModule } from '../../modules/scaling-roadmap/scaling-roadmap.module.js';
 
 /**
@@ -23,7 +23,7 @@ import { ScalingRoadmapModule } from '../../modules/scaling-roadmap/scaling-road
     IdentityModule,
     DiagnosisModule,
     InitiativeModule,
-    PortfolioRoutingModule,
+    RoutingModule,
     ScalingRoadmapModule,
   ],
   controllers: [HealthController],

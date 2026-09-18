@@ -46,7 +46,7 @@ import { MyDiagnosesController } from './presentation/controllers/my-diagnoses.c
  * phase, not invented here.
  *
  * `GetInitiativeCharacterizationUseCase` is exported for
- * `portfolio-routing` to consume — see the note on that use case for
+ * `routing/` to consume — see the note on that use case for
  * what it replaces.
  */
 @Module({

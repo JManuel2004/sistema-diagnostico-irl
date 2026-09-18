@@ -19,7 +19,7 @@ const NO_CHARACTERIZATION: Characterization = {
 /**
  * `GetInitiativeCharacterizationUseCase` — the read `routing/` needs to
  * score a service against the initiative's situation, not only its IRL
- * profile (`portfolio-routing`'s `InitiativeCharacterizationPort`).
+ * profile (`routing/`'s `InitiativeCharacterizationPort`).
  *
  * Returns the empty characterization when no initiative is registered
  * for the diagnostic, which is still always true in practice: the
@@ -29,7 +29,7 @@ const NO_CHARACTERIZATION: Characterization = {
  * This replaces `TypeOrmInitiativeCharacterizationRepository`'s direct
  * reads of `IniciativaOrm`/`EtapaIniciativaOrm`/`SectorOrm` — those
  * entities are gone (renamed and moved here as part of this oleada);
- * `portfolio-routing` now calls this use case instead of reaching into
+ * `routing/` now calls this use case instead of reaching into
  * `initiative/`'s tables itself.
  */
 @Injectable()

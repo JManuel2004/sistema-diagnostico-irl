@@ -112,7 +112,7 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     ANSWER_SHEET_REPOSITORY,
     MATURITY_PROFILE_REPOSITORY,
     ComputeMaturityProfileUseCase,
-    // Consumed by RoutingModule/RoadmapModule (portfolio-routing/
+    // Consumed by RoutingModule/RoadmapModule (routing/
     // scaling-roadmap until Oleadas 4/5 rename them): the recommendation
     // and roadmap engines read the profile through this read use case,
     // never reaching the tables directly.

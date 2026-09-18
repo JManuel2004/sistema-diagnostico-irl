@@ -53,7 +53,7 @@ export default {
       functions: 92,
       lines: 93,
     },
-    './src/modules/portfolio-routing/domain/': {
+    './src/modules/routing/domain/': {
       branches: 90,
       functions: 95,
       lines: 95,

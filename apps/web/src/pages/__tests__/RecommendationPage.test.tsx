@@ -25,7 +25,6 @@ const RECOMENDACION = {
   alternatives: [
     { idService: 2, name: 'Mentoría', position: 2, score: 3.8 },
   ],
-  configurationVersion: 1,
   generatedAt: '2026-09-07T14:30:00.000Z',
 };
 
@@ -200,9 +199,6 @@ describe('RecommendationPage', () => {
           rankingAfterExceptions: [],
           adjustedByException: false,
           incompleteCharacterization: [],
-          configurationVersion: 1,
-          calibrationSnapshot: 1,
-          parametersSnapshot: 1,
           factsHash: 'a'.repeat(64),
           evaluatedAt: '2026-09-07T14:30:00.000Z',
         });

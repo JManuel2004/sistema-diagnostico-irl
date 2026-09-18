@@ -21,13 +21,15 @@ import { EnglishMaturityProfileNaming1747526400015 } from '../../../src/infrastr
 import { EnglishRoadmapGraphNaming1747526400016 } from '../../../src/infrastructure/database/migrations/20260518016-EnglishRoadmapGraphNaming.js';
 import { EnglishDiagnosticNaming1747526400017 } from '../../../src/infrastructure/database/migrations/20260518017-EnglishDiagnosticNaming.js';
 import { EnglishPortfolioRoutingNaming1747526400018 } from '../../../src/infrastructure/database/migrations/20260518018-EnglishPortfolioRoutingNaming.js';
-import { PortfolioRecommendationOrm } from '../../../src/modules/portfolio-routing/infrastructure/persistence/portfolio-recommendation.orm-entity.js';
-import { RecommendationAlternativeOrm } from '../../../src/modules/portfolio-routing/infrastructure/persistence/recommendation-alternative.orm-entity.js';
-import { LayerTraceOrm } from '../../../src/modules/portfolio-routing/infrastructure/persistence/layer-trace.orm-entity.js';
-import { TypeOrmRecommendationRepository } from '../../../src/modules/portfolio-routing/infrastructure/persistence/typeorm-recommendation.repository.js';
-import { Recommendation } from '../../../src/modules/portfolio-routing/domain/entities/recommendation.aggregate.js';
+import { EnglishInitiativeConsentNaming1747526400020 } from '../../../src/infrastructure/database/migrations/20260518020-EnglishInitiativeConsentNaming.js';
+import { RetireRoutingConfigurationVersioning1747526400021 } from '../../../src/infrastructure/database/migrations/20260518021-RetireRoutingConfigurationVersioning.js';
+import { PortfolioRecommendationOrm } from '../../../src/modules/routing/infrastructure/database/orm-entities/portfolio-recommendation.orm-entity.js';
+import { RecommendationAlternativeOrm } from '../../../src/modules/routing/infrastructure/database/orm-entities/recommendation-alternative.orm-entity.js';
+import { LayerTraceOrm } from '../../../src/modules/routing/infrastructure/database/orm-entities/layer-trace.orm-entity.js';
+import { TypeOrmRecommendationRepository } from '../../../src/modules/routing/infrastructure/database/repositories/typeorm-recommendation.repository.js';
+import { Recommendation } from '../../../src/modules/routing/domain/entities/recommendation.aggregate.js';
 import { Uuid } from '../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
-import type { ScoredCandidate } from '../../../src/modules/portfolio-routing/domain/value-objects/scored-candidate.vo.js';
+import type { ScoredCandidate } from '../../../src/modules/routing/domain/value-objects/scored-candidate.vo.js';
 
 /**
  * Pruebas de integración del repositorio de recomendaciones.
@@ -38,18 +40,14 @@ import type { ScoredCandidate } from '../../../src/modules/portfolio-routing/dom
  * basta, así que aquí se comprueba cortando la escritura a la mitad y
  * confirmando que no queda nada.
  *
- * También cubre las garantías que sostiene la base de datos por
- * construcción: una sola versión vigente, y una sola recomendación por
- * diagnóstico.
+ * También cubre la garantía que sostiene la base de datos por
+ * construcción: una sola recomendación por diagnóstico.
  */
 describe('Recomendación — persistencia (integration)', () => {
   let container: StartedPostgreSqlContainer;
   let dataSource: DataSource;
   let repo: TypeOrmRecommendationRepository;
   let ormRepo: Repository<PortfolioRecommendationOrm>;
-  let idVersion: string;
-  let idCalibration: string;
-  let idParameters: string;
   let idService: number;
   let diagnosticId: string;
 
@@ -104,6 +102,8 @@ describe('Recomendación — persistencia (integration)', () => {
         EnglishRoadmapGraphNaming1747526400016,
         EnglishDiagnosticNaming1747526400017,
         EnglishPortfolioRoutingNaming1747526400018,
+        EnglishInitiativeConsentNaming1747526400020,
+        RetireRoutingConfigurationVersioning1747526400021,
       ],
       migrationsTableName: 'typeorm_migrations',
     });
@@ -115,25 +115,6 @@ describe('Recomendación — persistencia (integration)', () => {
     repo = new TypeOrmRecommendationRepository(ormRepo);
 
     // Configuración mínima para satisfacer las claves foráneas.
-    [{ id: idCalibration }] = await dataSource.query(
-      `INSERT INTO irl_catalog.calibration_snapshot (number, author_id, state)
-       VALUES (1, 't', 'PUBLISHED') RETURNING id`,
-    );
-    [{ id: idParameters }] = await dataSource.query(
-      `INSERT INTO irl_catalog.parameters_snapshot
-         (number, author_id, bottleneck_weight, gap_weight,
-          moderate_imbalance_weight, critical_imbalance_weight,
-          stage_affinity_weight, out_of_range_penalty, minimum_threshold,
-          alternatives_count, state)
-       VALUES (1,'t',3,1.5,0.5,1,0.8,2,2.5,2,'PUBLISHED')
-       RETURNING id`,
-    );
-    [{ id: idVersion }] = await dataSource.query(
-      `INSERT INTO irl_catalog.configuration_version
-         (number, author_id, id_calibration_snapshot, id_parameters_snapshot, state)
-       VALUES (1,'t',$1,$2,'ACTIVE') RETURNING id`,
-      [idCalibration, idParameters],
-    );
     [{ id: idService }] = await dataSource.query(
       `INSERT INTO irl_catalog.portfolio_service (name, is_active)
        VALUES ('Consultoría', true) RETURNING id`,
@@ -164,9 +145,6 @@ describe('Recomendación — persistencia (integration)', () => {
     const alternate = candidate(idService + 1, 'Mentoría', 3.8);
     return Recommendation.create({
       diagnosticId: Uuid.create(diagnosticId),
-      idConfigurationVersion: idVersion,
-      idCalibrationSnapshot: idCalibration,
-      idParametersSnapshot: idParameters,
       finalRanking: [primary, alternate],
       minimumThreshold: 2.5,
       alternativesCount: 2,
@@ -198,15 +176,30 @@ describe('Recomendación — persistencia (integration)', () => {
   });
 
   it('no deja nada escrito si la transacción falla a mitad de camino', async () => {
-    // Se rompe la tercera escritura (la traza) forzando un fallo de clave
-    // foránea. Si la transacción no envolviera las tres, la fila de
-    // recomendación y su alternativa quedarían huérfanas: una
-    // recomendación sin traza no se puede explicar, que es exactamente lo
-    // que este módulo promete evitar.
-    const rota = recommendation();
-    Object.defineProperty(rota, 'idCalibrationSnapshot', {
-      value: '999999',
-      writable: false,
+    // Se rompe la tercera escritura (la traza) forzando un fallo de
+    // longitud en `facts_hash` (varchar(64)). Si la transacción no
+    // envolviera las tres, la fila de recomendación y su alternativa
+    // quedarían huérfanas: una recomendación sin traza no se puede
+    // explicar, que es exactamente lo que este módulo promete evitar.
+    const primary = candidate(idService, 'Consultoría', 5.55);
+    const alternate = candidate(idService + 1, 'Mentoría', 3.8);
+    const rota = Recommendation.create({
+      diagnosticId: Uuid.create(diagnosticId),
+      finalRanking: [primary, alternate],
+      minimumThreshold: 2.5,
+      alternativesCount: 2,
+      justification: 'porque sí',
+      noRecommendationReason: null,
+      trace: {
+        layer1Excluded: [],
+        rankingBeforeExceptions: [primary, alternate],
+        appliedExceptions: [],
+        discardedExceptions: [],
+        rankingAfterExceptions: [primary, alternate],
+        incompleteCharacterization: [],
+        factsHash: 'a'.repeat(65),
+      },
+      generatedAt: new Date(),
     });
 
     await expect(repo.save(rota)).rejects.toThrow();
@@ -258,36 +251,23 @@ describe('Recomendación — persistencia (integration)', () => {
     await expect(
       dataSource.query(
         `INSERT INTO irl_diagnostic.portfolio_recommendation
-           (id_diagnostic, id_configuration_version, result_type,
+           (id_diagnostic, result_type,
             service_snapshot, criterion_justification, generated_at)
-         VALUES ($1, $2, 'NO_RECOMMENDATION', NULL, 'otra', now())`,
-        [diagnosticId, idVersion],
+         VALUES ($1, 'NO_RECOMMENDATION', NULL, 'otra', now())`,
+        [diagnosticId],
       ),
     ).rejects.toThrow(/uq_portfolio_recommendation_diagnostic|duplicate key/);
-  });
-
-  it('la base de datos impide dos versions de configuración vigentes', async () => {
-    // Garantía por construcción: sobrevive a una condición de carrera en
-    // la publicación sin depender de que el código ordene bien.
-    await expect(
-      dataSource.query(
-        `INSERT INTO irl_catalog.configuration_version
-           (number, author_id, id_calibration_snapshot, id_parameters_snapshot, state)
-         VALUES (99,'t',$1,$2,'ACTIVE')`,
-        [idCalibration, idParameters],
-      ),
-    ).rejects.toThrow(/ux_configuration_version_single_active|duplicate key/);
   });
 
   it('rechaza una recomendación incoherente: sin service pero de type RECOMENDACION', async () => {
     await expect(
       dataSource.query(
         `INSERT INTO irl_diagnostic.portfolio_recommendation
-           (id_diagnostic, id_configuration_version, result_type,
+           (id_diagnostic, result_type,
             id_primary_service, primary_score, service_snapshot,
             criterion_justification, generated_at)
-         VALUES ($1, $2, 'RECOMMENDATION', NULL, NULL, NULL, NULL, now())`,
-        [diagnosticId, idVersion],
+         VALUES ($1, 'RECOMMENDATION', NULL, NULL, NULL, NULL, now())`,
+        [diagnosticId],
       ),
     ).rejects.toThrow(/ck_portfolio_recommendation_coherence/);
   });

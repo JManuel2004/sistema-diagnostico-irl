@@ -19,27 +19,27 @@ import boundaries from 'eslint-plugin-boundaries';
  *         decorators. See the inline rationale on the second tier below.
  *
  * MIGRATION NOTE — two layer namings coexist during the structural phase
- * (`convenciones-objetivo.md` §2). `portfolio-routing` and
- * `scaling-roadmap` are the only modules still on the intermediate naming
- * from the mechanical phase (`domain/`, `usecase/`, `application/` as the
- * controller layer). Everything already moved to its definitive location
- * — `shared/irl-taxonomy/`, `shared/identity/`, `modules/diagnosis/` —
- * uses the definitive four layers (`domain/`, `application/` as use
- * cases, `infrastructure/`, `presentation/`), captured here as the
- * `ctx-*` element types so the two namings do not collide: the old
- * wildcards are scoped explicitly to the two modules that still need
- * them instead of matching `src/modules/*` generically, otherwise
- * `modules/diagnosis/application/` (use cases) would be misread as the
- * old scheme's controller layer. Once `portfolio-routing` and
- * `scaling-roadmap` migrate (Oleadas 4 and 5), the old element types and
- * this note are removed and `ctx-*` becomes the only naming.
+ * (`convenciones-objetivo.md` §2). `scaling-roadmap` is the only module
+ * still on the intermediate naming from the mechanical phase (`domain/`,
+ * `usecase/`, `application/` as the controller layer). Everything already
+ * moved to its definitive location — `shared/irl-taxonomy/`,
+ * `shared/identity/`, `modules/diagnosis/`, `modules/initiative/`,
+ * `modules/routing/` — uses the definitive four layers (`domain/`,
+ * `application/` as use cases, `infrastructure/`, `presentation/`),
+ * captured here as the `ctx-*` element types so the two namings do not
+ * collide: the old wildcard is scoped explicitly to the one module that
+ * still needs it instead of matching `src/modules/*` generically,
+ * otherwise `modules/diagnosis/application/` (use cases) would be
+ * misread as the old scheme's controller layer. Once `scaling-roadmap`
+ * migrates (Oleada 5), the old element types and this note are removed
+ * and `ctx-*` becomes the only naming.
  */
 
 /** Modules still on the intermediate `application/`-as-controller naming. */
-const LEGACY_LAYER_MODULES = '{portfolio-routing,scaling-roadmap}';
+const LEGACY_LAYER_MODULES = '{scaling-roadmap}';
 
 /** Modules already on the definitive four-layer naming. */
-const DEFINITIVE_LAYER_CONTEXTS = 'modules/diagnosis,modules/initiative,shared/irl-taxonomy,shared/identity';
+const DEFINITIVE_LAYER_CONTEXTS = 'modules/diagnosis,modules/initiative,modules/routing,shared/irl-taxonomy,shared/identity';
 
 /** Framework packages. Banned outright in `domain/`. */
 const FRAMEWORK_PACKAGES = [
@@ -163,12 +163,12 @@ export default [
                 'shared-kernel',
                 // A module on the definitive naming can still depend on a
                 // not-yet-migrated module's exported use case (e.g.
-                // `portfolio-routing`/`scaling-roadmap` importing
-                // `modules/diagnosis`'s `GetMaturityProfileUseCase`) —
-                // that dependency runs the other way today (legacy
-                // `usecase` importing `ctx-application`, already allowed
-                // above); this direction is symmetric for the reverse
-                // case once those two modules migrate.
+                // `scaling-roadmap` importing `modules/diagnosis`'s
+                // `GetMaturityProfileUseCase`) — that dependency runs the
+                // other way today (legacy `usecase` importing
+                // `ctx-application`, already allowed above); this
+                // direction is symmetric for the reverse case once that
+                // module migrates.
                 'usecase',
               ],
             },
@@ -223,7 +223,7 @@ export default [
     // so does the ban on the NestJS packages that have no business here
     // (`@nestjs/core`, `@nestjs/typeorm`, the platform adapters).
     //
-    // `usecase/` and `application/` (controllers) cover the two modules
+    // `usecase/` and `application/` (controllers) cover the one module
     // still on the intermediate naming; `application/` (use cases) under
     // the definitive contexts covers the rest — same ban either way.
     files: [

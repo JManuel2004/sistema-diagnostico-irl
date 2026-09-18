@@ -12,11 +12,12 @@ import { TAXONOMY_REPOSITORY } from './domain/repositories/taxonomy.repository.p
  * pairs (`convenciones-objetivo.md` §1.1).
  *
  * `DimensionOrm` is also registered directly by other modules today
- * (`diagnosis/`, and — until Oleadas 4/5 correct it — `portfolio-routing`
- * and `scaling-roadmap`) instead of going through `TAXONOMY_REPOSITORY`.
- * That is the pre-existing "acceso cruzado a DimensionOrm" deuda
- * (backlog 1.3/3.2), unchanged by this module's introduction — it gives
- * those modules a port to switch to, it does not switch them itself.
+ * (`diagnosis/`, and — until Oleada 5 corrects it — `scaling-roadmap`)
+ * instead of going through `TAXONOMY_REPOSITORY`. `routing/` was fixed to
+ * use the port in Oleada 4. The remaining case is the pre-existing
+ * "acceso cruzado a DimensionOrm" deuda (backlog 1.3/3.2), unchanged by
+ * this module's introduction — it gives that module a port to switch to,
+ * it does not switch it itself.
  */
 @Module({
   imports: [

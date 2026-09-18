@@ -69,9 +69,6 @@ function trace(over: Partial<LayerTraceResponse> = {}): LayerTraceResponse {
     rankingAfterExceptions: [],
     adjustedByException: false,
     incompleteCharacterization: [],
-    configurationVersion: 1,
-    calibrationSnapshot: 1,
-    parametersSnapshot: 1,
     factsHash: 'a'.repeat(64),
     evaluatedAt: '2026-09-07T14:30:00.000Z',
     ...over,
@@ -171,7 +168,6 @@ describe('LayerTracePanel', () => {
 describe('RecommendationSummary', () => {
   const base = {
     diagnosticId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    configurationVersion: 1,
     generatedAt: '2026-09-07T14:30:00.000Z',
   } as const;
 
