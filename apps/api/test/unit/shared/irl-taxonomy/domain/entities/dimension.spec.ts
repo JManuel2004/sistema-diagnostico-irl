@@ -7,6 +7,7 @@ const VALID_ROW = {
   name: 'Technology Readiness Level',
   description: 'Madurez tecnológica de la solución.',
   sequence: 1,
+  minimumExpectedLevel: 4,
 };
 
 describe('Dimension', () => {

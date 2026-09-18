@@ -37,6 +37,7 @@ export class TypeOrmTaxonomyRepository implements TaxonomyRepositoryPort {
         name: r.nameEs,
         description: r.description,
         sequence: r.sequence,
+        minimumExpectedLevel: r.minimumExpectedLevel,
       }),
     );
   }

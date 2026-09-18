@@ -59,7 +59,7 @@ export default {
       lines: 95,
       statements: 95,
     },
-    './src/modules/scaling-roadmap/domain/': {
+    './src/modules/roadmap/domain/': {
       branches: 90,
       functions: 95,
       lines: 95,

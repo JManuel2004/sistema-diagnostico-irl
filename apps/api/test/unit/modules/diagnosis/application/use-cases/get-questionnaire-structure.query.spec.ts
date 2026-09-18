@@ -12,6 +12,7 @@ function makeDimension(code: string, sequence: number): Dimension {
     name: `Name ${code}`,
     description: `Desc ${code}`,
     sequence,
+    minimumExpectedLevel: 4,
   });
 }
 

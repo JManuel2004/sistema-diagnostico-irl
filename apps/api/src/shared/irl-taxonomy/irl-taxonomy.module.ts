@@ -11,13 +11,12 @@ import { TAXONOMY_REPOSITORY } from './domain/repositories/taxonomy.repository.p
  * dimensions, the SA-06 conversion table, and the six fixed imbalance
  * pairs (`convenciones-objetivo.md` §1.1).
  *
- * `DimensionOrm` is also registered directly by other modules today
- * (`diagnosis/`, and — until Oleada 5 corrects it — `scaling-roadmap`)
- * instead of going through `TAXONOMY_REPOSITORY`. `routing/` was fixed to
- * use the port in Oleada 4. The remaining case is the pre-existing
- * "acceso cruzado a DimensionOrm" deuda (backlog 1.3/3.2), unchanged by
- * this module's introduction — it gives that module a port to switch to,
- * it does not switch it itself.
+ * `DimensionOrm` is also registered directly by `diagnosis/` today
+ * instead of going through `TAXONOMY_REPOSITORY`. `routing/` and
+ * `roadmap/` were fixed to use the port in Oleadas 4 and 5. The
+ * remaining case is the pre-existing "acceso cruzado a DimensionOrm"
+ * deuda (backlog 1.3/3.2), unchanged by this module's introduction — it
+ * gives that module a port to switch to, it does not switch it itself.
  */
 @Module({
   imports: [

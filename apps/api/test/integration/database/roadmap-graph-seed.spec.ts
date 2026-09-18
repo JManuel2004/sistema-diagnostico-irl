@@ -16,6 +16,7 @@ import { RoadmapDependencyGraph1747526400012 } from '../../../src/infrastructure
 import { EnglishCatalogNaming1747526400013 } from '../../../src/infrastructure/database/migrations/20260518013-EnglishCatalogNaming.js';
 import { EnglishMaturityProfileNaming1747526400015 } from '../../../src/infrastructure/database/migrations/20260518015-EnglishMaturityProfileNaming.js';
 import { EnglishRoadmapGraphNaming1747526400016 } from '../../../src/infrastructure/database/migrations/20260518016-EnglishRoadmapGraphNaming.js';
+import { RetireRoadmapDependencyActive1747526400022 } from '../../../src/infrastructure/database/migrations/20260518022-RetireRoadmapDependencyActive.js';
 import { DIMENSIONS } from '../../../src/infrastructure/database/seeds/data/dimensions.js';
 import { DIMENSION_DEPENDENCIES } from '../../../src/infrastructure/database/seeds/data/dimension-dependencies.js';
 import { seedRoadmapGraph } from '../../../src/infrastructure/database/seeds/seed-roadmap-graph.js';
@@ -59,6 +60,7 @@ describe('Seed del graph de dependencies (integration)', () => {
         EnglishCatalogNaming1747526400013,
         EnglishMaturityProfileNaming1747526400015,
         EnglishRoadmapGraphNaming1747526400016,
+        RetireRoadmapDependencyActive1747526400022,
       ],
       migrationsTableName: 'typeorm_migrations',
     });

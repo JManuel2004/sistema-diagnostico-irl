@@ -22,6 +22,7 @@ export interface DimensionPersistence {
   readonly name: string;
   readonly description: string;
   readonly sequence: number;
+  readonly minimumExpectedLevel: number;
 }
 
 export class Dimension {
@@ -31,6 +32,7 @@ export class Dimension {
     public readonly name: string,
     public readonly description: string,
     public readonly sequence: number,
+    public readonly minimumExpectedLevel: number,
   ) {}
 
   static fromPersistence(row: DimensionPersistence): Dimension {
@@ -49,6 +51,7 @@ export class Dimension {
       row.name,
       row.description,
       row.sequence,
+      row.minimumExpectedLevel,
     );
   }
 }

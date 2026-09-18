@@ -5,7 +5,7 @@ import { IdentityModule } from '../../shared/identity/identity.module.js';
 import { DiagnosisModule } from '../../modules/diagnosis/diagnosis.module.js';
 import { InitiativeModule } from '../../modules/initiative/initiative.module.js';
 import { RoutingModule } from '../../modules/routing/routing.module.js';
-import { ScalingRoadmapModule } from '../../modules/scaling-roadmap/scaling-roadmap.module.js';
+import { RoadmapModule } from '../../modules/roadmap/roadmap.module.js';
 
 /**
  * Composition root for the v1 HTTP surface.
@@ -24,7 +24,7 @@ import { ScalingRoadmapModule } from '../../modules/scaling-roadmap/scaling-road
     DiagnosisModule,
     InitiativeModule,
     RoutingModule,
-    ScalingRoadmapModule,
+    RoadmapModule,
   ],
   controllers: [HealthController],
 })
