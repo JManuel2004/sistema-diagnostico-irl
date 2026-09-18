@@ -7,7 +7,7 @@ import { InvariantViolationError } from '../../../shared/kernel/domain/errors/in
 import { NotFoundError } from '../../../shared/kernel/domain/errors/not-found.error.js';
 import { ForbiddenError } from '../../../shared/kernel/domain/errors/forbidden.error.js';
 import { ConflictError } from '../../../shared/kernel/domain/errors/conflict.error.js';
-import { MaturityProfileCalculationError } from '../../../modules/maturity-profile/domain/errors/maturity-profile-calculation.error.js';
+import { MaturityProfileCalculationError } from '../../../modules/diagnosis/domain/exceptions/maturity-profile-calculation.error.js';
 import type { ProblemDetails } from '../problem-details.js';
 
 /**

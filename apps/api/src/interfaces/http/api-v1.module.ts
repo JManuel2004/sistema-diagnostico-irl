@@ -2,10 +2,7 @@ import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './health.controller.js';
 import { IdentityModule } from '../../shared/identity/identity.module.js';
-import { IrlCatalogModule } from '../../modules/irl-catalog/irl-catalog.module.js';
-import { QuestionnaireModule } from '../../modules/questionnaire/questionnaire.module.js';
-import { DiagnosticModule } from '../../modules/diagnostic/diagnostic.module.js';
-import { MaturityProfileModule } from '../../modules/maturity-profile/maturity-profile.module.js';
+import { DiagnosisModule } from '../../modules/diagnosis/diagnosis.module.js';
 import { PortfolioRoutingModule } from '../../modules/portfolio-routing/portfolio-routing.module.js';
 import { ScalingRoadmapModule } from '../../modules/scaling-roadmap/scaling-roadmap.module.js';
 
@@ -16,17 +13,14 @@ import { ScalingRoadmapModule } from '../../modules/scaling-roadmap/scaling-road
  * Versioning is performed by mounting this module under `/api/v1` (set
  * via `app.setGlobalPrefix('api/v1')` in `main.ts`).
  *
- * Modules communicate by ID only — the orchestrator (Diagnostic) is the
- * only module that composes other modules.
+ * Modules communicate by ID only — the orchestrator (`DiagnosisModule`)
+ * is the only module that composes other modules.
  */
 @Module({
   imports: [
     TerminusModule,
     IdentityModule,
-    IrlCatalogModule,
-    QuestionnaireModule,
-    DiagnosticModule,
-    MaturityProfileModule,
+    DiagnosisModule,
     PortfolioRoutingModule,
     ScalingRoadmapModule,
   ],

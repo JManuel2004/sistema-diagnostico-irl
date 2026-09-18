@@ -7,15 +7,39 @@ import boundaries from 'eslint-plugin-boundaries';
  * Two layers of rules:
  *
  *  1. `eslint-plugin-boundaries` enforces that modules respect the four-layer
- *     dependency direction (application → usecase → domain ← infrastructure).
+ *     dependency direction (application → usecase → domain ← infrastructure,
+ *     or presentation → application → domain ← infrastructure for modules
+ *     already on the definitive layout — see the migration note below).
  *     Shared kernel may be imported by anyone; it imports nothing else.
  *
  *  2. `no-restricted-imports` denies the specific framework / IO packages,
  *     in two tiers:
  *       - `domain/` (and the shared kernel domain) bans everything.
- *       - `usecase/` and `application/` ban IO but allow the NestJS DI
+ *       - `usecase/`/`application/` ban IO but allow the NestJS DI
  *         decorators. See the inline rationale on the second tier below.
+ *
+ * MIGRATION NOTE — two layer namings coexist during the structural phase
+ * (`convenciones-objetivo.md` §2). `portfolio-routing` and
+ * `scaling-roadmap` are the only modules still on the intermediate naming
+ * from the mechanical phase (`domain/`, `usecase/`, `application/` as the
+ * controller layer). Everything already moved to its definitive location
+ * — `shared/irl-taxonomy/`, `shared/identity/`, `modules/diagnosis/` —
+ * uses the definitive four layers (`domain/`, `application/` as use
+ * cases, `infrastructure/`, `presentation/`), captured here as the
+ * `ctx-*` element types so the two namings do not collide: the old
+ * wildcards are scoped explicitly to the two modules that still need
+ * them instead of matching `src/modules/*` generically, otherwise
+ * `modules/diagnosis/application/` (use cases) would be misread as the
+ * old scheme's controller layer. Once `portfolio-routing` and
+ * `scaling-roadmap` migrate (Oleadas 4 and 5), the old element types and
+ * this note are removed and `ctx-*` becomes the only naming.
  */
+
+/** Modules still on the intermediate `application/`-as-controller naming. */
+const LEGACY_LAYER_MODULES = '{portfolio-routing,scaling-roadmap}';
+
+/** Modules already on the definitive four-layer naming. */
+const DEFINITIVE_LAYER_CONTEXTS = 'modules/diagnosis,shared/irl-taxonomy,shared/identity';
 
 /** Framework packages. Banned outright in `domain/`. */
 const FRAMEWORK_PACKAGES = [
@@ -51,32 +75,35 @@ export default [
     plugins: { boundaries },
     settings: {
       'boundaries/elements': [
-        { type: 'domain', pattern: 'src/modules/*/domain/**' },
-        { type: 'usecase', pattern: 'src/modules/*/usecase/**' },
-        { type: 'application', pattern: 'src/modules/*/application/**' },
-        { type: 'infrastructure', pattern: 'src/modules/*/infrastructure/**' },
+        // Intermediate naming — scoped to the two modules still on it.
+        { type: 'domain', pattern: `src/modules/${LEGACY_LAYER_MODULES}/domain/**` },
+        { type: 'usecase', pattern: `src/modules/${LEGACY_LAYER_MODULES}/usecase/**` },
+        {
+          type: 'application',
+          pattern: `src/modules/${LEGACY_LAYER_MODULES}/application/**`,
+        },
+        {
+          type: 'infrastructure',
+          pattern: `src/modules/${LEGACY_LAYER_MODULES}/infrastructure/**`,
+        },
         { type: 'shared-kernel', pattern: 'src/shared/kernel/**' },
-        // `shared/irl-taxonomy/` and `shared/identity/` already carry the
-        // definitive four-layer naming (domain/application/infrastructure/
-        // presentation) that the rest of `src/modules/*/` migrates to
-        // module by module during the structural phase. Kept as separate
-        // element types, scoped to `src/shared/{irl-taxonomy,identity}/`
-        // only, so the two naming schemes can coexist without colliding.
+        // Definitive naming — `shared/irl-taxonomy/`, `shared/identity/`
+        // and `modules/diagnosis/` (see MIGRATION NOTE above).
         {
-          type: 'shared-domain',
-          pattern: 'src/shared/{irl-taxonomy,identity}/domain/**',
+          type: 'ctx-domain',
+          pattern: `src/{${DEFINITIVE_LAYER_CONTEXTS}}/domain/**`,
         },
         {
-          type: 'shared-application',
-          pattern: 'src/shared/{irl-taxonomy,identity}/application/**',
+          type: 'ctx-application',
+          pattern: `src/{${DEFINITIVE_LAYER_CONTEXTS}}/application/**`,
         },
         {
-          type: 'shared-infrastructure',
-          pattern: 'src/shared/{irl-taxonomy,identity}/infrastructure/**',
+          type: 'ctx-infrastructure',
+          pattern: `src/{${DEFINITIVE_LAYER_CONTEXTS}}/infrastructure/**`,
         },
         {
-          type: 'shared-presentation',
-          pattern: 'src/shared/{irl-taxonomy,identity}/presentation/**',
+          type: 'ctx-presentation',
+          pattern: `src/{${DEFINITIVE_LAYER_CONTEXTS}}/presentation/**`,
         },
         { type: 'config', pattern: 'src/config/**' },
         { type: 'infra-global', pattern: 'src/infrastructure/**' },
@@ -88,19 +115,16 @@ export default [
         {
           default: 'disallow',
           rules: [
-            {
-              from: 'domain',
-              allow: ['domain', 'shared-kernel', 'shared-domain'],
-            },
+            { from: 'domain', allow: ['domain', 'shared-kernel', 'ctx-domain'] },
             {
               from: 'usecase',
-              allow: ['usecase', 'domain', 'shared-kernel', 'shared-domain', 'shared-application'],
+              allow: ['usecase', 'domain', 'shared-kernel', 'ctx-domain', 'ctx-application'],
             },
             {
               // The controller layer: it depends on use cases, never on
               // domain or infrastructure directly.
               from: 'application',
-              allow: ['application', 'usecase', 'shared-kernel', 'shared-application'],
+              allow: ['application', 'usecase', 'shared-kernel', 'ctx-application'],
             },
             {
               from: 'infrastructure',
@@ -110,9 +134,9 @@ export default [
                 'application',
                 'domain',
                 'shared-kernel',
-                'shared-domain',
-                'shared-application',
-                'shared-infrastructure',
+                'ctx-domain',
+                'ctx-application',
+                'ctx-infrastructure',
               ],
             },
             { from: 'shared-kernel', allow: ['shared-kernel'] },
@@ -123,26 +147,43 @@ export default [
               // layers may be imported directly by any module's domain —
               // see `convenciones-objetivo.md` §1.1, case (b) — instead of
               // only through a port, which is how Core/Supporting
-              // contexts communicate with each other.
-              from: 'shared-domain',
-              allow: ['shared-domain', 'shared-kernel'],
+              // contexts communicate with each other. `modules/diagnosis/`
+              // (Core) shares this element type only because it is on the
+              // same definitive naming, not because it is Shared Kernel —
+              // its own domain still only reaches other Core/Supporting
+              // domains through a port, same as `domain`/`usecase` above.
+              from: 'ctx-domain',
+              allow: ['ctx-domain', 'shared-kernel'],
             },
             {
-              from: 'shared-application',
-              allow: ['shared-application', 'shared-domain', 'shared-kernel'],
-            },
-            {
-              from: 'shared-infrastructure',
+              from: 'ctx-application',
               allow: [
-                'shared-infrastructure',
-                'shared-application',
-                'shared-domain',
+                'ctx-application',
+                'ctx-domain',
+                'shared-kernel',
+                // A module on the definitive naming can still depend on a
+                // not-yet-migrated module's exported use case (e.g.
+                // `portfolio-routing`/`scaling-roadmap` importing
+                // `modules/diagnosis`'s `GetMaturityProfileUseCase`) —
+                // that dependency runs the other way today (legacy
+                // `usecase` importing `ctx-application`, already allowed
+                // above); this direction is symmetric for the reverse
+                // case once those two modules migrate.
+                'usecase',
+              ],
+            },
+            {
+              from: 'ctx-infrastructure',
+              allow: [
+                'ctx-infrastructure',
+                'ctx-application',
+                'ctx-domain',
                 'shared-kernel',
               ],
             },
             {
-              from: 'shared-presentation',
-              allow: ['shared-presentation', 'shared-application', 'shared-kernel'],
+              from: 'ctx-presentation',
+              allow: ['ctx-presentation', 'ctx-application', 'shared-kernel'],
             },
           ],
         },
@@ -154,9 +195,9 @@ export default [
     // framework or an IO package. Strictest tier, non-negotiable
     // (root CLAUDE.md, "Architectural rules").
     files: [
-      'src/modules/*/domain/**/*.ts',
+      `src/modules/${LEGACY_LAYER_MODULES}/domain/**/*.ts`,
       'src/shared/kernel/domain/**/*.ts',
-      'src/shared/{irl-taxonomy,identity}/domain/**/*.ts',
+      `src/{${DEFINITIVE_LAYER_CONTEXTS}}/domain/**/*.ts`,
     ],
     rules: {
       'no-restricted-imports': [
@@ -182,15 +223,13 @@ export default [
     // so does the ban on the NestJS packages that have no business here
     // (`@nestjs/core`, `@nestjs/typeorm`, the platform adapters).
     //
-    // Both `usecase/` (use cases) and `application/` (controllers) are
-    // listed for `src/modules/*/`, still on the intermediate naming; the
-    // two `shared/` modules already carry the definitive `application/`
-    // (use cases) naming, so `shared/*/application/**` is listed too —
-    // same ban, no exception for having moved first.
+    // `usecase/` and `application/` (controllers) cover the two modules
+    // still on the intermediate naming; `application/` (use cases) under
+    // the definitive contexts covers the rest — same ban either way.
     files: [
-      'src/modules/*/usecase/**/*.ts',
-      'src/modules/*/application/**/*.ts',
-      'src/shared/{irl-taxonomy,identity}/application/**/*.ts',
+      `src/modules/${LEGACY_LAYER_MODULES}/usecase/**/*.ts`,
+      `src/modules/${LEGACY_LAYER_MODULES}/application/**/*.ts`,
+      `src/{${DEFINITIVE_LAYER_CONTEXTS}}/application/**/*.ts`,
     ],
     rules: {
       'no-restricted-imports': [

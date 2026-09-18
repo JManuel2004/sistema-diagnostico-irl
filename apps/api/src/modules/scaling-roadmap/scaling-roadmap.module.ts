@@ -9,14 +9,14 @@ import { TopologicalLayeringService } from './domain/services/topological-layeri
 import { TargetLevelCalculatorService } from './domain/services/target-level-calculator.service.js';
 import { GenerateScalingRoadmapUseCase } from './usecase/generate-scaling-roadmap.use-case.js';
 import { RoadmapController } from './application/http/roadmap.controller.js';
-import { MaturityProfileModule } from '../maturity-profile/maturity-profile.module.js';
+import { DiagnosisModule } from '../diagnosis/diagnosis.module.js';
 
 /**
  * `ScalingRoadmapModule` — bounded context for the scaling roadmap
  * (RF-14).
  *
  * Structurally symmetric to `PortfolioRoutingModule`: its own controller
- * and an import of `MaturityProfileModule` to read the profile through
+ * and an import of `DiagnosisModule` to read the profile through
  * its read use case, never reaching into its tables. This is a conscious
  * deviation from the plan, which proposed hanging the endpoint off
  * `DiagnosticController`; symmetry with the sibling module already built
@@ -34,7 +34,7 @@ import { MaturityProfileModule } from '../maturity-profile/maturity-profile.modu
 @Module({
   imports: [
     TypeOrmModule.forFeature([DimensionDependencyOrm, DimensionOrm]),
-    MaturityProfileModule,
+    DiagnosisModule,
   ],
   providers: [
     RoadmapClosureService,

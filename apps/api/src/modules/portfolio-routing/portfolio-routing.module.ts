@@ -30,7 +30,7 @@ import { GenerateRecommendationUseCase } from './usecase/generate-recommendation
 import { GetRecommendationUseCase } from './usecase/get-recommendation.use-case.js';
 import { GetRecommendationTraceUseCase } from './usecase/get-recommendation-trace.use-case.js';
 import { RecommendationController } from './application/http/recommendation.controller.js';
-import { MaturityProfileModule } from '../maturity-profile/maturity-profile.module.js';
+import { DiagnosisModule } from '../diagnosis/diagnosis.module.js';
 
 /**
  * `PortfolioRoutingModule` — contexto acotado del enrutamiento al
@@ -48,7 +48,7 @@ import { MaturityProfileModule } from '../maturity-profile/maturity-profile.modu
  * registra como providers de clase porque no reciben nada en el
  * constructor, igual que `IrlCalculatorService`.
  *
- * Importa `MaturityProfileModule` para leer el perfil por su caso de uso
+ * Importa `DiagnosisModule` para leer el perfil por su caso de uso
  * de lectura, nunca alcanzando sus tablas.
  */
 @Module({
@@ -71,7 +71,7 @@ import { MaturityProfileModule } from '../maturity-profile/maturity-profile.modu
       EtapaIniciativaOrm,
       SectorOrm,
     ]),
-    MaturityProfileModule,
+    DiagnosisModule,
   ],
   providers: [
     OrdinalTranslatorService,

@@ -13,7 +13,7 @@ import {
   type RoadmapPhase,
 } from '../domain/entities/scaling-roadmap.aggregate.js';
 import { RoadmapCalculationError } from '../domain/errors/roadmap.errors.js';
-import { GetMaturityProfileUseCase } from '../../maturity-profile/usecase/get-maturity-profile.use-case.js';
+import { GetMaturityProfileUseCase } from '../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
 import { Uuid } from '../../../shared/kernel/domain/value-objects/uuid.vo.js';
 
 export interface GenerateScalingRoadmapCommand {

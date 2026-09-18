@@ -26,7 +26,7 @@ import {
   NoActiveConfigurationError,
   ProfileNotComputedError,
 } from '../domain/errors/portfolio-routing.errors.js';
-import { GetMaturityProfileUseCase } from '../../maturity-profile/usecase/get-maturity-profile.use-case.js';
+import { GetMaturityProfileUseCase } from '../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
 import { Uuid } from '../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { toRecomendacionResponse } from './map-recommendation-response.js';
 
