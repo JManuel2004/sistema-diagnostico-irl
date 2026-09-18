@@ -12,7 +12,7 @@ import { PortfolioServiceOrm } from './infrastructure/persistence/portfolio-serv
 import { PortfolioRecommendationOrm } from './infrastructure/persistence/portfolio-recommendation.orm-entity.js';
 import { RecommendationAlternativeOrm } from './infrastructure/persistence/recommendation-alternative.orm-entity.js';
 import { LayerTraceOrm } from './infrastructure/persistence/layer-trace.orm-entity.js';
-import { DimensionOrm } from '../irl-catalog/infrastructure/persistence/entities/dimension.orm-entity.js';
+import { DimensionOrm } from '../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
 import { IniciativaOrm } from '../initiative/infrastructure/persistence/iniciativa.orm-entity.js';
 import { EtapaIniciativaOrm } from '../initiative/infrastructure/persistence/etapa-iniciativa.orm-entity.js';
 import { SectorOrm } from '../initiative/infrastructure/persistence/sector.orm-entity.js';

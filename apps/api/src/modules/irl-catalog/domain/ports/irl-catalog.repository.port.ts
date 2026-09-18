@@ -1,7 +1,7 @@
-import type { Dimension } from '../dimension.js';
+import type { Dimension } from '../../../../shared/irl-taxonomy/domain/entities/dimension.js';
 import type { Statement } from '../statement.js';
-import type { ConversionRange } from '../conversion-range.js';
-import type { DimensionPair } from '../dimension-pair.js';
+import type { ConversionRange } from '../../../../shared/irl-taxonomy/domain/entities/conversion-range.js';
+import type { DimensionPair } from '../../../../shared/irl-taxonomy/domain/entities/dimension-pair.js';
 
 /**
  * Read-only port for the IRL catalog.

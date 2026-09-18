@@ -8,7 +8,7 @@ import {
   IMBALANCE_REPOSITORY,
   type ImbalanceRepositoryPort,
 } from '../domain/ports/imbalance.repository.port.js';
-import { ConflictError } from '../../../shared-kernel/domain/errors/conflict.error.js';
+import { ConflictError } from '../../../shared/kernel/domain/errors/conflict.error.js';
 import { toMaturityProfileResponse } from './map-maturity-profile-response.js';
 
 export interface GetMaturityProfileQuery {

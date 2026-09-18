@@ -23,7 +23,7 @@ import { PublishedOrdinalIntensityOrm } from './published-ordinal-intensity.orm-
 import { PublishedEligibilityRuleOrm } from './published-eligibility-rule.orm-entity.js';
 import { PublishedExceptionRuleOrm } from './published-exception-rule.orm-entity.js';
 import { PortfolioServiceOrm } from './portfolio-service.orm-entity.js';
-import { DimensionOrm } from '../../../irl-catalog/infrastructure/persistence/entities/dimension.orm-entity.js';
+import { DimensionOrm } from '../../../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
 
 /**
  * Adaptador de lectura de la configuración publicada.

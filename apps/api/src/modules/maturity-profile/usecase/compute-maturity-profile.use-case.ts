@@ -16,9 +16,9 @@ import { ImbalanceEvaluatorService } from '../domain/services/imbalance-evaluato
 import { MaturityProfile } from '../domain/entities/maturity-profile.aggregate.js';
 import { MaturityProfileCalculationError } from '../domain/errors/maturity-profile-calculation.error.js';
 import type { ImbalanceResult } from '../domain/value-objects/imbalance-result.vo.js';
-import { Uuid } from '../../../shared-kernel/domain/value-objects/uuid.vo.js';
-import { DimensionCode } from '../../../shared-kernel/domain/value-objects/dimension-code.js';
-import { LikertValue } from '../../../shared-kernel/domain/value-objects/likert-value.vo.js';
+import { Uuid } from '../../../shared/kernel/domain/value-objects/uuid.vo.js';
+import { DimensionCode } from '../../../shared/kernel/domain/value-objects/dimension-code.js';
+import { LikertValue } from '../../../shared/kernel/domain/value-objects/likert-value.vo.js';
 
 export interface ComputeMaturityProfileCommand {
   diagnosticId: string;

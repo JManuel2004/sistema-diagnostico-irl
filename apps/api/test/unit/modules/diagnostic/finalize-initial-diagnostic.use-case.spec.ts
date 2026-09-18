@@ -8,13 +8,13 @@ import type { AnswerSheetRepositoryPort } from '../../../../src/modules/question
 import { AnswerSheet } from '../../../../src/modules/questionnaire/domain/entities/answer-sheet.aggregate.js';
 import { MaturityProfile } from '../../../../src/modules/maturity-profile/domain/entities/maturity-profile.aggregate.js';
 import { DimensionResult } from '../../../../src/modules/maturity-profile/domain/value-objects/dimension-result.vo.js';
-import { DimensionCode } from '../../../../src/shared-kernel/domain/value-objects/dimension-code.js';
-import { IrlLevel } from '../../../../src/shared-kernel/domain/value-objects/irl-level.vo.js';
-import { LikertValue } from '../../../../src/shared-kernel/domain/value-objects/likert-value.vo.js';
-import { Uuid } from '../../../../src/shared-kernel/domain/value-objects/uuid.vo.js';
-import { NotFoundError } from '../../../../src/shared-kernel/domain/errors/not-found.error.js';
-import { ConflictError } from '../../../../src/shared-kernel/domain/errors/conflict.error.js';
-import { InvariantViolationError } from '../../../../src/shared-kernel/domain/errors/invariant-violation.error.js';
+import { DimensionCode } from '../../../../src/shared/kernel/domain/value-objects/dimension-code.js';
+import { IrlLevel } from '../../../../src/shared/kernel/domain/value-objects/irl-level.vo.js';
+import { LikertValue } from '../../../../src/shared/kernel/domain/value-objects/likert-value.vo.js';
+import { Uuid } from '../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
+import { NotFoundError } from '../../../../src/shared/kernel/domain/errors/not-found.error.js';
+import { ConflictError } from '../../../../src/shared/kernel/domain/errors/conflict.error.js';
+import { InvariantViolationError } from '../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 

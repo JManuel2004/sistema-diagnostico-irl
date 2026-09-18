@@ -1,6 +1,6 @@
 import { AnswerSheet } from '../../../../../src/modules/questionnaire/domain/entities/answer-sheet.aggregate.js';
-import { LikertValue } from '../../../../../src/shared-kernel/domain/value-objects/likert-value.vo.js';
-import { Uuid } from '../../../../../src/shared-kernel/domain/value-objects/uuid.vo.js';
+import { LikertValue } from '../../../../../src/shared/kernel/domain/value-objects/likert-value.vo.js';
+import { Uuid } from '../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
 
 const DIAGNOSTIC_ID = Uuid.create('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11');
 

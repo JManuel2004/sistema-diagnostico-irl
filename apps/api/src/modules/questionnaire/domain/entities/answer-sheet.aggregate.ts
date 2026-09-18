@@ -1,5 +1,5 @@
-import type { Uuid } from '../../../../shared-kernel/domain/value-objects/uuid.vo.js';
-import type { LikertValue } from '../../../../shared-kernel/domain/value-objects/likert-value.vo.js';
+import type { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
+import type { LikertValue } from '../../../../shared/kernel/domain/value-objects/likert-value.vo.js';
 import { Answer } from './answer.entity.js';
 import type { AnswerPersistence } from './answer.entity.js';
 

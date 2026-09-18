@@ -5,10 +5,10 @@ import type { ImbalanceRepositoryPort } from '../../../../../src/modules/maturit
 import { MaturityProfile } from '../../../../../src/modules/maturity-profile/domain/entities/maturity-profile.aggregate.js';
 import { DimensionResult } from '../../../../../src/modules/maturity-profile/domain/value-objects/dimension-result.vo.js';
 import { ImbalanceResult } from '../../../../../src/modules/maturity-profile/domain/value-objects/imbalance-result.vo.js';
-import { DimensionCode } from '../../../../../src/shared-kernel/domain/value-objects/dimension-code.js';
-import { IrlLevel } from '../../../../../src/shared-kernel/domain/value-objects/irl-level.vo.js';
-import { Uuid } from '../../../../../src/shared-kernel/domain/value-objects/uuid.vo.js';
-import { ConflictError } from '../../../../../src/shared-kernel/domain/errors/conflict.error.js';
+import { DimensionCode } from '../../../../../src/shared/kernel/domain/value-objects/dimension-code.js';
+import { IrlLevel } from '../../../../../src/shared/kernel/domain/value-objects/irl-level.vo.js';
+import { Uuid } from '../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
+import { ConflictError } from '../../../../../src/shared/kernel/domain/errors/conflict.error.js';
 
 const DIAGNOSTIC_ID = '550e8400-e29b-41d4-a716-446655440000';
 const CODES = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;

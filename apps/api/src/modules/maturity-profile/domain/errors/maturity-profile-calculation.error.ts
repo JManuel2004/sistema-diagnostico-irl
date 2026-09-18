@@ -1,4 +1,4 @@
-import { DomainError } from '../../../../shared-kernel/domain/errors/domain-error.js';
+import { DomainError } from '../../../../shared/kernel/domain/errors/domain-error.js';
 
 /**
  * Thrown when the IRL maturity profile cannot be computed for reasons that

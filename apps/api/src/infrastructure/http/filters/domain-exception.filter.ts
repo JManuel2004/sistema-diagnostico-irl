@@ -2,11 +2,11 @@ import { Catch, HttpStatus, Logger } from '@nestjs/common';
 import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ClsService } from 'nestjs-cls';
-import { DomainError } from '../../../shared-kernel/domain/errors/domain-error.js';
-import { InvariantViolationError } from '../../../shared-kernel/domain/errors/invariant-violation.error.js';
-import { NotFoundError } from '../../../shared-kernel/domain/errors/not-found.error.js';
-import { ForbiddenError } from '../../../shared-kernel/domain/errors/forbidden.error.js';
-import { ConflictError } from '../../../shared-kernel/domain/errors/conflict.error.js';
+import { DomainError } from '../../../shared/kernel/domain/errors/domain-error.js';
+import { InvariantViolationError } from '../../../shared/kernel/domain/errors/invariant-violation.error.js';
+import { NotFoundError } from '../../../shared/kernel/domain/errors/not-found.error.js';
+import { ForbiddenError } from '../../../shared/kernel/domain/errors/forbidden.error.js';
+import { ConflictError } from '../../../shared/kernel/domain/errors/conflict.error.js';
 import { MaturityProfileCalculationError } from '../../../modules/maturity-profile/domain/errors/maturity-profile-calculation.error.js';
 import type { ProblemDetails } from '../problem-details.js';
 

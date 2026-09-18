@@ -17,7 +17,7 @@ import { appConfig } from '../../../src/config/configuration.js';
  * el pipeline global (comprobado — ambos siguen devolviendo 401). Asi que
  * en vez de esquivar la autenticacion, la suite la atraviesa: se acuna un
  * RS256 propio y se sirve la clave publica como JWKS con `nock`, el mismo
- * patron de `modules/identity/cognito-jwt-guard.e2e-spec.ts`.
+ * patron de `shared/identity/cognito-jwt-guard.e2e-spec.ts`.
  *
  * Ninguna cuenta del pool Cognito compartido participa, y el issuer y la
  * URI del JWKS se leen de la config que la app ya cargo — de modo que esto

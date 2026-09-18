@@ -1,5 +1,5 @@
 import { DIMENSION_CODES, type DimensionCode } from '@innlab/contracts';
-import type { Uuid } from '../../../../shared-kernel/domain/value-objects/uuid.vo.js';
+import type { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { RoadmapCalculationError } from '../errors/roadmap.errors.js';
 
 /**

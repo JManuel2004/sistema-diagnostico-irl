@@ -8,7 +8,7 @@ import type {
   DimensionMinimumSnapshot,
 } from '../../domain/ports/dependency-graph.repository.port.js';
 import { DimensionDependencyOrm } from './dimension-dependency.orm-entity.js';
-import { DimensionOrm } from '../../../irl-catalog/infrastructure/persistence/entities/dimension.orm-entity.js';
+import { DimensionOrm } from '../../../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
 
 /**
  * Read adapter for the graph over `irl_catalog`.

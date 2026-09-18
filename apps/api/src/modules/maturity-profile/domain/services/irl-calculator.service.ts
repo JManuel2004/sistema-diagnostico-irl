@@ -1,7 +1,7 @@
-import type { DimensionCode } from '../../../../shared-kernel/domain/value-objects/dimension-code.js';
-import type { LikertValue } from '../../../../shared-kernel/domain/value-objects/likert-value.vo.js';
-import type { IrlLevel } from '../../../../shared-kernel/domain/value-objects/irl-level.vo.js';
-import type { ConversionRange } from '../../../irl-catalog/domain/conversion-range.js';
+import type { DimensionCode } from '../../../../shared/kernel/domain/value-objects/dimension-code.js';
+import type { LikertValue } from '../../../../shared/kernel/domain/value-objects/likert-value.vo.js';
+import type { IrlLevel } from '../../../../shared/kernel/domain/value-objects/irl-level.vo.js';
+import type { ConversionRange } from '../../../../shared/irl-taxonomy/domain/entities/conversion-range.js';
 import { DimensionResult } from '../value-objects/dimension-result.vo.js';
 import { MaturityProfileCalculationError } from '../errors/maturity-profile-calculation.error.js';
 

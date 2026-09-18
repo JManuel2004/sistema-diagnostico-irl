@@ -1,9 +1,9 @@
 import { toMaturityProfileResponse } from '../../../../../src/modules/maturity-profile/usecase/map-maturity-profile-response.js';
 import { MaturityProfile } from '../../../../../src/modules/maturity-profile/domain/entities/maturity-profile.aggregate.js';
 import { DimensionResult } from '../../../../../src/modules/maturity-profile/domain/value-objects/dimension-result.vo.js';
-import { DimensionCode } from '../../../../../src/shared-kernel/domain/value-objects/dimension-code.js';
-import { IrlLevel } from '../../../../../src/shared-kernel/domain/value-objects/irl-level.vo.js';
-import { Uuid } from '../../../../../src/shared-kernel/domain/value-objects/uuid.vo.js';
+import { DimensionCode } from '../../../../../src/shared/kernel/domain/value-objects/dimension-code.js';
+import { IrlLevel } from '../../../../../src/shared/kernel/domain/value-objects/irl-level.vo.js';
+import { Uuid } from '../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
 
 const CODES = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;
 

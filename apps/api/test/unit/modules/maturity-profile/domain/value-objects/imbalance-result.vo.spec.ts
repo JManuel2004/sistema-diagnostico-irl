@@ -1,5 +1,5 @@
 import { ImbalanceResult } from '../../../../../../src/modules/maturity-profile/domain/value-objects/imbalance-result.vo.js';
-import { DimensionCode } from '../../../../../../src/shared-kernel/domain/value-objects/dimension-code.js';
+import { DimensionCode } from '../../../../../../src/shared/kernel/domain/value-objects/dimension-code.js';
 
 function makeResult(
   pairId = 1,

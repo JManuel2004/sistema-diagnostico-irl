@@ -1,4 +1,4 @@
-import { Uuid } from '../../../../shared-kernel/domain/value-objects/uuid.vo.js';
+import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import type { ScoredCandidate } from '../value-objects/scored-candidate.vo.js';
 import type {
   AppliedException,

@@ -1,7 +1,7 @@
 import { CRITICAL_IRL_THRESHOLD } from '@innlab/contracts';
-import { Uuid } from '../../../../shared-kernel/domain/value-objects/uuid.vo.js';
-import { InvariantViolationError } from '../../../../shared-kernel/domain/errors/invariant-violation.error.js';
-import { DIMENSION_CODES } from '../../../../shared-kernel/domain/value-objects/dimension-code.js';
+import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
+import { InvariantViolationError } from '../../../../shared/kernel/domain/errors/invariant-violation.error.js';
+import { DIMENSION_CODES } from '../../../../shared/kernel/domain/value-objects/dimension-code.js';
 import {
   DimensionResult,
   type DimensionResultPersistence,

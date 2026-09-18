@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DimensionDependencyOrm } from './infrastructure/persistence/dimension-dependency.orm-entity.js';
-import { DimensionOrm } from '../irl-catalog/infrastructure/persistence/entities/dimension.orm-entity.js';
+import { DimensionOrm } from '../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
 import { TypeOrmDependencyGraphRepository } from './infrastructure/persistence/typeorm-dependency-graph.repository.js';
 import { DEPENDENCY_GRAPH_REPOSITORY } from './domain/ports/dependency-graph.repository.port.js';
 import { RoadmapClosureService } from './domain/services/roadmap-closure.service.js';

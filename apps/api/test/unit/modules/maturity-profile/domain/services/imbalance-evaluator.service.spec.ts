@@ -1,5 +1,5 @@
 import { ImbalanceEvaluatorService } from '../../../../../../src/modules/maturity-profile/domain/services/imbalance-evaluator.service.js';
-import { DimensionCode } from '../../../../../../src/shared-kernel/domain/value-objects/dimension-code.js';
+import { DimensionCode } from '../../../../../../src/shared/kernel/domain/value-objects/dimension-code.js';
 
 function pair(id: number, left: string, right: string) {
   return {

@@ -1,4 +1,4 @@
-import { Uuid } from '../../../shared-kernel/domain/value-objects/uuid.vo.js';
+import { Uuid } from '../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { DiagnosticState } from './diagnostic-state.vo.js';
 import type { DiagnosticStateName } from './diagnostic-state.vo.js';
 

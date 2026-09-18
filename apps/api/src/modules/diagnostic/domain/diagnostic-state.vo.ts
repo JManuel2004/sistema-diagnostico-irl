@@ -1,4 +1,4 @@
-import { InvariantViolationError } from '../../../shared-kernel/domain/errors/invariant-violation.error.js';
+import { InvariantViolationError } from '../../../shared/kernel/domain/errors/invariant-violation.error.js';
 
 /**
  * `DiagnosticState` — finite state machine for a single diagnostic.

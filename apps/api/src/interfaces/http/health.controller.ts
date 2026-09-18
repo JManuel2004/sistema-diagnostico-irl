@@ -6,7 +6,7 @@ import {
 } from '@nestjs/terminus';
 import type { HealthCheckResult } from '@nestjs/terminus';
 import { ApiTags } from '@nestjs/swagger';
-import { Public } from '../../modules/identity/infrastructure/decorators/public.decorator.js';
+import { Public } from '../../shared/identity/infrastructure/decorators/public.decorator.js';
 
 /**
  * Health-check endpoints used by orchestrators (Docker, Kubernetes,

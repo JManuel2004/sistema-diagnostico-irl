@@ -1,5 +1,5 @@
-import { DimensionCode } from '../../../shared-kernel/domain/value-objects/dimension-code.js';
-import { InvariantViolationError } from '../../../shared-kernel/domain/errors/invariant-violation.error.js';
+import { DimensionCode } from '../../../shared/kernel/domain/value-objects/dimension-code.js';
+import { InvariantViolationError } from '../../../shared/kernel/domain/errors/invariant-violation.error.js';
 
 /**
  * `Statement` — domain entity representing one of the 48 questionnaire

@@ -1,5 +1,5 @@
-import { DimensionCode } from '../../../../../src/shared-kernel/domain/value-objects/dimension-code.js';
-import { InvariantViolationError } from '../../../../../src/shared-kernel/domain/errors/invariant-violation.error.js';
+import { DimensionCode } from '../../../../../src/shared/kernel/domain/value-objects/dimension-code.js';
+import { InvariantViolationError } from '../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 
 describe('DimensionCode', () => {
   describe('create', () => {

@@ -12,8 +12,8 @@ import { ComputeMaturityProfileUseCase } from './usecase/compute-maturity-profil
 import { GetMaturityProfileUseCase } from './usecase/get-maturity-profile.use-case.js';
 import { MaturityProfileController } from './application/http/maturity-profile.controller.js';
 import { IrlCatalogModule } from '../irl-catalog/irl-catalog.module.js';
-import { DimensionOrm } from '../irl-catalog/infrastructure/persistence/entities/dimension.orm-entity.js';
-import { DimensionPairOrm } from '../irl-catalog/infrastructure/persistence/entities/dimension-pair.orm-entity.js';
+import { DimensionOrm } from '../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
+import { DimensionPairOrm } from '../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension-pair.orm-entity.js';
 
 /**
  * `MaturityProfileModule` — bounded context for the IRL maturity profile.

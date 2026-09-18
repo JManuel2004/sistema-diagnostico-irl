@@ -7,7 +7,7 @@ import {
   type ImbalanceClassification,
 } from '../../domain/value-objects/imbalance-result.vo.js';
 import { ImbalanceAnalysisOrm } from './imbalance-analysis.orm-entity.js';
-import { DimensionPairOrm } from '../../../irl-catalog/infrastructure/persistence/entities/dimension-pair.orm-entity.js';
+import { DimensionPairOrm } from '../../../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension-pair.orm-entity.js';
 
 @Injectable()
 export class TypeOrmImbalanceRepository implements ImbalanceRepositoryPort {

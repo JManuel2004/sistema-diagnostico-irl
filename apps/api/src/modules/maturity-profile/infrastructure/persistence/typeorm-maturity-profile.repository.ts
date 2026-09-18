@@ -5,7 +5,7 @@ import type { MaturityProfileRepositoryPort } from '../../domain/ports/maturity-
 import { MaturityProfile } from '../../domain/entities/maturity-profile.aggregate.js';
 import { MaturityProfileCalculationError } from '../../domain/errors/maturity-profile-calculation.error.js';
 import { DimensionResultOrm } from './dimension-result.orm-entity.js';
-import { DimensionOrm } from '../../../irl-catalog/infrastructure/persistence/entities/dimension.orm-entity.js';
+import { DimensionOrm } from '../../../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
 
 @Injectable()
 export class TypeOrmMaturityProfileRepository implements MaturityProfileRepositoryPort {

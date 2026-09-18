@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { IrlCatalogRepositoryPort } from '../../domain/ports/irl-catalog.repository.port.js';
-import { Dimension } from '../../domain/dimension.js';
+import { Dimension } from '../../../../shared/irl-taxonomy/domain/entities/dimension.js';
 import { Statement } from '../../domain/statement.js';
-import { ConversionRange } from '../../domain/conversion-range.js';
-import { DimensionPair } from '../../domain/dimension-pair.js';
-import { DimensionOrm } from './entities/dimension.orm-entity.js';
+import { ConversionRange } from '../../../../shared/irl-taxonomy/domain/entities/conversion-range.js';
+import { DimensionPair } from '../../../../shared/irl-taxonomy/domain/entities/dimension-pair.js';
+import { DimensionOrm } from '../../../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
 import { StatementOrm } from './entities/statement.orm-entity.js';
-import { ConversionRangeOrm } from './entities/conversion-range.orm-entity.js';
-import { DimensionPairOrm } from './entities/dimension-pair.orm-entity.js';
+import { ConversionRangeOrm } from '../../../../shared/irl-taxonomy/infrastructure/database/orm-entities/conversion-range.orm-entity.js';
+import { DimensionPairOrm } from '../../../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension-pair.orm-entity.js';
 
 /**
  * TypeORM-backed adapter for the catalog port.

@@ -1,4 +1,4 @@
-import { DomainError } from '../../../../shared-kernel/domain/errors/domain-error.js';
+import { DomainError } from '../../../../shared/kernel/domain/errors/domain-error.js';
 
 /**
  * Códigos estables del módulo de enrutamiento. El frontend y las pruebas

@@ -1,6 +1,6 @@
-import { DimensionCode } from '../../../../shared-kernel/domain/value-objects/dimension-code.js';
-import { IrlLevel } from '../../../../shared-kernel/domain/value-objects/irl-level.vo.js';
-import { InvariantViolationError } from '../../../../shared-kernel/domain/errors/invariant-violation.error.js';
+import { DimensionCode } from '../../../../shared/kernel/domain/value-objects/dimension-code.js';
+import { IrlLevel } from '../../../../shared/kernel/domain/value-objects/irl-level.vo.js';
+import { InvariantViolationError } from '../../../../shared/kernel/domain/errors/invariant-violation.error.js';
 
 /**
  * `DimensionResult` — value object that captures the outcome of the IRL

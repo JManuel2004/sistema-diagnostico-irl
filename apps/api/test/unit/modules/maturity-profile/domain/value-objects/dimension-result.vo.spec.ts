@@ -1,7 +1,7 @@
 import { DimensionResult } from '../../../../../../src/modules/maturity-profile/domain/value-objects/dimension-result.vo.js';
-import { DimensionCode } from '../../../../../../src/shared-kernel/domain/value-objects/dimension-code.js';
-import { IrlLevel } from '../../../../../../src/shared-kernel/domain/value-objects/irl-level.vo.js';
-import { InvariantViolationError } from '../../../../../../src/shared-kernel/domain/errors/invariant-violation.error.js';
+import { DimensionCode } from '../../../../../../src/shared/kernel/domain/value-objects/dimension-code.js';
+import { IrlLevel } from '../../../../../../src/shared/kernel/domain/value-objects/irl-level.vo.js';
+import { InvariantViolationError } from '../../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 
 describe('DimensionResult (maturity-profile)', () => {
   const trl = DimensionCode.create('TRL');

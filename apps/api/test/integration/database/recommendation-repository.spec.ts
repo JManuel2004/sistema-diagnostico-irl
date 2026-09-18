@@ -26,7 +26,7 @@ import { RecommendationAlternativeOrm } from '../../../src/modules/portfolio-rou
 import { LayerTraceOrm } from '../../../src/modules/portfolio-routing/infrastructure/persistence/layer-trace.orm-entity.js';
 import { TypeOrmRecommendationRepository } from '../../../src/modules/portfolio-routing/infrastructure/persistence/typeorm-recommendation.repository.js';
 import { Recommendation } from '../../../src/modules/portfolio-routing/domain/entities/recommendation.aggregate.js';
-import { Uuid } from '../../../src/shared-kernel/domain/value-objects/uuid.vo.js';
+import { Uuid } from '../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
 import type { ScoredCandidate } from '../../../src/modules/portfolio-routing/domain/value-objects/scored-candidate.vo.js';
 
 /**

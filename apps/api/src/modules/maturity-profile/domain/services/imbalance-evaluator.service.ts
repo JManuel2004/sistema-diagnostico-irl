@@ -1,5 +1,5 @@
-import type { DimensionPair } from '../../../irl-catalog/domain/dimension-pair.js';
-import { DimensionCode } from '../../../../shared-kernel/domain/value-objects/dimension-code.js';
+import type { DimensionPair } from '../../../../shared/irl-taxonomy/domain/entities/dimension-pair.js';
+import { DimensionCode } from '../../../../shared/kernel/domain/value-objects/dimension-code.js';
 import {
   ImbalanceResult,
   type ImbalanceClassification,

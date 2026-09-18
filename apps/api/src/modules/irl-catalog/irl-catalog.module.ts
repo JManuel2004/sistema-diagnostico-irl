@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DimensionOrm } from './infrastructure/persistence/entities/dimension.orm-entity.js';
+import { DimensionOrm } from '../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
 import { StatementOrm } from './infrastructure/persistence/entities/statement.orm-entity.js';
-import { ConversionRangeOrm } from './infrastructure/persistence/entities/conversion-range.orm-entity.js';
-import { DimensionPairOrm } from './infrastructure/persistence/entities/dimension-pair.orm-entity.js';
+import { ConversionRangeOrm } from '../../shared/irl-taxonomy/infrastructure/database/orm-entities/conversion-range.orm-entity.js';
+import { DimensionPairOrm } from '../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension-pair.orm-entity.js';
 import { TypeOrmIrlCatalogRepository } from './infrastructure/persistence/typeorm-irl-catalog.repository.js';
 import {
   IRL_CATALOG_REPOSITORY,

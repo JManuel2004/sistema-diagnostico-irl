@@ -1,5 +1,5 @@
 import { Statement } from '../../../../../src/modules/irl-catalog/domain/statement.js';
-import { InvariantViolationError } from '../../../../../src/shared-kernel/domain/errors/invariant-violation.error.js';
+import { InvariantViolationError } from '../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 
 const VALID_ROW = {
   id: '1',

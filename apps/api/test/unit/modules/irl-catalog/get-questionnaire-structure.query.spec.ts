@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { GetQuestionnaireStructureQuery } from '../../../../src/modules/irl-catalog/usecase/queries/get-questionnaire-structure.query.js';
 import type { IrlCatalogRepositoryPort } from '../../../../src/modules/irl-catalog/domain/ports/irl-catalog.repository.port.js';
-import { Dimension } from '../../../../src/modules/irl-catalog/domain/dimension.js';
+import { Dimension } from '../../../../src/shared/irl-taxonomy/domain/entities/dimension.js';
 import { Statement } from '../../../../src/modules/irl-catalog/domain/statement.js';
 
 function makeDimension(code: string, sequence: number): Dimension {

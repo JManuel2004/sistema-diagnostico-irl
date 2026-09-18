@@ -4,7 +4,7 @@ import {
   type EvaluationTrace,
 } from '../../../../../src/modules/portfolio-routing/domain/entities/recommendation.aggregate.js';
 import type { ScoredCandidate } from '../../../../../src/modules/portfolio-routing/domain/value-objects/scored-candidate.vo.js';
-import { Uuid } from '../../../../../src/shared-kernel/domain/value-objects/uuid.vo.js';
+import { Uuid } from '../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
 import {
   CalibrationNotMonotonicError,
   NoActiveConfigurationError,

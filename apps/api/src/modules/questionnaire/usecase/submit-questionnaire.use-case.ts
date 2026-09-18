@@ -5,9 +5,9 @@ import {
   type AnswerSheetRepositoryPort,
 } from '../domain/ports/answer-sheet.repository.port.js';
 import { AnswerSheet } from '../domain/entities/answer-sheet.aggregate.js';
-import { Uuid } from '../../../shared-kernel/domain/value-objects/uuid.vo.js';
-import { LikertValue } from '../../../shared-kernel/domain/value-objects/likert-value.vo.js';
-import { InvariantViolationError } from '../../../shared-kernel/domain/errors/invariant-violation.error.js';
+import { Uuid } from '../../../shared/kernel/domain/value-objects/uuid.vo.js';
+import { LikertValue } from '../../../shared/kernel/domain/value-objects/likert-value.vo.js';
+import { InvariantViolationError } from '../../../shared/kernel/domain/errors/invariant-violation.error.js';
 
 export interface SubmitQuestionnaireCommand {
   diagnosticId: string;

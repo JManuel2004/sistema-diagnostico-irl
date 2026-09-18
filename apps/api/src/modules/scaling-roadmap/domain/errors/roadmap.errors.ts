@@ -1,4 +1,4 @@
-import { DomainError } from '../../../../shared-kernel/domain/errors/domain-error.js';
+import { DomainError } from '../../../../shared/kernel/domain/errors/domain-error.js';
 
 /**
  * Failure while building the scaling roadmap.

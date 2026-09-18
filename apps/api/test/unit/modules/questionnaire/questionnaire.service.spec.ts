@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { SubmitQuestionnaireUseCase } from '../../../../src/modules/questionnaire/usecase/submit-questionnaire.use-case.js';
 import type { AnswerSheetRepositoryPort } from '../../../../src/modules/questionnaire/domain/ports/answer-sheet.repository.port.js';
-import { InvariantViolationError } from '../../../../src/shared-kernel/domain/errors/invariant-violation.error.js';
+import { InvariantViolationError } from '../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 

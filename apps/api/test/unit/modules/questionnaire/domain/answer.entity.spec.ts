@@ -1,5 +1,5 @@
 import { Answer } from '../../../../../src/modules/questionnaire/domain/entities/answer.entity.js';
-import { LikertValue } from '../../../../../src/shared-kernel/domain/value-objects/likert-value.vo.js';
+import { LikertValue } from '../../../../../src/shared/kernel/domain/value-objects/likert-value.vo.js';
 
 describe('Answer', () => {
   describe('create', () => {

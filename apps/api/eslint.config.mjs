@@ -55,7 +55,29 @@ export default [
         { type: 'usecase', pattern: 'src/modules/*/usecase/**' },
         { type: 'application', pattern: 'src/modules/*/application/**' },
         { type: 'infrastructure', pattern: 'src/modules/*/infrastructure/**' },
-        { type: 'shared-kernel', pattern: 'src/shared-kernel/**' },
+        { type: 'shared-kernel', pattern: 'src/shared/kernel/**' },
+        // `shared/irl-taxonomy/` and `shared/identity/` already carry the
+        // definitive four-layer naming (domain/application/infrastructure/
+        // presentation) that the rest of `src/modules/*/` migrates to
+        // module by module during the structural phase. Kept as separate
+        // element types, scoped to `src/shared/{irl-taxonomy,identity}/`
+        // only, so the two naming schemes can coexist without colliding.
+        {
+          type: 'shared-domain',
+          pattern: 'src/shared/{irl-taxonomy,identity}/domain/**',
+        },
+        {
+          type: 'shared-application',
+          pattern: 'src/shared/{irl-taxonomy,identity}/application/**',
+        },
+        {
+          type: 'shared-infrastructure',
+          pattern: 'src/shared/{irl-taxonomy,identity}/infrastructure/**',
+        },
+        {
+          type: 'shared-presentation',
+          pattern: 'src/shared/{irl-taxonomy,identity}/presentation/**',
+        },
         { type: 'config', pattern: 'src/config/**' },
         { type: 'infra-global', pattern: 'src/infrastructure/**' },
       ],
@@ -66,16 +88,19 @@ export default [
         {
           default: 'disallow',
           rules: [
-            { from: 'domain', allow: ['domain', 'shared-kernel'] },
+            {
+              from: 'domain',
+              allow: ['domain', 'shared-kernel', 'shared-domain'],
+            },
             {
               from: 'usecase',
-              allow: ['usecase', 'domain', 'shared-kernel'],
+              allow: ['usecase', 'domain', 'shared-kernel', 'shared-domain', 'shared-application'],
             },
             {
               // The controller layer: it depends on use cases, never on
               // domain or infrastructure directly.
               from: 'application',
-              allow: ['application', 'usecase', 'shared-kernel'],
+              allow: ['application', 'usecase', 'shared-kernel', 'shared-application'],
             },
             {
               from: 'infrastructure',
@@ -85,9 +110,40 @@ export default [
                 'application',
                 'domain',
                 'shared-kernel',
+                'shared-domain',
+                'shared-application',
+                'shared-infrastructure',
               ],
             },
             { from: 'shared-kernel', allow: ['shared-kernel'] },
+            {
+              // `shared/irl-taxonomy/` and `shared/identity/` are
+              // themselves bounded contexts of a different DDD category
+              // (Shared Kernel / Anticorruption Layer): their domain
+              // layers may be imported directly by any module's domain —
+              // see `convenciones-objetivo.md` §1.1, case (b) — instead of
+              // only through a port, which is how Core/Supporting
+              // contexts communicate with each other.
+              from: 'shared-domain',
+              allow: ['shared-domain', 'shared-kernel'],
+            },
+            {
+              from: 'shared-application',
+              allow: ['shared-application', 'shared-domain', 'shared-kernel'],
+            },
+            {
+              from: 'shared-infrastructure',
+              allow: [
+                'shared-infrastructure',
+                'shared-application',
+                'shared-domain',
+                'shared-kernel',
+              ],
+            },
+            {
+              from: 'shared-presentation',
+              allow: ['shared-presentation', 'shared-application', 'shared-kernel'],
+            },
           ],
         },
       ],
@@ -97,7 +153,11 @@ export default [
     // Pure-domain constraint: the domain layer imports nothing from a
     // framework or an IO package. Strictest tier, non-negotiable
     // (root CLAUDE.md, "Architectural rules").
-    files: ['src/modules/*/domain/**/*.ts', 'src/shared-kernel/domain/**/*.ts'],
+    files: [
+      'src/modules/*/domain/**/*.ts',
+      'src/shared/kernel/domain/**/*.ts',
+      'src/shared/{irl-taxonomy,identity}/domain/**/*.ts',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -123,10 +183,14 @@ export default [
     // (`@nestjs/core`, `@nestjs/typeorm`, the platform adapters).
     //
     // Both `usecase/` (use cases) and `application/` (controllers) are
-    // listed: neither has any business importing IO directly.
+    // listed for `src/modules/*/`, still on the intermediate naming; the
+    // two `shared/` modules already carry the definitive `application/`
+    // (use cases) naming, so `shared/*/application/**` is listed too —
+    // same ban, no exception for having moved first.
     files: [
       'src/modules/*/usecase/**/*.ts',
       'src/modules/*/application/**/*.ts',
+      'src/shared/{irl-taxonomy,identity}/application/**/*.ts',
     ],
     rules: {
       'no-restricted-imports': [

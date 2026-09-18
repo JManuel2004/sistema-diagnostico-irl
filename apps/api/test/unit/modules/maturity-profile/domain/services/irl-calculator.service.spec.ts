@@ -3,9 +3,9 @@ import {
   IrlCalculatorService,
   type AnswersByDimension,
 } from '../../../../../../src/modules/maturity-profile/domain/services/irl-calculator.service.js';
-import { DimensionCode } from '../../../../../../src/shared-kernel/domain/value-objects/dimension-code.js';
-import { LikertValue } from '../../../../../../src/shared-kernel/domain/value-objects/likert-value.vo.js';
-import { ConversionRange } from '../../../../../../src/modules/irl-catalog/domain/conversion-range.js';
+import { DimensionCode } from '../../../../../../src/shared/kernel/domain/value-objects/dimension-code.js';
+import { LikertValue } from '../../../../../../src/shared/kernel/domain/value-objects/likert-value.vo.js';
+import { ConversionRange } from '../../../../../../src/shared/irl-taxonomy/domain/entities/conversion-range.js';
 import { MaturityProfileCalculationError } from '../../../../../../src/modules/maturity-profile/domain/errors/maturity-profile-calculation.error.js';
 
 const CODES = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;

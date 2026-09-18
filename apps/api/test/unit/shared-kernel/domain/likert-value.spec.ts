@@ -1,7 +1,7 @@
-import { LikertValue } from '../../../../src/shared-kernel/domain/value-objects/likert-value.vo.js';
-import { InvariantViolationError } from '../../../../src/shared-kernel/domain/errors/invariant-violation.error.js';
+import { LikertValue } from '../../../../src/shared/kernel/domain/value-objects/likert-value.vo.js';
+import { InvariantViolationError } from '../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 
-describe('LikertValue (shared-kernel)', () => {
+describe('LikertValue (shared/kernel)', () => {
   describe('valid range 1..5', () => {
     it.each([1, 2, 3, 4, 5])('accepts %i', (v) => {
       const lv = LikertValue.create(v);

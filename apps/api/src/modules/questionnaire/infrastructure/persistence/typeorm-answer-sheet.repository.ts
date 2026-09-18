@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { AnswerSheetRepositoryPort } from '../../domain/ports/answer-sheet.repository.port.js';
 import { AnswerSheet } from '../../domain/entities/answer-sheet.aggregate.js';
-import { Uuid } from '../../../../shared-kernel/domain/value-objects/uuid.vo.js';
+import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { AnswerOrm } from './answer.orm-entity.js';
 
 /**

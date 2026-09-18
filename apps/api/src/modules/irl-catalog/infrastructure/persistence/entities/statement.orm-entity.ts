@@ -6,7 +6,7 @@ import {
   PrimaryGeneratedColumn,
   type Relation,
 } from 'typeorm';
-import { DimensionOrm } from './dimension.orm-entity.js';
+import { DimensionOrm } from '../../../../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
 
 @Entity({ schema: 'irl_catalog', name: 'statement' })
 export class StatementOrm {

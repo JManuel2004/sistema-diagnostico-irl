@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { ScalingRoadmap } from '../../../../../src/modules/scaling-roadmap/domain/entities/scaling-roadmap.aggregate.js';
 import { RoadmapCalculationError } from '../../../../../src/modules/scaling-roadmap/domain/errors/roadmap.errors.js';
-import { Uuid } from '../../../../../src/shared-kernel/domain/value-objects/uuid.vo.js';
+import { Uuid } from '../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
 
 const DIAG = Uuid.create('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11');
 const AHORA = new Date('2026-09-08T10:00:00.000Z');
