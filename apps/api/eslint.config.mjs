@@ -39,7 +39,7 @@ import boundaries from 'eslint-plugin-boundaries';
 const LEGACY_LAYER_MODULES = '{portfolio-routing,scaling-roadmap}';
 
 /** Modules already on the definitive four-layer naming. */
-const DEFINITIVE_LAYER_CONTEXTS = 'modules/diagnosis,shared/irl-taxonomy,shared/identity';
+const DEFINITIVE_LAYER_CONTEXTS = 'modules/diagnosis,modules/initiative,shared/irl-taxonomy,shared/identity';
 
 /** Framework packages. Banned outright in `domain/`. */
 const FRAMEWORK_PACKAGES = [

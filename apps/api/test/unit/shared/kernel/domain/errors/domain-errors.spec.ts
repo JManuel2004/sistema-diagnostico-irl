@@ -1,7 +1,7 @@
-import { InvariantViolationError } from '../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
-import { NotFoundError } from '../../../../../src/shared/kernel/domain/errors/not-found.error.js';
-import { ForbiddenError } from '../../../../../src/shared/kernel/domain/errors/forbidden.error.js';
-import { ConflictError } from '../../../../../src/shared/kernel/domain/errors/conflict.error.js';
+import { InvariantViolationError } from '../../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
+import { NotFoundError } from '../../../../../../src/shared/kernel/domain/errors/not-found.error.js';
+import { ForbiddenError } from '../../../../../../src/shared/kernel/domain/errors/forbidden.error.js';
+import { ConflictError } from '../../../../../../src/shared/kernel/domain/errors/conflict.error.js';
 
 describe('Domain errors', () => {
   describe('InvariantViolationError', () => {

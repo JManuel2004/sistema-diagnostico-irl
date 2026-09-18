@@ -1,5 +1,5 @@
-import { Uuid } from '../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
-import { InvariantViolationError } from '../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
+import { Uuid } from '../../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
+import { InvariantViolationError } from '../../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 
 const VALID_UUID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 

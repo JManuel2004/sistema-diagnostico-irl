@@ -1,5 +1,5 @@
-import { IrlLevel } from '../../../../../src/shared/kernel/domain/value-objects/irl-level.vo.js';
-import { InvariantViolationError } from '../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
+import { IrlLevel } from '../../../../../../src/shared/kernel/domain/value-objects/irl-level.vo.js';
+import { InvariantViolationError } from '../../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 
 describe('IrlLevel', () => {
   describe('create', () => {

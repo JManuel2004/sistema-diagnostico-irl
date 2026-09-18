@@ -3,6 +3,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './health.controller.js';
 import { IdentityModule } from '../../shared/identity/identity.module.js';
 import { DiagnosisModule } from '../../modules/diagnosis/diagnosis.module.js';
+import { InitiativeModule } from '../../modules/initiative/initiative.module.js';
 import { PortfolioRoutingModule } from '../../modules/portfolio-routing/portfolio-routing.module.js';
 import { ScalingRoadmapModule } from '../../modules/scaling-roadmap/scaling-roadmap.module.js';
 
@@ -21,6 +22,7 @@ import { ScalingRoadmapModule } from '../../modules/scaling-roadmap/scaling-road
     TerminusModule,
     IdentityModule,
     DiagnosisModule,
+    InitiativeModule,
     PortfolioRoutingModule,
     ScalingRoadmapModule,
   ],

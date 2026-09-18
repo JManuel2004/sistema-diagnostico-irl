@@ -13,12 +13,9 @@ import { PortfolioRecommendationOrm } from './infrastructure/persistence/portfol
 import { RecommendationAlternativeOrm } from './infrastructure/persistence/recommendation-alternative.orm-entity.js';
 import { LayerTraceOrm } from './infrastructure/persistence/layer-trace.orm-entity.js';
 import { DimensionOrm } from '../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
-import { IniciativaOrm } from '../initiative/infrastructure/persistence/iniciativa.orm-entity.js';
-import { EtapaIniciativaOrm } from '../initiative/infrastructure/persistence/etapa-iniciativa.orm-entity.js';
-import { SectorOrm } from '../initiative/infrastructure/persistence/sector.orm-entity.js';
 import { TypeOrmActiveConfigurationRepository } from './infrastructure/persistence/typeorm-active-configuration.repository.js';
 import { TypeOrmRecommendationRepository } from './infrastructure/persistence/typeorm-recommendation.repository.js';
-import { TypeOrmInitiativeCharacterizationRepository } from './infrastructure/persistence/typeorm-initiative-characterization.repository.js';
+import { InitiativeCharacterizationAdapter } from './infrastructure/persistence/initiative-characterization.adapter.js';
 import { ACTIVE_CONFIGURATION_REPOSITORY } from './domain/ports/active-configuration.repository.port.js';
 import { RECOMMENDATION_REPOSITORY } from './domain/ports/recommendation.repository.port.js';
 import { INITIATIVE_CHARACTERIZATION_READER } from './domain/ports/initiative-characterization.port.js';
@@ -31,6 +28,7 @@ import { GetRecommendationUseCase } from './usecase/get-recommendation.use-case.
 import { GetRecommendationTraceUseCase } from './usecase/get-recommendation-trace.use-case.js';
 import { RecommendationController } from './application/http/recommendation.controller.js';
 import { DiagnosisModule } from '../diagnosis/diagnosis.module.js';
+import { InitiativeModule } from '../initiative/initiative.module.js';
 
 /**
  * `PortfolioRoutingModule` — contexto acotado del enrutamiento al
@@ -67,11 +65,9 @@ import { DiagnosisModule } from '../diagnosis/diagnosis.module.js';
       RecommendationAlternativeOrm,
       LayerTraceOrm,
       DimensionOrm,
-      IniciativaOrm,
-      EtapaIniciativaOrm,
-      SectorOrm,
     ]),
     DiagnosisModule,
+    InitiativeModule,
   ],
   providers: [
     OrdinalTranslatorService,
@@ -88,7 +84,7 @@ import { DiagnosisModule } from '../diagnosis/diagnosis.module.js';
     { provide: RECOMMENDATION_REPOSITORY, useClass: TypeOrmRecommendationRepository },
     {
       provide: INITIATIVE_CHARACTERIZATION_READER,
-      useClass: TypeOrmInitiativeCharacterizationRepository,
+      useClass: InitiativeCharacterizationAdapter,
     },
   ],
   controllers: [RecommendationController],

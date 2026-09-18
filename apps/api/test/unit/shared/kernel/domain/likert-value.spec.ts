@@ -1,5 +1,5 @@
-import { LikertValue } from '../../../../src/shared/kernel/domain/value-objects/likert-value.vo.js';
-import { InvariantViolationError } from '../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
+import { LikertValue } from '../../../../../src/shared/kernel/domain/value-objects/likert-value.vo.js';
+import { InvariantViolationError } from '../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 
 describe('LikertValue (shared/kernel)', () => {
   describe('valid range 1..5', () => {

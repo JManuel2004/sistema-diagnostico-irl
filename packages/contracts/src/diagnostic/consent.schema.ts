@@ -19,18 +19,17 @@ export type ConsentVersion = z.infer<typeof consentVersionSchema>;
 /**
  * Comando para registrar el consentimiento del usuario (HU-05 / RF-03).
  *
- * `POST /api/v1/diagnosticos/:id/consentimiento`.
+ * `POST /api/v1/diagnostics/:id/consent`.
  *
  * Reglas:
- *   - `accepted` debe ser `true` — la API rechaza `false`. El usuario
- *     que no acepta simplemente no envía la petición.
+ *   - El usuario que no acepta simplemente no envía la petición — no
+ *     hay un `accepted: false` que enviar ni que rechazar.
  *   - `version` es la versión del texto mostrado al usuario, no la
  *     "actual del servidor"; el backend verifica que coincida con la
- *     vigente y rechaza con `CONSENT_VERSION_MISMATCH` si no.
+ *     vigente y rechaza con 409 si no.
  */
 export const registerConsentSchema = z
   .object({
-    accepted: z.literal(true).describe('Indicador explícito de aceptación — solo se acepta `true`'),
     version: consentVersionSchema,
   })
   .describe('Registro del consentimiento (HU-05)');
@@ -40,7 +39,7 @@ export type RegisterConsentCommand = z.infer<typeof registerConsentSchema>;
 /**
  * Estado del consentimiento asociado a un diagnóstico.
  *
- * Endpoint: `GET /api/v1/diagnosticos/:id/consentimiento`.
+ * Endpoint: `GET /api/v1/diagnostics/:id/consent`.
  *
  * Cuando todavía no hay consentimiento registrado, el endpoint devuelve
  * 404 — el frontend lo interpreta como "necesitamos mostrar la pantalla

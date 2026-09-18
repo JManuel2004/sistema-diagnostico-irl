@@ -39,10 +39,10 @@ export async function seedPortfolioRouting(
 
   for (const e of ETAPAS) {
     await manager.query(
-      `INSERT INTO irl_catalog.etapa_iniciativa (codigo, nombre, orden, activo)
+      `INSERT INTO irl_catalog.initiative_stage (code, name, sequence, is_active)
        VALUES ($1, $2, $3, true)
-       ON CONFLICT (codigo) DO UPDATE
-         SET nombre = EXCLUDED.nombre, orden = EXCLUDED.orden`,
+       ON CONFLICT (code) DO UPDATE
+         SET name = EXCLUDED.name, sequence = EXCLUDED.sequence`,
       [e.codigo, e.nombre, e.orden],
     );
   }

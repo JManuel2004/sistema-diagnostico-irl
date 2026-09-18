@@ -1,5 +1,5 @@
-import { Result } from '../../../../src/shared/kernel/domain/result.js';
-import { InvariantViolationError } from '../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
+import { Result } from '../../../../../src/shared/kernel/domain/result.js';
+import { InvariantViolationError } from '../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 
 describe('Result', () => {
   describe('ok', () => {
