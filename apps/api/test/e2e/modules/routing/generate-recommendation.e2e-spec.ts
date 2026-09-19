@@ -87,20 +87,20 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     );
 
     await dataSource.query(
-      `INSERT INTO irl_catalog.sector (nombre, activo)
+      `INSERT INTO irl_catalog.sector (name, is_active)
        VALUES ('Agroindustria', true)
-       ON CONFLICT (nombre) DO NOTHING`,
+       ON CONFLICT (name) DO NOTHING`,
     );
 
     await dataSource.query(
-      `INSERT INTO irl_diagnostic.iniciativa
-         (id_iniciativa, id_diagnostico, id_sector, nombre, descripcion_breve,
-          id_etapa, tamano_equipo, vinculacion_academica)
-       SELECT $1, $2, s.id_sector, 'AgroConecta',
+      `INSERT INTO irl_diagnostic.initiative
+         (id, id_diagnostic, id_sector, name, short_description,
+          id_stage, team_size, academic_linkage)
+       SELECT $1, $2, s.id, 'AgroConecta',
               'Plataforma de trazabilidad y comercialización de café',
-              e.id_etapa, 3, false
-         FROM irl_catalog.sector s, irl_catalog.etapa_iniciativa e
-        WHERE s.nombre = 'Agroindustria' AND e.codigo = 'validacion'`,
+              e.id, 3, false
+         FROM irl_catalog.sector s, irl_catalog.initiative_stage e
+        WHERE s.name = 'Agroindustria' AND e.code = 'validacion'`,
       [randomUUID(), diagnosticId],
     );
 

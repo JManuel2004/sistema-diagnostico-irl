@@ -29,7 +29,7 @@ export class DiagnosisController {
     private readonly requestDeepAnalysis: RequestDeepAnalysisUseCase,
   ) {}
 
-  @Post(':id/finalizar-inicial')
+  @Post(':id/finalize-initial')
   @ApiCreatedResponse({
     description:
       'Cuestionario persistido, perfil calculado y diagnóstico en PROFILE_GENERATED',

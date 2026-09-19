@@ -11,7 +11,7 @@ import { AnswerOrm } from '../orm-entities/answer.orm-entity.js';
  *
  * Save policy: replace-all in a single transaction. DELETE then INSERT
  * inside a transaction guarantees the persisted state mirrors the
- * aggregate exactly. The `UNIQUE (id_diagnostico, id_statement)` DB
+ * aggregate exactly. The `UNIQUE (id_diagnostic, id_statement)` DB
  * constraint provides defense-in-depth against duplicate answers.
  *
  * `id` is a bigint GENERATED ALWAYS AS IDENTITY — never set it

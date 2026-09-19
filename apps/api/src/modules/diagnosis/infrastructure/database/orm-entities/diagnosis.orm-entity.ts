@@ -18,7 +18,7 @@ export class DiagnosisOrm {
   @Column({ name: 'phase_2_completed_at', type: 'timestamptz', nullable: true })
   phase2CompletedAt!: Date | null;
 
-  @Column({ name: 'state', type: 'varchar', length: 24 })
+  @Column({ name: 'state', type: 'varchar', length: 32 })
   state!: string;
 
   @Column({

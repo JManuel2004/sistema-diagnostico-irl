@@ -49,7 +49,7 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
       .values(rows)
       .orUpdate(
         ['likert_average', 'irl_level', 'in_critical_state', 'computed_at'],
-        ['id_diagnostico', 'id_dimension'],
+        ['id_diagnostic', 'id_dimension'],
       )
       .execute();
   }

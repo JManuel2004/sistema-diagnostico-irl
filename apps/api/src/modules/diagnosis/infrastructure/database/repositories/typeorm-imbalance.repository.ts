@@ -59,7 +59,7 @@ export class TypeOrmImbalanceRepository implements ImbalanceRepositoryPort {
       .insert()
       .into(ImbalanceAnalysisOrm)
       .values(rows)
-      .orUpdate(['level_difference', 'classification'], ['id_diagnostico', 'id_pair'])
+      .orUpdate(['level_difference', 'classification'], ['id_diagnostic', 'id_pair'])
       .execute();
   }
 }

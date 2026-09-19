@@ -22,7 +22,7 @@ describe('DiagnosisController', () => {
     );
   });
 
-  it('delegates finalizar-inicial to the orchestrator use case', async () => {
+  it('delegates finalize-initial to the orchestrator use case', async () => {
     const profile = { diagnosticId: DIAGNOSTIC_ID } as MaturityProfileResponse;
     mockUseCase.execute.mockResolvedValueOnce(Result.ok(profile));
     const answers = [{ statementId: '1', value: 3 }];

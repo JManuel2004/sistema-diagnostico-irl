@@ -9,7 +9,7 @@ export class AnswerOrm {
   id!: string;
 
   @Index('ix_answer_diagnostic')
-  @Column({ name: 'id_diagnostico', type: 'uuid' })
+  @Column({ name: 'id_diagnostic', type: 'uuid' })
   idDiagnostico!: string;
 
   @Column({ name: 'id_statement', type: 'bigint' })

@@ -14,7 +14,7 @@ import type { MaturityProfile } from '../entities/maturity-profile.aggregate.js'
  * never exposes a partial profile.
  *
  * The upsert key is the unique constraint
- * `uq_resultado_diag_dim (id_diagnostico, id_dimension)` declared in
+ * `uq_dimension_result_diag_dim (id_diagnostic, id_dimension)` declared in
  * the migration. The TypeORM adapter (Stage 5) replaces the entire row
  * set per call to keep the in-memory aggregate and the persisted state
  * fully consistent.

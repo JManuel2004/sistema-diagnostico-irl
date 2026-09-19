@@ -6,7 +6,7 @@ export class DimensionResultOrm {
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'id' })
   id!: string;
 
-  @Column({ name: 'id_diagnostico', type: 'uuid' })
+  @Column({ name: 'id_diagnostic', type: 'uuid' })
   idDiagnostico!: string;
 
   @Column({ name: 'id_dimension', type: 'integer' })

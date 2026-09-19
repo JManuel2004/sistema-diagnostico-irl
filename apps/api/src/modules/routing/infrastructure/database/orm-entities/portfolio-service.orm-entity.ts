@@ -11,6 +11,6 @@ export class PortfolioServiceOrm {
   @Column({ name: 'description', type: 'varchar', length: 500, nullable: true })
   description!: string | null;
 
-  @Column({ name: 'isActive', type: 'boolean', default: true })
+  @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;
 }

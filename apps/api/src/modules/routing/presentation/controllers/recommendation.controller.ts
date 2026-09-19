@@ -14,7 +14,7 @@ import { unwrapResult } from '../../../../shared/kernel/application/unwrap-resul
  *
  * La generación es `POST` sobre un subrecurso, en línea con
  * `POST /diagnostics/:id/finalize-initial`. Deliberadamente NO se
- * integra dentro de ese endpoint: `finalizar-inicial` cierra la fase 1
+ * integra dentro de ese endpoint: `finalize-initial` cierra la fase 1
  * (perfil de madurez) y la recomendación pertenece al análisis profundo,
  * que es un momento distinto del recorrido y una decisión que el usuario
  * toma por separado (RF-11).
