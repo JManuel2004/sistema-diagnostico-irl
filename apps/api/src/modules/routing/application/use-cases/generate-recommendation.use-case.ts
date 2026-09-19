@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { createHash } from 'node:crypto';
 import type {
   DimensionCode,
@@ -22,6 +23,7 @@ import { EligibilityFilterService } from '../../domain/services/eligibility-filt
 import { AffinityScorerService } from '../../domain/services/affinity-scorer.service.js';
 import { ExceptionEngineService } from '../../domain/services/exception-engine.service.js';
 import { Recommendation } from '../../domain/entities/recommendation.aggregate.js';
+import { PortfolioRecommendationCalculatedEvent } from '../../domain/events/portfolio-recommendation-calculated.event.js';
 import {
   NoActiveConfigurationError,
   ProfileNotComputedError,
@@ -58,6 +60,7 @@ export class GenerateRecommendationUseCase {
     private readonly eligibility: EligibilityFilterService,
     private readonly scorer: AffinityScorerService,
     private readonly exceptions: ExceptionEngineService,
+    private readonly events: EventEmitter2,
   ) {}
 
   async execute(
@@ -121,6 +124,14 @@ export class GenerateRecommendationUseCase {
     });
 
     await this.recommendations.save(recommendation);
+
+    // Published once the recommendation is persisted. No listener yet.
+    await this.events.emitAsync(
+      PortfolioRecommendationCalculatedEvent.eventName,
+      new PortfolioRecommendationCalculatedEvent({
+        diagnosticId: diagnosticId.value,
+      }),
+    );
 
     return Result.ok(toRecomendacionResponse(recommendation));
   }

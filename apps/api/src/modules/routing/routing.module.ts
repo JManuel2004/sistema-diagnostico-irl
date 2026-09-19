@@ -14,6 +14,7 @@ import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module
 import { TypeOrmActiveConfigurationRepository } from './infrastructure/database/repositories/typeorm-active-configuration.repository.js';
 import { TypeOrmRecommendationRepository } from './infrastructure/database/repositories/typeorm-recommendation.repository.js';
 import { InitiativeCharacterizationAdapter } from './infrastructure/initiative-characterization.adapter.js';
+import { DeepAnalysisRequestedListener } from './infrastructure/messaging/deep-analysis-requested.listener.js';
 import { ACTIVE_CONFIGURATION_REPOSITORY } from './domain/repositories/active-configuration.repository.port.js';
 import { RECOMMENDATION_REPOSITORY } from './domain/repositories/recommendation.repository.port.js';
 import { INITIATIVE_CHARACTERIZATION_READER } from './domain/repositories/initiative-characterization.port.js';
@@ -74,6 +75,7 @@ import { InitiativeModule } from '../initiative/initiative.module.js';
     GenerateRecommendationUseCase,
     GetRecommendationUseCase,
     GetRecommendationTraceUseCase,
+    DeepAnalysisRequestedListener,
     {
       provide: ACTIVE_CONFIGURATION_REPOSITORY,
       useClass: TypeOrmActiveConfigurationRepository,

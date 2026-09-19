@@ -32,6 +32,7 @@ import { FinalizeInitialDiagnosisUseCase } from './application/use-cases/finaliz
 import { SubmitQuestionnaireUseCase } from './application/use-cases/submit-questionnaire.use-case.js';
 import { ComputeMaturityProfileUseCase } from './application/use-cases/compute-maturity-profile.use-case.js';
 import { GetMaturityProfileUseCase } from './application/use-cases/get-maturity-profile.use-case.js';
+import { RequestDeepAnalysisUseCase } from './application/use-cases/request-deep-analysis.use-case.js';
 import { GetQuestionnaireStructureQuery } from './application/use-cases/get-questionnaire-structure.query.js';
 
 import { DiagnosisController } from './presentation/controllers/diagnosis.controller.js';
@@ -92,6 +93,7 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     SubmitQuestionnaireUseCase,
     ComputeMaturityProfileUseCase,
     GetMaturityProfileUseCase,
+    RequestDeepAnalysisUseCase,
     {
       provide: GetQuestionnaireStructureQuery,
       useFactory: (

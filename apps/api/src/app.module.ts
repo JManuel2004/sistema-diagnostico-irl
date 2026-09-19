@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService, ConfigType } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from 'nestjs-pino';
 import { ClsModule, ClsService } from 'nestjs-cls';
@@ -80,6 +81,10 @@ import { ApiV1Module } from './interfaces/http/api-v1.module.js';
         return buildOrmModuleOptions(cfg);
       },
     }),
+    // In-process domain events (`convenciones-objetivo.md` §1.1/§2.2) —
+    // no queue infrastructure, `EventEmitter2` dispatch is enough for
+    // the current volume and topology.
+    EventEmitterModule.forRoot(),
     ApiV1Module,
   ],
 })

@@ -3,7 +3,7 @@ import { Navigate, useParams } from 'react-router-dom';
 import {
   LayerTracePanel,
   RecommendationSummary,
-  useGenerateRecommendation,
+  useAcceptDeepAnalysis,
   useRecommendation,
   useRecommendationTrace,
 } from '@features/portfolio-recommendation';
@@ -16,19 +16,27 @@ import { ApiError } from '@/shared/api/http';
  * Si la recomendación aún no existe el backend responde 409 con
  * `ROUTING_RECOMMENDATION_NOT_GENERATED`; eso no es un fallo sino el
  * state inicial. Quien llega a esta ruta lo hace porque quiere ver la
- * recomendación de portafolio, así que la página la genera automáticamente
- * en vez de exigir un click adicional — no hay ninguna otra razón para
- * visitar esta URL. Distinguir ese 409 de un error real depende del
- * `code` que el interceptor conserva.
+ * recomendación de portafolio, así que la página acepta el análisis
+ * profundo automáticamente en vez de exigir un click adicional — no hay
+ * ninguna otra razón para visitar esta URL.
+ *
+ * La página ya no dispara el cálculo de `routing/` directamente: acepta el
+ * análisis profundo en `diagnosis/`, que publica un evento de dominio al
+ * que `routing/` y `roadmap/` reaccionan cada uno por su cuenta. Como esas
+ * reacciones son independientes, un fallo de `routing/` (p. ej. sin
+ * configuración activa) ya no llega como error de la aceptación: se
+ * manifiesta como que, tras aceptar, la recomendación sigue sin existir.
+ * Distinguir ese 409 de un error real depende del `code` que el
+ * interceptor conserva.
  */
 export default function RecommendationPage(): JSX.Element {
   const { id: diagnosticId } = useParams<{ id: string }>();
   const [trazaSolicitada, setTrazaSolicitada] = useState(false);
 
   const { data: recommendation, error, isPending } = useRecommendation(diagnosticId);
-  const generar = useGenerateRecommendation(diagnosticId);
-  const { mutate: generarRecomendacion, isIdle: generarEsIdle } = generar;
-  // Al regenerar, la mutación invalida la traza, así que si el panel está
+  const aceptar = useAcceptDeepAnalysis(diagnosticId);
+  const { mutate: aceptarAnalisis, isIdle: aceptarEsIdle } = aceptar;
+  // Al aceptar, la mutación invalida la traza, así que si el panel está
   // abierto se refresca solo. No hace falta cerrarlo ni sincronizar state.
   const trace = useRecommendationTrace(diagnosticId, trazaSolicitada);
 
@@ -36,14 +44,18 @@ export default function RecommendationPage(): JSX.Element {
     error instanceof ApiError &&
     error.code === 'ROUTING_RECOMMENDATION_NOT_GENERATED';
 
-  // `generarEsIdle` es lo que evita relanzar la mutación en cada render:
+  // `aceptarEsIdle` es lo que evita relanzar la mutación en cada render:
   // una vez que pasa a 'pending' (o falla), deja de ser idle y este efecto
   // no vuelve a dispararse aunque `noGenerada` siga en true.
   useEffect(() => {
-    if (noGenerada && generarEsIdle) {
-      generarRecomendacion();
+    if (noGenerada && aceptarEsIdle) {
+      aceptarAnalisis();
     }
-  }, [noGenerada, generarEsIdle, generarRecomendacion]);
+  }, [noGenerada, aceptarEsIdle, aceptarAnalisis]);
+
+  // La aceptación tuvo éxito y la relectura sigue sin encontrar la
+  // recomendación: el cálculo de `routing/` falló del lado del servidor.
+  const calculoFallo = aceptar.isSuccess && noGenerada;
 
   if (!diagnosticId) {
     return <Navigate to="/diagnosticos" replace />;
@@ -66,7 +78,7 @@ export default function RecommendationPage(): JSX.Element {
         <p className="text-muted-foreground text-base">Cargando…</p>
       )}
 
-      {noGenerada && !generar.isError && (
+      {noGenerada && !aceptar.isError && !calculoFallo && (
         <p className="text-muted-foreground text-base">Generando recomendación…</p>
       )}
 
@@ -90,16 +102,15 @@ export default function RecommendationPage(): JSX.Element {
         </div>
       )}
 
-      {generar.isError && (
+      {(aceptar.isError || calculoFallo) && (
         <div
           role="alert"
           className="border-critical/30 bg-critical-bg mt-4 rounded-md border p-4"
         >
           <p className="text-critical text-sm font-semibold">
-            {generar.error instanceof ApiError &&
-            generar.error.code === 'ROUTING_NO_ACTIVE_CONFIGURATION'
-              ? 'No hay una configuración de enrutamiento active. Contacta al equipo de INNLAB.'
-              : 'No fue posible generar la recomendación. Intenta de nuevo en unos minutos.'}
+            {aceptar.error instanceof ApiError && aceptar.error.status === 409
+              ? 'Este diagnóstico aún no tiene un perfil de madurez calculado.'
+              : 'No fue posible generar la recomendación. Intenta de nuevo en unos minutos o contacta al equipo de INNLAB.'}
           </p>
         </div>
       )}

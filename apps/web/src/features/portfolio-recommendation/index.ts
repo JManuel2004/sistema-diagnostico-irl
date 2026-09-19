@@ -5,5 +5,5 @@ export { LayerTracePanel } from './components/LayerTracePanel';
 export {
   useRecommendation,
   useRecommendationTrace,
-  useGenerateRecommendation,
+  useAcceptDeepAnalysis,
 } from './hooks/useRecommendation';

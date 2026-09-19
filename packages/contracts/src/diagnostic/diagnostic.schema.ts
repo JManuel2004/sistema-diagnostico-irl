@@ -95,3 +95,26 @@ export const finalizeInitialDiagnosticRequestSchema = z
 export type FinalizeInitialDiagnosticRequest = z.infer<
   typeof finalizeInitialDiagnosticRequestSchema
 >;
+
+/**
+ * Respuesta al aceptar el análisis profundo (RF-11).
+ *
+ * `POST /api/v1/diagnosticos/:id/deep-analysis` — dispara
+ * `DeepAnalysisRequestedEvent` en el backend, que `routing/` y
+ * `roadmap/` escuchan cada uno por su cuenta para calcular su parte.
+ * Idempotente en el estado, no en el efecto: si el diagnóstico ya está
+ * en `DEEP_ANALYSIS_IN_PROGRESS` o `DEEP_ANALYSIS_COMPLETE`, no cambia de
+ * estado pero sí vuelve a publicar el evento, para que un cálculo que
+ * falló la primera vez (p. ej. sin configuración de enrutamiento activa)
+ * pueda reintentarse.
+ */
+export const acceptDeepAnalysisResponseSchema = z
+  .object({
+    diagnosticId: uuidSchema,
+    state: diagnosticStateSchema,
+  })
+  .describe('Respuesta al aceptar el análisis profundo (RF-11)');
+
+export type AcceptDeepAnalysisResponse = z.infer<
+  typeof acceptDeepAnalysisResponseSchema
+>;

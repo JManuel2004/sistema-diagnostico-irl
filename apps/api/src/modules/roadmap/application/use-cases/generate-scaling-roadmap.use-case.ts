@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { DimensionCode } from '@innlab/contracts';
 import {
   DEPENDENCY_GRAPH_REPOSITORY,
@@ -13,6 +14,7 @@ import {
   type RoadmapPhase,
 } from '../../domain/entities/scaling-roadmap.aggregate.js';
 import { RoadmapCalculationError } from '../../domain/exceptions/roadmap.errors.js';
+import { ScalingRoadmapCalculatedEvent } from '../../domain/events/scaling-roadmap-calculated.event.js';
 import { GetMaturityProfileUseCase } from '../../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
@@ -49,6 +51,7 @@ export class GenerateScalingRoadmapUseCase {
     private readonly closure: RoadmapClosureService,
     private readonly layering: TopologicalLayeringService,
     private readonly targets: TargetLevelCalculatorService,
+    private readonly events: EventEmitter2,
   ) {}
 
   async execute(
@@ -106,12 +109,20 @@ export class GenerateScalingRoadmapUseCase {
       })),
     }));
 
-    return Result.ok(
-      ScalingRoadmap.create({
-        diagnosticId,
-        phases,
-        generatedAt: new Date(),
-      }),
+    const roadmap = ScalingRoadmap.create({
+      diagnosticId,
+      phases,
+      generatedAt: new Date(),
+    });
+
+    // Published every time a roadmap is calculated, whatever triggered
+    // it — this use case persists nothing, so "calculated" is the
+    // whole lifecycle. No listener yet.
+    await this.events.emitAsync(
+      ScalingRoadmapCalculatedEvent.eventName,
+      new ScalingRoadmapCalculatedEvent({ diagnosticId: diagnosticId.value }),
     );
+
+    return Result.ok(roadmap);
   }
 }

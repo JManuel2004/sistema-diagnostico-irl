@@ -1,8 +1,12 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Controller, Body, Param, Post } from '@nestjs/common';
 import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { FinalizeInitialDiagnosisUseCase } from '../../application/use-cases/finalize-initial-diagnosis.use-case.js';
+import { RequestDeepAnalysisUseCase } from '../../application/use-cases/request-deep-analysis.use-case.js';
 import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
-import type { MaturityProfileResponse } from '@innlab/contracts';
+import type {
+  MaturityProfileResponse,
+  AcceptDeepAnalysisResponse,
+} from '@innlab/contracts';
 
 /**
  * HTTP surface for the diagnostic orchestrator.
@@ -13,12 +17,16 @@ import type { MaturityProfileResponse } from '@innlab/contracts';
  *   - `GET  /api/v1/diagnostics/:id`    — fetch a single diagnostic.
  *   - `POST /api/v1/diagnostics/:id/finalize-initial` — orchestrates
  *     `Questionnaire` + `MaturityProfile` (out of phase-1 scope).
+ *   - `POST /api/v1/diagnostics/:id/deep-analysis` (RF-11) — accepts
+ *     deep analysis; fires `DeepAnalysisRequestedEvent` for `routing/`
+ *     and `roadmap/` to react to independently.
  */
 @ApiTags('diagnostics')
 @Controller('diagnostics')
 export class DiagnosisController {
   constructor(
     private readonly finalizeInitial: FinalizeInitialDiagnosisUseCase,
+    private readonly requestDeepAnalysis: RequestDeepAnalysisUseCase,
   ) {}
 
   @Post(':id/finalizar-inicial')
@@ -35,6 +43,20 @@ export class DiagnosisController {
         diagnosticId,
         answers: body.answers,
       }),
+    );
+  }
+
+  @Post(':id/deep-analysis')
+  @ApiCreatedResponse({
+    description:
+      'Análisis profundo aceptado — diagnóstico en DEEP_ANALYSIS_IN_PROGRESS. ' +
+      'Idempotente si ya estaba aceptado.',
+  })
+  async requestDeepAnalysisFor(
+    @Param('id') diagnosticId: string,
+  ): Promise<AcceptDeepAnalysisResponse> {
+    return unwrapResult(
+      await this.requestDeepAnalysis.execute({ diagnosticId }),
     );
   }
 }

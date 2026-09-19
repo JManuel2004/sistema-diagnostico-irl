@@ -8,6 +8,7 @@ import { TopologicalLayeringService } from './domain/services/topological-layeri
 import { TargetLevelCalculatorService } from './domain/services/target-level-calculator.service.js';
 import { GenerateScalingRoadmapUseCase } from './application/use-cases/generate-scaling-roadmap.use-case.js';
 import { RoadmapController } from './presentation/controllers/roadmap.controller.js';
+import { DeepAnalysisRequestedListener } from './infrastructure/messaging/deep-analysis-requested.listener.js';
 import { DiagnosisModule } from '../diagnosis/diagnosis.module.js';
 import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module.js';
 
@@ -42,6 +43,7 @@ import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module
     TopologicalLayeringService,
     TargetLevelCalculatorService,
     GenerateScalingRoadmapUseCase,
+    DeepAnalysisRequestedListener,
     {
       provide: DEPENDENCY_GRAPH_REPOSITORY,
       useClass: TypeOrmDependencyGraphRepository,

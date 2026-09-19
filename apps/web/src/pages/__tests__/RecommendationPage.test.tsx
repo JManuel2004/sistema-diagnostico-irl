@@ -9,6 +9,11 @@ import { renderWithClient } from '@/test/render-with-client';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 const BASE = '*/diagnostics/:id/recommendation';
+const DEEP_ANALYSIS = '*/diagnostics/:id/deep-analysis';
+const ACEPTADO = {
+  diagnosticId: DIAGNOSTIC_ID,
+  state: 'DEEP_ANALYSIS_IN_PROGRESS' as const,
+};
 
 const server = setupServer();
 
@@ -66,20 +71,37 @@ describe('RecommendationPage', () => {
     expect(screen.getByText(/riesgo legal más urgente/)).toBeInTheDocument();
   });
 
-  it('genera la recomendación automáticamente cuando todavía no existe', async () => {
-    // 409 con ROUTING_RECOMMENDATION_NOT_GENERATED no es un error: es el
-    // state inicial. Quien llega a esta ruta quiere ver la recomendación,
-    // así que la página la dispara sola — no hay botón que pulsar.
+  /**
+   * Simula el backend real: la recomendación no existe (409) hasta que se
+   * acepta el análisis profundo, momento en que `routing/` la calcula y
+   * persiste como reacción al evento.
+   */
+  function backendQueCalculaAlAceptar(opts: { calculaRecomendacion: boolean }) {
+    const estado = { aceptaciones: 0, calculada: false };
     server.use(
       mswHttp.get(BASE, () =>
-        problema(
-          'ROUTING_RECOMMENDATION_NOT_GENERATED',
-          409,
-          'Todavía no tiene recomendación generada.',
-        ),
+        estado.calculada
+          ? HttpResponse.json(RECOMENDACION)
+          : problema(
+              'ROUTING_RECOMMENDATION_NOT_GENERATED',
+              409,
+              'Todavía no tiene recomendación generada.',
+            ),
       ),
-      mswHttp.post(BASE, () => HttpResponse.json(RECOMENDACION, { status: 201 })),
+      mswHttp.post(DEEP_ANALYSIS, () => {
+        estado.aceptaciones += 1;
+        if (opts.calculaRecomendacion) estado.calculada = true;
+        return HttpResponse.json(ACEPTADO, { status: 201 });
+      }),
     );
+    return estado;
+  }
+
+  it('acepta el análisis profundo automáticamente cuando la recomendación todavía no existe', async () => {
+    // 409 con ROUTING_RECOMMENDATION_NOT_GENERATED no es un error: es el
+    // state inicial. Quien llega a esta ruta quiere ver la recomendación,
+    // así que la página acepta el análisis sola — no hay botón que pulsar.
+    const estado = backendQueCalculaAlAceptar({ calculaRecomendacion: true });
 
     renderPage();
 
@@ -90,20 +112,42 @@ describe('RecommendationPage', () => {
     expect(
       await screen.findByRole('heading', { name: 'Consultoría' }),
     ).toBeInTheDocument();
+    expect(estado.aceptaciones).toBe(1);
   });
 
-  it('muestra un state de carga mientras la generación está en curso', async () => {
+  it('ya no dispara el cálculo de routing/ directamente', async () => {
+    let postsDirectos = 0;
+    backendQueCalculaAlAceptar({ calculaRecomendacion: true });
+    server.use(
+      mswHttp.post(BASE, () => {
+        postsDirectos += 1;
+        return HttpResponse.json(RECOMENDACION, { status: 201 });
+      }),
+    );
+
+    renderPage();
+    await screen.findByRole('heading', { name: 'Consultoría' });
+
+    expect(postsDirectos).toBe(0);
+  });
+
+  it('muestra un state de carga mientras el análisis está en curso', async () => {
     let resolvePost!: () => void;
+    let calculada = false;
     server.use(
       mswHttp.get(BASE, () =>
-        problema('ROUTING_RECOMMENDATION_NOT_GENERATED', 409, 'aún no'),
+        calculada
+          ? HttpResponse.json(RECOMENDACION)
+          : problema('ROUTING_RECOMMENDATION_NOT_GENERATED', 409, 'aún no'),
       ),
       mswHttp.post(
-        BASE,
+        DEEP_ANALYSIS,
         () =>
           new Promise<Response>((resolve) => {
-            resolvePost = () =>
-              resolve(HttpResponse.json(RECOMENDACION, { status: 201 }));
+            resolvePost = () => {
+              calculada = true;
+              resolve(HttpResponse.json(ACEPTADO, { status: 201 }));
+            };
           }),
       ),
     );
@@ -119,34 +163,42 @@ describe('RecommendationPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('no reintenta la generación indefinidamente si falla', async () => {
-    let intentosDePost = 0;
+  it('avisa, sin reintentar, cuando el análisis se acepta pero el cálculo de routing/ falló', async () => {
+    // Los listeners son independientes: un fallo de `routing/` (p. ej. sin
+    // configuración activa) no hace fallar la aceptación; se ve porque,
+    // tras aceptar, la recomendación sigue sin existir.
+    const estado = backendQueCalculaAlAceptar({ calculaRecomendacion: false });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toContain(
+        'No fue posible generar la recomendación',
+      );
+    });
+
+    // Un solo intento: el efecto se apaga en cuanto la mutación deja de
+    // estar "idle", así que un fallo no debe desatar un bucle.
+    expect(estado.aceptaciones).toBe(1);
+  });
+
+  it('avisa cuando el diagnóstico aún no puede aceptar el análisis profundo', async () => {
     server.use(
       mswHttp.get(BASE, () =>
         problema('ROUTING_RECOMMENDATION_NOT_GENERATED', 409, 'aún no'),
       ),
-      mswHttp.post(BASE, () => {
-        intentosDePost += 1;
-        return problema(
-          'ROUTING_NO_ACTIVE_CONFIGURATION',
-          409,
-          'No hay versión active.',
-        );
-      }),
+      mswHttp.post(DEEP_ANALYSIS, () =>
+        problema('CONFLICT', 409, 'Deep analysis cannot be requested'),
+      ),
     );
 
     renderPage();
 
     await waitFor(() => {
       expect(screen.getByRole('alert').textContent).toContain(
-        'No hay una configuración de enrutamiento active',
+        'aún no tiene un perfil de madurez calculado',
       );
     });
-
-    // Un solo intento: el efecto que dispara la generación se apaga en
-    // cuanto la mutación deja de estar "idle", así que un fallo no debe
-    // desatar un bucle de reintentos.
-    expect(intentosDePost).toBe(1);
   });
 
   it('distingue la falta de configuración active de un error genérico', async () => {

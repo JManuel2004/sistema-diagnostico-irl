@@ -1,10 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/shared/api/query-keys';
-import {
-  generateRecommendation,
-  getRecommendation,
-  getRecommendationTrace,
-} from '../api/recommendation.api';
+import { acceptDeepAnalysis } from '@/shared/api/diagnostic.api';
+import { getRecommendation, getRecommendationTrace } from '../api/recommendation.api';
 
 /**
  * La recomendación es un snapshot inmutable una vez generada, igual que el
@@ -40,21 +37,35 @@ export function useRecommendationTrace(
   });
 }
 
-export function useGenerateRecommendation(diagnosticId: string | undefined) {
+/**
+ * Ya no dispara el cálculo de la recomendación directamente: acepta el
+ * análisis profundo en `diagnosis/`, que publica `DeepAnalysisRequestedEvent`
+ * y deja que `routing/` (y `roadmap/`) calculen por su cuenta. Al terminar,
+ * el resultado ya está persistido, así que solo hay que volver a leerlo.
+ *
+ * `onSuccess` devuelve la promesa de la invalidación para que la mutación
+ * siga en `pending` hasta que la relectura termina: así la página no ve un
+ * hueco entre "aceptado" y "recomendación disponible".
+ */
+export function useAcceptDeepAnalysis(diagnosticId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => generateRecommendation(diagnosticId!),
-    onSuccess: (data) => {
+    mutationFn: () => acceptDeepAnalysis(diagnosticId!),
+    onSuccess: async () => {
       if (!diagnosticId) return;
-      queryClient.setQueryData(
-        queryKeys.diagnostic.recommendation(diagnosticId),
-        data,
-      );
-      // La traza cambia con cada regeneración; invalidarla evita mostrar
-      // la explicación de una evaluación anterior junto a un resultado nuevo.
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.diagnostic.recommendationTrace(diagnosticId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.diagnostic.recommendation(diagnosticId),
+        }),
+        // La traza y el roadmap se recalculan con el análisis; invalidarlos
+        // evita mostrar el resultado de una evaluación anterior.
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.diagnostic.recommendationTrace(diagnosticId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.diagnostic.roadmap(diagnosticId),
+        }),
+      ]);
     },
   });
 }
