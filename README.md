@@ -24,14 +24,14 @@ Phase 1 scope covers user stories from epics **E-03 (Cuestionario IRL)** and **E
 
 Lock these versions or use `nvm`/Corepack to pin them automatically:
 
-- **Node.js 22.x LTS** (see `.nvmrc`)
+- **Node.js ≥ 24.9** (24.x LTS; see `.nvmrc` and `engines` in `package.json`). Older versions cannot run the test suites: `jose`/`jwks-rsa` load ESM through `require()`, which Jest only supports from Node 24.9
 - **pnpm 9.x** (declared in `packageManager` field, installed via Corepack)
 - **Docker** — required for the local PostgreSQL instance
 
 Verify:
 
 ```bash
-node --version    # v22.x.x
+node --version    # v24.9 or newer
 corepack enable
 corepack prepare pnpm@9 --activate
 pnpm --version    # 9.x.x

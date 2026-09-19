@@ -19,7 +19,7 @@ Estimated time: **30–45 minutes** the first time, including a Docker pull. Sub
 
 | Tool           | Version      | Install                                                                                                                                    |
 | -------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Node.js        | **22.x LTS** | [nvm](https://github.com/nvm-sh/nvm) (mac/Linux) or [nvs](https://github.com/jasongin/nvs) (Windows). The repo's `.nvmrc` pins the version |
+| Node.js        | **≥ 24.9**   | [nvm](https://github.com/nvm-sh/nvm) (mac/Linux) or [nvs](https://github.com/jasongin/nvs) (Windows). The repo's `.nvmrc` selects 24.x and `engines` enforces ≥ 24.9 (older Node cannot run the tests: `jose`/`jwks-rsa` need `require()` of ESM) |
 | pnpm           | **9.x**      | Installed via Corepack (ships with Node)                                                                                                   |
 | Docker Desktop | latest       | <https://www.docker.com/products/docker-desktop>                                                                                           |
 | Git            | 2.40+        | Standard install                                                                                                                           |
@@ -32,7 +32,7 @@ Estimated time: **30–45 minutes** the first time, including a Docker pull. Sub
 ### Verify the prerequisites
 
 ```bash
-node --version            # should print v22.x.x
+node --version            # should print v24.9 or newer
 corepack enable
 corepack prepare pnpm@9 --activate
 pnpm --version            # should print 9.x.x
