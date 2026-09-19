@@ -1,5 +1,14 @@
 /** @type {import('jest').Config} */
 export default {
+  // Recycle each worker after every test file (a 1000-byte limit is always
+  // exceeded). Loading a second full `AppModule` graph in a worker that
+  // already ran one corrupts Jest's ESM module registry and the suite dies
+  // with "Cannot read properties of undefined (reading 'identifier')" while
+  // Nest retries the database connection. Which e2e suite hit it depended on
+  // scheduling — with fewer workers than test files, any of them could — so
+  // the e2e project cannot rely on workers happening to be fresh. As a side
+  // effect the whole run is faster (~13 s against ~29 s).
+  workerIdleMemoryLimit: 1000,
   projects: [
     {
       displayName: 'unit',
