@@ -7,7 +7,7 @@ import type { UserContextCachePort } from './domain/repositories/user-context.ca
 import { USER_CONTEXT_PORT } from './domain/repositories/user-context.repository.port.js';
 import type { UserContextPort } from './domain/repositories/user-context.repository.port.js';
 import { InMemoryUserContextCache } from './infrastructure/cache/in-memory-user-context.cache.js';
-import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard.js';
+import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard.js';
 import { InnlabCoreHttpClient } from './infrastructure/integrations/innlab-core-http.client.js';
 import { CognitoJwtStrategy } from './infrastructure/strategies/cognito-jwt.strategy.js';
 import { MeController } from './presentation/controllers/me.controller.js';

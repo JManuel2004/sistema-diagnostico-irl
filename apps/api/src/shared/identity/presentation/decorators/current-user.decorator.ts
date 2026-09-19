@@ -1,6 +1,6 @@
 import { createParamDecorator } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
-import type { AuthenticatedUser } from '../../domain/entities/authenticated-user.vo.js';
+import type { AuthenticatedUser } from '../../application/dtos/authenticated-user.js';
 
 /**
  * Reads the authenticated user off the request:

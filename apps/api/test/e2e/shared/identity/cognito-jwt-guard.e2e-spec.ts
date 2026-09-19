@@ -7,9 +7,9 @@ import type { Server } from 'node:http';
 import nock from 'nock';
 import request from 'supertest';
 import { appConfig } from '../../../../src/config/configuration.js';
-import { CurrentUser } from '../../../../src/shared/identity/infrastructure/decorators/current-user.decorator.js';
-import { Public } from '../../../../src/shared/identity/infrastructure/decorators/public.decorator.js';
-import { JwtAuthGuard } from '../../../../src/shared/identity/infrastructure/guards/jwt-auth.guard.js';
+import { CurrentUser } from '../../../../src/shared/identity/presentation/decorators/current-user.decorator.js';
+import { Public } from '../../../../src/shared/identity/presentation/decorators/public.decorator.js';
+import { JwtAuthGuard } from '../../../../src/shared/identity/presentation/guards/jwt-auth.guard.js';
 import { CognitoJwtStrategy } from '../../../../src/shared/identity/infrastructure/strategies/cognito-jwt.strategy.js';
 import type { AuthenticatedUser } from '../../../../src/shared/identity/domain/entities/authenticated-user.vo.js';
 

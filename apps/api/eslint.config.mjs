@@ -64,41 +64,56 @@ export default [
     files: ['src/**/*.ts'],
     plugins: { boundaries },
     settings: {
+      // Imports are written with the `.js` extension (NodeNext ESM) but the
+      // files on disk are `.ts`; without a TypeScript-aware resolver the
+      // plugin cannot resolve the target of an import, treats it as
+      // unresolved and silently skips the layer check.
+      'import/resolver': {
+        typescript: { project: './tsconfig.json' },
+      },
+      // `mode: 'full'` matches each pattern against the whole path from the
+      // package root. The default (`folder`) appends its own `**/*` to the
+      // pattern and would never match the `.../domain/**` globs below.
       'boundaries/elements': [
         // Listed before `shared-kernel` so the technical layers of the
         // kernel (database tooling, HTTP filters, health probe) are not
         // swallowed by the broader `src/shared/kernel/**` pattern.
         {
           type: 'infra-global',
+          mode: 'full',
           pattern: 'src/shared/kernel/{infrastructure,presentation}/**',
         },
-        { type: 'shared-kernel', pattern: 'src/shared/kernel/**' },
+        { type: 'shared-kernel', mode: 'full', pattern: 'src/shared/kernel/**' },
         {
           type: 'ctx-domain',
+          mode: 'full',
           pattern: `src/{${DEFINITIVE_LAYER_CONTEXTS}}/domain/**`,
         },
         {
           type: 'ctx-application',
+          mode: 'full',
           pattern: `src/{${DEFINITIVE_LAYER_CONTEXTS}}/application/**`,
         },
         {
           type: 'ctx-infrastructure',
+          mode: 'full',
           pattern: `src/{${DEFINITIVE_LAYER_CONTEXTS}}/infrastructure/**`,
         },
         {
           type: 'ctx-presentation',
+          mode: 'full',
           pattern: `src/{${DEFINITIVE_LAYER_CONTEXTS}}/presentation/**`,
         },
-        { type: 'config', pattern: 'src/config/**' },
+        { type: 'config', mode: 'full', pattern: 'src/config/**' },
       ],
     },
     rules: {
-      'boundaries/element-types': [
+      'boundaries/dependencies': [
         'error',
         {
           default: 'disallow',
           rules: [
-            { from: 'shared-kernel', allow: ['shared-kernel'] },
+            { from: { type: 'shared-kernel' }, allow: { to: { type: ['shared-kernel'] } } },
             {
               // `shared/irl-taxonomy/` and `shared/identity/` are
               // themselves bounded contexts of a different DDD category
@@ -113,25 +128,47 @@ export default [
               // not because they are Shared Kernel — their own domains
               // still only reach other Core/Supporting domains through a
               // port.
-              from: 'ctx-domain',
-              allow: ['ctx-domain', 'shared-kernel'],
+              from: { type: 'ctx-domain' },
+              allow: { to: { type: ['ctx-domain', 'shared-kernel'] } },
             },
             {
-              from: 'ctx-application',
-              allow: ['ctx-application', 'ctx-domain', 'shared-kernel'],
+              from: { type: 'ctx-application' },
+              allow: {
+                to: { type: ['ctx-application', 'ctx-domain', 'shared-kernel'] },
+              },
             },
             {
-              from: 'ctx-infrastructure',
-              allow: [
-                'ctx-infrastructure',
-                'ctx-application',
-                'ctx-domain',
-                'shared-kernel',
-              ],
+              from: { type: 'ctx-infrastructure' },
+              allow: {
+                to: {
+                  type: [
+                    'ctx-infrastructure',
+                    'ctx-application',
+                    'ctx-domain',
+                    'shared-kernel',
+                    'infra-global',
+                    'config',
+                  ],
+                },
+              },
             },
             {
-              from: 'ctx-presentation',
-              allow: ['ctx-presentation', 'ctx-application', 'shared-kernel'],
+              // `presentation/` reaches the domain only through
+              // `application/` (use cases and their DTOs).
+              from: { type: 'ctx-presentation' },
+              allow: {
+                to: {
+                  type: ['ctx-presentation', 'ctx-application', 'shared-kernel'],
+                },
+              },
+            },
+            { from: { type: 'config' }, allow: { to: { type: ['config'] } } },
+            {
+              // Technical layers of the kernel (DB tooling, HTTP filters,
+              // health probe) compose the application: they may import
+              // anything.
+              from: { type: 'infra-global' },
+              allow: { to: { type: '*' } },
             },
           ],
         },

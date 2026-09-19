@@ -2,7 +2,7 @@
 import { jest } from '@jest/globals';
 import type { ExecutionContext } from '@nestjs/common';
 import type { Reflector } from '@nestjs/core';
-import { JwtAuthGuard } from '../../../../../../src/shared/identity/infrastructure/guards/jwt-auth.guard.js';
+import { JwtAuthGuard } from '../../../../../../src/shared/identity/presentation/guards/jwt-auth.guard.js';
 
 const executionContext = {
   getHandler: () => undefined,

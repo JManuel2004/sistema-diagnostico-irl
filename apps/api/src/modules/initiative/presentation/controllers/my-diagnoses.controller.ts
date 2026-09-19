@@ -1,8 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { DiagnosticSummary } from '@innlab/contracts';
-import { CurrentUser } from '../../../../shared/identity/infrastructure/decorators/current-user.decorator.js';
-import type { AuthenticatedUser } from '../../../../shared/identity/domain/entities/authenticated-user.vo.js';
+import { CurrentUser } from '../../../../shared/identity/presentation/decorators/current-user.decorator.js';
+import type { AuthenticatedUser } from '../../../../shared/identity/application/dtos/authenticated-user.js';
 import { ListMyDiagnosesUseCase } from '../../application/use-cases/list-my-diagnoses.use-case.js';
 
 /**

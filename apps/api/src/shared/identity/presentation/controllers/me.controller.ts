@@ -1,8 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { ResolveUserContextUseCase } from '../../application/use-cases/resolve-user-context.use-case.js';
-import { CurrentUser } from '../../infrastructure/decorators/current-user.decorator.js';
-import type { AuthenticatedUser } from '../../domain/entities/authenticated-user.vo.js';
+import { CurrentUser } from '../decorators/current-user.decorator.js';
+import type { AuthenticatedUser } from '../../application/dtos/authenticated-user.js';
 
 /**
  * Session surface for the authenticated user (HU-01 / HU-02).

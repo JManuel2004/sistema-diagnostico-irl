@@ -1,8 +1,8 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { ConsentRecord } from '@innlab/contracts';
-import { CurrentUser } from '../../../../shared/identity/infrastructure/decorators/current-user.decorator.js';
-import type { AuthenticatedUser } from '../../../../shared/identity/domain/entities/authenticated-user.vo.js';
+import { CurrentUser } from '../../../../shared/identity/presentation/decorators/current-user.decorator.js';
+import type { AuthenticatedUser } from '../../../../shared/identity/application/dtos/authenticated-user.js';
 import { RecordConsentUseCase } from '../../application/use-cases/record-consent.use-case.js';
 import { GetConsentUseCase } from '../../application/use-cases/get-consent.use-case.js';
 import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
