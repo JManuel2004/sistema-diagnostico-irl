@@ -8,6 +8,7 @@ import {
   useRecommendationTrace,
 } from '@features/portfolio-recommendation';
 import { PageShell } from '@/shared/ui/page-shell';
+import { Card, CardContent } from '@/shared/ui/card';
 import { ApiError } from '@/shared/api/http';
 
 /**
@@ -41,8 +42,7 @@ export default function RecommendationPage(): JSX.Element {
   const trace = useRecommendationTrace(diagnosticId, trazaSolicitada);
 
   const noGenerada =
-    error instanceof ApiError &&
-    error.code === 'ROUTING_RECOMMENDATION_NOT_GENERATED';
+    error instanceof ApiError && error.code === 'ROUTING_RECOMMENDATION_NOT_GENERATED';
 
   // `aceptarEsIdle` es lo que evita relanzar la mutación en cada render:
   // una vez que pasa a 'pending' (o falla), deja de ser idle y este efecto
@@ -69,50 +69,44 @@ export default function RecommendationPage(): JSX.Element {
           Recomendación de portafolio
         </h1>
         <p className="text-muted-foreground mt-3 max-w-prose text-base leading-relaxed">
-          A partir de tu perfil de madurez, el sistema identifica cuál de los
-          services de INNLAB corresponde mejor al state actual de la iniciativa.
+          A partir de tu perfil de madurez, el sistema identifica cuál de los services de INNLAB
+          corresponde mejor al state actual de la iniciativa.
         </p>
       </header>
 
-      {isPending && (
-        <p className="text-muted-foreground text-base">Cargando…</p>
-      )}
+      {isPending && <p className="text-muted-foreground text-base">Cargando…</p>}
 
       {noGenerada && !aceptar.isError && !calculoFallo && (
         <p className="text-muted-foreground text-base">Generando recomendación…</p>
       )}
 
       {error && !noGenerada && (
-        <div
-          role="alert"
-          className="border-critical/30 bg-critical-bg rounded-md border p-4"
-        >
-          <p className="text-critical text-sm font-semibold">
-            No fue posible obtener la recomendación
-          </p>
-          <p className="text-critical mt-1 text-sm">
-            {error instanceof ApiError &&
-            error.code === 'ROUTING_NO_ACTIVE_CONFIGURATION'
-              ? 'No hay una configuración de enrutamiento active. Contacta al equipo de INNLAB.'
-              : error instanceof ApiError &&
-                  error.code === 'ROUTING_PROFILE_NOT_COMPUTED'
-                ? 'Este diagnóstico aún no tiene un perfil de madurez calculado.'
-                : error.message}
-          </p>
-        </div>
+        <Card role="alert" className="border-critical/30 bg-critical-bg">
+          <CardContent className="p-4">
+            <p className="text-critical text-sm font-semibold">
+              No fue posible obtener la recomendación
+            </p>
+            <p className="text-critical mt-1 text-sm">
+              {error instanceof ApiError && error.code === 'ROUTING_NO_ACTIVE_CONFIGURATION'
+                ? 'No hay una configuración de enrutamiento active. Contacta al equipo de INNLAB.'
+                : error instanceof ApiError && error.code === 'ROUTING_PROFILE_NOT_COMPUTED'
+                  ? 'Este diagnóstico aún no tiene un perfil de madurez calculado.'
+                  : error.message}
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {(aceptar.isError || calculoFallo) && (
-        <div
-          role="alert"
-          className="border-critical/30 bg-critical-bg mt-4 rounded-md border p-4"
-        >
-          <p className="text-critical text-sm font-semibold">
-            {aceptar.error instanceof ApiError && aceptar.error.status === 409
-              ? 'Este diagnóstico aún no tiene un perfil de madurez calculado.'
-              : 'No fue posible generar la recomendación. Intenta de nuevo en unos minutos o contacta al equipo de INNLAB.'}
-          </p>
-        </div>
+        <Card role="alert" className="border-critical/30 bg-critical-bg mt-4">
+          <CardContent className="p-4">
+            <p className="text-critical text-sm font-semibold">
+              {aceptar.error instanceof ApiError && aceptar.error.status === 409
+                ? 'Este diagnóstico aún no tiene un perfil de madurez calculado.'
+                : 'No fue posible generar la recomendación. Intenta de nuevo en unos minutos o contacta al equipo de INNLAB.'}
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {recommendation && (

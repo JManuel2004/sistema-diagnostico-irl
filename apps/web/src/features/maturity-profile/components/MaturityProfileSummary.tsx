@@ -9,6 +9,7 @@ import type {
   ImbalancePairResult,
 } from '@innlab/contracts';
 import { getDimensionShortName } from '@/shared/lib/dimensions';
+import { Card, CardContent } from '@/shared/ui/card';
 
 /**
  * Las etiquetas cortas viven en `shared/lib/dimensions` y no aquí: el
@@ -63,22 +64,20 @@ function SummaryCard({
 }): JSX.Element {
   const styles = TONE_STYLES[tone];
   return (
-    <article
-      className={`flex gap-3 rounded-lg border p-4 ${styles.ring}`}
-      role="group"
-      aria-label={`${eyebrow}: ${title}`}
-    >
-      <Icon
-        className={`mt-0.5 h-5 w-5 shrink-0 ${styles.iconColor}`}
-        strokeLinejoin="miter"
-        aria-hidden
-      />
-      <div className="min-w-0 flex-1">
-        <p className="text-overline text-muted-foreground">{eyebrow}</p>
-        <p className="text-foreground mt-1 text-sm font-semibold leading-snug">{title}</p>
-        {children !== undefined && <div className="mt-2 text-xs leading-relaxed">{children}</div>}
-      </div>
-    </article>
+    <Card role="group" aria-label={`${eyebrow}: ${title}`} className={styles.ring}>
+      <CardContent className="flex gap-3 p-4">
+        <Icon
+          className={`mt-0.5 h-5 w-5 shrink-0 ${styles.iconColor}`}
+          strokeLinejoin="miter"
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-overline text-muted-foreground">{eyebrow}</p>
+          <p className="text-foreground mt-1 text-sm font-semibold leading-snug">{title}</p>
+          {children !== undefined && <div className="mt-2 text-xs leading-relaxed">{children}</div>}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -170,7 +169,8 @@ export function MaturityProfileSummary({
         >
           <p className="text-muted-foreground">
             {asymmetry.classification === 'critical' && 'Asimetría crítica — atención prioritaria.'}
-            {asymmetry.classification === 'moderate' && 'Asimetría moderada — vale la pena equilibrar.'}
+            {asymmetry.classification === 'moderate' &&
+              'Asimetría moderada — vale la pena equilibrar.'}
             {asymmetry.classification === 'acceptable' && 'Perfil balanceado dentro del rango KTH.'}
           </p>
         </SummaryCard>
@@ -191,7 +191,9 @@ export function MaturityProfileSummary({
         (flaggedPairs.length > 0 ? (
           <SummaryCard
             icon={ArrowLeftRight}
-            tone={flaggedPairs.some((p) => p.classification === 'critical') ? 'critical' : 'moderate'}
+            tone={
+              flaggedPairs.some((p) => p.classification === 'critical') ? 'critical' : 'moderate'
+            }
             eyebrow="Pares desequilibrados"
             title={`${flaggedPairs.length} de ${imbalances.length} pares KTH fuera de balance`}
           >

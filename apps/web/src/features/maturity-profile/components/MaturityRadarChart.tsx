@@ -7,30 +7,17 @@ import {
   RadarChart,
   ResponsiveContainer,
 } from 'recharts';
-import type { DimensionResult, ImbalancePairResult } from '@innlab/contracts';
+import type { DimensionCode, DimensionResult, ImbalancePairResult } from '@innlab/contracts';
+import {
+  getDimensionShortName,
+  getDimensionVisual,
+  type DimensionVisualMeta,
+} from '@/shared/lib/dimensions';
 import {
   buildImbalancedVertices,
   severityColorForLevel,
   type RadarPoint,
 } from '../utils/radar-helpers';
-
-const DIMENSION_NAME_ES: Record<string, string> = {
-  TRL: 'Tecnología',
-  CRL: 'Cliente',
-  BRL: 'Negocio',
-  IPRL: 'Propiedad Intelectual',
-  TmRL: 'Equipo',
-  FRL: 'Financiación',
-};
-
-const DIMENSION_COLOR: Record<string, string> = {
-  TRL: 'var(--color-dimension-trl, #5454E9)',
-  CRL: 'var(--color-dimension-crl, #5832B0)',
-  BRL: 'var(--color-dimension-brl, #1F633D)',
-  IPRL: 'var(--color-dimension-iprl, #3D3D5C)',
-  TmRL: 'var(--color-dimension-tmrl, #8C3811)',
-  FRL: 'var(--color-dimension-frl, #5C4A1A)',
-};
 
 interface MaturityRadarChartProps {
   dimensionResults: readonly DimensionResult[];
@@ -40,7 +27,7 @@ interface MaturityRadarChartProps {
 
 function asRadarPoints(results: readonly DimensionResult[]): readonly RadarPoint[] {
   return results.map((r) => ({
-    dimension: DIMENSION_NAME_ES[r.dimensionCode] ?? r.dimensionCode,
+    dimension: getDimensionShortName(r.dimensionCode),
     code: r.dimensionCode,
     level: r.irlLevel,
     averageLikert: r.averageLikert,
@@ -66,7 +53,9 @@ function AxisLabel({
   const point = [...pointsByCode.values()].find((p) => p.dimension === dimensionName);
   if (!point) return null;
 
-  const codeColor = DIMENSION_COLOR[point.code] ?? '#1A1A24';
+  // Unknown codes are not in the map; `getDimensionVisual` yields undefined.
+  const visual: DimensionVisualMeta | undefined = getDimensionVisual(point.code as DimensionCode);
+  const codeColor = visual?.color ?? '#1A1A24';
   const levelColor = severityColorForLevel(point.level);
 
   const isTopLabel = point.code === 'TRL';
