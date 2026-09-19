@@ -157,10 +157,16 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     });
   });
 
-  it('POST /recommendation devuelve Consultoría con sus dos alternatives', async () => {
-    const res = await agent
-      .post(`/api/v1/diagnostics/${diagnosticId}/recommendation`)
+  it('aceptar el análisis profundo genera Consultoría con sus dos alternatives', async () => {
+    // La recomendación ya no se genera con un POST propio: la calcula
+    // `routing/` al reaccionar a la aceptación del análisis profundo.
+    await agent
+      .post(`/api/v1/diagnostics/${diagnosticId}/deep-analysis`)
       .expect(201);
+
+    const res = await agent
+      .get(`/api/v1/diagnostics/${diagnosticId}/recommendation`)
+      .expect(200);
 
     const dto = recommendationResponseSchema.parse(res.body);
 
@@ -229,9 +235,9 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     expect(trace.factsHash).toHaveLength(64);
   });
 
-  it('regenerar la recomendación es idempotente y no acumula filas', async () => {
+  it('volver a aceptar el análisis profundo es idempotente y no acumula filas', async () => {
     await agent
-      .post(`/api/v1/diagnostics/${diagnosticId}/recommendation`)
+      .post(`/api/v1/diagnostics/${diagnosticId}/deep-analysis`)
       .expect(201);
 
     const [{ count }] = await dataSource.query<{ count: string }[]>(

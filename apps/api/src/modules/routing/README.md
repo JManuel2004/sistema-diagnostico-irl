@@ -11,7 +11,7 @@ Calcula la recomendación de portafolio de INNLAB para un diagnóstico: fichas o
 - No es llamado por `diagnosis/`: reacciona a `DeepAnalysisRequestedEvent`. Un `Result.err` en el listener se registra y no propaga, para no impedir que `roadmap/` reaccione.
 
 ## Nivel de completitud
-Implementado: motor de tres capas, traza, persistencia idempotente, caso de aceptación AgroConecta. Sin pantalla de administración de la configuración (fuera de alcance, backlog 5.6). El endpoint `POST diagnostics/:id/recommendation` ya no tiene llamador en el frontend (backlog 14.3).
+Implementado: motor de tres capas, traza, persistencia idempotente, caso de aceptación AgroConecta. Sin pantalla de administración de la configuración (fuera de alcance, backlog 5.6). El antiguo `POST diagnostics/:id/recommendation` se retiró (backlog 14.3): la recomendación solo se genera por `DeepAnalysisRequestedEvent`.
 
 ## Responsabilidad (lenguaje ubicuo)
 "Qué servicio de INNLAB le conviene a esta iniciativa y por qué": la recomendación, sus alternativas y la explicación de cómo se llegó a ella.
@@ -22,7 +22,7 @@ Implementado: motor de tres capas, traza, persistencia idempotente, caso de acep
 ## Qué expone hacia afuera
 - **Eventos que publica:** `PortfolioRecommendationCalculatedEvent` (`shared/kernel/events/`, pensado para `reporting/`).
 - **Eventos que escucha:** `DeepAnalysisRequestedEvent`.
-- **HTTP:** `diagnostics/:id/recommendation` y `…/recommendation/trace`. Contratos en Swagger.
+- **HTTP (solo lectura):** `GET diagnostics/:id/recommendation` y `…/recommendation/trace`. Contratos en Swagger.
 
 ## De qué depende
 `diagnosis/` por `GetMaturityProfileUseCase`; `initiative/` por `GetInitiativeCharacterizationUseCase` (vía `InitiativeCharacterizationPort`); `shared/irl-taxonomy` por `TAXONOMY_REPOSITORY`.

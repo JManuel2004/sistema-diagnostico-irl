@@ -1,10 +1,9 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param } from '@nestjs/common';
+import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type {
   RecommendationResponse,
   LayerTraceResponse,
 } from '@innlab/contracts';
-import { GenerateRecommendationUseCase } from '../../application/use-cases/generate-recommendation.use-case.js';
 import { GetRecommendationUseCase } from '../../application/use-cases/get-recommendation.use-case.js';
 import { GetRecommendationTraceUseCase } from '../../application/use-cases/get-recommendation-trace.use-case.js';
 import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
@@ -12,12 +11,12 @@ import { unwrapResult } from '../../../../shared/kernel/application/unwrap-resul
 /**
  * Superficie HTTP del enrutamiento al portafolio (RF-15).
  *
- * La generación es `POST` sobre un subrecurso, en línea con
- * `POST /diagnostics/:id/finalize-initial`. Deliberadamente NO se
- * integra dentro de ese endpoint: `finalize-initial` cierra la fase 1
- * (perfil de madurez) y la recomendación pertenece al análisis profundo,
- * que es un momento distinto del recorrido y una decisión que el usuario
- * toma por separado (RF-11).
+ * Solo lectura. La recomendación no se genera desde aquí: la calcula
+ * `routing/` al reaccionar a `DeepAnalysisRequestedEvent`, que publica
+ * `POST /diagnostics/:id/deep-analysis` (RF-11). El antiguo
+ * `POST /diagnostics/:id/recommendation` se retiró en la Fase 5 (backlog
+ * 14.3): ofrecía un camino de escritura paralelo que no pasaba por el
+ * evento ni comprobaba el estado del diagnóstico.
  *
  * La traza va en su propia ruta porque su audiencia es el equipo de
  * INNLAB, no el líder de iniciativa.
@@ -26,19 +25,9 @@ import { unwrapResult } from '../../../../shared/kernel/application/unwrap-resul
 @Controller('diagnostics/:id/recommendation')
 export class RecommendationController {
   constructor(
-    private readonly generar: GenerateRecommendationUseCase,
     private readonly obtener: GetRecommendationUseCase,
     private readonly obtenerTraza: GetRecommendationTraceUseCase,
   ) {}
-
-  @Post()
-  @ApiCreatedResponse({
-    description:
-      'Recomendación de portafolio generada y persistida junto con su trace por layers',
-  })
-  async generate(@Param('id') diagnosticId: string): Promise<RecommendationResponse> {
-    return unwrapResult(await this.generar.execute({ diagnosticId }));
-  }
 
   @Get()
   @ApiOkResponse({ description: 'Recomendación de portafolio persistida' })

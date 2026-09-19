@@ -17,12 +17,3 @@
 export interface UseCase<TCommand, TResult> {
   execute(command: TCommand): Promise<TResult>;
 }
-
-/**
- * Synonym for a query use case — semantically distinct from a write
- * operation even though the shape is identical. Use `Query` when the
- * implementation must be side-effect-free (CQRS).
- */
-export interface Query<TParams, TResult> {
-  execute(params: TParams): Promise<TResult>;
-}
