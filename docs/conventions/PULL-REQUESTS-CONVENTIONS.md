@@ -97,7 +97,7 @@ The linked HU-xx ticket has acceptance criteria (Gherkin scenarios). Every scena
 
 - Domain code imports no framework code.
 - Use cases have one `execute(command)` method.
-- Repositories implement ports declared in `domain/ports/`.
+- Repositories implement ports declared in `domain/repositories/`.
 - Frontend features don't import from other features.
 - The bilingual rule is respected.
 
@@ -134,7 +134,7 @@ If the PR changes:
 | Change                                | Update                                                                       |
 | ------------------------------------- | ---------------------------------------------------------------------------- |
 | An endpoint shape, URL, or error code | `docs/conventions/api-design.md` examples and `apps/api/docs/error-codes.md` |
-| A module's responsibility             | `apps/api/docs/modules.md`                                                   |
+| A module's responsibility             | the module's own `README.md` (`apps/api/src/modules/<name>/`)                                                   |
 | A feature's surface                   | `apps/web/docs/features.md`                                                  |
 | A state-management decision           | `apps/web/docs/state-management.md`                                          |
 | A workflow step                       | The relevant doc in `docs/workflows/`                                        |

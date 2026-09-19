@@ -64,12 +64,13 @@ The ticket tells you which epic, the epic maps to one or two modules/features:
 
 | Epic                      | Backend module                                   | Frontend feature                          |
 | ------------------------- | ------------------------------------------------ | ----------------------------------------- |
-| E-01 Access & identity    | `modules/identity`                               | `features/auth`, `features/diagnostic`    |
-| E-02 Consent & initiative | `modules/consent`, `modules/initiative`          | `features/consent`, `features/initiative` |
-| E-03 Questionnaire        | `modules/questionnaire`, `modules/irl-catalog`   | `features/questionnaire`                  |
-| E-04 Initial maturity     | `modules/maturity-profile`, `modules/diagnostic` | `features/maturity-profile`               |
+| E-01 Access & identity    | `shared/identity`                                | `features/auth`                           |
+| E-02 Consent & initiative | `modules/initiative` (consent lives here)        | not built yet                             |
+| E-03 Questionnaire        | `modules/diagnosis`, `shared/irl-taxonomy`       | `features/questionnaire`                  |
+| E-04 Initial maturity     | `modules/diagnosis`                              | `features/maturity-profile`               |
+| E-06 Deep analysis        | `modules/routing`, `modules/roadmap`             | `features/portfolio-recommendation`, `features/scaling-roadmap` |
 
-For the full map: [`apps/api/docs/modules.md`](../../apps/api/docs/modules.md) and [`apps/web/docs/modules.md`](../../apps/web/docs/modules.md).
+For the full map: [`apps/api/docs/MODULES.md`](../../apps/api/docs/MODULES.md) and [`apps/web/docs/MODULES.md`](../../apps/web/docs/MODULES.md); each backend module documents itself in the `README.md` at its root.
 
 ### Architecture rules to keep in mind
 
@@ -78,7 +79,8 @@ These are the most common mistakes the team catches in review:
 - **No framework imports in `domain/`.** No `@nestjs/common`, no `typeorm`, no `axios`. Domain code is plain TypeScript. (See [`apps/api/CLAUDE.md`](../../apps/api/CLAUDE.md).)
 - **One use case per class, one `execute(command)` method.** Don't create helper methods on the use case class.
 - **Features can't import from other features** (frontend). Use `shared/` for cross-feature primitives. (See [`apps/web/CLAUDE.md`](../../apps/web/CLAUDE.md).)
-- **Spanish for domain, English for infrastructure.** `Diagnostico`, `Iniciativa`, `Afirmacion` (Spanish) vs `Repository`, `UseCase`, `Controller` (English).
+- **English for every identifier.** `Diagnosis`, `Initiative`, `Statement` — domain included. Spanish only for text the end user reads (see `docs/conventions/CODE-STYLE.md`).
+- **`presentation/` imports only from `application/`**, and modules talk through ports and domain events, never each other's entities.
 - **No `synchronize: true` in TypeORM.** Schema changes go through migrations.
 
 ESLint catches most of these at save time. If you see a red squiggle, fix it then — not at PR time.
@@ -127,17 +129,17 @@ Commits follow the [standard format](../conventions/STANDARD-COMMIT.md):
 Examples for a typical day's work:
 
 ```bash
-git add src/modules/questionnaire/domain/services/completeness-checker.service.ts
-git commit -m "feat: add + [questionnaire] - [add completeness checker domain service]"
+git add src/modules/diagnosis/domain/services/completeness-checker.service.ts
+git commit -m "feat: add + [diagnosis] - [add completeness checker domain service]"
 
-git add test/unit/modules/questionnaire/completeness-checker.service.spec.ts
+git add test/unit/modules/diagnosis/domain/services/completeness-checker.service.spec.ts
 git commit -m "test: add + [completeness-checker] - [cover incomplete and complete sheets]"
 
-git add src/modules/questionnaire/application/use-cases/submit-questionnaire.use-case.ts
-git commit -m "feat: add + [questionnaire] - [wire submit use case to completeness checker]"
+git add src/modules/diagnosis/application/use-cases/submit-questionnaire.use-case.ts
+git commit -m "feat: add + [diagnosis] - [wire submit use case to completeness checker]"
 
-git add src/modules/questionnaire/interfaces/http/questionnaire.controller.ts
-git commit -m "feat: add + [questionnaire] - [expose post envio endpoint with rfc 7807 errors]"
+git add src/modules/diagnosis/presentation/controllers/questionnaire.controller.ts
+git commit -m "feat: add + [diagnosis] - [expose post questionnaire endpoint with rfc 7807 errors]"
 ```
 
 The pre-commit hook runs ESLint and Prettier on staged files. The commit-msg hook validates the message format. If either rejects you, fix and try again — don't bypass with `--no-verify`.

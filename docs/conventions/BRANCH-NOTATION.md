@@ -48,7 +48,7 @@ Where:
 | `IRL-7-fix-bug`                                                                     | Too vague. The summary must describe the deliverable, not the activity.                                        |
 | `IRL-7`                                                                             | Missing the summary. The summary is mandatory — branch names appear in PR lists where the ID alone is useless. |
 | `show-questionnaire-by-dimensions`                                                  | Missing the Jira ID. Every branch must trace to a ticket.                                                      |
-| `IRL-7-mostrar-cuestionario-por-dimensiones`                                        | English only. Domain code is bilingual, but branches and commits are English (see `STANDARD-COMMIT.md`).       |
+| `IRL-7-mostrar-cuestionario-por-dimensiones`                                        | English only. All code is in English, and branches and commits are English (see `STANDARD-COMMIT.md`).       |
 | `IRL-7-show-questionnaire-by-dimensions-and-also-add-the-radar-and-fix-some-styles` | Too long. Split into multiple branches if scope exceeds one HU.                                                |
 
 ## Creating a branch — recommended flow

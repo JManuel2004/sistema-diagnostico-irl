@@ -6,32 +6,34 @@ REST conventions for the `@innlab/api` backend. These rules apply to every endpo
 
 1. **REST, not RPC.** URLs are resources, not actions.
 2. **Versioned at the path.** Every endpoint is prefixed `/api/v1/`. When a breaking change is unavoidable, add `/api/v2/` — never break `/api/v1/`.
-3. **Spanish for URL segments.** This is a domain-language consistency call: the API mirrors the language of the SRS and the database.
+3. **English for URL segments**, like every other identifier in the code (`convenciones-objetivo.md` §3). Only user-facing strings stay in Spanish.
 4. **camelCase for JSON keys.** Frontend convention.
 5. **RFC 7807 Problem Details for all errors.** With a project-specific `code` field for machine consumption.
 6. **Authenticated by default.** Every endpoint requires a valid JWT unless explicitly opted out (`@Public()` decorator).
-7. **Authorize at the resource level.** Use cases enforce `if (resource.userId !== currentUser.id) throw new ForbiddenError()`.
+7. **Authorize at the resource level.** Use cases verify that the resource exists and belongs to the caller before acting, and answer `NotFoundError` / `ForbiddenError` (see `initiative/`'s `DiagnosticOwnershipPort`).
 
 ## URL conventions
 
-### Resources are plural nouns in Spanish
+### Resources are plural nouns in English
 
 ```
-GET    /api/v1/diagnosticos                  ✓
-GET    /api/v1/diagnostics                   ✗ (English)
-GET    /api/v1/diagnostico                   ✗ (singular)
+GET    /api/v1/diagnostics                   ✓
+GET    /api/v1/diagnostics                  ✗ (Spanish)
+GET    /api/v1/diagnostic                    ✗ (singular)
 
-GET    /api/v1/catalogo/cuestionario         ✓
+GET    /api/v1/catalog/questionnaire         ✓
 GET    /api/v1/catalog/questionnaire         ✗
 ```
+
+A resource that is a singleton under its parent (there is one consent and one initiative per diagnostic) is singular: `diagnostics/:id/consent`, `diagnostics/:id/initiative`.
 
 ### Hierarchical when the relationship demands it
 
 ```
-POST   /api/v1/diagnosticos/:id/consentimiento     ✓
-POST   /api/v1/diagnosticos/:id/iniciativa         ✓
-POST   /api/v1/diagnosticos/:id/cuestionario/envio ✓
-GET    /api/v1/diagnosticos/:id/perfil             ✓
+POST   /api/v1/diagnostics/:id/consent             ✓
+POST   /api/v1/diagnostics/:id/initiative          ✓
+POST   /api/v1/diagnostics/:id/questionnaire       ✓
+GET    /api/v1/diagnostics/:id/profile             ✓
 ```
 
 The hierarchy reflects the **aggregate boundary**: consent, initiative, questionnaire submission, and profile all belong to a diagnostic.
@@ -41,19 +43,19 @@ The hierarchy reflects the **aggregate boundary**: consent, initiative, question
 REST is "create / read / update / delete." Some operations don't fit cleanly:
 
 ```
-POST   /api/v1/diagnosticos/:id/cuestionario/envio    ✓ (submit is an action)
-POST   /api/v1/diagnosticos/:id/perfil/calculo        ✓ (calculate is an action)
+POST   /api/v1/diagnostics/:id/finalize-initial       ✓ (finalize is an action)
+POST   /api/v1/diagnostics/:id/deep-analysis          ✓ (accepting deep analysis is an action)
 ```
 
-When you need an action, **make it explicit as a sub-resource verb at the end** (`/envio`, `/calculo`, not `/submit`, `/calculate`). The verb stays in Spanish to match.
+When you need an action, **make it explicit as a sub-resource verb at the end** (`/finalize-initial`, `/deep-analysis`), in English and kebab-case.
 
 ### What not to do
 
 ```
-GET    /api/v1/getDiagnosticos               ✗ (verbs in URLs)
-POST   /api/v1/diagnostico/create            ✗ (verbs in URLs)
-GET    /api/v1/diagnosticos?action=submit    ✗ (RPC over query string)
-DELETE /api/v1/diagnosticos/:id/respuestas/all ✗ (use the parent resource: DELETE /respuestas)
+GET    /api/v1/getDiagnostics               ✗ (verbs in URLs)
+POST   /api/v1/diagnostic/create            ✗ (verbs in URLs)
+GET    /api/v1/diagnostics?action=submit    ✗ (RPC over query string)
+DELETE /api/v1/diagnostics/:id/answers/all ✗ (use the parent resource: DELETE /answers)
 ```
 
 ## HTTP methods
@@ -71,7 +73,7 @@ DELETE /api/v1/diagnosticos/:id/respuestas/all ✗ (use the parent resource: DEL
 ### Request body: camelCase JSON
 
 ```json
-POST /api/v1/diagnosticos/abc/cuestionario/envio
+POST /api/v1/diagnostics/abc/questionnaire
 
 {
   "answers": [
@@ -86,7 +88,7 @@ Note: `statementId`, not `afirmacionId`. JSON keys are in English camelCase even
 ### Response body: camelCase JSON
 
 ```json
-GET /api/v1/diagnosticos/abc/perfil
+GET /api/v1/diagnostics/abc/profile
 
 {
   "diagnosticId": "abc",
@@ -104,7 +106,7 @@ GET /api/v1/diagnosticos/abc/perfil
 
 ### Pagination
 
-For list endpoints (eventually `GET /api/v1/diagnosticos`):
+For list endpoints (eventually `GET /api/v1/diagnostics`):
 
 ```json
 {
@@ -135,7 +137,7 @@ Every error response is a JSON document with `Content-Type: application/problem+
   "status": 422,
   "code": "QUESTIONNAIRE_INCOMPLETE",
   "detail": "Faltan 3 afirmaciones por responder",
-  "instance": "/api/v1/diagnosticos/abc/cuestionario/envio",
+  "instance": "/api/v1/diagnostics/abc/questionnaire",
   "missing": [
     { "dimension": "TRL", "sequences": [3, 7] },
     { "dimension": "FRL", "sequences": [5] }
@@ -176,7 +178,7 @@ Once an error code is published (used in production or staging), don't rename it
 ## Authentication
 
 ```http
-GET /api/v1/diagnosticos
+GET /api/v1/diagnostics
 Authorization: Bearer eyJhbGciOiJSUzI1NiIs...
 ```
 
@@ -232,7 +234,7 @@ Conventions:
 ### Submit the questionnaire
 
 ```http
-POST /api/v1/diagnosticos/abc-123/cuestionario/envio
+POST /api/v1/diagnostics/abc-123/questionnaire
 Authorization: Bearer ...
 X-Correlation-Id: V1StGXR8_Z5jdHi6B-myT
 Content-Type: application/json
@@ -257,7 +259,7 @@ Responses:
 ### Retrieve the profile of an existing diagnostic
 
 ```http
-GET /api/v1/diagnosticos/abc-123/perfil
+GET /api/v1/diagnostics/abc-123/profile
 Authorization: Bearer ...
 ```
 

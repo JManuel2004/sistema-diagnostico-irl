@@ -18,25 +18,33 @@ Three principles guide every test we write:
 | **Integration** | `apps/api/test/integration/` | Jest + Testcontainers (Postgres) | Repositories, use cases with real DB                                    | Full suite < 60s  |
 | **E2E**         | `apps/api/test/e2e/`         | Jest + supertest + nock          | Full HTTP cycle, one spec per user story, self-signed JWT + mocked JWKS | Full suite < 3min |
 
+### Running the tiers
+
+- **Node ≥ 24.9** is required (`.nvmrc`, `engines`): `jose`/`jwks-rsa` load ESM through `require()`, which Jest supports only from that version. On older Node the identity unit suite and every e2e suite fail to load.
+- **Unit** needs nothing else. **Integration** needs Docker (Testcontainers starts Postgres).
+- **E2E** boots the real `AppModule` against the database in `DATABASE_URL`, which must be migrated and seeded first (`docker compose up -d postgres`, then `pnpm --filter @innlab/api db:migration:run && db:seed`). Each suite creates its own rows with random ids and deletes them afterwards, because suites share the database and run in parallel.
+- Repository adapters that only unit tests exercise with in-memory doubles can hide schema drift (a renamed column mapped under its old name passes every unit test). Persistence adapters need an integration test against a real database.
+
 ### Coverage thresholds (enforced in CI)
 
 ```js
 // jest.config.js
 coverageThreshold: {
-  './src/modules/maturity-profile/domain/': { branches: 95, functions: 95, lines: 95 },
-  './src/modules/questionnaire/domain/':    { branches: 90, functions: 90, lines: 90 },
+  './src/modules/diagnosis/domain/': { branches: 87, functions: 92, lines: 93 },
+  './src/modules/routing/domain/':   { branches: 90, functions: 95, lines: 95, statements: 95 },
+  './src/modules/roadmap/domain/':   { branches: 90, functions: 95, lines: 95, statements: 95 },
 }
 ```
 
-The whole codebase isn't gated. The IRL calculator and questionnaire invariants are gated. The threshold exists where the business risk is.
+(Illustrative; the authoritative values, and why each is set where it is, are in `apps/api/jest.config.js`.) The whole codebase isn't gated. The domains that carry business risk — the IRL calculator and questionnaire invariants in `diagnosis`, the recommendation engine, the roadmap — are gated.
 
 ### Unit tests — what to write
 
 For **domain services and value objects**:
 
 ```ts
-// test/unit/modules/maturity-profile/domain/services/irl-calculator.service.spec.ts
-import { IrlCalculatorService } from '../../../../../src/modules/maturity-profile/domain/services/irl-calculator.service.js';
+// test/unit/modules/diagnosis/domain/services/irl-calculator.service.spec.ts
+import { IrlCalculatorService } from '../../../../../src/modules/diagnosis/domain/services/irl-calculator.service.js';
 import { fc, it as itProp } from 'fast-check-jest';
 
 describe('IrlCalculatorService', () => {
@@ -70,7 +78,7 @@ describe('IrlCalculatorService', () => {
 For **application use cases** with port stubs:
 
 ```ts
-// test/unit/modules/questionnaire/application/submit-questionnaire.use-case.spec.ts
+// test/unit/modules/diagnosis/application/submit-questionnaire.use-case.spec.ts
 describe('SubmitQuestionnaireUseCase', () => {
   let repository: AnswerSheetRepositoryPort;
   let useCase: SubmitQuestionnaireUseCase;
@@ -104,7 +112,7 @@ describe('SubmitQuestionnaireUseCase', () => {
 For **repositories** against a real database:
 
 ```ts
-// test/integration/modules/questionnaire/typeorm-answer-sheet.repository.spec.ts
+// test/integration/database/typeorm-answer-sheet.repository.spec.ts
 import { TypeOrmAnswerSheetRepository } from '...';
 import { setupTestDatabase, teardownTestDatabase, truncateAllTables } from '../setup.js';
 
@@ -162,7 +170,7 @@ the app already loaded, so it works with real Cognito credentials and with the
 placeholders in `.env.example` alike.
 
 ```ts
-// test/e2e/modules/questionnaire/submit-questionnaire.e2e-spec.ts
+// test/e2e/modules/diagnosis/submit-questionnaire.e2e-spec.ts
 import { authenticateAgainst } from '../../support/authenticated-app.js';
 
 describe('HU-10: Verify completeness before calculation', () => {
@@ -196,7 +204,7 @@ describe('HU-10: Verify completeness before calculation', () => {
     const diagnostic = await seedDiagnosticReadyForQuestionnaire(app, 'user-1');
 
     const res = await agent
-      .post(`/api/v1/diagnosticos/${diagnostic.id}/cuestionario/envio`)
+      .post(`/api/v1/diagnostics/${diagnostic.id}/questionnaire`)
       .send({ answers: incompleteAnswers() });
 
     expect(res.status).toBe(422);
@@ -205,7 +213,7 @@ describe('HU-10: Verify completeness before calculation', () => {
   });
 ```
 
-The guard itself is not this suite's job — `modules/identity/cognito-jwt-guard.e2e-spec.ts`
+The guard itself is not this suite's job — `shared/identity/cognito-jwt-guard.e2e-spec.ts`
 covers signature, issuer, algorithm, `kid` lookup, `token_use` and `@Public()`
 routes on its own.
 
@@ -265,8 +273,8 @@ import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 
 const server = setupServer(
-  http.get('/api/v1/catalogo/cuestionario', () => HttpResponse.json(mockQuestionnaireStructure())),
-  http.post('/api/v1/diagnosticos/:id/cuestionario/envio', () =>
+  http.get('/api/v1/catalog/questionnaire', () => HttpResponse.json(mockQuestionnaireStructure())),
+  http.post('/api/v1/diagnostics/:id/questionnaire', () =>
     HttpResponse.json(mockMaturityProfile()),
   ),
 );

@@ -2,52 +2,51 @@
 
 Rules that ESLint and Prettier can't fully enforce. Reviewers cite this document during PR review; new contributors read it before their first PR.
 
-## Bilingual codebase
+## Language policy
 
-This is the most distinctive convention in the project. **Memorize it.**
+**English for everything in code** — no exception by layer or identifier kind (`convenciones-objetivo.md` §3). Spanish is reserved for what the end user reads.
 
-| Language    | Used for                                                                                                                                                                  |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Spanish** | Domain entities, business value objects, DB tables and columns, REST URL segments, user-facing strings, business terms                                                    |
-| **English** | Infrastructure code, framework constructs, technical terms, file names of technical files, type-only helpers, commit messages, branch names, code comments, documentation |
+| Language    | Used for                                                                                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **English** | Every identifier: domain entities and value objects, use cases, DB tables and columns, REST URL segments, file names, commit messages, branch names, code comments, documentation |
+| **Spanish** | User-facing strings only: interface copy, error messages shown on screen, questionnaire text, and catalog data values (`name_es`, descriptions)                                |
 
 ### Examples
 
 ```ts
-// ✓ correct: Spanish domain, English infrastructure
-class Diagnostico { /* ... */ }
-class TypeOrmDiagnosticoRepository implements DiagnosticoRepositoryPort { /* ... */ }
-const consentimientoController = new ConsentimientoController();
+// ✓ correct: English everywhere in code
+class Diagnosis { /* ... */ }
+class TypeOrmDiagnosisRepository implements DiagnosisRepositoryPort { /* ... */ }
+class Statement { /* ... */ }
 
-// REST URLs in Spanish
-GET /api/v1/diagnosticos/:id/cuestionario
+// REST URLs in English
+GET /api/v1/diagnostics/:id/questionnaire
 
-// DB columns in Spanish (snake_case)
-CREATE TABLE respuesta (
-  id_respuesta UUID PRIMARY KEY,
-  id_diagnostico UUID NOT NULL,
-  id_afirmacion UUID NOT NULL,
-  valor_likert SMALLINT NOT NULL
+// DB columns in English (snake_case)
+CREATE TABLE answer (
+  id UUID PRIMARY KEY,
+  id_diagnostic UUID NOT NULL,
+  id_statement BIGINT NOT NULL,
+  likert_value SMALLINT NOT NULL
 );
 
-// ✗ wrong: translating loses the meaning
-class Diagnostic { /* ... */ }
-class Statement { /* ... */ } // it's an "afirmación", not a "statement" in IRL terminology
+// ✗ wrong: Spanish identifiers
+class Diagnostico { /* ... */ }
+class Afirmacion { /* ... */ }
 
 // ✗ wrong: mixing inside one identifier
-class DiagnosticoRepositorio { /* ... */ }
-class StatementAfirmacion { /* ... */ }
+class DiagnosticoRepository { /* ... */ }
 ```
 
 ### Borderline cases
 
-- **Domain enums with technical names**: dimension codes (`TRL`, `CRL`, `BRL`, etc.) stay as-is because they're acronyms defined by the KTH framework — they're neither English nor Spanish.
-- **Domain value objects with English names**: `LikertValue` and `IrlLevel` stay in English because they're scale concepts, not Spanish-domain terms. The data they wrap (a number) doesn't translate.
-- **Business errors**: name them in English with a Spanish-aware description. `QuestionnaireIncompleteError` (English class name) returns a problem-details `title: "Cuestionario incompleto"` for users.
+- **Domain enums with technical names**: dimension codes (`TRL`, `CRL`, `BRL`, etc.) stay as-is because they are acronyms defined by the KTH framework.
+- **Business errors**: the class name is English (`QuestionnaireIncompleteError`); the message a user reads on screen is Spanish and comes from the presentation layer, not from the domain identifier.
+- **Frontend routes** (`/diagnosticos/:id/recomendacion`) are user-visible URLs, not API identifiers; they follow the product language (Spanish).
 
 ### When in doubt
 
-Ask: _"would a non-technical INNLAB staff member recognize this term?"_ If yes → Spanish. If it's plumbing they'd never see → English.
+Ask: _"does an end user read this?"_ If yes → Spanish, as copy. If it is an identifier, a file, a table, a column, a route of the API, or a comment → English.
 
 ## TypeScript conventions
 
@@ -117,7 +116,7 @@ import { z } from 'zod';
 
 import { likertValueSchema } from '@innlab/contracts';
 
-import type { AnswerSheetRepositoryPort } from '../../domain/ports/answer-sheet.repository.port.js';
+import type { AnswerSheetRepositoryPort } from '../../domain/repositories/answer-sheet.repository.port.js';
 import { AnswerSheet } from '../../domain/entities/answer-sheet.aggregate.js';
 ```
 
@@ -197,15 +196,15 @@ ESLint's `no-floating-promises` rule catches forgotten awaits. Don't suppress it
 | ---------------- | --------------------------------------------------------------- | ------------------------------- |
 | Use case class   | `<Verb><Noun>UseCase`                                           | `SubmitQuestionnaireUseCase`    |
 | Use case method  | always `execute(command)`                                       | —                               |
-| Repository port  | `<Aggregate>RepositoryPort`                                     | `DiagnosticoRepositoryPort`     |
-| Repository impl  | `TypeOrm<Aggregate>Repository`                                  | `TypeOrmDiagnosticoRepository`  |
+| Repository port  | `<Aggregate>RepositoryPort`                                     | `DiagnosisRepositoryPort`     |
+| Repository impl  | `TypeOrm<Aggregate>Repository`                                  | `TypeOrmDiagnosisRepository`  |
 | External port    | `<Service>Port`                                                 | `MailerPort`, `UserContextPort` |
 | External adapter | `<Technology><Service>Adapter` or `<Technology><Service>Client` | `InnlabCoreHttpClient`          |
 | HTTP DTO input   | `<Verb><Noun>Dto`                                               | `SubmitQuestionnaireDto`        |
 | HTTP DTO output  | `<Noun>Response`                                                | `MaturityProfileResponse`       |
 | Domain error     | `<Description>Error`                                            | `QuestionnaireIncompleteError`  |
 | Value object     | PascalCase, noun                                                | `LikertValue`, `IrlLevel`       |
-| Aggregate root   | PascalCase, noun                                                | `AnswerSheet`, `Diagnostico`    |
+| Aggregate root   | PascalCase, noun                                                | `AnswerSheet`, `Diagnosis`    |
 
 ### Frontend
 
@@ -223,15 +222,18 @@ ESLint's `no-floating-promises` rule catches forgotten awaits. Don't suppress it
 
 ### Backend modules
 
-Inside each `modules/<name>/` folder:
+Inside each `modules/<name>/` folder (and the two `shared/` contexts, `irl-taxonomy` and `identity`):
 
 ```
-domain/              # framework-free
-application/         # depends on domain
-infrastructure/      # depends on domain + application
-interfaces/          # depends on application
+domain/              # framework-free: entities, value-objects, services, exceptions, repositories (ports), events
+application/         # depends on domain: use-cases, dtos
+infrastructure/      # depends on domain + application: database/{orm-entities,repositories}, messaging, integrations
+presentation/        # depends on application only: controllers
 <name>.module.ts
+README.md            # scope, rules, exposed API, tests (convenciones-objetivo.md §4.4)
 ```
+
+`presentation/` never imports from `domain/` or `infrastructure/`; `eslint-plugin-boundaries` fails the lint if it does. Ports live in `domain/repositories/` (not `domain/ports/`). Events that cross modules live in `shared/kernel/events/`. The global technical layers (migrations, seeds, HTTP filters) live in `shared/kernel/infrastructure/`, not in a top-level `infrastructure/` folder.
 
 Don't introduce new top-level folders inside a module without discussion. If you find yourself wanting `services/` at the module root, decide whether it's domain or infrastructure and place it there.
 
