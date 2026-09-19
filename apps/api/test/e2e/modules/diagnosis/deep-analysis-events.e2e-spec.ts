@@ -204,12 +204,17 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
     ]);
   });
 
-  it('el roadmap se calcula para el mismo perfil', async () => {
+  it('el roadmap se calcula para el mismo perfil, y leerlo no publica ningún evento', async () => {
+    const antes = roadmapCalculado.mock.calls.length;
+
     const res = await agent
       .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
       .expect(200);
+    await agent.get(`/api/v1/diagnostics/${diagnosticId}/roadmap`).expect(200);
 
     expect(() => roadmapResponseSchema.parse(res.body)).not.toThrow();
+    // Regresión 14.4: un GET no es un cálculo real.
+    expect(roadmapCalculado.mock.calls.length).toBe(antes);
   });
 
   it('aceptar de nuevo no cambia el estado, vuelve a publicar y no acumula recomendaciones', async () => {
@@ -228,9 +233,7 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
     expect(recomendacionCalculada.mock.calls.length).toBe(
       antes.recomendacion + 1,
     );
-    // El roadmap publica en cada cálculo, y también se recalcula en cada
-    // GET, así que aquí basta con comprobar que volvió a publicar.
-    expect(roadmapCalculado.mock.calls.length).toBeGreaterThan(antes.roadmap);
+    expect(roadmapCalculado.mock.calls.length).toBe(antes.roadmap + 1);
 
     const [{ count }] = await dataSource.query<{ count: string }[]>(
       `SELECT COUNT(*)::text AS count
