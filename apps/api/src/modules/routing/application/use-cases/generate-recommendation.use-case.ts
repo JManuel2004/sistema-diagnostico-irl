@@ -23,7 +23,7 @@ import { EligibilityFilterService } from '../../domain/services/eligibility-filt
 import { AffinityScorerService } from '../../domain/services/affinity-scorer.service.js';
 import { ExceptionEngineService } from '../../domain/services/exception-engine.service.js';
 import { Recommendation } from '../../domain/entities/recommendation.aggregate.js';
-import { PortfolioRecommendationCalculatedEvent } from '../../domain/events/portfolio-recommendation-calculated.event.js';
+import { PortfolioRecommendationCalculatedEvent } from '../../../../shared/kernel/events/portfolio-recommendation-calculated.event.js';
 import {
   NoActiveConfigurationError,
   ProfileNotComputedError,

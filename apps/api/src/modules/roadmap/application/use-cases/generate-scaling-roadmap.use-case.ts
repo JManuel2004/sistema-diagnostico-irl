@@ -14,7 +14,7 @@ import {
   type RoadmapPhase,
 } from '../../domain/entities/scaling-roadmap.aggregate.js';
 import { RoadmapCalculationError } from '../../domain/exceptions/roadmap.errors.js';
-import { ScalingRoadmapCalculatedEvent } from '../../domain/events/scaling-roadmap-calculated.event.js';
+import { ScalingRoadmapCalculatedEvent } from '../../../../shared/kernel/events/scaling-roadmap-calculated.event.js';
 import { GetMaturityProfileUseCase } from '../../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';

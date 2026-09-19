@@ -1,4 +1,4 @@
-import { DomainEvent } from '../../../../shared/kernel/events/domain-event.base.js';
+import { DomainEvent } from './domain-event.base.js';
 
 /**
  * Fired by `roadmap/` when it finishes calculating a scaling roadmap.
@@ -6,10 +6,11 @@ import { DomainEvent } from '../../../../shared/kernel/events/domain-event.base.
  * that module is built, without `roadmap/` needing to know `reporting/`
  * exists (`convenciones-objetivo.md` §1.1).
  *
- * Lives here, not in `shared/kernel/events/`: no module listens to it
- * today, and the location rule reserves that folder for events that do
- * ("regla de ubicación" — an event that starts internal and later gains
- * an external listener moves at that point, not preemptively).
+ * Lives in `shared/kernel/events/` even though nothing listens to it yet:
+ * `reporting/` is its intended listener, and it must be able to import the
+ * event without depending on `roadmap/` (`convenciones-objetivo.md` §1.1,
+ * "regla de ubicación" — events meant to cross a module boundary are
+ * declared here from the start).
  */
 export interface ScalingRoadmapCalculatedPayload {
   readonly diagnosticId: string;
