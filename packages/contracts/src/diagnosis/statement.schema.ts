@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dimensionCodeSchema } from '../catalog/dimension.schema.js';
+import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
 
 /**
  * A statement of the IRL questionnaire.

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { dimensionCodeSchema } from './dimension.schema.js';
-import { statementSchema } from '../questionnaire/statement.schema.js';
+import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
+import { statementSchema } from './statement.schema.js';
 
 /**
  * A dimension with its 8 statements embedded — the nested shape the

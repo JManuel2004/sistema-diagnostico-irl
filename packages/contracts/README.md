@@ -12,7 +12,7 @@ What does **not** belong here:
 
 - Business logic. Schemas describe shape; logic lives in the apps.
 - React components, NestJS providers, or any framework code.
-- Database concerns. Those live in the backend's `infrastructure/persistence`.
+- Database concerns. Those live in each backend module's `infrastructure/database/orm-entities/`.
 
 ## How it's consumed
 
@@ -36,31 +36,34 @@ pnpm --filter @innlab/contracts build
 
 ## Folder structure
 
+Folders mirror the backend's bounded contexts (`convenciones-objetivo.md` §1.1), named in English like everything else (§3). The barrel `src/index.ts` is the only public surface — no consumer imports a folder path.
+
 ```
 packages/contracts/
 ├── src/
-│   ├── questionnaire/
-│   │   ├── likert.schema.ts          # LikertValue (1..5)
+│   ├── common/                        # cross-cutting
+│   │   ├── problem-details.schema.ts  # RFC 7807
+│   │   └── uuid.schema.ts
+│   ├── irl-taxonomy/                  # shared/irl-taxonomy
+│   │   └── dimension.schema.ts        # DIMENSION_CODES, dimension shape
+│   ├── diagnosis/                     # modules/diagnosis
+│   │   ├── diagnostic.schema.ts       # diagnostic + state machine, deep-analysis acceptance
+│   │   ├── questionnaire-structure.schema.ts
+│   │   ├── likert.schema.ts           # LikertValue (1..5)
 │   │   ├── statement.schema.ts
 │   │   ├── answer.schema.ts
-│   │   └── submission.schema.ts
-│   ├── maturity-profile/
-│   │   ├── dimension-result.schema.ts
-│   │   ├── bottleneck.schema.ts
-│   │   ├── imbalance.schema.ts
-│   │   └── profile-response.schema.ts
-│   ├── catalog/
-│   │   ├── dimension.schema.ts
-│   │   └── questionnaire-structure.schema.ts
-│   ├── diagnostic/
-│   │   ├── diagnostic.schema.ts
+│   │   ├── submission.schema.ts
+│   │   └── …                          # maturity profile: dimension-result, bottleneck,
+│   │                                  #   gaps, asymmetry, imbalance, profile-response
+│   ├── initiative/                    # modules/initiative
+│   │   ├── initiative.schema.ts
 │   │   └── consent.schema.ts
-│   ├── initiative/
-│   │   └── initiative.schema.ts
-│   ├── common/
-│   │   ├── problem-details.schema.ts # RFC 7807
-│   │   └── uuid.schema.ts
-│   └── index.ts                      # barrel — public exports only
+│   ├── routing/                       # modules/routing
+│   │   └── …                          # predicate, diagnostic-facts,
+│   │                                  #   recommendation-response, layer-trace
+│   ├── roadmap/                       # modules/roadmap
+│   │   └── roadmap-response.schema.ts
+│   └── index.ts                       # barrel — public exports only
 ├── package.json
 ├── tsconfig.json
 └── README.md                          # this file

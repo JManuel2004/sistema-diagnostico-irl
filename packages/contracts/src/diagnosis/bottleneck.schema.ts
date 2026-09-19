@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dimensionCodeSchema } from '../catalog/dimension.schema.js';
+import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
 
 /**
  * Cuello de botella del perfil — la(s) dimensión(es) con el nivel IRL

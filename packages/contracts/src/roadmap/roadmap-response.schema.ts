@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { uuidSchema } from '../common/uuid.schema.js';
-import { dimensionCodeSchema } from '../catalog/dimension.schema.js';
+import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
 
 /**
  * Roadmap de escalamiento (RF-14).

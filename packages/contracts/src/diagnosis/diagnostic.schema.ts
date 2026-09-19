@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { uuidSchema } from '../common/uuid.schema.js';
-import { answerItemSchema } from '../questionnaire/answer.schema.js';
+import { answerItemSchema } from './answer.schema.js';
 
 /**
  * Estados del proceso de diagnóstico — máquina de estados que rige las

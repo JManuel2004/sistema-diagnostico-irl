@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dimensionCodeSchema } from '../catalog/dimension.schema.js';
+import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
 
 /**
  * Clasificación del desequilibrio entre dos dimensiones (RF-10):

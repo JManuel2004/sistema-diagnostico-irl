@@ -10,36 +10,32 @@
 export * from './common/uuid.schema.js';
 export * from './common/problem-details.schema.js';
 
-// ── catalog ───────────────────────────────────────────────────────────
-export * from './catalog/dimension.schema.js';
-export * from './catalog/questionnaire-structure.schema.js';
+// ── irl-taxonomy (shared/irl-taxonomy) ────────────────────────────────
+export * from './irl-taxonomy/dimension.schema.js';
 
-// ── questionnaire ─────────────────────────────────────────────────────
-export * from './questionnaire/likert.schema.js';
-export * from './questionnaire/statement.schema.js';
-export * from './questionnaire/answer.schema.js';
-export * from './questionnaire/submission.schema.js';
-
-// ── maturity profile ──────────────────────────────────────────────────
-export * from './maturity-profile/dimension-result.schema.js';
-export * from './maturity-profile/bottleneck.schema.js';
-export * from './maturity-profile/gaps.schema.js';
-export * from './maturity-profile/asymmetry.schema.js';
-export * from './maturity-profile/imbalance.schema.js';
-export * from './maturity-profile/profile-response.schema.js';
-
-// ── diagnostic ────────────────────────────────────────────────────────
-export * from './diagnostic/diagnostic.schema.js';
-export * from './diagnostic/consent.schema.js';
+// ── diagnosis ─────────────────────────────────────────────────────────
+export * from './diagnosis/questionnaire-structure.schema.js';
+export * from './diagnosis/likert.schema.js';
+export * from './diagnosis/statement.schema.js';
+export * from './diagnosis/answer.schema.js';
+export * from './diagnosis/submission.schema.js';
+export * from './diagnosis/dimension-result.schema.js';
+export * from './diagnosis/bottleneck.schema.js';
+export * from './diagnosis/gaps.schema.js';
+export * from './diagnosis/asymmetry.schema.js';
+export * from './diagnosis/imbalance.schema.js';
+export * from './diagnosis/profile-response.schema.js';
+export * from './diagnosis/diagnostic.schema.js';
 
 // ── initiative ────────────────────────────────────────────────────────
+export * from './initiative/consent.schema.js';
 export * from './initiative/initiative.schema.js';
 
-// ── portfolio routing ─────────────────────────────────────────────────
-export * from './portfolio-routing/predicate.schema.js';
-export * from './portfolio-routing/diagnostic-facts.schema.js';
-export * from './portfolio-routing/recommendation-response.schema.js';
-export * from './portfolio-routing/layer-trace.schema.js';
+// ── routing ───────────────────────────────────────────────────────────
+export * from './routing/predicate.schema.js';
+export * from './routing/diagnostic-facts.schema.js';
+export * from './routing/recommendation-response.schema.js';
+export * from './routing/layer-trace.schema.js';
 
-// ── scaling roadmap ───────────────────────────────────────────────────
-export * from './scaling-roadmap/roadmap-response.schema.js';
+// ── roadmap ───────────────────────────────────────────────────────────
+export * from './roadmap/roadmap-response.schema.js';

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dimensionCodeSchema } from '../catalog/dimension.schema.js';
+import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
 
 /**
  * Resultado por dimensión dentro del perfil de madurez (RF-07).
