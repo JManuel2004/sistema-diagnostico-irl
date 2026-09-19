@@ -1,9 +1,9 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
-import { InitialSchema1747526400001 } from '../../../src/infrastructure/database/migrations/20260518001-InitialSchema.js';
-import { DIMENSIONS } from '../../../src/infrastructure/database/seeds/data/dimensions.js';
-import { STATEMENTS } from '../../../src/infrastructure/database/seeds/data/statements.js';
+import { InitialSchema1747526400001 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518001-InitialSchema.js';
+import { DIMENSIONS } from '../../../src/shared/kernel/infrastructure/database/seeds/data/dimensions.js';
+import { STATEMENTS } from '../../../src/shared/kernel/infrastructure/database/seeds/data/statements.js';
 
 /**
  * Smoke test for the migration + seed pipeline.

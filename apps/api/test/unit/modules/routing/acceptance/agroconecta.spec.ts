@@ -7,7 +7,7 @@ import {
   ELIGIBILITY_RULES,
   EXCEPTION_RULES,
   SERVICES,
-} from '../../../../../src/infrastructure/database/seeds/data/routing.js';
+} from '../../../../../src/shared/kernel/infrastructure/database/seeds/data/routing.js';
 import { CalibrationScale } from '../../../../../src/modules/routing/domain/value-objects/calibration-scale.vo.js';
 import type { OrdinalProfile } from '../../../../../src/modules/routing/domain/value-objects/ordinal-profile.vo.js';
 import { OrdinalTranslatorService } from '../../../../../src/modules/routing/domain/services/ordinal-translator.service.js';

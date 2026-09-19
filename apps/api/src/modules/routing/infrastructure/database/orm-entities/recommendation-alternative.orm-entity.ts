@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { numericTransformer } from '../../../../../infrastructure/database/numeric.transformer.js';
+import { numericTransformer } from '../../../../../shared/kernel/infrastructure/database/numeric.transformer.js';
 
 /**
  * Positions 2..N of the ranking that accompany the principal

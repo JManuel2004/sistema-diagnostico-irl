@@ -22,11 +22,11 @@
     "test:e2e": "pnpm contracts:build && node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --selectProjects e2e",
     "test:cov": "pnpm contracts:build && node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --coverage",
     "test:watch": "pnpm contracts:build && node --experimental-vm-modules --no-warnings node_modules/jest/bin/jest.js --watch",
-    "db:migration:generate": "pnpm typeorm migration:generate -d src/infrastructure/database/data-source.ts",
+    "db:migration:generate": "pnpm typeorm migration:generate -d src/shared/kernel/infrastructure/database/data-source.ts",
     "db:migration:create": "pnpm typeorm migration:create",
-    "db:migration:run": "pnpm typeorm migration:run -d src/infrastructure/database/data-source.ts",
-    "db:migration:revert": "pnpm typeorm migration:revert -d src/infrastructure/database/data-source.ts",
-    "db:seed": "pnpm contracts:build && tsx src/infrastructure/database/seeds/index.ts",
+    "db:migration:run": "pnpm typeorm migration:run -d src/shared/kernel/infrastructure/database/data-source.ts",
+    "db:migration:revert": "pnpm typeorm migration:revert -d src/shared/kernel/infrastructure/database/data-source.ts",
+    "db:seed": "pnpm contracts:build && tsx src/shared/kernel/infrastructure/database/seeds/index.ts",
     "typeorm": "tsx ./node_modules/typeorm/cli.js"
   },
   "dependencies": {

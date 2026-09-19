@@ -13,7 +13,7 @@ import {
   type AppConfig,
 } from './config/configuration.js';
 import { buildOrmModuleOptions } from './config/ormconfig.factory.js';
-import { ApiV1Module } from './interfaces/http/api-v1.module.js';
+import { ApiModule } from './api.module.js';
 
 /**
  * Composition root of the application.
@@ -85,7 +85,7 @@ import { ApiV1Module } from './interfaces/http/api-v1.module.js';
     // no queue infrastructure, `EventEmitter2` dispatch is enough for
     // the current volume and topology.
     EventEmitterModule.forRoot(),
-    ApiV1Module,
+    ApiModule,
   ],
 })
 export class AppModule {}

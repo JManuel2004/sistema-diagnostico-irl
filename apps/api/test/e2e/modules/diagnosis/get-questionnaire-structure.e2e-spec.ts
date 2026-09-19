@@ -6,7 +6,7 @@ import {
 import request from 'supertest';
 import nock from 'nock';
 import { AppModule } from '../../../../src/app.module.js';
-import { configureApp } from '../../../../src/infrastructure/http/configure-app.js';
+import { configureApp } from '../../../../src/shared/kernel/infrastructure/http/configure-app.js';
 import { authenticateAgainst } from '../../support/authenticated-app.js';
 import { questionnaireStructureSchema } from '@innlab/contracts';
 

@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { numericTransformer } from '../../../../../infrastructure/database/numeric.transformer.js';
+import { numericTransformer } from '../../../../../shared/kernel/infrastructure/database/numeric.transformer.js';
 
 @Entity({ schema: 'irl_diagnostic', name: 'dimension_result' })
 export class DimensionResultOrm {

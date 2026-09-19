@@ -65,6 +65,13 @@ export default [
     plugins: { boundaries },
     settings: {
       'boundaries/elements': [
+        // Listed before `shared-kernel` so the technical layers of the
+        // kernel (database tooling, HTTP filters, health probe) are not
+        // swallowed by the broader `src/shared/kernel/**` pattern.
+        {
+          type: 'infra-global',
+          pattern: 'src/shared/kernel/{infrastructure,presentation}/**',
+        },
         { type: 'shared-kernel', pattern: 'src/shared/kernel/**' },
         {
           type: 'ctx-domain',
@@ -83,7 +90,6 @@ export default [
           pattern: `src/{${DEFINITIVE_LAYER_CONTEXTS}}/presentation/**`,
         },
         { type: 'config', pattern: 'src/config/**' },
-        { type: 'infra-global', pattern: 'src/infrastructure/**' },
       ],
     },
     rules: {

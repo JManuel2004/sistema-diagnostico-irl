@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm';
-import { numericTransformer } from '../../../../../infrastructure/database/numeric.transformer.js';
+import { numericTransformer } from '../../../../kernel/infrastructure/database/numeric.transformer.js';
 
 @Entity({ schema: 'irl_catalog', name: 'conversion_range' })
 export class ConversionRangeOrm {

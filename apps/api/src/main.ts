@@ -12,7 +12,7 @@ import {
   APP_CONFIG_NAMESPACE,
   type AppConfig,
 } from './config/configuration.js';
-import { configureApp } from './infrastructure/http/configure-app.js';
+import { configureApp } from './shared/kernel/infrastructure/http/configure-app.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(

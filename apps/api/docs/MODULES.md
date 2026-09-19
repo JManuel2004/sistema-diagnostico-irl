@@ -92,7 +92,7 @@ Full. Roadmap texts and portfolio routing rules are seeded but not exposed yet (
 
 ### Catalog write rule
 
-Catalogs are read-only at runtime. **Never** write from application code. Changes go through seed files in `src/infrastructure/database/seeds/` and require a migration + seed run.
+Catalogs are read-only at runtime. **Never** write from application code. Changes go through seed files in `src/shared/kernel/infrastructure/database/seeds/` and require a migration + seed run.
 
 ---
 

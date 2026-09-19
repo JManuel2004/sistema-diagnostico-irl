@@ -13,7 +13,7 @@ import {
   layerTraceResponseSchema,
 } from '@innlab/contracts';
 import { AppModule } from '../../../../src/app.module.js';
-import { configureApp } from '../../../../src/infrastructure/http/configure-app.js';
+import { configureApp } from '../../../../src/shared/kernel/infrastructure/http/configure-app.js';
 import { authenticateAgainst } from '../../support/authenticated-app.js';
 
 /**

@@ -10,7 +10,7 @@ import nock from 'nock';
 import { randomUUID } from 'node:crypto';
 import { roadmapResponseSchema } from '@innlab/contracts';
 import { AppModule } from '../../../../src/app.module.js';
-import { configureApp } from '../../../../src/infrastructure/http/configure-app.js';
+import { configureApp } from '../../../../src/shared/kernel/infrastructure/http/configure-app.js';
 import { authenticateAgainst } from '../../support/authenticated-app.js';
 
 /**

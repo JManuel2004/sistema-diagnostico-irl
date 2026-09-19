@@ -6,7 +6,8 @@ import type { AppConfig } from './configuration.js';
  * Single TypeORM options factory shared by:
  *   - NestJS `TypeOrmModule.forRootAsync` at runtime.
  *   - The CLI `DataSource` exported from
- *     `src/infrastructure/database/data-source.ts` (migrations + seeds).
+ *     `src/shared/kernel/infrastructure/database/data-source.ts`
+ *     (migrations + seeds).
  *
  * Keeping one factory means a future change to connection pooling, SSL,
  * logging policy, or migrations glob lands in a single file and is
@@ -18,8 +19,10 @@ import type { AppConfig } from './configuration.js';
  * (the typical case) work without explicit schema hints in every query.
  */
 
-const MIGRATIONS_GLOB_SRC = 'src/infrastructure/database/migrations/*.ts';
-const MIGRATIONS_GLOB_DIST = 'dist/infrastructure/database/migrations/*.js';
+const MIGRATIONS_GLOB_SRC =
+  'src/shared/kernel/infrastructure/database/migrations/*.ts';
+const MIGRATIONS_GLOB_DIST =
+  'dist/shared/kernel/infrastructure/database/migrations/*.js';
 const ENTITIES_GLOB_SRC =
   'src/modules/**/infrastructure/persistence/**/*.orm-entity.ts';
 const ENTITIES_GLOB_DIST =

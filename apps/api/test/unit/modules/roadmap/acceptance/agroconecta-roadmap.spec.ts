@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import type { DimensionCode } from '@innlab/contracts';
-import { DIMENSIONS } from '../../../../../src/infrastructure/database/seeds/data/dimensions.js';
-import { DIMENSION_DEPENDENCIES } from '../../../../../src/infrastructure/database/seeds/data/dimension-dependencies.js';
+import { DIMENSIONS } from '../../../../../src/shared/kernel/infrastructure/database/seeds/data/dimensions.js';
+import { DIMENSION_DEPENDENCIES } from '../../../../../src/shared/kernel/infrastructure/database/seeds/data/dimension-dependencies.js';
 import { DependencyGraph } from '../../../../../src/modules/roadmap/domain/value-objects/dependency-graph.vo.js';
 import { RoadmapClosureService } from '../../../../../src/modules/roadmap/domain/services/roadmap-closure.service.js';
 import { TopologicalLayeringService } from '../../../../../src/modules/roadmap/domain/services/topological-layering.service.js';

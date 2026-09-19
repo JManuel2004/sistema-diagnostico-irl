@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import { config as loadEnv } from 'dotenv';
-import { loadAppConfig } from '../../config/configuration.js';
-import { buildOrmDataSourceOptions } from '../../config/ormconfig.factory.js';
+import { loadAppConfig } from '../../../../config/configuration.js';
+import { buildOrmDataSourceOptions } from '../../../../config/ormconfig.factory.js';
 
 // Side-effect: hydrate `process.env` from local files for CLI tooling.
 loadEnv({ path: '.env.local' });

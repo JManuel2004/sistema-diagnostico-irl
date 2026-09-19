@@ -73,16 +73,17 @@ apps/api/
 │   │   ├── audit/               # cross-cutting evento_auditoria
 │   │   └── notifications/       # stub in phase 1, full in phase 2
 │   │
-│   ├── infrastructure/          # global infra (not module-scoped)
-│   │   ├── database/
-│   │   │   ├── data-source.ts
-│   │   │   ├── migrations/
-│   │   │   └── seeds/
-│   │   ├── http/                # global filters, interceptors, pipes
-│   │   └── logging/             # pino config
+│   ├── shared/kernel/
+│   │   ├── infrastructure/      # global infra (not module-scoped)
+│   │   │   ├── database/
+│   │   │   │   ├── data-source.ts
+│   │   │   │   ├── migrations/
+│   │   │   │   └── seeds/
+│   │   │   └── http/            # global filters, problem-details, configureApp
+│   │   └── presentation/controllers/
+│   │       └── health.controller.ts
 │   │
-│   └── interfaces/http/
-│       └── api-v1.module.ts     # composes controllers per API version
+│   └── api.module.ts            # composes the bounded-context modules
 │
 ├── test/
 │   ├── unit/                    # mirrors src/, no DB
@@ -210,8 +211,8 @@ typecheck               # tsc --noEmit
 format                  # prettier --write
 
 # database
-db:migration:generate -- src/infrastructure/database/migrations/<Name>
-db:migration:create   -- src/infrastructure/database/migrations/<Name>
+db:migration:generate -- src/shared/kernel/infrastructure/database/migrations/<Name>
+db:migration:create   -- src/shared/kernel/infrastructure/database/migrations/<Name>
 db:migration:run
 db:migration:revert
 db:seed                 # idempotent: ON CONFLICT DO UPDATE

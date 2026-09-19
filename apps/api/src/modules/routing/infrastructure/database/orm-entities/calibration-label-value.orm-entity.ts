@@ -1,5 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { numericTransformer } from '../../../../../infrastructure/database/numeric.transformer.js';
+import { numericTransformer } from '../../../../../shared/kernel/infrastructure/database/numeric.transformer.js';
 
 /**
  * One rung of the ordinal scale: the label the business side reads, and

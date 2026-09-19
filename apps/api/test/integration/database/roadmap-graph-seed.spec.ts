@@ -1,25 +1,25 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
-import { InitialSchema1747526400001 } from '../../../src/infrastructure/database/migrations/20260518001-InitialSchema.js';
-import { CatalogConversionAndPairs1747526400002 } from '../../../src/infrastructure/database/migrations/20260518002-CatalogConversionAndPairs.js';
-import { RemainingCatalogTables1747526400003 } from '../../../src/infrastructure/database/migrations/20260518003-RemainingCatalogTables.js';
-import { RemainingDiagnosticTables1747526400004 } from '../../../src/infrastructure/database/migrations/20260518004-RemainingDiagnosticTables.js';
-import { RemoveSingleRuleRoutingModel1747526400005 } from '../../../src/infrastructure/database/migrations/20260518005-RemoveSingleRuleRoutingModel.js';
-import { ExtendDiagnosticStateCheck1747526400006 } from '../../../src/infrastructure/database/migrations/20260518006-ExtendDiagnosticStateCheck.js';
-import { RoutingCalibration1747526400007 } from '../../../src/infrastructure/database/migrations/20260518007-RoutingCalibration.js';
-import { RoutingConfigurationVersion1747526400008 } from '../../../src/infrastructure/database/migrations/20260518008-RoutingConfigurationVersion.js';
-import { RoutingConfigurationDraft1747526400009 } from '../../../src/infrastructure/database/migrations/20260518009-RoutingConfigurationDraft.js';
-import { RecommendationResultAndTrace1747526400010 } from '../../../src/infrastructure/database/migrations/20260518010-RecommendationResultAndTrace.js';
-import { InitiativeCharacterization1747526400011 } from '../../../src/infrastructure/database/migrations/20260518011-InitiativeCharacterization.js';
-import { RoadmapDependencyGraph1747526400012 } from '../../../src/infrastructure/database/migrations/20260518012-RoadmapDependencyGraph.js';
-import { EnglishCatalogNaming1747526400013 } from '../../../src/infrastructure/database/migrations/20260518013-EnglishCatalogNaming.js';
-import { EnglishMaturityProfileNaming1747526400015 } from '../../../src/infrastructure/database/migrations/20260518015-EnglishMaturityProfileNaming.js';
-import { EnglishRoadmapGraphNaming1747526400016 } from '../../../src/infrastructure/database/migrations/20260518016-EnglishRoadmapGraphNaming.js';
-import { RetireRoadmapDependencyActive1747526400022 } from '../../../src/infrastructure/database/migrations/20260518022-RetireRoadmapDependencyActive.js';
-import { DIMENSIONS } from '../../../src/infrastructure/database/seeds/data/dimensions.js';
-import { DIMENSION_DEPENDENCIES } from '../../../src/infrastructure/database/seeds/data/dimension-dependencies.js';
-import { seedRoadmapGraph } from '../../../src/infrastructure/database/seeds/seed-roadmap-graph.js';
+import { InitialSchema1747526400001 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518001-InitialSchema.js';
+import { CatalogConversionAndPairs1747526400002 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518002-CatalogConversionAndPairs.js';
+import { RemainingCatalogTables1747526400003 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518003-RemainingCatalogTables.js';
+import { RemainingDiagnosticTables1747526400004 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518004-RemainingDiagnosticTables.js';
+import { RemoveSingleRuleRoutingModel1747526400005 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518005-RemoveSingleRuleRoutingModel.js';
+import { ExtendDiagnosticStateCheck1747526400006 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518006-ExtendDiagnosticStateCheck.js';
+import { RoutingCalibration1747526400007 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518007-RoutingCalibration.js';
+import { RoutingConfigurationVersion1747526400008 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518008-RoutingConfigurationVersion.js';
+import { RoutingConfigurationDraft1747526400009 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518009-RoutingConfigurationDraft.js';
+import { RecommendationResultAndTrace1747526400010 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518010-RecommendationResultAndTrace.js';
+import { InitiativeCharacterization1747526400011 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518011-InitiativeCharacterization.js';
+import { RoadmapDependencyGraph1747526400012 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518012-RoadmapDependencyGraph.js';
+import { EnglishCatalogNaming1747526400013 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518013-EnglishCatalogNaming.js';
+import { EnglishMaturityProfileNaming1747526400015 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518015-EnglishMaturityProfileNaming.js';
+import { EnglishRoadmapGraphNaming1747526400016 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518016-EnglishRoadmapGraphNaming.js';
+import { RetireRoadmapDependencyActive1747526400022 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518022-RetireRoadmapDependencyActive.js';
+import { DIMENSIONS } from '../../../src/shared/kernel/infrastructure/database/seeds/data/dimensions.js';
+import { DIMENSION_DEPENDENCIES } from '../../../src/shared/kernel/infrastructure/database/seeds/data/dimension-dependencies.js';
+import { seedRoadmapGraph } from '../../../src/shared/kernel/infrastructure/database/seeds/seed-roadmap-graph.js';
 
 /**
  * Integración del seed del graph de dependencies contra Postgres real.
