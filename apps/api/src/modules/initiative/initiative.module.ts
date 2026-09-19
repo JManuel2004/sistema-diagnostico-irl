@@ -14,6 +14,8 @@ import { TypeOrmInitiativeCatalogRepository } from './infrastructure/database/re
 import { INITIATIVE_REPOSITORY } from './domain/repositories/initiative.repository.port.js';
 import { CONSENT_REPOSITORY } from './domain/repositories/consent.repository.port.js';
 import { INITIATIVE_CATALOG_REPOSITORY } from './domain/repositories/initiative-catalog.port.js';
+import { DIAGNOSTIC_OWNERSHIP } from './domain/repositories/diagnostic-ownership.port.js';
+import { DiagnosisOwnershipAdapter } from './infrastructure/diagnosis-ownership.adapter.js';
 
 import { RegisterInitiativeUseCase } from './application/use-cases/register-initiative.use-case.js';
 import { GetInitiativeUseCase } from './application/use-cases/get-initiative.use-case.js';
@@ -37,13 +39,16 @@ import { MyDiagnosesController } from './presentation/controllers/my-diagnoses.c
  * initiative profile rather than staying as a gate inside the
  * questionnaire flow.
  *
- * Imports `DiagnosisModule` for two reasons: `ListMyDiagnosesUseCase`
- * reads `DIAGNOSIS_REPOSITORY` directly (a Supporting context reading a
- * Core context's exported port — allowed, `convenciones-objetivo.md`
- * §1.1 case (b)), and both `RegisterInitiativeUseCase` and
- * `RecordConsentUseCase` take a `diagnosticId` whose validity this
- * module does not itself verify — that check is deferred to a future
- * phase, not invented here.
+ * Imports `DiagnosisModule` for `DIAGNOSIS_REPOSITORY`, which a
+ * Supporting context may read as a Core context's exported port
+ * (`convenciones-objetivo.md` §1.1 case (b)). `ListMyDiagnosesUseCase`
+ * reads it directly; `RegisterInitiativeUseCase` and
+ * `RecordConsentUseCase` reach it through `DiagnosticOwnershipPort`
+ * (`DiagnosisOwnershipAdapter`), which verifies the diagnostic exists
+ * and belongs to the caller before either writes anything.
+ *
+ * Recording consent publishes `ConsentRecordedEvent`; `diagnosis/`
+ * listens and moves its own state machine — `initiative/` never calls it.
  *
  * `GetInitiativeCharacterizationUseCase` is exported for
  * `routing/` to consume — see the note on that use case for
@@ -66,6 +71,7 @@ import { MyDiagnosesController } from './presentation/controllers/my-diagnoses.c
       provide: INITIATIVE_CATALOG_REPOSITORY,
       useClass: TypeOrmInitiativeCatalogRepository,
     },
+    { provide: DIAGNOSTIC_OWNERSHIP, useClass: DiagnosisOwnershipAdapter },
     RegisterInitiativeUseCase,
     GetInitiativeUseCase,
     RecordConsentUseCase,

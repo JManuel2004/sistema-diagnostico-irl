@@ -33,7 +33,10 @@ import { SubmitQuestionnaireUseCase } from './application/use-cases/submit-quest
 import { ComputeMaturityProfileUseCase } from './application/use-cases/compute-maturity-profile.use-case.js';
 import { GetMaturityProfileUseCase } from './application/use-cases/get-maturity-profile.use-case.js';
 import { RequestDeepAnalysisUseCase } from './application/use-cases/request-deep-analysis.use-case.js';
+import { ApplyConsentToDiagnosisUseCase } from './application/use-cases/apply-consent-to-diagnosis.use-case.js';
 import { GetQuestionnaireStructureQuery } from './application/use-cases/get-questionnaire-structure.query.js';
+
+import { ConsentRecordedListener } from './infrastructure/messaging/consent-recorded.listener.js';
 
 import { DiagnosisController } from './presentation/controllers/diagnosis.controller.js';
 import { QuestionnaireController } from './presentation/controllers/questionnaire.controller.js';
@@ -94,6 +97,8 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     ComputeMaturityProfileUseCase,
     GetMaturityProfileUseCase,
     RequestDeepAnalysisUseCase,
+    ApplyConsentToDiagnosisUseCase,
+    ConsentRecordedListener,
     {
       provide: GetQuestionnaireStructureQuery,
       useFactory: (

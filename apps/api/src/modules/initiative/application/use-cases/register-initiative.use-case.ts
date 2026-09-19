@@ -8,13 +8,20 @@ import {
   INITIATIVE_CATALOG_REPOSITORY,
   type InitiativeCatalogPort,
 } from '../../domain/repositories/initiative-catalog.port.js';
+import {
+  DIAGNOSTIC_OWNERSHIP,
+  type DiagnosticOwnershipPort,
+} from '../../domain/repositories/diagnostic-ownership.port.js';
 import { Initiative } from '../../domain/entities/initiative.aggregate.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
+import type { ForbiddenError } from '../../../../shared/kernel/domain/errors/forbidden.error.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
 
 export interface RegisterInitiativeCommand {
   diagnosticId: string;
+  /** The authenticated caller; must own `diagnosticId`. */
+  userId: string;
   sectorId: string;
   name: string;
   // Required, not optional as `registerInitiativeSchema` in
@@ -34,6 +41,10 @@ export interface RegisterInitiativeCommand {
  * record — `InitiativeRepositoryPort.save` upserts by `diagnosticId`,
  * there is no separate "update" use case.
  *
+ * The diagnostic must exist and belong to `userId` before anything is
+ * written (`NotFoundError` / `ForbiddenError` otherwise), and that check
+ * runs before the catalog lookup.
+ *
  * An unknown `sectorId` is a normal, expected outcome — the client sent
  * a stale or invalid catalog id — not an exceptional condition
  * (`convenciones-objetivo.md` §2, "Adopción de Result<T, E>").
@@ -45,11 +56,16 @@ export class RegisterInitiativeUseCase {
     private readonly initiatives: InitiativeRepositoryPort,
     @Inject(INITIATIVE_CATALOG_REPOSITORY)
     private readonly catalog: InitiativeCatalogPort,
+    @Inject(DIAGNOSTIC_OWNERSHIP)
+    private readonly ownership: DiagnosticOwnershipPort,
   ) {}
 
   async execute(
     cmd: RegisterInitiativeCommand,
-  ): Promise<Result<InitiativeResponse, NotFoundError>> {
+  ): Promise<Result<InitiativeResponse, NotFoundError | ForbiddenError>> {
+    const owned = await this.ownership.verify(cmd.diagnosticId, cmd.userId);
+    if (!owned.ok) return owned;
+
     const sector = await this.catalog.findSectorById(cmd.sectorId);
     if (!sector) {
       return Result.err(new NotFoundError('Sector', cmd.sectorId));

@@ -1,6 +1,9 @@
 import { jest } from '@jest/globals';
 import { Test } from '@nestjs/testing';
 import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
+import { ConsentRecordedEvent } from '../../../../../src/shared/kernel/events/consent-recorded.event.js';
+import { ConsentRecordedListener } from '../../../../../src/modules/diagnosis/infrastructure/messaging/consent-recorded.listener.js';
+import { ApplyConsentToDiagnosisUseCase } from '../../../../../src/modules/diagnosis/application/use-cases/apply-consent-to-diagnosis.use-case.js';
 import { DeepAnalysisRequestedEvent } from '../../../../../src/shared/kernel/events/deep-analysis-requested.event.js';
 import { DeepAnalysisRequestedListener as RoutingListener } from '../../../../../src/modules/routing/infrastructure/messaging/deep-analysis-requested.listener.js';
 import { DeepAnalysisRequestedListener as RoadmapListener } from '../../../../../src/modules/roadmap/infrastructure/messaging/deep-analysis-requested.listener.js';
@@ -52,6 +55,33 @@ describe('DeepAnalysisRequestedEvent wiring', () => {
       diagnosticId: DIAGNOSTIC_ID,
     });
     expect(generateRoadmap).toHaveBeenCalledWith({ diagnosticId: DIAGNOSTIC_ID });
+
+    await moduleRef.close();
+  });
+
+  it('ConsentRecordedEvent published by initiative/ reaches the diagnosis/ listener', async () => {
+    const applyConsent = jest.fn(() => Promise.resolve(Result.ok(undefined)));
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [EventEmitterModule.forRoot()],
+      providers: [
+        ConsentRecordedListener,
+        {
+          provide: ApplyConsentToDiagnosisUseCase,
+          useValue: { execute: applyConsent },
+        },
+      ],
+    }).compile();
+    await moduleRef.init();
+
+    await moduleRef
+      .get(EventEmitter2)
+      .emitAsync(
+        ConsentRecordedEvent.eventName,
+        new ConsentRecordedEvent({ diagnosticId: DIAGNOSTIC_ID }),
+      );
+
+    expect(applyConsent).toHaveBeenCalledWith({ diagnosticId: DIAGNOSTIC_ID });
 
     await moduleRef.close();
   });

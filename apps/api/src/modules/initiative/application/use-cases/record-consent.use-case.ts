@@ -1,12 +1,20 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { ConsentRecord } from '@innlab/contracts';
 import {
   CONSENT_REPOSITORY,
   type ConsentRepositoryPort,
 } from '../../domain/repositories/consent.repository.port.js';
+import {
+  DIAGNOSTIC_OWNERSHIP,
+  type DiagnosticOwnershipPort,
+} from '../../domain/repositories/diagnostic-ownership.port.js';
 import { Consent } from '../../domain/entities/consent.entity.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
+import type { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
+import type { ForbiddenError } from '../../../../shared/kernel/domain/errors/forbidden.error.js';
+import { ConsentRecordedEvent } from '../../../../shared/kernel/events/consent-recorded.event.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
 
 /**
@@ -38,17 +46,34 @@ export interface RecordConsentCommand {
  * than silently accepted, per the contract's own documented rule. That
  * mismatch is a normal, expected outcome — not an exceptional condition
  * (`convenciones-objetivo.md` §2, "Adopción de Result<T, E>").
+ *
+ * The diagnostic must exist and belong to the caller before anything is
+ * written; that check comes first, so a user never learns whether a
+ * terms version is current for a diagnostic that is not theirs.
+ *
+ * Once the consent is saved it publishes `ConsentRecordedEvent`, which
+ * `diagnosis/` listens to in order to advance its own state machine —
+ * `initiative/` never calls `diagnosis/` to do it.
  */
 @Injectable()
 export class RecordConsentUseCase {
   constructor(
     @Inject(CONSENT_REPOSITORY)
     private readonly consents: ConsentRepositoryPort,
+    @Inject(DIAGNOSTIC_OWNERSHIP)
+    private readonly ownership: DiagnosticOwnershipPort,
+    private readonly events: EventEmitter2,
   ) {}
 
   async execute(
     cmd: RecordConsentCommand,
-  ): Promise<Result<ConsentRecord, ConflictError>> {
+  ): Promise<Result<ConsentRecord, NotFoundError | ForbiddenError | ConflictError>> {
+    const owned = await this.ownership.verify(
+      cmd.diagnosticId,
+      cmd.keycloakUserId,
+    );
+    if (!owned.ok) return owned;
+
     if (cmd.version !== CURRENT_TERMS_VERSION) {
       return Result.err(
         new ConflictError(
@@ -67,6 +92,11 @@ export class RecordConsentUseCase {
     });
 
     await this.consents.save(consent);
+
+    await this.events.emitAsync(
+      ConsentRecordedEvent.eventName,
+      new ConsentRecordedEvent({ diagnosticId: consent.diagnosticId.value }),
+    );
 
     return Result.ok({
       diagnosticId: consent.diagnosticId.value,
