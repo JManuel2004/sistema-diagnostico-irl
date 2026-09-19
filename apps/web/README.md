@@ -144,7 +144,7 @@ import { http } from '@shared/api/http';
 import { maturityProfileResponseSchema, type SubmitCommand } from '@innlab/contracts';
 
 export async function submitQuestionnaire(cmd: SubmitCommand) {
-  const { data } = await http.post(`/diagnosticos/${cmd.diagnosticId}/cuestionario/envio`, {
+  const { data } = await http.post(`/diagnostics/${cmd.diagnosticId}/questionnaire`, {
     answers: cmd.answers,
   });
   return maturityProfileResponseSchema.parse(data);
