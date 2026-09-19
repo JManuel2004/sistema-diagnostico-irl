@@ -1,4 +1,4 @@
-import type { DiagnosticFacts } from '@innlab/contracts';
+import type { DiagnosticFacts, EXCEPTION_ACTIONS } from '@innlab/contracts';
 import type { ScoredCandidate } from '../value-objects/scored-candidate.vo.js';
 import type { ExpressionTree } from './predicate-compiler.service.js';
 import { evaluarExpresion } from './predicate-compiler.service.js';
@@ -28,7 +28,7 @@ import { evaluarExpresion } from './predicate-compiler.service.js';
  *   - registra también las descartadas y por qué, para que "no pasó nada"
  *     sea una afirmación verificable y no una ausencia de información.
  */
-export type ExceptionAction = 'FORCE' | 'VETO' | 'PROMOTE' | 'DEMOTE';
+export type ExceptionAction = (typeof EXCEPTION_ACTIONS)[number];
 
 export interface CompiledExceptionRule {
   readonly code: string;
@@ -132,42 +132,71 @@ export class ExceptionEngineService {
   ): { siguiente: ScoredCandidate[]; effect: string } {
     const list = [...ranking];
     const [objetivo] = list.splice(indice, 1);
-    const name = objetivo.serviceName;
-
-    switch (rule.action) {
-      case 'FORCE': {
-        list.unshift(objetivo);
-        return {
-          siguiente: list,
-          effect:
-            indice === 0
-              ? `${name} ya ocupaba el puesto 1; la excepción lo fija explícitamente`
-              : `${name} pasa del puesto ${indice + 1} al puesto 1`,
-        };
-      }
-      case 'VETO': {
-        return {
-          siguiente: list,
-          effect: `${name} se retira del ranking (estaba en el puesto ${indice + 1})`,
-        };
-      }
-      case 'PROMOTE':
-      case 'DEMOTE': {
-        const salto = rule.positions ?? 0;
-        const delta = rule.action === 'PROMOTE' ? -salto : salto;
-        // Saturación en los extremos: promover 3 desde el puesto 2 deja
-        // el puesto 1, no un índice negativo.
-        const destino = Math.max(0, Math.min(list.length, indice + delta));
-        list.splice(destino, 0, objetivo);
-        const verbo = rule.action === 'PROMOTE' ? 'sube' : 'baja';
-        return {
-          siguiente: list,
-          effect:
-            destino === indice
-              ? `${name} se mantiene en el puesto ${indice + 1} (ya estaba en el extremo)`
-              : `${name} ${verbo} del puesto ${indice + 1} al puesto ${destino + 1}`,
-        };
-      }
-    }
+    return ACTION_STRATEGIES[rule.action]({ list, objetivo, indice, rule });
   }
 }
+
+/** What a strategy receives: the ranking without the target, and the target. */
+interface ActionContext {
+  /** The ranking with the target already removed. */
+  readonly list: ScoredCandidate[];
+  readonly objetivo: ScoredCandidate;
+  /** Position (0-based) the target had before the action. */
+  readonly indice: number;
+  readonly rule: CompiledExceptionRule;
+}
+
+type ActionStrategy = (ctx: ActionContext) => {
+  siguiente: ScoredCandidate[];
+  effect: string;
+};
+
+function moveBy(direction: 'up' | 'down'): ActionStrategy {
+  return ({ list, objetivo, indice, rule }) => {
+    const salto = rule.positions ?? 0;
+    const delta = direction === 'up' ? -salto : salto;
+    // Saturación en los extremos: promover 3 desde el puesto 2 deja
+    // el puesto 1, no un índice negativo.
+    const destino = Math.max(0, Math.min(list.length, indice + delta));
+    list.splice(destino, 0, objetivo);
+    const verbo = direction === 'up' ? 'sube' : 'baja';
+    const name = objetivo.serviceName;
+    return {
+      siguiente: list,
+      effect:
+        destino === indice
+          ? `${name} se mantiene en el puesto ${indice + 1} (ya estaba en el extremo)`
+          : `${name} ${verbo} del puesto ${indice + 1} al puesto ${destino + 1}`,
+    };
+  };
+}
+
+/**
+ * One strategy per action — the extension point of the exception layer.
+ *
+ * Typed as `Record<ExceptionAction, …>`, so adding an action to
+ * `EXCEPTION_ACTIONS` in `@innlab/contracts` fails to compile here until its
+ * strategy exists; there is no switch to remember and no fallthrough that
+ * silently ignores a new action. To add one: (1) the constant in the
+ * contracts, (2) its strategy below, (3) a migration widening the
+ * `ck_published_exception_rule_action` (and `_positions`) constraints.
+ */
+const ACTION_STRATEGIES: Record<ExceptionAction, ActionStrategy> = {
+  FORCE: ({ list, objetivo, indice }) => {
+    list.unshift(objetivo);
+    const name = objetivo.serviceName;
+    return {
+      siguiente: list,
+      effect:
+        indice === 0
+          ? `${name} ya ocupaba el puesto 1; la excepción lo fija explícitamente`
+          : `${name} pasa del puesto ${indice + 1} al puesto 1`,
+    };
+  },
+  VETO: ({ list, objetivo, indice }) => ({
+    siguiente: list,
+    effect: `${objetivo.serviceName} se retira del ranking (estaba en el puesto ${indice + 1})`,
+  }),
+  PROMOTE: moveBy('up'),
+  DEMOTE: moveBy('down'),
+};

@@ -38,25 +38,38 @@ export type ExpressionTree =
 const CAMPOS = new Set<string>(QUERYABLE_FIELDS);
 const BOOLEANOS = new Set<string>(BOOLEAN_OPERATORS);
 
-/** Campos cuyo valor es una colección: admiten `contiene` y `conteo*`. */
-const CAMPOS_COLECCION = new Set<string>([
-  'bottleneck',
-  'gaps',
-  'criticalImbalances',
-  'moderateImbalances',
-]);
+/**
+ * Cómo se comporta cada campo consultable, lo que decide qué operadores
+ * admite:
+ *   - `collection`: su valor es una colección; admite `contains` y `count*`.
+ *   - `numeric`: admite comparaciones de orden.
+ *   - `scalar`: texto o booleano; solo igualdad.
+ *
+ * Tipado como `Record<Field, …>` a propósito: añadir un campo a
+ * `QUERYABLE_FIELDS` en `@innlab/contracts` no compila hasta que se declare
+ * aquí su tipo. Antes eran dos `Set` paralelos y un campo nuevo que no caía
+ * en ninguno se aceptaba en silencio, sin la validación de tipo esperada
+ * (backlog 5.2).
+ */
+export type FieldKind = 'collection' | 'numeric' | 'scalar';
 
-/** Campos numéricos: admiten comparaciones de orden. */
-const CAMPOS_NUMERICOS = new Set<string>([
-  'averageLevel',
-  'levelByDimension.TRL',
-  'levelByDimension.CRL',
-  'levelByDimension.BRL',
-  'levelByDimension.IPRL',
-  'levelByDimension.TmRL',
-  'levelByDimension.FRL',
-  'characterization.teamSize',
-]);
+export const FIELD_KIND: Record<Field, FieldKind> = {
+  bottleneck: 'collection',
+  gaps: 'collection',
+  criticalImbalances: 'collection',
+  moderateImbalances: 'collection',
+  averageLevel: 'numeric',
+  'levelByDimension.TRL': 'numeric',
+  'levelByDimension.CRL': 'numeric',
+  'levelByDimension.BRL': 'numeric',
+  'levelByDimension.IPRL': 'numeric',
+  'levelByDimension.TmRL': 'numeric',
+  'levelByDimension.FRL': 'numeric',
+  'characterization.stage': 'scalar',
+  'characterization.sector': 'scalar',
+  'characterization.teamSize': 'numeric',
+  'characterization.academicLinkage': 'scalar',
+};
 
 export class PredicateCompilerService {
   compile(predicate: unknown, modo: CompilationMode): ExpressionTree {
@@ -164,8 +177,17 @@ export class PredicateCompilerService {
     value: unknown,
     ruta: string,
   ): void {
-    const esColeccion = CAMPOS_COLECCION.has(field);
-    const esNumerico = CAMPOS_NUMERICOS.has(field);
+    const kind: FieldKind | undefined = FIELD_KIND[field as Field];
+    if (kind === undefined) {
+      // Defensa en profundidad: el tipo `Record<Field, …>` ya impide llegar
+      // aquí en compilación; esto cubre un campo que llegue por otra vía.
+      throw new PredicateCompilationError(
+        `El campo '${field}' no tiene tipo declarado; no se puede validar (${ruta})`,
+        { ruta, field },
+      );
+    }
+    const esColeccion = kind === 'collection';
+    const esNumerico = kind === 'numeric';
     const opDePertenencia = op === 'contains' || op === 'not_contains';
     const opDeConteo = op.startsWith('count');
     const opDeOrden = ['>=', '<=', '>', '<'].includes(op);

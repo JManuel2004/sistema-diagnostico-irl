@@ -70,10 +70,21 @@ export const layer1ExclusionSchema = z.object({
   exclusionMessage: z.string(),
 });
 
+/**
+ * The actions an exception rule can take on the ranking. Single source of
+ * truth for the extension point: the domain derives its `ExceptionAction`
+ * type from this list, the engine keeps one strategy per entry (the compiler
+ * fails until it has one), and only the database `CHECK` constraint
+ * (`ck_published_exception_rule_action`) has to be widened by a migration.
+ */
+export const EXCEPTION_ACTIONS = ['FORCE', 'VETO', 'PROMOTE', 'DEMOTE'] as const;
+
+export const exceptionActionSchema = z.enum(EXCEPTION_ACTIONS);
+
 export const appliedExceptionSchema = z.object({
   code: z.string(),
   order: z.number().int().positive(),
-  action: z.enum(['FORCE', 'VETO', 'PROMOTE', 'DEMOTE']),
+  action: exceptionActionSchema,
   targetService: z.string(),
   declaredReason: z.string(),
   rankingBefore: z.array(rankingEntrySchema),

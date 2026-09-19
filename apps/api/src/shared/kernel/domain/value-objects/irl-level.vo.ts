@@ -14,15 +14,27 @@ import { InvariantViolationError } from '../errors/invariant-violation.error.js'
  */
 export type IrlLevelValue = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
-const VALID_LEVELS: ReadonlySet<number> = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+export const IRL_MIN_LEVEL = 1;
+export const IRL_MAX_LEVEL = 9;
+
+/**
+ * Whether `input` is a valid IRL level. The one place that states the
+ * scale; anything else that needs to check a level (`DependencyGraph`,
+ * for instance) asks here instead of restating `[1, 9]` (backlog 5.3).
+ */
+export function isValidIrlLevel(input: number): boolean {
+  return (
+    Number.isInteger(input) && input >= IRL_MIN_LEVEL && input <= IRL_MAX_LEVEL
+  );
+}
 
 export class IrlLevel {
   private constructor(public readonly value: IrlLevelValue) {}
 
   static create(input: number): IrlLevel {
-    if (!Number.isInteger(input) || !VALID_LEVELS.has(input)) {
+    if (!isValidIrlLevel(input)) {
       throw new InvariantViolationError(
-        `IrlLevel must be an integer in [1, 9]; received ${String(input)}`,
+        `IrlLevel must be an integer in [${String(IRL_MIN_LEVEL)}, ${String(IRL_MAX_LEVEL)}]; received ${String(input)}`,
         { received: input },
       );
     }

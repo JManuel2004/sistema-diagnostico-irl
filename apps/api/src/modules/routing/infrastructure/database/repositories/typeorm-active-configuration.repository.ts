@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import type { DimensionCode } from '@innlab/contracts';
+import { exceptionActionSchema, type DimensionCode } from '@innlab/contracts';
 import type {
   ActiveConfigurationRepositoryPort,
   ResolvedConfiguration,
@@ -9,10 +9,7 @@ import type {
 import { CalibrationScale } from '../../../domain/value-objects/calibration-scale.vo.js';
 import type { OrdinalProfile } from '../../../domain/value-objects/ordinal-profile.vo.js';
 import type { CompiledEligibilityRule } from '../../../domain/services/eligibility-filter.service.js';
-import type {
-  ExceptionAction,
-  CompiledExceptionRule,
-} from '../../../domain/services/exception-engine.service.js';
+import type { CompiledExceptionRule } from '../../../domain/services/exception-engine.service.js';
 import { PredicateCompilerService } from '../../../domain/services/predicate-compiler.service.js';
 import { CalibrationLabelValueOrm } from '../orm-entities/calibration-label-value.orm-entity.js';
 import { ScoringParametersOrm } from '../orm-entities/scoring-parameters.orm-entity.js';
@@ -137,7 +134,8 @@ export class TypeOrmActiveConfigurationRepository
       code: r.code,
       priorityOrder: r.priorityOrder,
       expresion: this.compiler.compile(r.predicate, 'WITH_DEGREE'),
-      action: r.action as ExceptionAction,
+      // Validated at runtime on top of the DB CHECK, instead of trusting a cast.
+      action: exceptionActionSchema.parse(r.action),
       idTargetService: r.idTargetService,
       positions: r.positions,
       declaredReason: r.declaredReason,

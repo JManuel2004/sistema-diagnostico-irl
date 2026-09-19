@@ -8,6 +8,10 @@ import {
 } from '../../../domain/value-objects/imbalance-result.vo.js';
 import { ImbalanceAnalysisOrm } from '../orm-entities/imbalance-analysis.orm-entity.js';
 import { DimensionPairOrm } from '../../../../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension-pair.orm-entity.js';
+import { upsertColumns } from '../../../../../shared/kernel/infrastructure/database/upsert-columns.js';
+
+/** Unique constraint `uq_imbalance_analysis_diag_pair` the upsert conflicts on. */
+const CONFLICT = ['id_diagnostic', 'id_pair'] as const;
 
 @Injectable()
 export class TypeOrmImbalanceRepository implements ImbalanceRepositoryPort {
@@ -59,7 +63,7 @@ export class TypeOrmImbalanceRepository implements ImbalanceRepositoryPort {
       .insert()
       .into(ImbalanceAnalysisOrm)
       .values(rows)
-      .orUpdate(['level_difference', 'classification'], ['id_diagnostic', 'id_pair'])
+      .orUpdate(upsertColumns(this.orm, CONFLICT), [...CONFLICT])
       .execute();
   }
 }

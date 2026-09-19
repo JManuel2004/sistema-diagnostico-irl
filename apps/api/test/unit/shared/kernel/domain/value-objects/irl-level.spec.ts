@@ -1,4 +1,7 @@
-import { IrlLevel } from '../../../../../../src/shared/kernel/domain/value-objects/irl-level.vo.js';
+import {
+  IrlLevel,
+  isValidIrlLevel,
+} from '../../../../../../src/shared/kernel/domain/value-objects/irl-level.vo.js';
 import { InvariantViolationError } from '../../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 
 describe('IrlLevel', () => {
@@ -31,5 +34,15 @@ describe('IrlLevel', () => {
     it('returns 0 for same level', () => {
       expect(IrlLevel.create(5).diff(IrlLevel.create(5))).toBe(0);
     });
+  });
+});
+
+describe('isValidIrlLevel', () => {
+  it.each([1, 5, 9])('accepts %s', (level) => {
+    expect(isValidIrlLevel(level)).toBe(true);
+  });
+
+  it.each([0, 10, -1, 1.5, Number.NaN])('rejects %s', (level) => {
+    expect(isValidIrlLevel(level)).toBe(false);
   });
 });

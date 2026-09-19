@@ -1,8 +1,11 @@
 import { DIMENSION_CODES, type DimensionCode } from '@innlab/contracts';
+import { RoadmapCalculationError } from '../exceptions/roadmap.errors.js';
+import { kahnLayers } from '../services/kahn-layers.js';
 import {
-  DependencyGraphCycleError,
-  RoadmapCalculationError,
-} from '../exceptions/roadmap.errors.js';
+  IRL_MAX_LEVEL,
+  IRL_MIN_LEVEL,
+  isValidIrlLevel,
+} from '../../../../shared/kernel/domain/value-objects/irl-level.vo.js';
 import type {
   DependencyEdgeSnapshot,
   DimensionMinimumSnapshot,
@@ -136,46 +139,22 @@ export class DependencyGraph {
   // ───────────────────────────────────────────────────────────────────────
 
   private static assertNivelEnRango(nivel: number, que: string): void {
-    if (!Number.isInteger(nivel) || nivel < 1 || nivel > 9) {
+    if (!isValidIrlLevel(nivel)) {
       throw new RoadmapCalculationError(
-        `El ${que} debe ser un entero en [1, 9]; se recibió ${String(nivel)}`,
+        `El ${que} debe ser un entero en [${String(IRL_MIN_LEVEL)}, ${String(IRL_MAX_LEVEL)}]; se recibió ${String(nivel)}`,
         { recibido: nivel },
       );
     }
   }
 
   /**
-   * Kahn over the whole graph. If nodes remain unprocessed once the
-   * nodes without incoming edges are exhausted, those nodes are in a
-   * cycle or depend on one.
+   * Kahn over the whole graph, via the traversal shared with the layering
+   * service. It throws `DependencyGraphCycleError` if any node is left over
+   * once the free ones are exhausted; the layers it returns are not needed.
    */
   private static assertAciclico(
     edges: readonly DependencyEdgeSnapshot[],
   ): void {
-    const gradoEntrada = new Map<DimensionCode, number>(
-      DIMENSION_CODES.map((c) => [c, 0]),
-    );
-    for (const e of edges) {
-      gradoEntrada.set(e.target, (gradoEntrada.get(e.target) ?? 0) + 1);
-    }
-
-    const restantes = new Set<DimensionCode>(DIMENSION_CODES);
-    let progreso = true;
-    while (restantes.size > 0 && progreso) {
-      const listos = [...restantes].filter((d) => gradoEntrada.get(d) === 0);
-      progreso = listos.length > 0;
-      for (const d of listos) {
-        restantes.delete(d);
-        for (const e of edges) {
-          if (e.source === d && restantes.has(e.target)) {
-            gradoEntrada.set(e.target, (gradoEntrada.get(e.target) ?? 1) - 1);
-          }
-        }
-      }
-    }
-
-    if (restantes.size > 0) {
-      throw new DependencyGraphCycleError([...restantes]);
-    }
+    kahnLayers(new Set<DimensionCode>(DIMENSION_CODES), edges);
   }
 }

@@ -29,6 +29,7 @@ import {
   ProfileNotComputedError,
 } from '../../domain/exceptions/routing.errors.js';
 import { GetMaturityProfileUseCase } from '../../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
+import { irlLevelsByDimension } from '../../../../shared/irl-taxonomy/domain/services/irl-levels-by-dimension.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
 import { toRecomendacionResponse } from '../dtos/map-recommendation-response.js';
@@ -139,11 +140,9 @@ export class GenerateRecommendationUseCase {
   /**
    * Arma los hechos del diagnóstico.
    *
-   * El cuello de botella y las brechas se toman del perfil calculado, no
-   * de las columnas `is_bottleneck` / `in_critical_state` de
-   * `dimension_result`: la primera se persiste siempre en `false` y la
-   * segunda guarda una semántica distinta de la del SRS. Derivarlas del
-   * agregado evita depender de columnas cuyo significado está en disputa.
+   * Los niveles, el cuello de botella y las brechas se toman del perfil
+   * calculado, no de las columnas persistidas de `dimension_result`; el
+   * porqué está en `irlLevelsByDimension`.
    */
   private async construirHechos(
     diagnosticId: string,
@@ -158,7 +157,7 @@ export class GenerateRecommendationUseCase {
       await this.caracterizaciones.findByDiagnosticId(diagnosticId);
 
     const levelByDimension = Object.fromEntries(
-      perfil.dimensionResults.map((r) => [r.dimensionCode, r.irlLevel]),
+      irlLevelsByDimension(perfil.dimensionResults),
     ) as Record<DimensionCode, number>;
 
     const niveles = perfil.dimensionResults.map((r) => r.irlLevel);

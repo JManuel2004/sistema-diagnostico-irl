@@ -6,6 +6,10 @@ import { MaturityProfile } from '../../../domain/entities/maturity-profile.aggre
 import { MaturityProfileCalculationError } from '../../../domain/exceptions/maturity-profile-calculation.error.js';
 import { DimensionResultOrm } from '../orm-entities/dimension-result.orm-entity.js';
 import { DimensionOrm } from '../../../../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
+import { upsertColumns } from '../../../../../shared/kernel/infrastructure/database/upsert-columns.js';
+
+/** Unique constraint `uq_dimension_result_diag_dim` the upsert conflicts on. */
+const CONFLICT = ['id_diagnostic', 'id_dimension'] as const;
 
 @Injectable()
 export class TypeOrmMaturityProfileRepository implements MaturityProfileRepositoryPort {
@@ -47,10 +51,7 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
       .insert()
       .into(DimensionResultOrm)
       .values(rows)
-      .orUpdate(
-        ['likert_average', 'irl_level', 'in_critical_state', 'computed_at'],
-        ['id_diagnostic', 'id_dimension'],
-      )
+      .orUpdate(upsertColumns(this.orm, CONFLICT), [...CONFLICT])
       .execute();
   }
 

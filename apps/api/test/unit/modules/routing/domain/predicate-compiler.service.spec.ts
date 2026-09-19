@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
-import type { DiagnosticFacts } from '@innlab/contracts';
+import { QUERYABLE_FIELDS, type DiagnosticFacts } from '@innlab/contracts';
 import {
+  FIELD_KIND,
   PredicateCompilerService,
   evaluarExpresion,
 } from '../../../../../src/modules/routing/domain/services/predicate-compiler.service.js';
@@ -330,4 +331,29 @@ it('rechaza un nodo que no es un objeto', () => {
       });
     });
   });
+});
+
+// Backlog 5.2: a queryable field must not be accepted without a declared
+// kind. `FIELD_KIND` is typed `Record<Field, …>` so the compiler already
+// enforces it; this pins the same guarantee at runtime.
+describe('FIELD_KIND', () => {
+  it('declares a kind for every queryable field and nothing else', () => {
+    expect(Object.keys(FIELD_KIND).sort()).toEqual([...QUERYABLE_FIELDS].sort());
+  });
+
+  it.each(QUERYABLE_FIELDS.map((f) => [f, FIELD_KIND[f]] as const))(
+    '%s (%s) rejects the operators its kind does not support',
+    (field, kind) => {
+      const orderOp = () =>
+        compiler.compile({ field, op: '>=', value: 1 }, 'WITH_DEGREE');
+      const memberOp = () =>
+        compiler.compile({ field, op: 'contains', value: 'x' }, 'WITH_DEGREE');
+
+      if (kind === 'numeric') expect(orderOp).not.toThrow();
+      else expect(orderOp).toThrow(PredicateCompilationError);
+
+      if (kind === 'collection') expect(memberOp).not.toThrow();
+      else expect(memberOp).toThrow(PredicateCompilationError);
+    },
+  );
 });

@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { DimensionCode } from '@innlab/contracts';
 import {
   DEPENDENCY_GRAPH_REPOSITORY,
   type DependencyGraphRepositoryPort,
@@ -14,6 +13,7 @@ import {
 } from '../../domain/entities/scaling-roadmap.aggregate.js';
 import { RoadmapCalculationError } from '../../domain/exceptions/roadmap.errors.js';
 import { GetMaturityProfileUseCase } from '../../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
+import { irlLevelsByDimension } from '../../../../shared/irl-taxonomy/domain/services/irl-levels-by-dimension.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
 import type { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
@@ -38,12 +38,8 @@ export interface GenerateScalingRoadmapCommand {
  * is published by `DeepAnalysisRequestedListener`, the flow that actually
  * calculates on the user's acceptance (backlog 14.4).
  *
- * A note on the levels: they come from `dimensionResults[].irlLevel`,
- * which is correct and verified. `dimension_result.is_bottleneck` and
- * `in_critical_state` are deliberately **not** consumed: the first is
- * always persisted as `false` and the second holds semantics different
- * from the SRS. This approach does not need them, and that independence
- * is one of its real advantages.
+ * The levels come from `irlLevelsByDimension`, which also explains why the
+ * persisted `dimension_result` flags are not consumed.
  */
 @Injectable()
 export class GenerateScalingRoadmapUseCase {
@@ -81,9 +77,7 @@ export class GenerateScalingRoadmapUseCase {
       );
     }
 
-    const levels = new Map<DimensionCode, number>(
-      profile.dimensionResults.map((r) => [r.dimensionCode, r.irlLevel]),
-    );
+    const levels = irlLevelsByDimension(profile.dimensionResults);
 
     const [edges, minimums] = await Promise.all([
       this.graphs.findEdges(),
