@@ -29,7 +29,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "strictNullChecks": true,
-    "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src", "postcss.config.js", "tailwind.config.ts", "vite.config.ts", "index.html"]
