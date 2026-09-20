@@ -26,12 +26,6 @@ export default function NotFoundPage(): JSX.Element {
           <Link to="/" className={buttonVariants({ size: 'default' })}>
             Volver al inicio
           </Link>
-          <Link
-            to="/diagnosticos/demo/cuestionario"
-            className={buttonVariants({ variant: 'secondary' })}
-          >
-            Abrir el cuestionario
-          </Link>
         </div>
       </div>
     </PageShell>

@@ -1,14 +1,20 @@
 import type { JSX } from 'react';
-import { Link } from 'react-router-dom';
 import type { DimensionCode } from '@innlab/contracts';
+import { Link } from 'react-router-dom';
 import { LogoutButton } from '@features/auth';
 import { buttonVariants } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
 import { PageShell } from '@/shared/ui/page-shell';
 import { DIMENSION_ORDER, getDimensionVisual } from '@/shared/lib/dimensions';
+import { hasStoredSession } from '@/shared/auth/session';
 
 /**
  * Landing institucional.
+ *
+ * Es pública y no lleva navegación: se ve sin sesión, y su único botón,
+ * «Iniciar diagnóstico», lleva a `/diagnosticos/nuevo`. Esa ruta es protegida:
+ * con sesión sigue directo al asistente y sin ella pasa por el inicio de sesión
+ * de INNLAB y continúa al volver, sin que el usuario pulse otra vez.
  *
  * Composición:
  *  - Hero alineado a la izquierda (regla de alineación del manual),
@@ -63,9 +69,13 @@ const LANDING_COPY: Record<DimensionCode, Omit<LandingDimensionCopy, 'code'>> = 
   },
 };
 
-export default function HomePage(): JSX.Element {
+export default function LandingPage(): JSX.Element {
   return (
-    <PageShell width="wide" showAttribution headerActions={<LogoutButton />}>
+    <PageShell
+      width="wide"
+      showAttribution
+      headerActions={hasStoredSession() ? <LogoutButton /> : undefined}
+    >
       {/* Hero — institutional layout, left-aligned per brand manual */}
       <section className="grid gap-10 lg:grid-cols-12 lg:items-center">
         <div className="lg:col-span-7">
@@ -80,18 +90,10 @@ export default function HomePage(): JSX.Element {
             Readiness Level y obtén un perfil con el roadmap para cerrar las brechas más críticas.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link to="/diagnosticos/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/cuestionario" className={buttonVariants({ size: 'lg' })}>
+          <div className="mt-8">
+            <Link to="/diagnosticos/nuevo" className={buttonVariants({ size: 'lg' })}>
               Iniciar diagnóstico
             </Link>
-            <a
-              href="https://innlab.org/"
-              target="_blank"
-              rel="noreferrer noopener"
-              className={buttonVariants({ variant: 'ghost', size: 'lg' })}
-            >
-              Conocer INNLAB
-            </a>
           </div>
 
           <p className="text-muted-foreground mt-6 text-sm">
@@ -141,7 +143,7 @@ export default function HomePage(): JSX.Element {
             {
               step: '01',
               title: 'Responde 48 afirmaciones',
-              body: 'Ocho afirmaciones por dimensión, escala Likert de 1 a 5. Conserva tu progreso entre sesiones.',
+              body: 'Ocho afirmaciones por dimensión, escala Likert de 1 a 5. Tu borrador se conserva mientras mantengas abierta la pestaña.',
             },
             {
               step: '02',

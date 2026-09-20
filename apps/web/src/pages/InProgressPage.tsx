@@ -64,16 +64,10 @@ export default function InProgressPage({ title, story }: InProgressPageProps): J
             placeholder durante la etapa 1 de estabilización.
           </p>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            Mientras tanto, puedes explorar el cuestionario completo o regresar al inicio.
+            Mientras tanto, puedes volver al inicio e iniciar un diagnóstico.
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
-            <Link
-              to="/diagnosticos/demo/cuestionario"
-              className={buttonVariants({ size: 'default' })}
-            >
-              Ir al cuestionario
-            </Link>
-            <Link to="/" className={buttonVariants({ variant: 'secondary' })}>
+            <Link to="/" className={buttonVariants({ size: 'default' })}>
               Volver al inicio
             </Link>
           </div>
