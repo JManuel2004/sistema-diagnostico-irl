@@ -27,9 +27,7 @@ export interface InitiativeStageCatalogEntry {
  * `shared/irl-taxonomy/` because neither is IRL framework vocabulary,
  * they are INNLAB's own initiative-intake taxonomy.
  */
-export const INITIATIVE_CATALOG_REPOSITORY = Symbol(
-  'INITIATIVE_CATALOG_REPOSITORY',
-);
+export const INITIATIVE_CATALOG_REPOSITORY = Symbol('INITIATIVE_CATALOG_REPOSITORY');
 
 export interface InitiativeCatalogPort {
   findAllSectors(): Promise<SectorCatalogEntry[]>;

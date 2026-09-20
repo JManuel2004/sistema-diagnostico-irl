@@ -33,7 +33,7 @@ export class ConsentController {
     return unwrapResult(
       await this.record.execute({
         diagnosticId,
-        keycloakUserId: user.id,
+        cognitoUserId: user.id,
         version: body.version,
       }),
     );

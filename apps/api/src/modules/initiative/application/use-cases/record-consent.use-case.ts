@@ -31,7 +31,7 @@ export const CURRENT_TERMS_VERSION = 'v1';
 
 export interface RecordConsentCommand {
   diagnosticId: string;
-  keycloakUserId: string;
+  cognitoUserId: string;
   version: string;
 }
 
@@ -68,10 +68,7 @@ export class RecordConsentUseCase {
   async execute(
     cmd: RecordConsentCommand,
   ): Promise<Result<ConsentRecord, NotFoundError | ForbiddenError | ConflictError>> {
-    const owned = await this.ownership.verify(
-      cmd.diagnosticId,
-      cmd.keycloakUserId,
-    );
+    const owned = await this.ownership.verify(cmd.diagnosticId, cmd.cognitoUserId);
     if (!owned.ok) return owned;
 
     if (cmd.version !== CURRENT_TERMS_VERSION) {
@@ -87,7 +84,7 @@ export class RecordConsentUseCase {
     const consent = Consent.accept({
       id: Uuid.generate(),
       diagnosticId,
-      keycloakUserId: cmd.keycloakUserId,
+      cognitoUserId: cmd.cognitoUserId,
       termsVersion: cmd.version,
     });
 

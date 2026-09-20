@@ -1,6 +1,9 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import type { Initiative as InitiativeResponse } from '@innlab/contracts';
+import type {
+  Initiative as InitiativeResponse,
+  RegisterInitiativeCommand,
+} from '@innlab/contracts';
 import { CurrentUser } from '../../../../shared/identity/presentation/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../../../shared/identity/application/dtos/authenticated-user.js';
 import { RegisterInitiativeUseCase } from '../../application/use-cases/register-initiative.use-case.js';
@@ -26,7 +29,7 @@ export class InitiativeController {
   @ApiCreatedResponse({ description: 'Initiative registered for this diagnostic' })
   async registerInitiative(
     @Param('id') diagnosticId: string,
-    @Body() body: { sectorId: string; name: string; shortDescription: string },
+    @Body() body: RegisterInitiativeCommand,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<InitiativeResponse> {
     return unwrapResult(
@@ -35,7 +38,13 @@ export class InitiativeController {
         userId: user.id,
         sectorId: body.sectorId,
         name: body.name,
-        shortDescription: body.shortDescription,
+        productType: body.productType,
+        stageId: body.stageId,
+        declaredStage: body.declaredStage,
+        teamSize: body.teamSize,
+        teamDescription: body.teamDescription,
+        targetMarket: body.targetMarket,
+        currentFunding: body.currentFunding,
       }),
     );
   }

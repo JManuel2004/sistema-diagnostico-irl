@@ -22,6 +22,11 @@ import { GetInitiativeUseCase } from './application/use-cases/get-initiative.use
 import { RecordConsentUseCase } from './application/use-cases/record-consent.use-case.js';
 import { GetConsentUseCase } from './application/use-cases/get-consent.use-case.js';
 import { ListMyDiagnosesUseCase } from './application/use-cases/list-my-diagnoses.use-case.js';
+import {
+  ListSectorsUseCase,
+  ListStagesUseCase,
+} from './application/use-cases/list-initiative-catalog.use-case.js';
+import { InitiativeCatalogController } from './presentation/controllers/initiative-catalog.controller.js';
 import { GetInitiativeCharacterizationUseCase } from './application/use-cases/get-initiative-characterization.use-case.js';
 
 import { InitiativeController } from './presentation/controllers/initiative.controller.js';
@@ -56,12 +61,7 @@ import { MyDiagnosesController } from './presentation/controllers/my-diagnoses.c
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      InitiativeOrm,
-      ConsentOrm,
-      SectorOrm,
-      InitiativeStageOrm,
-    ]),
+    TypeOrmModule.forFeature([InitiativeOrm, ConsentOrm, SectorOrm, InitiativeStageOrm]),
     DiagnosisModule,
   ],
   providers: [
@@ -78,8 +78,15 @@ import { MyDiagnosesController } from './presentation/controllers/my-diagnoses.c
     GetConsentUseCase,
     ListMyDiagnosesUseCase,
     GetInitiativeCharacterizationUseCase,
+    ListSectorsUseCase,
+    ListStagesUseCase,
   ],
-  controllers: [InitiativeController, ConsentController, MyDiagnosesController],
+  controllers: [
+    InitiativeController,
+    ConsentController,
+    MyDiagnosesController,
+    InitiativeCatalogController,
+  ],
   exports: [GetInitiativeCharacterizationUseCase],
 })
 export class InitiativeModule {}

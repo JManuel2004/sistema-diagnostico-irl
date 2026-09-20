@@ -21,7 +21,7 @@ import { InvariantViolationError } from '../../../../shared/kernel/domain/errors
 export interface ConsentPersistence {
   readonly id: string;
   readonly diagnosticId: string;
-  readonly keycloakUserId: string;
+  readonly cognitoUserId: string;
   readonly accepted: boolean;
   readonly acceptedAt: Date;
   readonly termsVersion: string;
@@ -31,7 +31,7 @@ export class Consent {
   private constructor(
     public readonly id: Uuid,
     public readonly diagnosticId: Uuid,
-    public readonly keycloakUserId: string,
+    public readonly cognitoUserId: string,
     public readonly accepted: boolean,
     public readonly acceptedAt: Date,
     public readonly termsVersion: string,
@@ -40,19 +40,17 @@ export class Consent {
   static accept(input: {
     id: Uuid;
     diagnosticId: Uuid;
-    keycloakUserId: string;
+    cognitoUserId: string;
     termsVersion: string;
     now?: Date;
   }): Consent {
     if (!/^v\d+(\.\d+)*$/.test(input.termsVersion)) {
-      throw new InvariantViolationError(
-        `Invalid terms version format: '${input.termsVersion}'`,
-      );
+      throw new InvariantViolationError(`Invalid terms version format: '${input.termsVersion}'`);
     }
     return new Consent(
       input.id,
       input.diagnosticId,
-      input.keycloakUserId,
+      input.cognitoUserId,
       true,
       input.now ?? new Date(),
       input.termsVersion,
@@ -63,7 +61,7 @@ export class Consent {
     return new Consent(
       Uuid.create(row.id),
       Uuid.create(row.diagnosticId),
-      row.keycloakUserId,
+      row.cognitoUserId,
       row.accepted,
       row.acceptedAt,
       row.termsVersion,
@@ -74,7 +72,7 @@ export class Consent {
     return {
       id: this.id.value,
       diagnosticId: this.diagnosticId.value,
-      keycloakUserId: this.keycloakUserId,
+      cognitoUserId: this.cognitoUserId,
       accepted: this.accepted,
       acceptedAt: this.acceptedAt,
       termsVersion: this.termsVersion,

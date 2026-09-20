@@ -31,7 +31,7 @@ export class TypeOrmConsentRepository implements ConsentRepositoryPort {
       this.orm.create({
         id: existing?.id ?? snapshot.id,
         idDiagnostic: snapshot.diagnosticId,
-        keycloakUserId: snapshot.keycloakUserId,
+        cognitoUserId: snapshot.cognitoUserId,
         accepted: snapshot.accepted,
         acceptedAt: snapshot.acceptedAt,
         termsVersion: snapshot.termsVersion,
@@ -43,7 +43,7 @@ export class TypeOrmConsentRepository implements ConsentRepositoryPort {
     return Consent.fromPersistence({
       id: row.id,
       diagnosticId: row.idDiagnostic,
-      keycloakUserId: row.keycloakUserId,
+      cognitoUserId: row.cognitoUserId,
       accepted: row.accepted,
       acceptedAt: row.acceptedAt,
       termsVersion: row.termsVersion,

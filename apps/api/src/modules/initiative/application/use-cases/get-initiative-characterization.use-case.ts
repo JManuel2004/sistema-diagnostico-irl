@@ -46,9 +46,7 @@ export class GetInitiativeCharacterizationUseCase {
     if (!initiative) return NO_CHARACTERIZATION;
 
     const [stage, sector] = await Promise.all([
-      initiative.stageId === null
-        ? null
-        : this.catalog.findStageById(initiative.stageId),
+      initiative.stageId === null ? null : this.catalog.findStageById(initiative.stageId),
       this.catalog.findSectorById(initiative.sectorId),
     ]);
 

@@ -34,9 +34,7 @@ export class DiagnosisOwnershipAdapter implements DiagnosticOwnershipPort {
       return Result.err(new NotFoundError('Diagnosis', diagnosticId));
     }
     if (diagnostic.userId !== userId) {
-      return Result.err(
-        new ForbiddenError('The diagnostic belongs to another user'),
-      );
+      return Result.err(new ForbiddenError('The diagnostic belongs to another user'));
     }
     return Result.ok(undefined);
   }

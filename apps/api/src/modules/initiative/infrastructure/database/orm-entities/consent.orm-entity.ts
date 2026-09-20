@@ -8,8 +8,8 @@ export class ConsentOrm {
   @Column({ name: 'id_diagnostic', type: 'uuid' })
   idDiagnostic!: string;
 
-  @Column({ name: 'keycloak_user_id', type: 'varchar', length: 64 })
-  keycloakUserId!: string;
+  @Column({ name: 'cognito_user_id', type: 'varchar', length: 64 })
+  cognitoUserId!: string;
 
   @Column({ name: 'accepted', type: 'boolean' })
   accepted!: boolean;

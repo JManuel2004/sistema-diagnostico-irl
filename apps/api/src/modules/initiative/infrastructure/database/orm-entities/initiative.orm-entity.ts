@@ -14,8 +14,20 @@ export class InitiativeOrm {
   @Column({ name: 'name', type: 'varchar', length: 200 })
   name!: string;
 
-  @Column({ name: 'short_description', type: 'varchar', length: 1000 })
-  shortDescription!: string;
+  @Column({ name: 'product_type', type: 'varchar', length: 500 })
+  productType!: string;
+
+  @Column({ name: 'declared_stage', type: 'varchar', length: 500 })
+  declaredStage!: string;
+
+  @Column({ name: 'team_description', type: 'varchar', length: 500 })
+  teamDescription!: string;
+
+  @Column({ name: 'target_market', type: 'varchar', length: 500 })
+  targetMarket!: string;
+
+  @Column({ name: 'current_funding', type: 'varchar', length: 500 })
+  currentFunding!: string;
 
   // ── Characterisation ────────────────────────────────────────────────
   //

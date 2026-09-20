@@ -46,17 +46,11 @@ export class TypeOrmInitiativeCatalogRepository implements InitiativeCatalogPort
 
   async findStageById(id: string): Promise<InitiativeStageCatalogEntry | null> {
     const row = await this.stages.findOne({ where: { id } });
-    return row
-      ? { id: row.id, code: row.code, name: row.name, sequence: row.sequence }
-      : null;
+    return row ? { id: row.id, code: row.code, name: row.name, sequence: row.sequence } : null;
   }
 
-  async findStageByCode(
-    code: string,
-  ): Promise<InitiativeStageCatalogEntry | null> {
+  async findStageByCode(code: string): Promise<InitiativeStageCatalogEntry | null> {
     const row = await this.stages.findOne({ where: { code } });
-    return row
-      ? { id: row.id, code: row.code, name: row.name, sequence: row.sequence }
-      : null;
+    return row ? { id: row.id, code: row.code, name: row.name, sequence: row.sequence } : null;
   }
 }

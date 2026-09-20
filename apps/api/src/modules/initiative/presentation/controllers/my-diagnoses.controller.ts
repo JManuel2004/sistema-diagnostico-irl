@@ -21,9 +21,7 @@ export class MyDiagnosesController {
 
   @Get()
   @ApiOkResponse({ description: "The caller's own diagnostics, most recent first" })
-  listMyDiagnoses(
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<DiagnosticSummary[]> {
+  listMyDiagnoses(@CurrentUser() user: AuthenticatedUser): Promise<DiagnosticSummary[]> {
     return this.listMine.execute(user.id);
   }
 }

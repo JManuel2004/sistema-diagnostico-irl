@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { toDiagnosticResponse } from '../../../diagnosis/application/dtos/map-diagnostic-response.js';
 import type { DiagnosticSummary } from '@innlab/contracts';
 import {
   DIAGNOSIS_REPOSITORY,
@@ -25,12 +26,6 @@ export class ListMyDiagnosesUseCase {
 
   async execute(userId: string): Promise<DiagnosticSummary[]> {
     const rows = await this.diagnoses.findAllByUserId(userId);
-    return rows.map((d) => ({
-      id: d.id.value,
-      userId: d.userId,
-      state: d.state.value,
-      createdAt: d.createdAt.toISOString(),
-      updatedAt: d.updatedAt.toISOString(),
-    }));
+    return rows.map(toDiagnosticResponse);
   }
 }
