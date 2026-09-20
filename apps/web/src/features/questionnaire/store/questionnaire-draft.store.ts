@@ -10,8 +10,10 @@ import type { DimensionCode, LikertValue } from '@innlab/contracts';
  * page reload (F5):
  *
  *   1. `answers`  — statementId → Likert 1..5
- *   2. `activeTab` — currently selected dimension code
- *   3. `diagnosticId` — guards against cross-diagnostic contamination
+ *   2. `justifications` — statementId → why the user chose that level (mandatory
+ *      to submit; a statement is complete only with both)
+ *   3. `activeTab` — currently selected dimension code
+ *   4. `diagnosticId` — guards against cross-diagnostic contamination
  *
  * Persistence: `sessionStorage` (per `STATE_MANAGEMENT.md` §289). The
  * draft survives `F5` but dies with the tab — by design, since the
@@ -23,6 +25,7 @@ import type { DimensionCode, LikertValue } from '@innlab/contracts';
 interface State {
   diagnosticId: string | null;
   answers: Record<string, LikertValue>;
+  justifications: Record<string, string>;
   activeTab: DimensionCode;
   dirty: boolean;
 }
@@ -37,6 +40,9 @@ interface Actions {
    */
   initialize: (diagnosticId?: string | null) => void;
   setAnswer: (statementId: string, value: LikertValue) => void;
+  setJustification: (statementId: string, text: string) => void;
+  /** Replaces answers and justifications at once (development autofill). */
+  fill: (answers: Record<string, LikertValue>, justifications: Record<string, string>) => void;
   setActiveTab: (tab: DimensionCode) => void;
   /** Wipes only the per-diagnostic data; keeps the diagnosticId. */
   reset: () => void;
@@ -51,6 +57,7 @@ const DRAFT_STORAGE_KEY = 'innlab.questionnaire-draft.v1';
 const INITIAL_STATE: State = {
   diagnosticId: null,
   answers: {},
+  justifications: {},
   activeTab: 'TRL',
   dirty: false,
 };
@@ -70,6 +77,12 @@ export const useQuestionnaireDraftStore = create<DraftStore>()(
       setAnswer(statementId: string, value: LikertValue) {
         set((s) => ({ answers: { ...s.answers, [statementId]: value }, dirty: true }));
       },
+      setJustification(statementId: string, text: string) {
+        set((s) => ({ justifications: { ...s.justifications, [statementId]: text }, dirty: true }));
+      },
+      fill(answers: Record<string, LikertValue>, justifications: Record<string, string>) {
+        set({ answers, justifications, dirty: true });
+      },
       setActiveTab(activeTab: DimensionCode) {
         set({ activeTab });
       },
@@ -83,13 +96,16 @@ export const useQuestionnaireDraftStore = create<DraftStore>()(
     {
       name: DRAFT_STORAGE_KEY,
       storage: createJSONStorage(() => sessionStorage),
-      version: 1,
+      // v2 added `justifications`; a v1 draft has none and simply starts without them.
+      version: 2,
+      migrate: (persisted) => ({ justifications: {}, ...(persisted as object) }),
       // `dirty` is derived (any answer makes it true on next mutation),
       // so we intentionally exclude it from persistence per
       // SPEC-STORY3 §5.3 / Definition of Done §7.6.
       partialize: (s) => ({
         diagnosticId: s.diagnosticId,
         answers: s.answers,
+        justifications: s.justifications,
         activeTab: s.activeTab,
       }),
     },
@@ -100,7 +116,24 @@ export default useQuestionnaireDraftStore;
 
 // Stable selectors — defined at module scope so Zustand can rely on
 // referential identity to skip re-renders.
+export const selectDraftDiagnosticId = (s: DraftStore) => s.diagnosticId;
 export const selectAnswers = (s: DraftStore) => s.answers;
+export const selectJustifications = (s: DraftStore) => s.justifications;
+export const selectSetJustification = (s: DraftStore) => s.setJustification;
+export const selectFill = (s: DraftStore) => s.fill;
+export const selectJustificationById = (id: string) => (s: DraftStore) => s.justifications[id] ?? '';
+
+/**
+ * A statement is complete when it has a Likert answer **and** a non-blank
+ * justification: both are mandatory to process the diagnostic.
+ */
+export function isStatementComplete(
+  answers: Record<string, LikertValue>,
+  justifications: Record<string, string>,
+  statementId: string,
+): boolean {
+  return answers[statementId] !== undefined && (justifications[statementId] ?? '').trim().length > 0;
+}
 export const selectSetAnswer = (s: DraftStore) => s.setAnswer;
 export const selectActiveTab = (s: DraftStore) => s.activeTab;
 export const selectSetActiveTab = (s: DraftStore) => s.setActiveTab;

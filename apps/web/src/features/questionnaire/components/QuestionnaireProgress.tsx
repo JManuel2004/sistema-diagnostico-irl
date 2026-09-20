@@ -1,15 +1,22 @@
 import type { QuestionnaireStructure } from '@innlab/contracts';
-import { selectAnswers, useQuestionnaireDraftStore } from '../store/questionnaire-draft.store';
+import {
+  isStatementComplete,
+  selectAnswers,
+  selectJustifications,
+  useQuestionnaireDraftStore,
+} from '../store/questionnaire-draft.store';
 
 /**
  * `QuestionnaireProgress` — banda superior con el progreso global del
  * cuestionario y el indicador de guardado automático.
  *
  * Adoptado del prototipo cliente: la información agregada
- * (`X / 48 afirmaciones`, `% completado`, barra) vive arriba para que
- * el avance no quede oculto dentro de cada dimensión, y el chip
- * "Guardado automático" recuerda visualmente la promesa de HU-09
- * (las respuestas se conservan en sesión sin acción del usuario).
+ * (`X / 48 afirmaciones completas`, `% completado`, barra; una afirmación está
+ * completa con su respuesta Likert y su justificación) vive arriba para que
+ * el avance no quede oculto dentro de cada dimensión. El chip dice lo que
+ * realmente ocurre con el borrador (HU-09): se conserva en esta pestaña
+ * (`sessionStorage`) y no llega al servidor hasta «Procesar diagnóstico»;
+ * no promete guardado entre sesiones ni entre pestañas (backlog 10.2).
  *
  * El componente es presentacional: deriva todo del store y no muta
  * estado.
@@ -20,10 +27,12 @@ interface Props {
 
 export function QuestionnaireProgress({ dimensions }: Props) {
   const answers = useQuestionnaireDraftStore(selectAnswers);
+  const justifications = useQuestionnaireDraftStore(selectJustifications);
 
   const total = dimensions.reduce((acc, d) => acc + d.statements.length, 0);
   const answered = dimensions.reduce(
-    (acc, d) => acc + d.statements.filter((s) => answers[s.id] !== undefined).length,
+    (acc, d) =>
+      acc + d.statements.filter((s) => isStatementComplete(answers, justifications, s.id)).length,
     0,
   );
   const pct = total === 0 ? 0 : Math.round((answered / total) * 100);
@@ -38,7 +47,7 @@ export function QuestionnaireProgress({ dimensions }: Props) {
           <p className="text-overline text-azul-icesi">Progreso</p>
           <p className="text-foreground text-sm font-medium">
             {answered}
-            <span className="text-muted-foreground"> / {total} afirmaciones</span>
+            <span className="text-muted-foreground"> / {total} afirmaciones completas</span>
           </p>
         </div>
 
@@ -48,13 +57,13 @@ export function QuestionnaireProgress({ dimensions }: Props) {
           </p>
           <span
             className="text-muted-foreground inline-flex items-center gap-2 text-xs"
-            title="Tus respuestas se guardan en tu sesión actual"
+            title="Tu borrador se conserva mientras no cierres esta pestaña. Se envía al procesar el diagnóstico."
           >
             <span
               aria-hidden="true"
               className="bg-acceptable inline-block h-1.5 w-1.5 rounded-full"
             />
-            Guardado automático
+            Borrador guardado en esta pestaña
           </span>
         </div>
       </div>
@@ -64,7 +73,7 @@ export function QuestionnaireProgress({ dimensions }: Props) {
         aria-valuenow={pct}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${answered} de ${total} afirmaciones respondidas`}
+        aria-label={`${answered} de ${total} afirmaciones completas`}
         className="bg-border/60 mt-3 h-1.5 w-full overflow-hidden rounded-full"
       >
         <div

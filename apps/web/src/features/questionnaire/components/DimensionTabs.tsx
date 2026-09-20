@@ -6,7 +6,9 @@ import { DimensionNav } from './DimensionNav';
 import { QuestionnaireProgress } from './QuestionnaireProgress';
 import {
   selectActiveTab,
+  isStatementComplete,
   selectAnswers,
+  selectJustifications,
   selectSetActiveTab,
   useQuestionnaireDraftStore,
 } from '../store/questionnaire-draft.store';
@@ -63,14 +65,25 @@ export function DimensionTabs({ dimensions }: Props) {
   const activeTab = useQuestionnaireDraftStore(selectActiveTab);
   const setActiveTab = useQuestionnaireDraftStore(selectSetActiveTab);
   const answers = useQuestionnaireDraftStore(selectAnswers);
+  const justifications = useQuestionnaireDraftStore(selectJustifications);
 
   const panelTopRef = useRef<HTMLDivElement | null>(null);
+  // Pestaña que ya estaba a la vista: el efecto solo desplaza cuando cambia
+  // respecto de ella, no al montar (ahí la página debe cargar desde arriba).
+  const shownTab = useRef(activeTab);
 
   // Auto-scroll: cuando el usuario cambia de dimensión, llevarlo a la
   // cabecera del panel para que no entre a mitad de scroll. Se usa
   // typeof-guard porque jsdom (entorno de tests) no implementa
   // `scrollIntoView`; en un navegador real está siempre disponible.
+  //
+  // La comparación con `shownTab` (y no una bandera de «primer render»)
+  // es lo que evita el desplazamiento al montar también bajo StrictMode, que
+  // ejecuta el efecto dos veces en desarrollo.
   useEffect(() => {
+    if (shownTab.current === activeTab) return;
+    shownTab.current = activeTab;
+
     const node = panelTopRef.current;
     if (node && typeof node.scrollIntoView === 'function') {
       node.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -97,7 +110,9 @@ export function DimensionTabs({ dimensions }: Props) {
           className="grid h-auto w-full min-w-max grid-cols-6 gap-1 p-1"
         >
           {dimensions.map((d) => {
-            const answered = d.statements.filter((st) => answers[st.id] !== undefined).length;
+            const answered = d.statements.filter((st) =>
+              isStatementComplete(answers, justifications, st.id),
+            ).length;
             const total = d.statements.length;
             const isComplete = answered === total && total > 0;
 

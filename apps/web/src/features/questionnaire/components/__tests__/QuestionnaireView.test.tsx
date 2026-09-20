@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -104,6 +104,51 @@ describe('QuestionnaireView', () => {
     await waitFor(() =>
       expect(screen.getByRole('tabpanel')).toHaveTextContent('CRL — Nombre'),
     );
+  });
+
+  describe('scroll', () => {
+    const scrollIntoView = vi.fn();
+
+    beforeEach(() => {
+      scrollIntoView.mockClear();
+      // jsdom no implementa `scrollIntoView`: se define para observar las llamadas.
+      Element.prototype.scrollIntoView = scrollIntoView;
+    });
+
+    afterEach(() => {
+      // @ts-expect-error restaura el estado de jsdom, que no define el método.
+      delete Element.prototype.scrollIntoView;
+    });
+
+    it('does not scroll when the questionnaire mounts', async () => {
+      withSuccessHandler();
+      renderWithClient(<QuestionnaireView />);
+
+      await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
+
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('does not scroll when it mounts on a tab restored from the draft', async () => {
+      withSuccessHandler();
+      useQuestionnaireDraftStore.getState().setActiveTab('BRL');
+      renderWithClient(<QuestionnaireView />);
+
+      await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
+
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('scrolls back to the top of the panel when the dimension changes', async () => {
+      withSuccessHandler();
+      const user = userEvent.setup();
+      renderWithClient(<QuestionnaireView />);
+
+      await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
+      await user.click(screen.getByRole('tab', { name: 'CRL' }));
+
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+    });
   });
 
   it('renders an error state when the request fails', async () => {

@@ -1,5 +1,6 @@
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group';
 import { cn } from '@/shared/lib/utils';
+import { LIKERT_OPTIONS } from '../lib/likert-options';
 import type { LikertValue } from '@innlab/contracts';
 
 /**
@@ -21,14 +22,6 @@ interface Props {
   onChange: (value: LikertValue) => void;
 }
 
-const OPTIONS: { value: LikertValue; label: string }[] = [
-  { value: 1, label: 'Totalmente en desacuerdo' },
-  { value: 2, label: 'En desacuerdo' },
-  { value: 3, label: 'Ni de acuerdo ni en desacuerdo' },
-  { value: 4, label: 'De acuerdo' },
-  { value: 5, label: 'Totalmente de acuerdo' },
-];
-
 export function LikertScale({ id, value, onChange }: Props) {
   // Radix exige un `value` definido durante toda la vida del componente
   // para no oscilar entre modo controlado/no-controlado. Usamos `""`
@@ -44,7 +37,7 @@ export function LikertScale({ id, value, onChange }: Props) {
       value={controlledValue}
       onValueChange={(v) => onChange(Number(v))}
     >
-      {OPTIONS.map((opt) => {
+      {LIKERT_OPTIONS.map((opt) => {
         const isSelected = value === opt.value;
         return (
           <div key={opt.value} className="flex flex-col items-center gap-2 text-center">
