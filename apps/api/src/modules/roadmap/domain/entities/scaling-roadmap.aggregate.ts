@@ -1,4 +1,8 @@
-import { DIMENSION_CODES, type DimensionCode } from '@innlab/contracts';
+import {
+  DIMENSION_CODES,
+  type DimensionCode,
+  type RoadmapInclusionReason,
+} from '@innlab/contracts';
 import type { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { RoadmapCalculationError } from '../exceptions/roadmap.errors.js';
 
@@ -18,6 +22,16 @@ export interface RoadmapDimensionTarget {
   readonly currentLevel: number;
   readonly targetLevel: number;
   readonly enables: readonly DimensionCode[];
+  /** Why the dimension is in the roadmap at all. */
+  readonly inclusionReason: RoadmapInclusionReason;
+  /** The level the dimension is expected to reach on its own account. */
+  readonly expectedMinimum: number;
+  /**
+   * The dimension of the roadmap whose requirement sets `targetLevel`, when
+   * that requirement is above `expectedMinimum`; `null` when the target is
+   * simply the expected minimum.
+   */
+  readonly targetDrivenBy: DimensionCode | null;
 }
 
 /**

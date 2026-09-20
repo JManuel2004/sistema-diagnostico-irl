@@ -1,4 +1,4 @@
-import type { DimensionCode } from '@innlab/contracts';
+import { DIMENSION_CODES, type DimensionCode } from '@innlab/contracts';
 import type { DependencyGraph } from '../value-objects/dependency-graph.vo.js';
 
 /**
@@ -43,5 +43,31 @@ export class TargetLevelCalculatorService {
     }
 
     return targets;
+  }
+
+  /**
+   * The dimension in the closure whose requirement sets `d`'s target, or
+   * `null` when the target is `d`'s own expected minimum.
+   *
+   * Answers "why this level?" for the response: a target above the minimum
+   * exists only because of a dependent, and naming it is what makes the
+   * level arguable. On equal demands the first in the framework's canonical
+   * order wins, so the answer is deterministic.
+   */
+  demandedBy(
+    d: DimensionCode,
+    closure: ReadonlySet<DimensionCode>,
+    graph: DependencyGraph,
+  ): DimensionCode | null {
+    const minimum = graph.expectedMinimum(d);
+    const demanding = graph
+      .outgoingEdges(d)
+      .filter((e) => closure.has(e.target) && e.minimumRequiredLevel > minimum)
+      .sort(
+        (a, b) =>
+          b.minimumRequiredLevel - a.minimumRequiredLevel ||
+          DIMENSION_CODES.indexOf(a.target) - DIMENSION_CODES.indexOf(b.target),
+      );
+    return demanding[0]?.target ?? null;
   }
 }

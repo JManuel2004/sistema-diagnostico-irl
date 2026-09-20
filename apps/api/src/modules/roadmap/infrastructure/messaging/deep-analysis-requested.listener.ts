@@ -16,11 +16,10 @@ import { GenerateScalingRoadmapUseCase } from '../../application/use-cases/gener
  * fails the emitting use case's `emitAsync` nor blocks `routing/`'s
  * listener.
  *
- * On success it publishes `ScalingRoadmapCalculatedEvent`. The roadmap is
- * not persisted, so the calculation triggered by the user's acceptance is
- * the only one that counts as "calculated"; the use case stays silent
- * because `GET /roadmap` runs it too (backlog 14.4). Whoever later requests the roadmap over HTTP gets the same
- * error through the normal `Result` → `DomainExceptionFilter` path.
+ * On success the use case has already saved the roadmap, and this listener
+ * publishes `ScalingRoadmapCalculatedEvent`. Whoever later reads the roadmap
+ * over HTTP before a successful calculation gets `ROADMAP_NOT_GENERATED`
+ * through the normal `Result` → `DomainExceptionFilter` path.
  */
 @Injectable()
 export class DeepAnalysisRequestedListener {

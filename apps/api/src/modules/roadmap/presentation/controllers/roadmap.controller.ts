@@ -7,20 +7,15 @@ import { unwrapResult } from '../../../../shared/kernel/application/unwrap-resul
 /**
  * HTTP surface for the scaling roadmap (RF-14).
  *
- * `GET` and not `POST`: the roadmap is a deterministic function of the
- * profile and the seeded graph, so reading it creates nothing. With a
- * static configuration, recomputing it on every read always gives the
- * same result; persisting it only becomes necessary once the graph can
- * change and reproducing an old roadmap is required.
+ * `GET` reads the roadmap saved when the user accepted the deep analysis
+ * (`POST /diagnostics/:id/deep-analysis`); it neither calculates nor
+ * creates anything. Until the analysis is accepted the use case's
+ * `Result.err` (`RoadmapNotGeneratedError`) unwraps to a 409, the same
+ * shape as `GET /diagnostics/:id/recommendation`.
  *
  * It is requested **separately** from the portfolio recommendation. They
- * are two independent reads of the same profile, not a chain: the
- * roadmap neither calls the router nor depends on it. The frontend
- * composes both.
- *
- * If the diagnostic has no computed profile, the use case's `Result.err`
- * (a `ConflictError`, propagated from `GetMaturityProfileUseCase`)
- * unwraps to a 409, exactly like `GET /diagnostics/:id/profile`.
+ * are two independent reads of results saved by two independent
+ * listeners, not a chain. The frontend composes both.
  */
 @ApiTags('roadmap')
 @Controller('diagnostics/:id/roadmap')
@@ -30,7 +25,7 @@ export class RoadmapController {
   @Get()
   @ApiOkResponse({
     description:
-      'Phased scaling roadmap. An empty `phases` means the initiative ' +
+      'Saved phased scaling roadmap. An empty `phases` means the initiative ' +
       'meets the expected minimum in all six dimensions.',
   })
   async get(@Param('id') diagnosticId: string): Promise<RoadmapResponse> {

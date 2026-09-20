@@ -42,3 +42,21 @@ export class DependencyGraphCycleError extends RoadmapCalculationError {
     );
   }
 }
+
+/**
+ * The roadmap of a diagnostic was requested before the user accepted the
+ * deep analysis, which is what calculates and saves it.
+ *
+ * Maps to **409**: the diagnostic exists but is not in the state the read
+ * needs. It is the expected initial state, not a failure — the same
+ * precedent as `RecommendationNotGeneratedError`.
+ */
+export class RoadmapNotGeneratedError extends DomainError {
+  override readonly code = 'ROADMAP_NOT_GENERATED';
+
+  constructor(public readonly diagnosticId: string) {
+    super(
+      `El diagnóstico ${diagnosticId} todavía no tiene roadmap de escalamiento generado.`,
+    );
+  }
+}

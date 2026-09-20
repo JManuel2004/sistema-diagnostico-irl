@@ -3,6 +3,10 @@ import {
   DEPENDENCY_GRAPH_REPOSITORY,
   type DependencyGraphRepositoryPort,
 } from '../../domain/repositories/dependency-graph.repository.port.js';
+import {
+  ROADMAP_REPOSITORY,
+  type RoadmapRepositoryPort,
+} from '../../domain/repositories/roadmap.repository.port.js';
 import { DependencyGraph } from '../../domain/value-objects/dependency-graph.vo.js';
 import { RoadmapClosureService } from '../../domain/services/roadmap-closure.service.js';
 import { TopologicalLayeringService } from '../../domain/services/topological-layering.service.js';
@@ -23,7 +27,12 @@ export interface GenerateScalingRoadmapCommand {
 }
 
 /**
- * Builds the scaling roadmap from the maturity profile.
+ * Builds the scaling roadmap from the maturity profile and saves it.
+ *
+ * The roadmap is a fixed result with its date, like the profile and the
+ * recommendation: it is calculated when the user accepts the deep analysis
+ * and `GET /roadmap` only reads what was saved. Calculating again (the
+ * acceptance is repeatable) replaces the saved one.
  *
  * Resolves the IO — profile and graph — and then chains three pure
  * domain services. None of them touches the database, so the whole
@@ -33,10 +42,8 @@ export interface GenerateScalingRoadmapCommand {
  * never reaching into its tables; the same coupling
  * `GenerateRecommendationUseCase` already uses.
  *
- * Publishes no event. It also backs `GET /diagnostics/:id/roadmap`, and a
- * read is not a calculation for whoever listens: `ScalingRoadmapCalculatedEvent`
- * is published by `DeepAnalysisRequestedListener`, the flow that actually
- * calculates on the user's acceptance (backlog 14.4).
+ * Publishes no event: `ScalingRoadmapCalculatedEvent` is published by
+ * `DeepAnalysisRequestedListener`, which calls this use case.
  *
  * The levels come from `irlLevelsByDimension`, which also explains why the
  * persisted `dimension_result` flags are not consumed.
@@ -50,6 +57,8 @@ export class GenerateScalingRoadmapUseCase {
     private readonly closure: RoadmapClosureService,
     private readonly layering: TopologicalLayeringService,
     private readonly targets: TargetLevelCalculatorService,
+    @Inject(ROADMAP_REPOSITORY)
+    private readonly roadmaps: RoadmapRepositoryPort,
   ) {}
 
   async execute(
@@ -102,6 +111,12 @@ export class GenerateScalingRoadmapUseCase {
           .outgoingEdges(code)
           .filter((e) => closure.has(e.target))
           .map((e) => e.target),
+        inclusionReason:
+          (levels.get(code) ?? 0) < graph.expectedMinimum(code)
+            ? ('BELOW_EXPECTED_MINIMUM' as const)
+            : ('REQUIRED_ENABLER' as const),
+        expectedMinimum: graph.expectedMinimum(code),
+        targetDrivenBy: this.targets.demandedBy(code, closure, graph),
       })),
     }));
 
@@ -110,6 +125,8 @@ export class GenerateScalingRoadmapUseCase {
       phases,
       generatedAt: new Date(),
     });
+
+    await this.roadmaps.save(roadmap);
 
     return Result.ok(roadmap);
   }

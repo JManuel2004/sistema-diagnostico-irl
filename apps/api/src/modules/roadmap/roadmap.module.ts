@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScalingRoadmapOrm } from './infrastructure/database/orm-entities/scaling-roadmap.orm-entity.js';
+import { TypeOrmRoadmapRepository } from './infrastructure/database/repositories/typeorm-roadmap.repository.js';
+import { ROADMAP_REPOSITORY } from './domain/repositories/roadmap.repository.port.js';
 import { DimensionDependencyOrm } from './infrastructure/database/orm-entities/dimension-dependency.orm-entity.js';
 import { TypeOrmDependencyGraphRepository } from './infrastructure/database/repositories/typeorm-dependency-graph.repository.js';
 import { DEPENDENCY_GRAPH_REPOSITORY } from './domain/repositories/dependency-graph.repository.port.js';
@@ -35,7 +38,7 @@ import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DimensionDependencyOrm]),
+    TypeOrmModule.forFeature([DimensionDependencyOrm, ScalingRoadmapOrm]),
     IrlTaxonomyModule,
     DiagnosisModule,
   ],
@@ -46,6 +49,7 @@ import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module
     GenerateScalingRoadmapUseCase,
     GetScalingRoadmapUseCase,
     DeepAnalysisRequestedListener,
+    { provide: ROADMAP_REPOSITORY, useClass: TypeOrmRoadmapRepository },
     {
       provide: DEPENDENCY_GRAPH_REPOSITORY,
       useClass: TypeOrmDependencyGraphRepository,

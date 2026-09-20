@@ -33,6 +33,12 @@ export function toRoadmapResponse(
           currentLevel: d.currentLevel,
           targetLevel: d.targetLevel,
           enables: d.enables.map((code) => requireDimensionRef(refs, code)),
+          inclusionReason: d.inclusionReason,
+          expectedMinimum: d.expectedMinimum,
+          targetDrivenBy:
+            d.targetDrivenBy === null
+              ? null
+              : requireDimensionRef(refs, d.targetDrivenBy),
         };
       }),
     })),
