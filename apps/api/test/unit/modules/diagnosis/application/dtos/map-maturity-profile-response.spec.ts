@@ -1,3 +1,4 @@
+import { aDimensionCatalog } from '../../../../support/dimension-catalog.js';
 import { toMaturityProfileResponse } from '../../../../../../src/modules/diagnosis/application/dtos/map-maturity-profile-response.js';
 import { MaturityProfile } from '../../../../../../src/modules/diagnosis/domain/entities/maturity-profile.aggregate.js';
 import { DimensionResult } from '../../../../../../src/modules/diagnosis/domain/value-objects/dimension-result.vo.js';
@@ -7,7 +8,10 @@ import { Uuid } from '../../../../../../src/shared/kernel/domain/value-objects/u
 
 const CODES = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;
 
-function resultFor(code: (typeof CODES)[number], level: number): DimensionResult {
+function resultFor(
+  code: (typeof CODES)[number],
+  level: number,
+): DimensionResult {
   return DimensionResult.create({
     dimensionCode: DimensionCode.create(code),
     averageLikert: 3.0,
@@ -33,7 +37,7 @@ describe('toMaturityProfileResponse', () => {
       ],
     });
 
-    const dto = toMaturityProfileResponse(profile, []);
+    const dto = toMaturityProfileResponse(profile, [], aDimensionCatalog());
 
     expect(dto.gaps.threshold).toBe(3);
     expect(dto.gaps.dimensions).toEqual(['CRL', 'BRL', 'IPRL', 'FRL']);
@@ -46,7 +50,7 @@ describe('toMaturityProfileResponse', () => {
       dimensionResults: CODES.map((c) => resultFor(c, 6)),
     });
 
-    const dto = toMaturityProfileResponse(profile, []);
+    const dto = toMaturityProfileResponse(profile, [], aDimensionCatalog());
 
     expect(dto.gaps.dimensions).toEqual([]);
     expect(dto.gaps.threshold).toBe(3);
@@ -66,9 +70,40 @@ describe('toMaturityProfileResponse', () => {
       ],
     });
 
-    const dto = toMaturityProfileResponse(profile, []);
+    const dto = toMaturityProfileResponse(profile, [], aDimensionCatalog());
 
     expect(dto.strength).toEqual({ dimensions: ['TRL'], level: 5 });
-    expect(dto.asymmetry).toEqual({ difference: 3, classification: 'moderate' });
+    expect(dto.asymmetry).toEqual({
+      difference: 3,
+      classification: 'moderate',
+    });
+  });
+
+  // Backlog 4.5: `name` used to be the dimension code, so the frontend kept
+  // its own name maps. The names come from the catalog.
+  it('names each dimension from the catalog, never by its code', () => {
+    const profile = MaturityProfile.create({
+      diagnosticId,
+      computedAt,
+      dimensionResults: CODES.map((c) => resultFor(c, 5)),
+    });
+
+    const dto = toMaturityProfileResponse(profile, [], aDimensionCatalog());
+
+    expect(
+      dto.dimensionResults.map((r) => [r.dimensionCode, r.name, r.shortName]),
+    ).toEqual(CODES.map((c) => [c, `Nombre completo ${c}`, `Corto ${c}`]));
+  });
+
+  it('fails when the catalog is missing a dimension of the profile', () => {
+    const profile = MaturityProfile.create({
+      diagnosticId,
+      computedAt,
+      dimensionResults: CODES.map((c) => resultFor(c, 5)),
+    });
+
+    expect(() =>
+      toMaturityProfileResponse(profile, [], aDimensionCatalog().slice(1)),
+    ).toThrow(/catalog has no entry/);
   });
 });

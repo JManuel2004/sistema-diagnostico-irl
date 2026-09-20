@@ -8,6 +8,10 @@ import {
   IMBALANCE_REPOSITORY,
   type ImbalanceRepositoryPort,
 } from '../../domain/repositories/imbalance.repository.port.js';
+import {
+  TAXONOMY_REPOSITORY,
+  type TaxonomyRepositoryPort,
+} from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
 import { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
 import { toMaturityProfileResponse } from '../dtos/map-maturity-profile-response.js';
@@ -31,6 +35,8 @@ export class GetMaturityProfileUseCase {
     private readonly profiles: MaturityProfileRepositoryPort,
     @Inject(IMBALANCE_REPOSITORY)
     private readonly imbalances: ImbalanceRepositoryPort,
+    @Inject(TAXONOMY_REPOSITORY)
+    private readonly taxonomy: TaxonomyRepositoryPort,
   ) {}
 
   async execute(
@@ -46,6 +52,9 @@ export class GetMaturityProfileUseCase {
     }
 
     const storedImbalances = await this.imbalances.findByDiagnosticId(query.diagnosticId);
-    return Result.ok(toMaturityProfileResponse(profile, storedImbalances));
+    const dimensions = await this.taxonomy.findAllDimensions();
+    return Result.ok(
+      toMaturityProfileResponse(profile, storedImbalances, dimensions),
+    );
   }
 }

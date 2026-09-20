@@ -10,8 +10,8 @@ import { InvariantViolationError } from '../../../../shared/kernel/domain/errors
  * Dimension instances but never mutates them; updates ship through
  * catalog seeds.
  *
- * The persistence model speaks `dimension(code, name_es, description,
- * sequence)`; this domain class uses English property names per the
+ * The persistence model speaks `dimension(code, name_es, short_name_es,
+ * description, sequence)`; this domain class uses English property names per the
  * project's language convention (see CODE-STYLE). `name_es` holds the
  * Spanish display name — the language suffix names the data, not the
  * schema.
@@ -20,6 +20,7 @@ export interface DimensionPersistence {
   readonly id: number;
   readonly code: string;
   readonly name: string;
+  readonly shortName: string;
   readonly description: string;
   readonly sequence: number;
   readonly minimumExpectedLevel: number;
@@ -30,6 +31,7 @@ export class Dimension {
     public readonly id: number,
     public readonly code: DimensionCode,
     public readonly name: string,
+    public readonly shortName: string,
     public readonly description: string,
     public readonly sequence: number,
     public readonly minimumExpectedLevel: number,
@@ -49,6 +51,7 @@ export class Dimension {
       row.id,
       DimensionCode.create(row.code),
       row.name,
+      row.shortName,
       row.description,
       row.sequence,
       row.minimumExpectedLevel,

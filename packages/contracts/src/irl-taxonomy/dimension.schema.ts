@@ -21,6 +21,27 @@ export const dimensionCodeSchema = z
 export type DimensionCode = z.infer<typeof dimensionCodeSchema>;
 
 /**
+ * Referencia a una dimensión con los nombres que la interfaz muestra.
+ *
+ * Las respuestas que nombran dimensiones por su código (el roadmap, por
+ * ejemplo) las devuelven con esta forma para que el frontend no mantenga su
+ * propio mapa de nombres: el catálogo de la base de datos es la única
+ * fuente.
+ */
+export const dimensionRefSchema = z
+  .object({
+    code: dimensionCodeSchema,
+    name: z.string().min(1).describe('Nombre completo de la dimensión en español'),
+    shortName: z
+      .string()
+      .min(1)
+      .describe('Etiqueta corta para espacios reducidos (ejes, tarjetas, líneas)'),
+  })
+  .describe('Referencia a una dimensión IRL con sus nombres');
+
+export type DimensionRef = z.infer<typeof dimensionRefSchema>;
+
+/**
  * Metadata de una dimensión IRL — código, nombre, descripción y orden
  * de presentación. Se usa para renderizar las pestañas/secciones del
  * cuestionario (HU-07) y la grilla del perfil (HU-13/HU-14).

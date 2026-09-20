@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { uuidSchema } from '../common/uuid.schema.js';
-import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
+import { dimensionCodeSchema, dimensionRefSchema } from '../irl-taxonomy/dimension.schema.js';
 
 /**
  * Roadmap de escalamiento (RF-14).
@@ -17,10 +17,15 @@ import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
 export const roadmapDimensionTargetSchema = z
   .object({
     dimensionCode: dimensionCodeSchema,
+    name: z.string().min(1).describe('Nombre completo de la dimensión en español'),
+    shortName: z
+      .string()
+      .min(1)
+      .describe('Etiqueta corta de la dimensión, para la línea del roadmap'),
     currentLevel: z.number().int().min(1).max(9),
     targetLevel: z.number().int().min(1).max(9),
     enables: z
-      .array(dimensionCodeSchema)
+      .array(dimensionRefSchema)
       .describe('Dimensiones del roadmap que esta desbloquea al alcanzar su meta'),
   })
   .describe('Una dimensión a intervenir dentro de una fase');
@@ -72,7 +77,7 @@ export const roadmapResponseSchema = z
     generatedAt: z.string().datetime(),
     phases: z.array(roadmapPhaseSchema),
     dimensionsWithoutIntervention: z
-      .array(dimensionCodeSchema)
+      .array(dimensionRefSchema)
       .describe(
         'Dimensiones que no requieren intervención. Explícitas para que su ' +
           'ausencia del plan no se lea como un olvido.',

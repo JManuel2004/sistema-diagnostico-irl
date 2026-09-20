@@ -5,6 +5,7 @@ const VALID_ROW = {
   id: 1,
   code: 'TRL',
   name: 'Technology Readiness Level',
+  shortName: 'Tecnología',
   description: 'Madurez tecnológica de la solución.',
   sequence: 1,
   minimumExpectedLevel: 4,
@@ -17,6 +18,7 @@ describe('Dimension', () => {
       expect(dim.id).toBe(1);
       expect(dim.code.value).toBe('TRL');
       expect(dim.name).toBe(VALID_ROW.name);
+      expect(dim.shortName).toBe('Tecnología');
       expect(dim.sequence).toBe(1);
     });
 

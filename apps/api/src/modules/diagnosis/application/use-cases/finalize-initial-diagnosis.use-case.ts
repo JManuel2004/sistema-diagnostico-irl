@@ -11,6 +11,10 @@ import {
   type AnswerSheetRepositoryPort,
 } from '../../domain/repositories/answer-sheet.repository.port.js';
 import { ComputeMaturityProfileUseCase } from './compute-maturity-profile.use-case.js';
+import {
+  TAXONOMY_REPOSITORY,
+  type TaxonomyRepositoryPort,
+} from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
 import { toMaturityProfileResponse } from '../dtos/map-maturity-profile-response.js';
 import { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
 import { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
@@ -52,6 +56,8 @@ export class FinalizeInitialDiagnosisUseCase {
     private readonly answerSheets: AnswerSheetRepositoryPort,
     private readonly submitQuestionnaire: SubmitQuestionnaireUseCase,
     private readonly computeProfile: ComputeMaturityProfileUseCase,
+    @Inject(TAXONOMY_REPOSITORY)
+    private readonly taxonomy: TaxonomyRepositoryPort,
   ) {}
 
   async execute(
@@ -107,6 +113,9 @@ export class FinalizeInitialDiagnosisUseCase {
 
     await this.diagnostics.save(diagnostico);
 
-    return Result.ok(toMaturityProfileResponse(profile, imbalances));
+    const dimensions = await this.taxonomy.findAllDimensions();
+    return Result.ok(
+      toMaturityProfileResponse(profile, imbalances, dimensions),
+    );
   }
 }

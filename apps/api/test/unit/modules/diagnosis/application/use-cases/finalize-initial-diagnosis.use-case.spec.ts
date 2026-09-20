@@ -1,4 +1,6 @@
 import { jest } from '@jest/globals';
+import type { TaxonomyRepositoryPort } from '../../../../../../src/shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
+import { aDimensionCatalog } from '../../../../support/dimension-catalog.js';
 import { FinalizeInitialDiagnosisUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/finalize-initial-diagnosis.use-case.js';
 import type { DiagnosisRepositoryPort } from '../../../../../../src/modules/diagnosis/domain/repositories/diagnosis.repository.port.js';
 import { Diagnosis } from '../../../../../../src/modules/diagnosis/domain/entities/diagnosis.aggregate.js';
@@ -61,8 +63,12 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   let useCase: FinalizeInitialDiagnosisUseCase;
   let diagnostics: jest.Mocked<DiagnosisRepositoryPort>;
   let answerSheets: jest.Mocked<AnswerSheetRepositoryPort>;
-  let submitQuestionnaire: jest.Mocked<Pick<SubmitQuestionnaireUseCase, 'execute'>>;
-  let computeProfile: jest.Mocked<Pick<ComputeMaturityProfileUseCase, 'execute'>>;
+  let submitQuestionnaire: jest.Mocked<
+    Pick<SubmitQuestionnaireUseCase, 'execute'>
+  >;
+  let computeProfile: jest.Mocked<
+    Pick<ComputeMaturityProfileUseCase, 'execute'>
+  >;
 
   beforeEach(() => {
     diagnostics = {
@@ -75,25 +81,43 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
       findByDiagnosticId: jest.fn(() => Promise.resolve(anAnswerSheet())),
       save: jest.fn(() => Promise.resolve(undefined)),
     };
-    submitQuestionnaire = { execute: jest.fn(() => Promise.resolve(Result.ok({
-      diagnosticId: DIAGNOSTIC_ID,
-      answersRecorded: 48,
-      state: 'QUESTIONNAIRE_COMPLETE' as const,
-    }))) };
-    computeProfile = { execute: jest.fn(() => Promise.resolve({ profile: aProfile(), imbalances: [] })) };
+    submitQuestionnaire = {
+      execute: jest.fn(() =>
+        Promise.resolve(
+          Result.ok({
+            diagnosticId: DIAGNOSTIC_ID,
+            answersRecorded: 48,
+            state: 'QUESTIONNAIRE_COMPLETE' as const,
+          }),
+        ),
+      ),
+    };
+    computeProfile = {
+      execute: jest.fn(() =>
+        Promise.resolve({ profile: aProfile(), imbalances: [] }),
+      ),
+    };
 
     useCase = new FinalizeInitialDiagnosisUseCase(
       diagnostics,
       answerSheets,
       submitQuestionnaire as unknown as SubmitQuestionnaireUseCase,
       computeProfile as unknown as ComputeMaturityProfileUseCase,
+      {
+        findAllDimensions: () => Promise.resolve(aDimensionCatalog()),
+      } as unknown as TaxonomyRepositoryPort,
     );
   });
 
   it('submits answers, computes the profile, and transitions to PROFILE_GENERATED', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS'));
+    diagnostics.findById.mockResolvedValueOnce(
+      diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS'),
+    );
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      answers: ANSWERS,
+    });
 
     expect(submitQuestionnaire.execute).toHaveBeenCalledWith({
       diagnosticId: DIAGNOSTIC_ID,
@@ -114,7 +138,9 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   });
 
   it('advances from QUESTIONNAIRE_COMPLETE to PROFILE_GENERATED', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('QUESTIONNAIRE_COMPLETE'));
+    diagnostics.findById.mockResolvedValueOnce(
+      diagnosticoIn('QUESTIONNAIRE_COMPLETE'),
+    );
 
     await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
 
@@ -127,7 +153,10 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
       diagnosticoIn('DEEP_ANALYSIS_IN_PROGRESS'),
     );
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      answers: ANSWERS,
+    });
 
     expect(submitQuestionnaire.execute).toHaveBeenCalledTimes(1);
     expect(computeProfile.execute).toHaveBeenCalledTimes(1);
@@ -139,7 +168,9 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   });
 
   it('is idempotent when the diagnostic is already PROFILE_GENERATED', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('PROFILE_GENERATED'));
+    diagnostics.findById.mockResolvedValueOnce(
+      diagnosticoIn('PROFILE_GENERATED'),
+    );
 
     await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
 
@@ -152,7 +183,10 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   it('returns an err result when the diagnostic does not exist', async () => {
     diagnostics.findById.mockResolvedValueOnce(null);
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      answers: ANSWERS,
+    });
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('expected err result');
@@ -164,7 +198,10 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   it('returns an err result when finalizing from an earlier state', async () => {
     diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('STARTED'));
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      answers: ANSWERS,
+    });
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('expected err result');
@@ -173,11 +210,20 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   });
 
   it('propagates the questionnaire submission error without computing a profile', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS'));
-    const submissionError = new InvariantViolationError('incomplete submission');
-    submitQuestionnaire.execute.mockResolvedValueOnce(Result.err(submissionError));
+    diagnostics.findById.mockResolvedValueOnce(
+      diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS'),
+    );
+    const submissionError = new InvariantViolationError(
+      'incomplete submission',
+    );
+    submitQuestionnaire.execute.mockResolvedValueOnce(
+      Result.err(submissionError),
+    );
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      answers: ANSWERS,
+    });
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('expected err result');
@@ -187,7 +233,9 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   });
 
   it('does not transition state if computation fails', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS'));
+    diagnostics.findById.mockResolvedValueOnce(
+      diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS'),
+    );
     computeProfile.execute.mockRejectedValueOnce(new Error('calc failed'));
 
     await expect(
@@ -198,6 +246,8 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
 
   it('does not skip the linear state machine', () => {
     const d = diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS');
-    expect(() => d.transitionTo('PROFILE_GENERATED')).toThrow(InvariantViolationError);
+    expect(() => d.transitionTo('PROFILE_GENERATED')).toThrow(
+      InvariantViolationError,
+    );
   });
 });

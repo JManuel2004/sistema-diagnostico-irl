@@ -10,13 +10,19 @@ import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
  *      contenga ese promedio.
  *   3. Empaquetar promedio + nivel en este resultado.
  *
- * El `name` se incluye para que el frontend pueda renderizar el
- * resultado sin hacer una segunda llamada al catálogo (HU-13/14).
+ * `name` (completo) y `shortName` (para espacios reducidos) vienen del
+ * catálogo y se incluyen para que el frontend pueda renderizar el
+ * resultado sin hacer una segunda llamada ni mantener sus propios nombres
+ * (HU-13/14).
  */
 export const dimensionResultSchema = z
   .object({
     dimensionCode: dimensionCodeSchema,
     name: z.string().min(1).describe('Nombre completo de la dimensión en español'),
+    shortName: z
+      .string()
+      .min(1)
+      .describe('Etiqueta corta para espacios reducidos (ejes, tarjetas, líneas)'),
     averageLikert: z
       .number()
       .min(1)

@@ -1,4 +1,6 @@
 import { jest } from '@jest/globals';
+import type { TaxonomyRepositoryPort } from '../../../../../../src/shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
+import { aDimensionCatalog } from '../../../../support/dimension-catalog.js';
 import { GetMaturityProfileUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/get-maturity-profile.use-case.js';
 import type { MaturityProfileRepositoryPort } from '../../../../../../src/modules/diagnosis/domain/repositories/maturity-profile.repository.port.js';
 import type { ImbalanceRepositoryPort } from '../../../../../../src/modules/diagnosis/domain/repositories/imbalance.repository.port.js';
@@ -28,12 +30,48 @@ function aProfile(): MaturityProfile {
 }
 
 const STORED_PAIRS: ImbalanceResult[] = [
-  new ImbalanceResult(1, DimensionCode.create('TRL'), DimensionCode.create('CRL'), 2, 'MODERATE'),
-  new ImbalanceResult(2, DimensionCode.create('TRL'), DimensionCode.create('BRL'), 0, 'ACCEPTABLE'),
-  new ImbalanceResult(3, DimensionCode.create('CRL'), DimensionCode.create('BRL'), 0, 'ACCEPTABLE'),
-  new ImbalanceResult(4, DimensionCode.create('TmRL'), DimensionCode.create('FRL'), 1, 'ACCEPTABLE'),
-  new ImbalanceResult(5, DimensionCode.create('BRL'), DimensionCode.create('IPRL'), 1, 'ACCEPTABLE'),
-  new ImbalanceResult(6, DimensionCode.create('TRL'), DimensionCode.create('IPRL'), 4, 'CRITICAL'),
+  new ImbalanceResult(
+    1,
+    DimensionCode.create('TRL'),
+    DimensionCode.create('CRL'),
+    2,
+    'MODERATE',
+  ),
+  new ImbalanceResult(
+    2,
+    DimensionCode.create('TRL'),
+    DimensionCode.create('BRL'),
+    0,
+    'ACCEPTABLE',
+  ),
+  new ImbalanceResult(
+    3,
+    DimensionCode.create('CRL'),
+    DimensionCode.create('BRL'),
+    0,
+    'ACCEPTABLE',
+  ),
+  new ImbalanceResult(
+    4,
+    DimensionCode.create('TmRL'),
+    DimensionCode.create('FRL'),
+    1,
+    'ACCEPTABLE',
+  ),
+  new ImbalanceResult(
+    5,
+    DimensionCode.create('BRL'),
+    DimensionCode.create('IPRL'),
+    1,
+    'ACCEPTABLE',
+  ),
+  new ImbalanceResult(
+    6,
+    DimensionCode.create('TRL'),
+    DimensionCode.create('IPRL'),
+    4,
+    'CRITICAL',
+  ),
 ];
 
 describe('GetMaturityProfileUseCase', () => {
@@ -50,7 +88,9 @@ describe('GetMaturityProfileUseCase', () => {
       findByDiagnosticId: jest.fn(() => Promise.resolve([])),
       save: jest.fn(() => Promise.resolve(undefined)),
     };
-    useCase = new GetMaturityProfileUseCase(profiles, imbalances);
+    useCase = new GetMaturityProfileUseCase(profiles, imbalances, {
+      findAllDimensions: () => Promise.resolve(aDimensionCatalog()),
+    } as unknown as TaxonomyRepositoryPort);
   });
 
   it('returns the persisted profile and stored imbalances without recomputing', async () => {
@@ -64,7 +104,9 @@ describe('GetMaturityProfileUseCase', () => {
     if (!result.ok) throw new Error('expected ok result');
     const dto = result.value;
     expect(dto.imbalances).toHaveLength(6);
-    expect(dto.imbalances?.find((p) => p.left === 'TRL' && p.right === 'IPRL')).toEqual({
+    expect(
+      dto.imbalances?.find((p) => p.left === 'TRL' && p.right === 'IPRL'),
+    ).toEqual({
       left: 'TRL',
       right: 'IPRL',
       difference: 4,

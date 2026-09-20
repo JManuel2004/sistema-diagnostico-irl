@@ -1,8 +1,7 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { RoadmapResponse } from '@innlab/contracts';
-import { GenerateScalingRoadmapUseCase } from '../../application/use-cases/generate-scaling-roadmap.use-case.js';
-import { toRoadmapResponse } from '../../application/dtos/map-roadmap-response.js';
+import { GetScalingRoadmapUseCase } from '../../application/use-cases/get-scaling-roadmap.use-case.js';
 import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
 
 /**
@@ -26,7 +25,7 @@ import { unwrapResult } from '../../../../shared/kernel/application/unwrap-resul
 @ApiTags('roadmap')
 @Controller('diagnostics/:id/roadmap')
 export class RoadmapController {
-  constructor(private readonly generate: GenerateScalingRoadmapUseCase) {}
+  constructor(private readonly roadmap: GetScalingRoadmapUseCase) {}
 
   @Get()
   @ApiOkResponse({
@@ -35,8 +34,6 @@ export class RoadmapController {
       'meets the expected minimum in all six dimensions.',
   })
   async get(@Param('id') diagnosticId: string): Promise<RoadmapResponse> {
-    return toRoadmapResponse(
-      unwrapResult(await this.generate.execute({ diagnosticId })),
-    );
+    return unwrapResult(await this.roadmap.execute({ diagnosticId }));
   }
 }

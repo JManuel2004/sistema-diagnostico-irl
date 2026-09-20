@@ -10,6 +10,7 @@ function makeDimension(code: string, sequence: number): Dimension {
     id: sequence,
     code,
     name: `Name ${code}`,
+    shortName: `Short ${code}`,
     description: `Desc ${code}`,
     sequence,
     minimumExpectedLevel: 4,

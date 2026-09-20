@@ -21,6 +21,10 @@ export class DimensionOrm {
   @Column({ name: 'name_en', type: 'varchar', length: 80 })
   nameEn!: string;
 
+  /** Short Spanish label for compact UI (chart axes, cards, roadmap lines). */
+  @Column({ name: 'short_name_es', type: 'varchar', length: 40 })
+  shortNameEs!: string;
+
   @Column({ name: 'description', type: 'varchar', length: 500 })
   description!: string;
 

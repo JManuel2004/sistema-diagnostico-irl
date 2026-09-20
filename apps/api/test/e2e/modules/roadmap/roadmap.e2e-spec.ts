@@ -8,7 +8,10 @@ import { DataSource } from 'typeorm';
 import request from 'supertest';
 import nock from 'nock';
 import { randomUUID } from 'node:crypto';
-import { roadmapResponseSchema } from '@innlab/contracts';
+import {
+  maturityProfileResponseSchema,
+  roadmapResponseSchema,
+} from '@innlab/contracts';
 import { AppModule } from '../../../../src/app.module.js';
 import { configureApp } from '../../../../src/shared/kernel/infrastructure/http/configure-app.js';
 import { authenticateAgainst } from '../../support/authenticated-app.js';
@@ -111,14 +114,31 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
       .get(`/api/v1/diagnostics/${diagnosticId}/profile`)
       .expect(200);
 
-    const perfil = res.body as {
-      dimensionResults: { dimensionCode: string; irlLevel: number }[];
-    };
+    const perfil = maturityProfileResponseSchema.parse(res.body);
     expect(
       Object.fromEntries(
         perfil.dimensionResults.map((r) => [r.dimensionCode, r.irlLevel]),
       ),
     ).toEqual({ TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 });
+  });
+
+  // Backlog 4.5: `name` used to serialize the dimension code. Both names come
+  // from the catalog in the database, in the real HTTP response.
+  it('el perfil nombra cada dimensión con el catálogo, no con su código', async () => {
+    const res = await agent
+      .get(`/api/v1/diagnostics/${diagnosticId}/profile`)
+      .expect(200);
+
+    const perfil = maturityProfileResponseSchema.parse(res.body);
+    const brl = perfil.dimensionResults.find((r) => r.dimensionCode === 'BRL');
+
+    expect(brl).toMatchObject({
+      name: 'Nivel de Madurez del Modelo de Negocio',
+      shortName: 'Negocio',
+    });
+    for (const r of perfil.dimensionResults) {
+      expect(r.name).not.toBe(r.dimensionCode);
+    }
   });
 
   it('GET /roadmap devuelve dos fases con el orden de dependencies esperado', async () => {
@@ -151,11 +171,13 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
       .expect((res) => {
         const roadmap = roadmapResponseSchema.parse(res.body);
 
-        expect([...roadmap.dimensionsWithoutIntervention].sort()).toEqual([
-          'CRL',
-          'TRL',
-          'TmRL',
-        ]);
+        expect(
+          roadmap.dimensionsWithoutIntervention.map((d) => d.code).sort(),
+        ).toEqual(['CRL', 'TRL', 'TmRL']);
+        // Sin intervención, pero nombradas con el catálogo.
+        expect(
+          roadmap.dimensionsWithoutIntervention.map((d) => d.shortName).sort(),
+        ).toEqual(['Cliente', 'Equipo', 'Tecnología']);
 
         const intervenidas = roadmap.phases.flatMap((f) =>
           f.dimensions.map((d) => d.dimensionCode),
@@ -196,11 +218,32 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
 
     const habilita = Object.fromEntries(
       roadmap.phases.flatMap((f) =>
-        f.dimensions.map((d) => [d.dimensionCode, d.enables]),
+        f.dimensions.map((d) => [d.dimensionCode, d.enables.map((e) => e.code)]),
       ),
     );
 
     expect(habilita).toEqual({ BRL: ['FRL'], IPRL: ['FRL'], FRL: [] });
+  });
+
+  it('nombra cada dimensión del roadmap con el catálogo', async () => {
+    const res = await agent
+      .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
+      .expect(200);
+    const roadmap = roadmapResponseSchema.parse(res.body);
+
+    const brl = roadmap.phases[0].dimensions[0];
+    expect(brl).toMatchObject({
+      dimensionCode: 'BRL',
+      name: 'Nivel de Madurez del Modelo de Negocio',
+      shortName: 'Negocio',
+    });
+    expect(brl.enables).toEqual([
+      {
+        code: 'FRL',
+        name: 'Nivel de Madurez de la Financiación',
+        shortName: 'Financiación',
+      },
+    ]);
   });
 
   it('un diagnóstico sin perfil calculado devuelve 409, no 404', async () => {

@@ -27,6 +27,9 @@ export * from './diagnosis/imbalance.schema.js';
 export * from './diagnosis/profile-response.schema.js';
 export * from './diagnosis/diagnostic.schema.js';
 
+// ── identity (shared/identity) ────────────────────────────────────────
+export * from './identity/core-session.schema.js';
+
 // ── initiative ────────────────────────────────────────────────────────
 export * from './initiative/consent.schema.js';
 export * from './initiative/initiative.schema.js';
