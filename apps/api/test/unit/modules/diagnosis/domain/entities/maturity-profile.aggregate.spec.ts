@@ -151,7 +151,11 @@ describe('MaturityProfile (aggregate root)', () => {
         resultFor('TmRL', 6),
         resultFor('FRL', 8),
       ];
-      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: results,
+      });
       const b = p.bottleneck();
       expect(b.level).toBe(3);
       expect(b.dimensions).toHaveLength(1);
@@ -167,7 +171,11 @@ describe('MaturityProfile (aggregate root)', () => {
         resultFor('TmRL', 2),
         resultFor('FRL', 7),
       ];
-      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: results,
+      });
       const b = p.bottleneck();
       expect(b.level).toBe(2);
       expect(b.dimensions).toHaveLength(3);
@@ -195,7 +203,11 @@ describe('MaturityProfile (aggregate root)', () => {
         resultFor('TmRL', 9),
         resultFor('FRL', 9),
       ];
-      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: results,
+      });
       const b = p.bottleneck();
       expect(b.level).toBe(1);
       expect(b.dimensions[0].dimensionCode.value).toBe('TRL');
@@ -212,7 +224,11 @@ describe('MaturityProfile (aggregate root)', () => {
         resultFor('TmRL', 6),
         resultFor('FRL', 2),
       ];
-      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: results,
+      });
       const s = p.strength();
       expect(s.level).toBe(8);
       expect(s.dimensions.map((r) => r.dimensionCode.value)).toEqual(['TRL']);
@@ -227,8 +243,14 @@ describe('MaturityProfile (aggregate root)', () => {
         resultFor('TmRL', 4),
         resultFor('FRL', 4),
       ];
-      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
-      expect(p.strength().dimensions.map((r) => r.dimensionCode.value)).toEqual(['TRL', 'CRL']);
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: results,
+      });
+      expect(p.strength().dimensions.map((r) => r.dimensionCode.value)).toEqual(
+        ['TRL', 'CRL'],
+      );
     });
   });
 
@@ -242,8 +264,15 @@ describe('MaturityProfile (aggregate root)', () => {
         resultFor('TmRL', 4),
         resultFor('FRL', 3),
       ];
-      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
-      expect(p.asymmetry()).toEqual({ difference: 3, classification: 'MODERATE' });
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: results,
+      });
+      expect(p.asymmetry()).toEqual({
+        difference: 3,
+        classification: 'MODERATE',
+      });
     });
 
     it('classifies a uniform profile as ACCEPTABLE', () => {
@@ -252,7 +281,10 @@ describe('MaturityProfile (aggregate root)', () => {
         computedAt,
         dimensionResults: CODES.map((c) => resultFor(c, 6)),
       });
-      expect(p.asymmetry()).toEqual({ difference: 0, classification: 'ACCEPTABLE' });
+      expect(p.asymmetry()).toEqual({
+        difference: 0,
+        classification: 'ACCEPTABLE',
+      });
     });
 
     it('classifies a spread of 8 as CRITICAL', () => {
@@ -264,8 +296,15 @@ describe('MaturityProfile (aggregate root)', () => {
         resultFor('TmRL', 9),
         resultFor('FRL', 1),
       ];
-      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
-      expect(p.asymmetry()).toEqual({ difference: 8, classification: 'CRITICAL' });
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: results,
+      });
+      expect(p.asymmetry()).toEqual({
+        difference: 8,
+        classification: 'CRITICAL',
+      });
     });
   });
 
@@ -279,7 +318,11 @@ describe('MaturityProfile (aggregate root)', () => {
         resultFor('TmRL', 4),
         resultFor('FRL', 3),
       ];
-      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: results,
+      });
       const g = p.gaps();
       expect(g.threshold).toBe(3);
       expect(g.dimensions.map((r) => r.dimensionCode.value)).toEqual([
@@ -310,8 +353,67 @@ describe('MaturityProfile (aggregate root)', () => {
         resultFor('TmRL', 6),
         resultFor('FRL', 6),
       ];
-      const p = MaturityProfile.create({ diagnosticId, computedAt, dimensionResults: results });
-      expect(p.gaps().dimensions.map((r) => r.dimensionCode.value)).toEqual(['IPRL']);
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: results,
+      });
+      expect(p.gaps().dimensions.map((r) => r.dimensionCode.value)).toEqual([
+        'IPRL',
+      ]);
+    });
+  });
+
+  describe('criticalState (RF-13)', () => {
+    const CRITICAL_ELIGIBLE = new Set(['CRL', 'BRL', 'TmRL']);
+
+    it('is the gaps restricted to CRL, BRL and TmRL, whatever the level of the others', () => {
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: [
+          resultFor('TRL', 1), // in a gap, but not eligible
+          resultFor('CRL', 3),
+          resultFor('BRL', 2),
+          resultFor('IPRL', 1), // in a gap, but not eligible
+          resultFor('TmRL', 6),
+          resultFor('FRL', 2), // in a gap, but not eligible
+        ],
+      });
+
+      expect(
+        p
+          .criticalState(CRITICAL_ELIGIBLE)
+          .dimensions.map((r) => r.dimensionCode.value),
+      ).toEqual(['CRL', 'BRL']);
+    });
+
+    it('is empty when no eligible dimension is in a gap, even if others are', () => {
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: [
+          resultFor('TRL', 1),
+          resultFor('CRL', 6),
+          resultFor('BRL', 6),
+          resultFor('IPRL', 1),
+          resultFor('TmRL', 6),
+          resultFor('FRL', 1),
+        ],
+      });
+
+      expect(p.criticalState(CRITICAL_ELIGIBLE).dimensions).toHaveLength(0);
+      expect(p.gaps().dimensions).toHaveLength(3);
+    });
+
+    it('is empty when the catalog marks no dimension as eligible', () => {
+      const p = MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: CODES.map((c) => resultFor(c, 1)),
+      });
+
+      expect(p.criticalState(new Set()).dimensions).toHaveLength(0);
     });
   });
 

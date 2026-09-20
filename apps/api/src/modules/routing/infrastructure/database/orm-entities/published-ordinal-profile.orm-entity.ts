@@ -26,7 +26,4 @@ export class PublishedOrdinalProfileOrm {
 
   @Column({ name: 'relevant_stages', type: 'varchar', length: 200 })
   relevantStages!: string;
-
-  @Column({ name: 'profile_hash', type: 'varchar', length: 64 })
-  profileHash!: string;
 }

@@ -9,8 +9,9 @@ import type { ObjectLiteral, Repository } from 'typeorm';
  * columns, and the create-date column.
  *
  * Why not list them by hand, as `.orUpdate([...])` asks: a hand-written
- * list has nothing to keep it complete. `dimension_result.is_bottleneck`
- * was left out of one and silently never updated (backlog 5.4). Deriving
+ * list has nothing to keep it complete. A column left out of one is
+ * silently never updated (it happened with `dimension_result`, backlog
+ * 5.4). Deriving
  * the list makes a new column part of the upsert the moment it is added to
  * the entity.
  *

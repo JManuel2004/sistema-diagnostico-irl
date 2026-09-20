@@ -12,12 +12,6 @@ export class PublishedEligibilityRuleOrm {
   @Column({ name: 'predicate', type: 'jsonb' })
   predicate!: unknown;
 
-  @Column({ name: 'expression_tree', type: 'jsonb' })
-  expressionTree!: unknown;
-
   @Column({ name: 'exclusion_message', type: 'varchar', length: 500 })
   exclusionMessage!: string;
-
-  @Column({ name: 'rule_hash', type: 'varchar', length: 64 })
-  ruleHash!: string;
 }

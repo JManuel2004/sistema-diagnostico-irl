@@ -21,9 +21,6 @@ export class PublishedExceptionRuleOrm {
   @Column({ name: 'predicate', type: 'jsonb' })
   predicate!: unknown;
 
-  @Column({ name: 'expression_tree', type: 'jsonb' })
-  expressionTree!: unknown;
-
   @Column({ name: 'action', type: 'varchar', length: 16 })
   action!: string;
 
@@ -38,7 +35,4 @@ export class PublishedExceptionRuleOrm {
 
   @Column({ name: 'priority_order', type: 'integer' })
   priorityOrder!: number;
-
-  @Column({ name: 'rule_hash', type: 'varchar', length: 64 })
-  ruleHash!: string;
 }

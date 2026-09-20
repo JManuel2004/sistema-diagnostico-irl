@@ -1,28 +1,9 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
+import { InitialSchema1747526400001 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518001-InitialSchema.js';
 import type { Repository } from 'typeorm';
 import { randomUUID } from 'node:crypto';
-import { InitialSchema1747526400001 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518001-InitialSchema.js';
-import { CatalogConversionAndPairs1747526400002 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518002-CatalogConversionAndPairs.js';
-import { RemainingCatalogTables1747526400003 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518003-RemainingCatalogTables.js';
-import { RemainingDiagnosticTables1747526400004 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518004-RemainingDiagnosticTables.js';
-import { RemoveSingleRuleRoutingModel1747526400005 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518005-RemoveSingleRuleRoutingModel.js';
-import { ExtendDiagnosticStateCheck1747526400006 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518006-ExtendDiagnosticStateCheck.js';
-import { RoutingCalibration1747526400007 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518007-RoutingCalibration.js';
-import { RoutingConfigurationVersion1747526400008 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518008-RoutingConfigurationVersion.js';
-import { RoutingConfigurationDraft1747526400009 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518009-RoutingConfigurationDraft.js';
-import { RecommendationResultAndTrace1747526400010 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518010-RecommendationResultAndTrace.js';
-import { InitiativeCharacterization1747526400011 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518011-InitiativeCharacterization.js';
-import { RoadmapDependencyGraph1747526400012 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518012-RoadmapDependencyGraph.js';
-import { EnglishCatalogNaming1747526400013 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518013-EnglishCatalogNaming.js';
-import { EnglishAnswerNaming1747526400014 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518014-EnglishAnswerNaming.js';
-import { EnglishMaturityProfileNaming1747526400015 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518015-EnglishMaturityProfileNaming.js';
-import { EnglishRoadmapGraphNaming1747526400016 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518016-EnglishRoadmapGraphNaming.js';
-import { EnglishDiagnosticNaming1747526400017 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518017-EnglishDiagnosticNaming.js';
-import { EnglishPortfolioRoutingNaming1747526400018 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518018-EnglishPortfolioRoutingNaming.js';
-import { EnglishInitiativeConsentNaming1747526400020 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518020-EnglishInitiativeConsentNaming.js';
-import { RetireRoutingConfigurationVersioning1747526400021 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518021-RetireRoutingConfigurationVersioning.js';
 import { PortfolioRecommendationOrm } from '../../../src/modules/routing/infrastructure/database/orm-entities/portfolio-recommendation.orm-entity.js';
 import { RecommendationAlternativeOrm } from '../../../src/modules/routing/infrastructure/database/orm-entities/recommendation-alternative.orm-entity.js';
 import { LayerTraceOrm } from '../../../src/modules/routing/infrastructure/database/orm-entities/layer-trace.orm-entity.js';
@@ -83,28 +64,7 @@ describe('Recomendación — persistencia (integration)', () => {
         RecommendationAlternativeOrm,
         LayerTraceOrm,
       ],
-      migrations: [
-        InitialSchema1747526400001,
-        CatalogConversionAndPairs1747526400002,
-        RemainingCatalogTables1747526400003,
-        RemainingDiagnosticTables1747526400004,
-        RemoveSingleRuleRoutingModel1747526400005,
-        ExtendDiagnosticStateCheck1747526400006,
-        RoutingCalibration1747526400007,
-        RoutingConfigurationVersion1747526400008,
-        RoutingConfigurationDraft1747526400009,
-        RecommendationResultAndTrace1747526400010,
-        InitiativeCharacterization1747526400011,
-        RoadmapDependencyGraph1747526400012,
-        EnglishCatalogNaming1747526400013,
-        EnglishAnswerNaming1747526400014,
-        EnglishMaturityProfileNaming1747526400015,
-        EnglishRoadmapGraphNaming1747526400016,
-        EnglishDiagnosticNaming1747526400017,
-        EnglishPortfolioRoutingNaming1747526400018,
-        EnglishInitiativeConsentNaming1747526400020,
-        RetireRoutingConfigurationVersioning1747526400021,
-      ],
+      migrations: [InitialSchema1747526400001],
       migrationsTableName: 'typeorm_migrations',
     });
 
@@ -169,9 +129,7 @@ describe('Recomendación — persistencia (integration)', () => {
     const read = await repo.findByDiagnosticId(diagnosticId);
     expect(read?.primary?.serviceName).toBe('Consultoría');
     expect(read?.primary?.total).toBeCloseTo(5.55, 3);
-    expect(read?.alternatives.map((a) => a.serviceName)).toEqual([
-      'Mentoría',
-    ]);
+    expect(read?.alternatives.map((a) => a.serviceName)).toEqual(['Mentoría']);
     expect(read?.trace.factsHash).toBe('a'.repeat(64));
   });
 

@@ -11,8 +11,8 @@ import { DIMENSION_DEPENDENCIES } from './data/dimension-dependencies.js';
  * Idempotent by the natural key `(source, target)`. The `DO UPDATE`
  * lists the one mutable column explicitly — omitting it would make the
  * seed look idempotent while never updating that value after the first
- * INSERT, which is exactly the shape of the bug that
- * `dimension_result.is_bottleneck` carries.
+ * INSERT, which is the shape of bug that a hand-written upsert column
+ * list invites (backlog 5.4).
  *
  * The expected minimum level per dimension is seeded in the `dimension`
  * step, not here: it is a column of that table.

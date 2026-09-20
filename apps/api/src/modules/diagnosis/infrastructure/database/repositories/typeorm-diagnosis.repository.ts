@@ -48,8 +48,8 @@ export class TypeOrmDiagnosisRepository implements DiagnosisRepositoryPort {
 
     if (existing) {
       existing.state = snapshot.state;
-      if (snapshot.state === 'PROFILE_GENERATED' && existing.phase1CompletedAt === null) {
-        existing.phase1CompletedAt = snapshot.updatedAt;
+      if (snapshot.state === 'PROFILE_GENERATED' && existing.completedAt === null) {
+        existing.completedAt = snapshot.updatedAt;
       }
       await this.orm.save(existing);
       return;

@@ -2,25 +2,20 @@ import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
 import { InitialSchema1747526400001 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518001-InitialSchema.js';
+import { seedCatalog } from '../../../src/shared/kernel/infrastructure/database/seeds/seed-catalog.js';
 import { DIMENSIONS } from '../../../src/shared/kernel/infrastructure/database/seeds/data/dimensions.js';
 import { STATEMENTS } from '../../../src/shared/kernel/infrastructure/database/seeds/data/statements.js';
 
 /**
  * Smoke test for the migration + seed pipeline.
  *
- * Boots a disposable Postgres via Testcontainers, applies the initial
- * migration, runs the equivalent of `db:seed`, then asserts the catalog
- * is populated as the framework demands: 6 dimensions, 48 statements.
+ * Boots a disposable Postgres via Testcontainers, applies the schema
+ * migration (the project has a single one), runs the same `seedCatalog` the
+ * `db:seed` command runs, and asserts the catalog is populated as the
+ * framework demands: 6 dimensions, 48 statements, and RF-13's critical
+ * dimensions marked.
  *
- * Also re-runs the seed to confirm idempotency — no duplicate rows,
- * updated text content reflected on the second pass.
- *
- * Deliberately applies only migration 001 (the schema as originally
- * created) and hand-rolls the equivalent insert SQL against that
- * schema's Spanish column names — it exercises the initial migration
- * in isolation, not the current renamed schema. Seed-data field names
- * (`DIMENSIONS`/`STATEMENTS`) follow the current English convention;
- * only the raw SQL column names below stay pinned to migration 001.
+ * Also re-runs the seed to confirm idempotency — no duplicate rows.
  */
 describe('Catalog seed (integration)', () => {
   let container: StartedPostgreSqlContainer;
@@ -50,85 +45,64 @@ describe('Catalog seed (integration)', () => {
   });
 
   const runSeed = async (): Promise<void> => {
-    await dataSource.transaction(async (manager) => {
-      for (const d of DIMENSIONS) {
-        await manager.query(
-          `INSERT INTO irl_catalog.dimension
-             (codigo, nombre_es, nombre_en, descripcion, es_dimension_critica, orden)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           ON CONFLICT (codigo) DO UPDATE
-             SET nombre_es            = EXCLUDED.nombre_es,
-                 nombre_en            = EXCLUDED.nombre_en,
-                 descripcion          = EXCLUDED.descripcion,
-                 es_dimension_critica = EXCLUDED.es_dimension_critica,
-                 orden                = EXCLUDED.orden`,
-          [
-            d.code,
-            d.nameEs,
-            d.nameEn,
-            d.description,
-            d.isCriticalDimension,
-            d.sequence,
-          ],
-        );
-      }
-      for (const s of STATEMENTS) {
-        await manager.query(
-          `INSERT INTO irl_catalog.afirmacion (id_dimension, numero_en_dimension, texto_es)
-           SELECT d.id_dimension, $2, $3
-             FROM irl_catalog.dimension d
-            WHERE d.codigo = $1
-           ON CONFLICT (id_dimension, numero_en_dimension) DO UPDATE
-             SET texto_es = EXCLUDED.texto_es`,
-          [s.dimensionCode, s.sequence, s.textEs],
-        );
-      }
-    });
+    await dataSource.transaction((manager) => seedCatalog(manager));
   };
 
-  it('populates 6 dimensions and 48 statements after a single run', async () => {
+  const count = async (table: string): Promise<string> => {
+    const [{ count: n }] = await dataSource.query<{ count: string }[]>(
+      `SELECT COUNT(*)::text AS count FROM ${table}`,
+    );
+    return n;
+  };
+
+  it('populates the catalog after a single run', async () => {
     await runSeed();
 
-    const [{ count: dimCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.dimension`,
+    expect(await count('irl_catalog.dimension')).toBe(
+      String(DIMENSIONS.length),
     );
-    const [{ count: afCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.afirmacion`,
+    expect(await count('irl_catalog.statement')).toBe(
+      String(STATEMENTS.length),
     );
-
-    expect(dimCount).toBe('6');
-    expect(afCount).toBe('48');
+    expect(await count('irl_catalog.dimension')).toBe('6');
+    expect(await count('irl_catalog.statement')).toBe('48');
+    expect(await count('irl_catalog.dimension_pair')).toBe('6');
+    expect(await count('irl_catalog.scoring_parameters')).toBe('1');
   });
 
   it('is idempotent — running again does not duplicate rows', async () => {
     await runSeed();
     await runSeed();
 
-    const [{ count: dimCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.dimension`,
-    );
-    const [{ count: afCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.afirmacion`,
-    );
-
-    expect(dimCount).toBe('6');
-    expect(afCount).toBe('48');
+    expect(await count('irl_catalog.dimension')).toBe('6');
+    expect(await count('irl_catalog.statement')).toBe('48');
+    expect(await count('irl_catalog.published_ordinal_profile')).toBe('6');
   });
 
   it('preserves exactly 8 statements per dimension', async () => {
     await runSeed();
 
-    const rows = await dataSource.query<{ codigo: string; cnt: string }[]>(
-      `SELECT d.codigo, COUNT(a.id_afirmacion)::text AS cnt
+    const rows = await dataSource.query<{ code: string; cnt: string }[]>(
+      `SELECT d.code, COUNT(s.id_statement)::text AS cnt
          FROM irl_catalog.dimension d
-         JOIN irl_catalog.afirmacion a ON a.id_dimension = d.id_dimension
-        GROUP BY d.codigo
-        ORDER BY d.codigo`,
+         JOIN irl_catalog.statement s ON s.id_dimension = d.id_dimension
+        GROUP BY d.code
+        ORDER BY d.code`,
     );
 
     expect(rows).toHaveLength(6);
     for (const r of rows) {
       expect(r.cnt).toBe('8');
     }
+  });
+
+  it('marks CRL, BRL and TmRL as susceptible to a critical state (RF-13)', async () => {
+    await runSeed();
+
+    const rows = await dataSource.query<{ code: string }[]>(
+      `SELECT code FROM irl_catalog.dimension WHERE is_critical_dimension ORDER BY code`,
+    );
+
+    expect(rows.map((r) => r.code)).toEqual(['BRL', 'CRL', 'TmRL']);
   });
 });

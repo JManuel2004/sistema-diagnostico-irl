@@ -23,9 +23,9 @@ async function repositoryOf<T extends ObjectLiteral>(
 }
 
 describe('upsertColumns', () => {
-  // Backlog 5.4: `is_bottleneck` was left out of a hand-written list and was
-  // never updated. Deriving the list from the entity puts it back.
-  it('includes every non-key column of dimension_result, is_bottleneck among them', async () => {
+  // Backlog 5.4: a hand-written list left a column out and it was never
+  // updated. Deriving the list from the entity includes every one.
+  it('includes every non-key column of dimension_result', async () => {
     const repo = await repositoryOf(DimensionResultOrm);
 
     expect(
@@ -35,7 +35,6 @@ describe('upsertColumns', () => {
         'computed_at',
         'in_critical_state',
         'irl_level',
-        'is_bottleneck',
         'likert_average',
       ].sort(),
     );

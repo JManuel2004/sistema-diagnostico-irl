@@ -1,5 +1,4 @@
 import type { EntityManager } from 'typeorm';
-import { createHash } from 'node:crypto';
 import {
   CALIBRATION_SCALE,
   ETAPAS,
@@ -95,8 +94,8 @@ export async function seedRouting(
     const stages = profile.relevantStages.join(',');
     const [{ id: idProfile }] = await manager.query<{ id: string }[]>(
       `INSERT INTO irl_catalog.published_ordinal_profile
-         (id_service, min_level, max_level, relevant_stages, profile_hash)
-       SELECT s.id, $2, $3, $4, $5
+         (id_service, min_level, max_level, relevant_stages)
+       SELECT s.id, $2, $3, $4
          FROM irl_catalog.portfolio_service s
         WHERE s.name = $1
        RETURNING id`,
@@ -105,7 +104,6 @@ export async function seedRouting(
         profile.minLevel,
         profile.maxLevel,
         stages,
-        hash({ ...profile }),
       ],
     );
 
@@ -125,16 +123,14 @@ export async function seedRouting(
   for (const rule of ELIGIBILITY_RULES) {
     await manager.query(
       `INSERT INTO irl_catalog.published_eligibility_rule
-         (id_service, predicate, expression_tree, exclusion_message, rule_hash)
-       SELECT s.id, $2::jsonb, $3::jsonb, $4, $5
+         (id_service, predicate, exclusion_message)
+       SELECT s.id, $2::jsonb, $3
          FROM irl_catalog.portfolio_service s
         WHERE s.name = $1`,
       [
         rule.service,
         JSON.stringify(rule.predicate),
-        JSON.stringify(rule.predicate),
         rule.exclusionMessage,
-        hash(rule),
       ],
     );
   }
@@ -143,32 +139,22 @@ export async function seedRouting(
   for (const rule of EXCEPTION_RULES) {
     await manager.query(
       `INSERT INTO irl_catalog.published_exception_rule
-         (code, predicate, expression_tree, action, id_target_service,
-          positions, declared_reason, priority_order, rule_hash)
-       SELECT $1, $2::jsonb, $3::jsonb, $4, s.id, $6, $7, $8, $9
+         (code, predicate, action, id_target_service,
+          positions, declared_reason, priority_order)
+       SELECT $1, $2::jsonb, $3, s.id, $5, $6, $7
          FROM irl_catalog.portfolio_service s
-        WHERE s.name = $5`,
+        WHERE s.name = $4`,
       [
         rule.code,
-        JSON.stringify(rule.predicate),
         JSON.stringify(rule.predicate),
         rule.action,
         rule.targetService,
         rule.positions,
         rule.declaredReason,
         rule.priorityOrder,
-        hash(rule),
       ],
     );
   }
 
   return { configurationSeeded: true };
-}
-
-/**
- * Huella del artefacto publicado. Sirve para detectar si dos fichas o
- * reglas comparten contenido idéntico sin compararlas campo a campo.
- */
-function hash(value: unknown): string {
-  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }

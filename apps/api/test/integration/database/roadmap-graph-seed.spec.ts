@@ -2,21 +2,6 @@ import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
 import { InitialSchema1747526400001 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518001-InitialSchema.js';
-import { CatalogConversionAndPairs1747526400002 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518002-CatalogConversionAndPairs.js';
-import { RemainingCatalogTables1747526400003 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518003-RemainingCatalogTables.js';
-import { RemainingDiagnosticTables1747526400004 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518004-RemainingDiagnosticTables.js';
-import { RemoveSingleRuleRoutingModel1747526400005 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518005-RemoveSingleRuleRoutingModel.js';
-import { ExtendDiagnosticStateCheck1747526400006 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518006-ExtendDiagnosticStateCheck.js';
-import { RoutingCalibration1747526400007 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518007-RoutingCalibration.js';
-import { RoutingConfigurationVersion1747526400008 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518008-RoutingConfigurationVersion.js';
-import { RoutingConfigurationDraft1747526400009 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518009-RoutingConfigurationDraft.js';
-import { RecommendationResultAndTrace1747526400010 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518010-RecommendationResultAndTrace.js';
-import { InitiativeCharacterization1747526400011 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518011-InitiativeCharacterization.js';
-import { RoadmapDependencyGraph1747526400012 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518012-RoadmapDependencyGraph.js';
-import { EnglishCatalogNaming1747526400013 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518013-EnglishCatalogNaming.js';
-import { EnglishMaturityProfileNaming1747526400015 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518015-EnglishMaturityProfileNaming.js';
-import { EnglishRoadmapGraphNaming1747526400016 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518016-EnglishRoadmapGraphNaming.js';
-import { RetireRoadmapDependencyActive1747526400022 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518022-RetireRoadmapDependencyActive.js';
 import { DIMENSIONS } from '../../../src/shared/kernel/infrastructure/database/seeds/data/dimensions.js';
 import { DIMENSION_DEPENDENCIES } from '../../../src/shared/kernel/infrastructure/database/seeds/data/dimension-dependencies.js';
 import { seedRoadmapGraph } from '../../../src/shared/kernel/infrastructure/database/seeds/seed-roadmap-graph.js';
@@ -44,24 +29,7 @@ describe('Seed del graph de dependencies (integration)', () => {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
-      migrations: [
-        InitialSchema1747526400001,
-        CatalogConversionAndPairs1747526400002,
-        RemainingCatalogTables1747526400003,
-        RemainingDiagnosticTables1747526400004,
-        RemoveSingleRuleRoutingModel1747526400005,
-        ExtendDiagnosticStateCheck1747526400006,
-        RoutingCalibration1747526400007,
-        RoutingConfigurationVersion1747526400008,
-        RoutingConfigurationDraft1747526400009,
-        RecommendationResultAndTrace1747526400010,
-        InitiativeCharacterization1747526400011,
-        RoadmapDependencyGraph1747526400012,
-        EnglishCatalogNaming1747526400013,
-        EnglishMaturityProfileNaming1747526400015,
-        EnglishRoadmapGraphNaming1747526400016,
-        RetireRoadmapDependencyActive1747526400022,
-      ],
+      migrations: [InitialSchema1747526400001],
       migrationsTableName: 'typeorm_migrations',
     });
 
@@ -72,13 +40,14 @@ describe('Seed del graph de dependencies (integration)', () => {
     for (const d of DIMENSIONS) {
       await dataSource.query(
         `INSERT INTO irl_catalog.dimension
-           (code, name_es, name_en, description, is_critical_dimension,
-            sequence, minimum_expected_level)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+           (code, name_es, name_en, short_name_es, description,
+            is_critical_dimension, sequence, minimum_expected_level)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
         [
           d.code,
           d.nameEs,
           d.nameEn,
+          d.shortNameEs,
           d.description,
           d.isCriticalDimension,
           d.sequence,
@@ -116,9 +85,7 @@ describe('Seed del graph de dependencies (integration)', () => {
   });
 
   it('las seis dimensions quedan con nivel mínimo esperado 4', async () => {
-    const rows = await dataSource.query<
-      { codigo: string; nivel: number }[]
-    >(
+    const rows = await dataSource.query<{ codigo: string; nivel: number }[]>(
       `SELECT code AS codigo, minimum_expected_level AS nivel
          FROM irl_catalog.dimension ORDER BY sequence`,
     );

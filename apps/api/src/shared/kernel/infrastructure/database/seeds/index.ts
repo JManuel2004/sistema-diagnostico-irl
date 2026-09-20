@@ -1,10 +1,6 @@
 import { config as loadEnv } from 'dotenv';
 import dataSource from '../data-source.js';
-import { CONVERSION_RANGES } from './data/conversion-ranges.js';
-import { DIMENSIONS } from './data/dimensions.js';
-import { STATEMENTS } from './data/statements.js';
-import { seedRouting } from './seed-routing.js';
-import { seedRoadmapGraph } from './seed-roadmap-graph.js';
+import { seedCatalog } from './seed-catalog.js';
 
 loadEnv({ path: '.env.local' });
 loadEnv({ path: '.env' });
@@ -33,95 +29,7 @@ async function run(): Promise<void> {
   let roadmap = { edges: 0 };
   try {
     await dataSource.transaction(async (manager) => {
-      for (const d of DIMENSIONS) {
-        await manager.query(
-          `INSERT INTO irl_catalog.dimension
-             (code, name_es, name_en, description, is_critical_dimension, sequence,
-              minimum_expected_level)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
-           ON CONFLICT (code) DO UPDATE
-             SET name_es                = EXCLUDED.name_es,
-                 name_en                = EXCLUDED.name_en,
-                 description            = EXCLUDED.description,
-                 is_critical_dimension  = EXCLUDED.is_critical_dimension,
-                 sequence               = EXCLUDED.sequence,
-                 minimum_expected_level = EXCLUDED.minimum_expected_level`,
-          [
-            d.code,
-            d.nameEs,
-            d.nameEn,
-            d.description,
-            d.isCriticalDimension,
-            d.sequence,
-            d.minimumExpectedLevel,
-          ],
-        );
-      }
-
-      for (const s of STATEMENTS) {
-        await manager.query(
-          `INSERT INTO irl_catalog.statement (id_dimension, sequence, text_es)
-           SELECT d.id_dimension, $2, $3
-             FROM irl_catalog.dimension d
-            WHERE d.code = $1
-           ON CONFLICT (id_dimension, sequence) DO UPDATE
-             SET text_es = EXCLUDED.text_es`,
-          [s.dimensionCode, s.sequence, s.textEs],
-        );
-      }
-
-      for (const r of CONVERSION_RANGES) {
-        await manager.query(
-          `INSERT INTO irl_catalog.conversion_range (irl_level, avg_min, avg_max)
-           VALUES ($1, $2, $3)
-           ON CONFLICT (irl_level) DO UPDATE
-             SET avg_min = EXCLUDED.avg_min,
-                 avg_max = EXCLUDED.avg_max`,
-          [r.irlLevel, r.avgMin, r.avgMax],
-        );
-      }
-
-      const PAIRS: [string, string][] = [
-        ['TRL', 'CRL'],
-        ['TRL', 'BRL'],
-        ['CRL', 'BRL'],
-        ['TmRL', 'FRL'],
-        ['BRL', 'IPRL'],
-        ['TRL', 'IPRL'],
-      ];
-      for (const [a, b] of PAIRS) {
-        await manager.query(
-          `INSERT INTO irl_catalog.dimension_pair (id_dimension_a, id_dimension_b, pair_code)
-           SELECT da.id_dimension, db.id_dimension, $3
-             FROM irl_catalog.dimension da, irl_catalog.dimension db
-            WHERE da.code = $1 AND db.code = $2
-           ON CONFLICT (pair_code) DO NOTHING`,
-          [a, b, `${a}-${b}`],
-        );
-      }
-
-      await manager.query(
-        `INSERT INTO irl_diagnostic.diagnostic
-           (id, keycloak_user_id, state, irl_framework_version)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (id) DO UPDATE
-           SET state = EXCLUDED.state`,
-        [
-          'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-          'usuario-demo',
-          'QUESTIONNAIRE_IN_PROGRESS',
-          'KTH-IRL-1.0',
-        ],
-      );
-
-      // Catálogo de enrutamiento. Va dentro de la misma transacción: una
-      // configuración con fichas pero sin reglas de excepción haría que
-      // el motor arrancase y diera resultados silenciosamente incompletos.
-      routing = await seedRouting(manager);
-
-      // Grafo de dependencias del roadmap. Va después de `dimension`
-      // porque resuelve sus FKs por subconsulta sobre `code`.
-      roadmap = await seedRoadmapGraph(manager);
+      ({ routing, roadmap } = await seedCatalog(manager));
     });
 
     const [{ count: dimCount }] = await dataSource.query<{ count: string }[]>(

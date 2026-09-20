@@ -12,11 +12,9 @@ export class DiagnosisOrm {
   @Column({ name: 'started_at', type: 'timestamptz', default: () => 'now()' })
   startedAt!: Date;
 
-  @Column({ name: 'phase_1_completed_at', type: 'timestamptz', nullable: true })
-  phase1CompletedAt!: Date | null;
-
-  @Column({ name: 'phase_2_completed_at', type: 'timestamptz', nullable: true })
-  phase2CompletedAt!: Date | null;
+  /** When the diagnostic's maturity profile was generated. */
+  @Column({ name: 'completed_at', type: 'timestamptz', nullable: true })
+  completedAt!: Date | null;
 
   @Column({ name: 'state', type: 'varchar', length: 32 })
   state!: string;

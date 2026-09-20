@@ -150,6 +150,20 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
     await app?.close();
   });
 
+  it('finalizar guarda el estado crítico solo en las dimensiones que RF-13 admite', async () => {
+    // Perfil AgroConecta: en brecha (IRL ≤ 3) están BRL (3), IPRL (1) y FRL (2),
+    // pero IPRL y FRL no reciben la alerta: solo BRL queda en estado crítico.
+    const filas = await dataSource.query<{ code: string }[]>(
+      `SELECT d.code
+         FROM irl_diagnostic.dimension_result r
+         JOIN irl_catalog.dimension d ON d.id_dimension = r.id_dimension
+        WHERE r.id_diagnostic = $1 AND r.in_critical_state`,
+      [diagnosticId],
+    );
+
+    expect(filas.map((f) => f.code)).toEqual(['BRL']);
+  });
+
   it('antes de aceptar, no existe recomendación ni se ha publicado nada', async () => {
     expect(await estadoDe(diagnosticId)).toBe('PROFILE_GENERATED');
     expect(solicitado).not.toHaveBeenCalled();

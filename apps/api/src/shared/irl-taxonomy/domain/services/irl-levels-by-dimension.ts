@@ -14,13 +14,12 @@ export interface DimensionLevelSource {
  * `routing/` and `roadmap/` both need it, and both used to re-derive it
  * with their own copy of the same explanation (backlog 3.2).
  *
- * The level is read from `dimensionResults[].irlLevel`, never from the
- * flags persisted next to it in `dimension_result`:
- *   - `is_bottleneck` is always persisted as `false`, so it says nothing;
- *   - `in_critical_state` holds semantics different from the SRS.
- * The bottleneck and the gaps are likewise taken from the computed profile,
- * not from those columns. Reading only the level keeps the consumers
- * independent of two columns whose meaning is disputed.
+ * The level is read from `dimensionResults[].irlLevel`. The bottleneck and
+ * the gaps are likewise taken from the computed profile
+ * (`MaturityProfile.bottleneck()`, `gaps()`), which is where they are
+ * derived; `dimension_result` keeps no bottleneck flag, and its
+ * `in_critical_state` (RF-13) is a persisted derivative that consumers of
+ * the profile have no need to read back.
  *
  * Pure: no IO, no validation of how many dimensions are present. A consumer
  * that needs exactly six (`roadmap/`) checks that itself and raises its own

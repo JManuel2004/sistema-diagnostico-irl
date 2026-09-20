@@ -140,6 +140,27 @@ export class MaturityProfile {
     return { dimensions, threshold: CRITICAL_IRL_THRESHOLD };
   }
 
+  /**
+   * RF-13 — Dimensiones en estado crítico.
+   *
+   * Solo las dimensiones que el marco declara susceptibles (CRL, BRL y
+   * TmRL, `dimension.is_critical_dimension`) pueden estar en estado crítico,
+   * y lo están cuando además su nivel IRL está en brecha (`gaps()`). TRL,
+   * IPRL y FRL no reciben esta alerta cualquiera que sea su nivel, así que
+   * una dimensión en brecha no es por sí sola una dimensión crítica.
+   *
+   * @param criticalDimensions códigos de las dimensiones susceptibles,
+   *   tomados del catálogo (`is_critical_dimension`).
+   */
+  criticalState(criticalDimensions: ReadonlySet<string>): {
+    readonly dimensions: readonly DimensionResult[];
+  } {
+    const dimensions = this.gaps().dimensions.filter((r) =>
+      criticalDimensions.has(r.dimensionCode.value),
+    );
+    return { dimensions };
+  }
+
   /** Persistence snapshot — the repository upserts the whole set atomically. */
   toPersistence(): MaturityProfilePersistence {
     return {

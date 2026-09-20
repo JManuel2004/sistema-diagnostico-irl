@@ -22,9 +22,20 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
 
   async save(profile: MaturityProfile): Promise<void> {
     const snapshot = profile.toPersistence();
-    const idByCode = await this.loadDimensionIdByCode();
-    const gapCodes = new Set<string>(
-      profile.gaps().dimensions.map((d) => d.dimensionCode.value),
+    const catalog = await this.dimensions.find();
+    const idByCode = new Map(
+      catalog.map((d) => [d.code, d.idDimension] as const),
+    );
+    // RF-13: critical state needs both a gap and a dimension the framework
+    // marks as susceptible (`is_critical_dimension`).
+    const criticalCodes = new Set<string>(
+      profile
+        .criticalState(
+          new Set(
+            catalog.filter((d) => d.isCriticalDimension).map((d) => d.code),
+          ),
+        )
+        .dimensions.map((d) => d.dimensionCode.value),
     );
 
     const rows = snapshot.dimensionResults.map((r) => {
@@ -40,8 +51,7 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
         idDimension,
         likertAverage: r.averageLikert,
         irlLevel: r.irlLevel,
-        inCriticalState: gapCodes.has(r.dimensionCode),
-        isBottleneck: false,
+        inCriticalState: criticalCodes.has(r.dimensionCode),
         computedAt: snapshot.computedAt,
       };
     });
@@ -83,11 +93,6 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
         };
       }),
     });
-  }
-
-  private async loadDimensionIdByCode(): Promise<ReadonlyMap<string, number>> {
-    const rows = await this.dimensions.find();
-    return new Map(rows.map((d) => [d.code, d.idDimension] as const));
   }
 
   private async loadDimensionCodeById(): Promise<ReadonlyMap<number, string>> {

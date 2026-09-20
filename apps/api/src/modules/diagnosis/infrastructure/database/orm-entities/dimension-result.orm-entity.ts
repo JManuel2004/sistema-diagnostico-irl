@@ -27,9 +27,6 @@ export class DimensionResultOrm {
   @Column({ name: 'in_critical_state', type: 'boolean' })
   inCriticalState!: boolean;
 
-  @Column({ name: 'is_bottleneck', type: 'boolean' })
-  isBottleneck!: boolean;
-
   @Column({ name: 'computed_at', type: 'timestamptz' })
   computedAt!: Date;
 }

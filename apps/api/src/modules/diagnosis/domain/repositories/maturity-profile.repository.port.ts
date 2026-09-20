@@ -19,11 +19,8 @@ import type { MaturityProfile } from '../entities/maturity-profile.aggregate.js'
  * set per call to keep the in-memory aggregate and the persisted state
  * fully consistent.
  *
- * DIAGIRL-35 (bottleneck) and DIAGIRL-38 (imbalance) need to update the
- * boolean flags (`is_bottleneck`, `in_critical_state`) on individual
- * rows. Those features will extend this port with targeted update
- * methods (e.g. `markBottleneck(diagnosticId, dimensionCode)`) — they
- * do NOT round-trip the whole aggregate.
+ * The bottleneck is not persisted: `MaturityProfile.bottleneck()` derives
+ * it. Only `in_critical_state` (RF-13) is stored alongside the levels.
  */
 export const MATURITY_PROFILE_REPOSITORY = Symbol(
   'MATURITY_PROFILE_REPOSITORY',
@@ -35,9 +32,8 @@ export interface MaturityProfileRepositoryPort {
    *
    * Replace-all semantics: any prior `dimension_result` rows for the
    * same `diagnosticId` are overwritten in the same transaction.
-   * `in_critical_state` is written from the IRL gap threshold
-   * (`CRITICAL_IRL_THRESHOLD`). `is_bottleneck` remains derived
-   * in the aggregate until a dedicated persist lands.
+   * `in_critical_state` is written from `MaturityProfile.criticalState()`
+   * (RF-13: a gap in CRL, BRL or TmRL).
    *
    * @throws when the underlying transaction fails; the caller maps it
    *   to a `MaturityProfileCalculationError` (HTTP 500).
