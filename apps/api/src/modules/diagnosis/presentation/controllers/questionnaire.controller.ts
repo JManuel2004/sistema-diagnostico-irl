@@ -18,7 +18,7 @@ export class QuestionnaireController {
   @ApiCreatedResponse({ description: 'Respuestas registradas exitosamente' })
   async submitQuestionnaire(
     @Param('id') diagnosticId: string,
-    @Body() body: { answers: { statementId: string; value: number }[] },
+    @Body() body: { answers: { statementId: string; value: number; justification: string }[] },
   ) {
     return unwrapResult(
       await this.submit.execute({ diagnosticId, answers: body.answers }),

@@ -57,6 +57,27 @@ export class Diagnosis {
     return this._state;
   }
 
+  /** The user accepted the deep analysis (RF-11): it is in progress or done. */
+  get deepAnalysisAccepted(): boolean {
+    return (
+      this._state.value === 'DEEP_ANALYSIS_IN_PROGRESS' ||
+      this._state.value === 'DEEP_ANALYSIS_COMPLETE'
+    );
+  }
+
+  /**
+   * The questionnaire was processed and the maturity profile exists (RF-07):
+   * the results can be read. Until then the diagnostic is still being filled
+   * in and can be resumed.
+   */
+  get completed(): boolean {
+    return (
+      this._state.value === 'PROFILE_GENERATED' ||
+      this._state.value === 'DEEP_ANALYSIS_DECLINED' ||
+      this.deepAnalysisAccepted
+    );
+  }
+
   get updatedAt(): Date {
     return this._updatedAt;
   }

@@ -37,6 +37,7 @@ export class TypeOrmAnswerSheetRepository implements AnswerSheetRepositoryPort {
       rows.map((r) => ({
         statementId: r.idStatement,
         value: r.likertValue,
+        justification: r.justification,
       })),
     );
   }
@@ -54,6 +55,7 @@ export class TypeOrmAnswerSheetRepository implements AnswerSheetRepositoryPort {
             idDiagnostico: sheet.diagnosticId.value,
             idStatement: a.statementId,
             likertValue: a.value,
+            justification: a.justification,
           }),
         );
         await manager.insert(AnswerOrm, rows);

@@ -30,9 +30,7 @@ export class ApplyConsentToDiagnosisUseCase {
     private readonly diagnostics: DiagnosisRepositoryPort,
   ) {}
 
-  async execute(
-    cmd: ApplyConsentToDiagnosisCommand,
-  ): Promise<Result<void, NotFoundError>> {
+  async execute(cmd: ApplyConsentToDiagnosisCommand): Promise<Result<void, NotFoundError>> {
     const diagnostico = await this.diagnostics.findById(cmd.diagnosticId);
     if (!diagnostico) {
       return Result.err(new NotFoundError('Diagnosis', cmd.diagnosticId));

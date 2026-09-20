@@ -12,7 +12,7 @@ import { Result } from '../../../../shared/kernel/domain/result.js';
 
 export interface SubmitQuestionnaireCommand {
   diagnosticId: string;
-  answers: { statementId: string; value: number }[];
+  answers: { statementId: string; value: number; justification: string }[];
 }
 
 /**
@@ -36,7 +36,7 @@ export class SubmitQuestionnaireUseCase {
     const sheet = AnswerSheet.create(diagnosticId);
 
     for (const item of cmd.answers) {
-      sheet.setAnswer(item.statementId, LikertValue.create(item.value));
+      sheet.setAnswer(item.statementId, LikertValue.create(item.value), item.justification);
     }
 
     if (sheet.answeredCount !== 48) {

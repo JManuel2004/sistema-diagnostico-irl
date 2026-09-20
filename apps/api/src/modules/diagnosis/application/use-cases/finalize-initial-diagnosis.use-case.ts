@@ -23,6 +23,7 @@ import { MaturityProfileCalculationError } from '../../domain/exceptions/maturit
 import { Result } from '../../../../shared/kernel/domain/result.js';
 
 const FINALIZABLE_STATES: readonly DiagnosisStateName[] = [
+  'WITH_INITIATIVE',
   'QUESTIONNAIRE_IN_PROGRESS',
   'QUESTIONNAIRE_COMPLETE',
   'PROFILE_GENERATED',
@@ -33,7 +34,7 @@ const FINALIZABLE_STATES: readonly DiagnosisStateName[] = [
 
 export interface FinalizeInitialDiagnosticCommand {
   diagnosticId: string;
-  answers: { statementId: string; value: number }[];
+  answers: { statementId: string; value: number; justification: string }[];
 }
 
 /**
@@ -73,10 +74,10 @@ export class FinalizeInitialDiagnosisUseCase {
     const current = diagnostico.state.value;
     if (!FINALIZABLE_STATES.includes(current)) {
       return Result.err(
-        new ConflictError(
-          `Diagnosis cannot be finalized from state ${current}`,
-          { diagnosticId: cmd.diagnosticId, state: current },
-        ),
+        new ConflictError(`Diagnosis cannot be finalized from state ${current}`, {
+          diagnosticId: cmd.diagnosticId,
+          state: current,
+        }),
       );
     }
 
@@ -104,6 +105,9 @@ export class FinalizeInitialDiagnosisUseCase {
       })),
     });
 
+    if (diagnostico.state.canTransitionTo('QUESTIONNAIRE_IN_PROGRESS')) {
+      diagnostico.transitionTo('QUESTIONNAIRE_IN_PROGRESS');
+    }
     if (diagnostico.state.canTransitionTo('QUESTIONNAIRE_COMPLETE')) {
       diagnostico.transitionTo('QUESTIONNAIRE_COMPLETE');
     }
@@ -114,8 +118,6 @@ export class FinalizeInitialDiagnosisUseCase {
     await this.diagnostics.save(diagnostico);
 
     const dimensions = await this.taxonomy.findAllDimensions();
-    return Result.ok(
-      toMaturityProfileResponse(profile, imbalances, dimensions),
-    );
+    return Result.ok(toMaturityProfileResponse(profile, imbalances, dimensions));
   }
 }

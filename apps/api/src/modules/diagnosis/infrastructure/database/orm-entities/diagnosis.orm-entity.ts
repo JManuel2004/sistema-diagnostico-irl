@@ -6,8 +6,8 @@ export class DiagnosisOrm {
   id!: string;
 
   @Index('ix_diagnostic_user')
-  @Column({ name: 'keycloak_user_id', type: 'varchar', length: 64 })
-  keycloakUserId!: string;
+  @Column({ name: 'cognito_user_id', type: 'varchar', length: 64 })
+  cognitoUserId!: string;
 
   @Column({ name: 'started_at', type: 'timestamptz', default: () => 'now()' })
   startedAt!: Date;

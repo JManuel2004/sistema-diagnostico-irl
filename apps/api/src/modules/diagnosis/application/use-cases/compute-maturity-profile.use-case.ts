@@ -88,19 +88,14 @@ export class ComputeMaturityProfileUseCase {
           { statementId: answer.statementId },
         );
       }
-      const existingKey = [...answersByDimension.keys()].find((k) =>
-        k.equals(dimension),
-      );
+      const existingKey = [...answersByDimension.keys()].find((k) => k.equals(dimension));
       const key = existingKey ?? dimension;
       const list = answersByDimension.get(key) ?? [];
       list.push(LikertValue.create(answer.value));
       answersByDimension.set(key, list);
     }
 
-    const dimensionResults = this.calculator.calculate(
-      answersByDimension,
-      conversionTable,
-    );
+    const dimensionResults = this.calculator.calculate(answersByDimension, conversionTable);
 
     const profile = MaturityProfile.create({
       diagnosticId,

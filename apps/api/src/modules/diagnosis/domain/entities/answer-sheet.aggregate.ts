@@ -34,9 +34,11 @@ export class AnswerSheet {
     return new AnswerSheet(diagnosticId, map);
   }
 
-  setAnswer(statementId: string, value: LikertValue): AnswerSheet {
+  setAnswer(statementId: string, value: LikertValue, justification: string): AnswerSheet {
     const existing = this.answersByStatement.get(statementId);
-    const next = existing ? existing.withValue(value) : Answer.create(statementId, value);
+    const next = existing
+      ? existing.withResponse(value, justification)
+      : Answer.create(statementId, value, justification);
     this.answersByStatement.set(statementId, next);
     return this;
   }
@@ -57,6 +59,7 @@ export class AnswerSheet {
     return [...this.answersByStatement.values()].map((a) => ({
       statementId: a.statementId,
       value: a.value.value,
+      justification: a.justification,
     }));
   }
 }

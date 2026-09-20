@@ -18,6 +18,9 @@ export class AnswerOrm {
   @Column({ name: 'likert_value', type: 'integer' })
   likertValue!: number;
 
+  @Column({ name: 'justification', type: 'varchar', length: 1000 })
+  justification!: string;
+
   @Column({
     name: 'answered_at',
     type: 'timestamptz',

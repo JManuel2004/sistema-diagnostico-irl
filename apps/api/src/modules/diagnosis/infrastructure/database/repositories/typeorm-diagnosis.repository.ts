@@ -26,7 +26,7 @@ export class TypeOrmDiagnosisRepository implements DiagnosisRepositoryPort {
 
   async findLatestByUserId(userId: string): Promise<Diagnosis | null> {
     const row = await this.orm.findOne({
-      where: { keycloakUserId: userId },
+      where: { cognitoUserId: userId },
       order: { startedAt: 'DESC' },
     });
     return row ? this.toDomain(row) : null;
@@ -34,7 +34,7 @@ export class TypeOrmDiagnosisRepository implements DiagnosisRepositoryPort {
 
   async findAllByUserId(userId: string): Promise<Diagnosis[]> {
     const rows = await this.orm.find({
-      where: { keycloakUserId: userId },
+      where: { cognitoUserId: userId },
       order: { startedAt: 'DESC' },
     });
     return rows.map((r) => this.toDomain(r));
@@ -58,7 +58,7 @@ export class TypeOrmDiagnosisRepository implements DiagnosisRepositoryPort {
     await this.orm.save(
       this.orm.create({
         id: snapshot.id,
-        keycloakUserId: snapshot.userId,
+        cognitoUserId: snapshot.userId,
         state: snapshot.state,
         startedAt: snapshot.createdAt,
       }),
@@ -68,7 +68,7 @@ export class TypeOrmDiagnosisRepository implements DiagnosisRepositoryPort {
   private toDomain(row: DiagnosisOrm): Diagnosis {
     return Diagnosis.fromPersistence({
       id: row.id,
-      userId: row.keycloakUserId,
+      userId: row.cognitoUserId,
       state: row.state,
       createdAt: row.startedAt,
       updatedAt: row.startedAt,

@@ -14,10 +14,7 @@ export interface RequestDeepAnalysisCommand {
   diagnosticId: string;
 }
 
-const ALREADY_ACCEPTED_STATES = new Set([
-  'DEEP_ANALYSIS_IN_PROGRESS',
-  'DEEP_ANALYSIS_COMPLETE',
-]);
+const ALREADY_ACCEPTED_STATES = new Set(['DEEP_ANALYSIS_IN_PROGRESS', 'DEEP_ANALYSIS_COMPLETE']);
 
 /**
  * `RequestDeepAnalysisUseCase` (RF-11 / HU-xx).
@@ -63,10 +60,10 @@ export class RequestDeepAnalysisUseCase {
     if (!ALREADY_ACCEPTED_STATES.has(current)) {
       if (current !== 'PROFILE_GENERATED') {
         return Result.err(
-          new ConflictError(
-            `Deep analysis cannot be requested from state ${current}`,
-            { diagnosticId: cmd.diagnosticId, state: current },
-          ),
+          new ConflictError(`Deep analysis cannot be requested from state ${current}`, {
+            diagnosticId: cmd.diagnosticId,
+            state: current,
+          }),
         );
       }
 

@@ -23,6 +23,10 @@ export function toMaturityProfileResponse(
   const strength = profile.strength();
   const asymmetry = profile.asymmetry();
   const gaps = profile.gaps();
+  // RF-13: which dimensions may be critical comes from the catalog.
+  const critical = profile.criticalState(
+    new Set(dimensions.filter((d) => d.isCriticalDimension).map((d) => d.code.value)),
+  );
 
   return {
     diagnosticId: profile.diagnosticId.value,
@@ -52,6 +56,9 @@ export function toMaturityProfileResponse(
     gaps: {
       dimensions: gaps.dimensions.map((r) => r.dimensionCode.value),
       threshold: gaps.threshold,
+    },
+    criticalState: {
+      dimensions: critical.dimensions.map((r) => r.dimensionCode.value),
     },
     imbalances:
       imbalances.length === 6

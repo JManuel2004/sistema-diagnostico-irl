@@ -24,6 +24,8 @@ export interface DimensionPersistence {
   readonly description: string;
   readonly sequence: number;
   readonly minimumExpectedLevel: number;
+  /** Whether the framework lets this dimension be in critical state (RF-13). */
+  readonly isCriticalDimension: boolean;
 }
 
 export class Dimension {
@@ -35,6 +37,7 @@ export class Dimension {
     public readonly description: string,
     public readonly sequence: number,
     public readonly minimumExpectedLevel: number,
+    public readonly isCriticalDimension: boolean,
   ) {}
 
   static fromPersistence(row: DimensionPersistence): Dimension {
@@ -55,6 +58,7 @@ export class Dimension {
       row.description,
       row.sequence,
       row.minimumExpectedLevel,
+      row.isCriticalDimension,
     );
   }
 }

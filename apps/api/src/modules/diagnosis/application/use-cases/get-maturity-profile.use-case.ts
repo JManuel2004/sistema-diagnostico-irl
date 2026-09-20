@@ -53,8 +53,6 @@ export class GetMaturityProfileUseCase {
 
     const storedImbalances = await this.imbalances.findByDiagnosticId(query.diagnosticId);
     const dimensions = await this.taxonomy.findAllDimensions();
-    return Result.ok(
-      toMaturityProfileResponse(profile, storedImbalances, dimensions),
-    );
+    return Result.ok(toMaturityProfileResponse(profile, storedImbalances, dimensions));
   }
 }

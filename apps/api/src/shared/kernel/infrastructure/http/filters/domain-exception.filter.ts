@@ -108,6 +108,7 @@ const STATUS_BY_CODE: Readonly<Record<string, number>> = {
   // Roadmap de escalamiento: un grafo con ciclo o unos mínimos
   // incompletos son defectos de configuración del sistema, no de la
   // petición. Un 4xx le diría al usuario que se equivocó él.
+  ROADMAP_NOT_GENERATED: HttpStatus.CONFLICT,
   ROADMAP_CALCULATION_FAILED: HttpStatus.INTERNAL_SERVER_ERROR,
   ROADMAP_GRAPH_HAS_CYCLE: HttpStatus.INTERNAL_SERVER_ERROR,
 };
