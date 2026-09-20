@@ -22,6 +22,7 @@ export * from './diagnosis/submission.schema.js';
 export * from './diagnosis/dimension-result.schema.js';
 export * from './diagnosis/bottleneck.schema.js';
 export * from './diagnosis/gaps.schema.js';
+export * from './diagnosis/critical-state.schema.js';
 export * from './diagnosis/asymmetry.schema.js';
 export * from './diagnosis/imbalance.schema.js';
 export * from './diagnosis/profile-response.schema.js';

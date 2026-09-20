@@ -3,6 +3,7 @@ import { uuidSchema } from '../common/uuid.schema.js';
 import { dimensionResultSchema } from './dimension-result.schema.js';
 import { bottleneckSchema } from './bottleneck.schema.js';
 import { gapsSchema } from './gaps.schema.js';
+import { criticalStateSchema } from './critical-state.schema.js';
 import { asymmetrySchema } from './asymmetry.schema.js';
 import { imbalancePairResultSchema } from './imbalance.schema.js';
 
@@ -51,6 +52,9 @@ export const maturityProfileResponseSchema = z
     ),
     gaps: gapsSchema.describe(
       'Dimensiones en brecha (IRL ≤ umbral) — evaluado en el backend; no recalcular en el cliente',
+    ),
+    criticalState: criticalStateSchema.describe(
+      'Dimensiones en estado crítico (RF-13) — evaluado en el backend; no recalcular en el cliente',
     ),
     imbalances: z
       .array(imbalancePairResultSchema)

@@ -22,17 +22,43 @@ export const sectorSchema = z
 export type Sector = z.infer<typeof sectorSchema>;
 
 /**
- * Registro de la información básica de una iniciativa (HU-06 / RF-04).
+ * Una etapa de la iniciativa (catálogo `irl_catalog.initiative_stage`).
+ *
+ * Endpoint: `GET /api/v1/initiative-catalog/stages`.
+ */
+export const initiativeStageSchema = z
+  .object({
+    id: z.string().min(1),
+    code: z.string().min(1),
+    name: z.string().min(1).describe('Nombre de la etapa en español'),
+  })
+  .describe('Una etapa del catálogo de etapas de iniciativa');
+
+export type InitiativeStage = z.infer<typeof initiativeStageSchema>;
+
+/** Máximo de caracteres de los campos de texto libre del perfil. */
+export const INITIATIVE_TEXT_MAX = 500;
+
+const requiredText = (label: string) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${label} es obligatorio`)
+    .max(INITIATIVE_TEXT_MAX, `${label} no puede exceder ${String(INITIATIVE_TEXT_MAX)} caracteres`);
+
+/**
+ * Registro del perfil de una iniciativa (HU-06 / RF-04).
  *
  * `POST /api/v1/diagnostics/:id/initiative`.
  *
- * Reglas:
- *   - `name`: 3–120 caracteres, obligatorio.
- *   - `sectorId`: id del sector seleccionado; el backend verifica que
- *     exista.
- *   - `shortDescription`: obligatoria, hasta 1000 caracteres — la
- *     columna es `NOT NULL` en `irl_diagnostic.initiative`, así que a
- *     diferencia de una versión anterior de este schema no es opcional.
+ * Es el paso previo al cuestionario y todos los campos son obligatorios:
+ *   - `name`: 3–120 caracteres.
+ *   - `sectorId` y `stageId`: ids del catálogo; el backend verifica que existan.
+ *   - `declaredStage`: cómo describe el usuario su etapa, en sus palabras,
+ *     junto a la etapa de catálogo (que es la que usa el enrutador).
+ *   - `teamSize` es un entero ≥ 1 y `teamDescription` dice quién es el equipo.
+ *
+ * Volver a registrarla actualiza la iniciativa del diagnóstico.
  */
 export const registerInitiativeSchema = z
   .object({
@@ -42,13 +68,15 @@ export const registerInitiativeSchema = z
       .min(3, 'El nombre debe tener al menos 3 caracteres')
       .max(120, 'El nombre no puede exceder 120 caracteres'),
     sectorId: z.string().min(1).describe('ID del sector seleccionado'),
-    shortDescription: z
-      .string()
-      .trim()
-      .min(1, 'La descripción es obligatoria')
-      .max(1000, 'La descripción no puede exceder 1000 caracteres'),
+    productType: requiredText('El tipo de producto o servicio'),
+    stageId: z.string().min(1).describe('ID de la etapa del catálogo'),
+    declaredStage: requiredText('La etapa declarada'),
+    teamSize: z.number().int().min(1, 'El equipo tiene al menos una persona').max(10000),
+    teamDescription: requiredText('La descripción del equipo'),
+    targetMarket: requiredText('El mercado objetivo'),
+    currentFunding: requiredText('El financiamiento actual'),
   })
-  .describe('Comando para registrar la información de una iniciativa');
+  .describe('Comando para registrar el perfil de una iniciativa');
 
 export type RegisterInitiativeCommand = z.infer<typeof registerInitiativeSchema>;
 
@@ -57,9 +85,8 @@ export type RegisterInitiativeCommand = z.infer<typeof registerInitiativeSchema>
  *
  * Endpoint: `GET /api/v1/diagnostics/:id/initiative`.
  *
- * Incluye el sector embebido para que el cliente no tenga que hacer
- * una segunda llamada al catálogo al pintar la tarjeta. No incluye
- * `createdAt`: `irl_diagnostic.initiative` no tiene esa columna.
+ * Incluye el sector y la etapa embebidos para que el cliente no tenga que
+ * consultar el catálogo al mostrarla.
  */
 export const initiativeSchema = z
   .object({
@@ -67,7 +94,13 @@ export const initiativeSchema = z
     diagnosticId: uuidSchema,
     name: z.string().min(3).max(120),
     sector: sectorSchema,
-    description: z.string().max(1000),
+    productType: z.string().min(1),
+    stage: initiativeStageSchema,
+    declaredStage: z.string().min(1),
+    teamSize: z.number().int().min(1),
+    teamDescription: z.string().min(1),
+    targetMarket: z.string().min(1),
+    currentFunding: z.string().min(1),
   })
   .describe('Iniciativa registrada en un diagnóstico');
 

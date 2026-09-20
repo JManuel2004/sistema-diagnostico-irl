@@ -44,7 +44,7 @@ export type DiagnosticState = z.infer<typeof diagnosticStateSchema>;
  *
  * Endpoint principal: `GET /api/v1/diagnosticos/:id`.
  *
- * `userId` es opaco (lo emite Keycloak); el frontend lo usa solo para
+ * `userId` es opaco (lo emite Cognito); el frontend lo usa solo para
  * comparar con el usuario actual y decidir si mostrar el diagnóstico.
  */
 export const diagnosticSchema = z
@@ -52,6 +52,16 @@ export const diagnosticSchema = z
     id: uuidSchema,
     userId: z.string().min(1).describe('Identificador del usuario propietario'),
     state: diagnosticStateSchema,
+    completed: z
+      .boolean()
+      .describe(
+        'Si el cuestionario ya se procesó y existe el perfil de madurez — derivado del estado en el backend; mientras sea falso el diagnóstico se puede reanudar',
+      ),
+    deepAnalysisAccepted: z
+      .boolean()
+      .describe(
+        'Si el usuario ya aceptó el análisis profundo — derivado del estado en el backend',
+      ),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
   })
