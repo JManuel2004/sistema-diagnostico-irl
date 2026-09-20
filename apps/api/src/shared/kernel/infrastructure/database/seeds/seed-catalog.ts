@@ -1,6 +1,7 @@
 import type { EntityManager } from 'typeorm';
 import { CONVERSION_RANGES } from './data/conversion-ranges.js';
 import { DIMENSIONS } from './data/dimensions.js';
+import { SECTORS } from './data/sectors.js';
 import { STATEMENTS } from './data/statements.js';
 import { seedRouting } from './seed-routing.js';
 import { seedRoadmapGraph } from './seed-roadmap-graph.js';
@@ -93,9 +94,20 @@ export async function seedCatalog(manager: EntityManager): Promise<{
     );
   }
 
+  // Sector catalog. `sector` has no natural unique key, so each name is
+  // inserted only when it is not there yet.
+  for (const name of SECTORS) {
+    await manager.query(
+      `INSERT INTO irl_catalog.sector (name, is_active)
+       SELECT $1::varchar, true
+       WHERE NOT EXISTS (SELECT 1 FROM irl_catalog.sector WHERE name = $1::varchar)`,
+      [name],
+    );
+  }
+
   await manager.query(
     `INSERT INTO irl_diagnostic.diagnostic
-       (id, keycloak_user_id, state, irl_framework_version)
+       (id, cognito_user_id, state, irl_framework_version)
      VALUES ($1, $2, $3, $4)
      ON CONFLICT (id) DO UPDATE
        SET state = EXCLUDED.state`,

@@ -43,6 +43,23 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  *     for the future `reporting/` module and still carry their original
  *     Spanish column names; they are translated when that module is designed.
  *
+ * `scaling_roadmap` holds the roadmap calculated when the user accepts the
+ * deep analysis: one row per diagnostic, `phases` as a `jsonb` snapshot of
+ * the aggregate (dimension codes, not names, which are read from the
+ * catalog). It is a fixed result with its date, like the maturity profile
+ * and the portfolio recommendation.
+ *
+ * `answer.justification` is the user's reason for each of the 48 answers; it
+ * is mandatory (`NOT NULL`, and it must contain at least one non-whitespace
+ * character: `btrim` would only strip spaces, not tabs or line breaks) and is
+ * stored with the answer.
+ *
+ * `initiative` holds the profile the user fills in before the questionnaire
+ * (`product_type`, `declared_stage` as free text next to the catalog stage
+ * `id_stage`, `team_size` with `team_description`, `target_market`,
+ * `current_funding`). The old `short_description` was replaced by
+ * `product_type`: no screen ever collected it.
+ *
  * `dimension_result` carries no bottleneck flag: the bottleneck is computed
  * in the `MaturityProfile` aggregate (`bottleneck()`), never persisted.
  *
@@ -240,7 +257,9 @@ export class InitialSchema1747526400001 implements MigrationInterface {
           id_diagnostic uuid NOT NULL,
           id_statement bigint NOT NULL,
           likert_value integer NOT NULL,
+          justification character varying(1000) NOT NULL,
           answered_at timestamp with time zone DEFAULT now() NOT NULL,
+          CONSTRAINT ck_answer_justification CHECK (((justification)::text ~ '\\S'::text)),
           CONSTRAINT ck_answer_likert_value CHECK (((likert_value >= 1) AND (likert_value <= 5)))
       )
     `);
@@ -248,7 +267,7 @@ export class InitialSchema1747526400001 implements MigrationInterface {
       CREATE TABLE irl_diagnostic.consent (
           id uuid NOT NULL,
           id_diagnostic uuid NOT NULL,
-          keycloak_user_id character varying(64) NOT NULL,
+          cognito_user_id character varying(64) NOT NULL,
           accepted boolean NOT NULL,
           accepted_at timestamp with time zone NOT NULL,
           terms_version character varying(16) NOT NULL
@@ -258,7 +277,7 @@ export class InitialSchema1747526400001 implements MigrationInterface {
       CREATE TABLE irl_diagnostic.descarga_reporte (
           id_descarga bigint GENERATED ALWAYS AS IDENTITY,
           id_diagnostico uuid NOT NULL,
-          keycloak_user_id character varying(64) NOT NULL,
+          cognito_user_id character varying(64) NOT NULL,
           timestamp_descarga timestamp with time zone NOT NULL,
           formato character varying(8) NOT NULL,
           tamano_bytes integer,
@@ -268,7 +287,7 @@ export class InitialSchema1747526400001 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE irl_diagnostic.diagnostic (
           id uuid NOT NULL,
-          keycloak_user_id character varying(64) NOT NULL,
+          cognito_user_id character varying(64) NOT NULL,
           started_at timestamp with time zone DEFAULT now() NOT NULL,
           completed_at timestamp with time zone,
           state character varying(32) NOT NULL,
@@ -294,7 +313,7 @@ export class InitialSchema1747526400001 implements MigrationInterface {
           id_evento bigint GENERATED ALWAYS AS IDENTITY,
           id_diagnostico uuid NOT NULL,
           tipo_evento character varying(40) NOT NULL,
-          keycloak_user_id character varying(64),
+          cognito_user_id character varying(64),
           timestamp_evento timestamp with time zone NOT NULL,
           metadata character varying(4000)
       )
@@ -305,10 +324,14 @@ export class InitialSchema1747526400001 implements MigrationInterface {
           id_diagnostic uuid NOT NULL,
           id_sector bigint NOT NULL,
           name character varying(200) NOT NULL,
-          short_description character varying(1000) NOT NULL,
+          product_type character varying(500) NOT NULL,
           id_stage bigint,
+          declared_stage character varying(500) NOT NULL,
           team_size integer,
+          team_description character varying(500) NOT NULL,
           academic_linkage boolean,
+          target_market character varying(500) NOT NULL,
+          current_funding character varying(500) NOT NULL,
           CONSTRAINT ck_initiative_team_size CHECK (((team_size IS NULL) OR (team_size > 0)))
       )
     `);
@@ -349,6 +372,14 @@ export class InitialSchema1747526400001 implements MigrationInterface {
           result_type character varying(24) DEFAULT 'RECOMMENDATION'::character varying NOT NULL,
           CONSTRAINT ck_portfolio_recommendation_coherence CHECK (((((result_type)::text = 'RECOMMENDATION'::text) AND (id_primary_service IS NOT NULL) AND (primary_score IS NOT NULL) AND (service_snapshot IS NOT NULL) AND (criterion_justification IS NOT NULL)) OR (((result_type)::text = 'NO_RECOMMENDATION'::text) AND (id_primary_service IS NULL) AND (primary_score IS NULL) AND (service_snapshot IS NULL)))),
           CONSTRAINT ck_portfolio_recommendation_result_type CHECK (((result_type)::text = ANY ((ARRAY['RECOMMENDATION'::character varying, 'NO_RECOMMENDATION'::character varying])::text[])))
+      )
+    `);
+    await queryRunner.query(`
+      CREATE TABLE irl_diagnostic.scaling_roadmap (
+          id bigint GENERATED ALWAYS AS IDENTITY,
+          id_diagnostic uuid NOT NULL,
+          phases jsonb NOT NULL,
+          generated_at timestamp with time zone NOT NULL
       )
     `);
 
@@ -424,6 +455,9 @@ export class InitialSchema1747526400001 implements MigrationInterface {
     `);
     await queryRunner.query(`
       ALTER TABLE irl_diagnostic.portfolio_recommendation ADD PRIMARY KEY (id)
+    `);
+    await queryRunner.query(`
+      ALTER TABLE irl_diagnostic.scaling_roadmap ADD PRIMARY KEY (id)
     `);
     await queryRunner.query(`
       ALTER TABLE irl_diagnostic.answer ADD PRIMARY KEY (id)
@@ -512,6 +546,9 @@ export class InitialSchema1747526400001 implements MigrationInterface {
       ALTER TABLE irl_diagnostic.portfolio_recommendation ADD CONSTRAINT uq_portfolio_recommendation_diagnostic UNIQUE (id_diagnostic)
     `);
     await queryRunner.query(`
+      ALTER TABLE irl_diagnostic.scaling_roadmap ADD CONSTRAINT uq_scaling_roadmap_diagnostic UNIQUE (id_diagnostic)
+    `);
+    await queryRunner.query(`
       ALTER TABLE irl_diagnostic.recommendation_alternative ADD CONSTRAINT uq_recommendation_alternative_position UNIQUE (id_recommendation, "position")
     `);
 
@@ -529,7 +566,7 @@ export class InitialSchema1747526400001 implements MigrationInterface {
       CREATE INDEX ix_answer_diagnostic ON irl_diagnostic.answer USING btree (id_diagnostic)
     `);
     await queryRunner.query(`
-      CREATE INDEX ix_diagnostic_user ON irl_diagnostic.diagnostic USING btree (keycloak_user_id)
+      CREATE INDEX ix_diagnostic_user ON irl_diagnostic.diagnostic USING btree (cognito_user_id)
     `);
     await queryRunner.query(`
       CREATE INDEX ix_recommendation_alternative_recommendation ON irl_diagnostic.recommendation_alternative USING btree (id_recommendation)
@@ -613,6 +650,9 @@ export class InitialSchema1747526400001 implements MigrationInterface {
     `);
     await queryRunner.query(`
       ALTER TABLE irl_diagnostic.portfolio_recommendation ADD CONSTRAINT fk_portfolio_recommendation_diagnostic FOREIGN KEY (id_diagnostic) REFERENCES irl_diagnostic.diagnostic(id) ON DELETE CASCADE
+    `);
+    await queryRunner.query(`
+      ALTER TABLE irl_diagnostic.scaling_roadmap ADD CONSTRAINT fk_scaling_roadmap_diagnostic FOREIGN KEY (id_diagnostic) REFERENCES irl_diagnostic.diagnostic(id) ON DELETE CASCADE
     `);
     await queryRunner.query(`
       ALTER TABLE irl_diagnostic.portfolio_recommendation ADD CONSTRAINT fk_portfolio_recommendation_primary_service FOREIGN KEY (id_primary_service) REFERENCES irl_catalog.portfolio_service(id)
