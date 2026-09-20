@@ -16,18 +16,22 @@ import { cn } from '@/shared/lib/utils';
  *  - Nombre completo a continuación en Plus Jakarta Sans Medium.
  *  - INNLAB no inventa logo propio: hereda la marca institucional.
  *
- * El descriptor aparece en el header de cada página y enlaza al
- * inicio del sistema. No se debe estilizar, recolorear el separador
- * ni cambiar la tipografía.
+ * El descriptor aparece en el header de cada página y enlaza al inicio.
+ * Cuál es ese inicio depende de la pantalla (`to`): en las pantallas con
+ * sesión y navegación (resultados, panel) es el panel; en la portada y en el
+ * asistente, que no llevan navegación, es la portada. No se debe estilizar,
+ * recolorear el separador ni cambiar la tipografía.
  */
 interface BrandDescriptorProps {
   readonly className?: string;
+  /** Destino del enlace. La portada por defecto. */
+  readonly to?: string;
 }
 
-export function BrandDescriptor({ className }: BrandDescriptorProps): JSX.Element {
+export function BrandDescriptor({ className, to = '/' }: BrandDescriptorProps): JSX.Element {
   return (
     <Link
-      to="/"
+      to={to}
       aria-label="Inicio · Diagnóstico IRL · INNLAB Centro de Innovación · Universidad Icesi"
       className={cn(
         'focus-visible:ring-ring group inline-flex items-center gap-4 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',

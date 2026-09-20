@@ -1,5 +1,6 @@
 import type { DimensionCode } from '@innlab/contracts';
 import { DIMENSION_CODES } from '@innlab/contracts';
+import { PALETTE } from './palette';
 
 /**
  * Metadata visual de las dimensiones IRL — single source of truth.
@@ -30,10 +31,10 @@ export interface DimensionVisualMeta {
   /** Clase Tailwind para texto oscurecido a AA sobre fondo blanco. */
   readonly textInk: string;
   /**
-   * Valor CSS del color de la dimensión, para lo que no admite clases:
-   * atributos SVG y estilos en línea (p. ej. el radar de recharts). Lee el
-   * mismo token que las clases Tailwind (`--color-dimension-*`) y trae el
-   * hex como respaldo.
+   * Color de la dimensión para lo que no admite clases: atributos SVG y
+   * estilos en línea (p. ej. el radar de recharts). Es la variante `-ink`,
+   * la que alcanza contraste AA sobre blanco, porque en SVG se usa para
+   * texto; el mismo valor que la clase `textInk`, salido de `PALETTE`.
    */
   readonly color: string;
 }
@@ -42,32 +43,32 @@ const DIMENSION_VISUAL: Record<DimensionCode, DimensionVisualMeta> = {
   TRL: {
     bg: 'bg-dimension-trl',
     textInk: 'text-dimension-trl-ink',
-    color: 'var(--color-dimension-trl, #5454E9)',
+    color: PALETTE.dimension['trl-ink'],
   },
   CRL: {
     bg: 'bg-dimension-crl',
     textInk: 'text-dimension-crl-ink',
-    color: 'var(--color-dimension-crl, #5832B0)',
+    color: PALETTE.dimension['crl-ink'],
   },
   BRL: {
     bg: 'bg-dimension-brl',
     textInk: 'text-dimension-brl-ink',
-    color: 'var(--color-dimension-brl, #1F633D)',
+    color: PALETTE.dimension['brl-ink'],
   },
   IPRL: {
     bg: 'bg-dimension-iprl',
     textInk: 'text-dimension-iprl-ink',
-    color: 'var(--color-dimension-iprl, #3D3D5C)',
+    color: PALETTE.dimension['iprl-ink'],
   },
   TmRL: {
     bg: 'bg-dimension-tmrl',
     textInk: 'text-dimension-tmrl-ink',
-    color: 'var(--color-dimension-tmrl, #8C3811)',
+    color: PALETTE.dimension['tmrl-ink'],
   },
   FRL: {
     bg: 'bg-dimension-frl',
     textInk: 'text-dimension-frl-ink',
-    color: 'var(--color-dimension-frl, #5C4A1A)',
+    color: PALETTE.dimension['frl-ink'],
   },
 };
 

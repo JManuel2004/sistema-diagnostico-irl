@@ -1,4 +1,5 @@
 import type { JSX, ReactNode } from 'react';
+import { AppNav } from './app-nav';
 import { BrandDescriptor } from './brand-descriptor';
 import { cn } from '@/shared/lib/utils';
 
@@ -6,8 +7,10 @@ import { cn } from '@/shared/lib/utils';
  * `PageShell` — chrome común para todas las páginas del producto.
  *
  * Compone:
- *  - Header con el descriptor institucional INNLAB (lock-up Icesi)
- *    y un slot opcional para acciones (perfil, sesión, etc.).
+ *  - Header con el descriptor institucional INNLAB (lock-up Icesi),
+ *    la navegación principal a continuación (`showNavigation`, solo en
+ *    resultados y panel) y un slot opcional para acciones (perfil, sesión).
+ *    Con navegación el descriptor lleva al panel; sin ella, a la portada.
  *  - Contenedor principal con anchos definidos por `DESIGN.md`:
  *      reading  → max-w-3xl (~768px), preguntas y texto extenso.
  *      standard → max-w-5xl, vistas mixtas (radar + cards).
@@ -32,6 +35,8 @@ interface PageShellProps {
   readonly children: ReactNode;
   readonly width?: Width;
   readonly showAttribution?: boolean;
+  /** Muestra la navegación (panel, resultados); solo en las pantallas posteriores al asistente. */
+  readonly showNavigation?: boolean;
   readonly headerActions?: ReactNode;
   readonly contentClassName?: string;
 }
@@ -40,6 +45,7 @@ export function PageShell({
   children,
   width = 'standard',
   showAttribution = false,
+  showNavigation = false,
   headerActions,
   contentClassName,
 }: PageShellProps): JSX.Element {
@@ -49,7 +55,10 @@ export function PageShell({
         <div
           className={cn('mx-auto flex h-16 items-center justify-between px-6 sm:px-8', WIDTHS.wide)}
         >
-          <BrandDescriptor />
+          <div className="flex items-center gap-8">
+            <BrandDescriptor to={showNavigation ? '/panel' : '/'} />
+            {showNavigation ? <AppNav /> : null}
+          </div>
           {headerActions ? <div className="flex items-center gap-3">{headerActions}</div> : null}
         </div>
       </header>
