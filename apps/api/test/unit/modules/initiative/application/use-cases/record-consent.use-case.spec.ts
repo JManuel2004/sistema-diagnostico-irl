@@ -23,7 +23,7 @@ describe('RecordConsentUseCase', () => {
 
   const command = {
     diagnosticId: DIAGNOSTIC_ID,
-    keycloakUserId: USER_ID,
+    cognitoUserId: USER_ID,
     version: CURRENT_TERMS_VERSION,
   };
 
@@ -50,10 +50,7 @@ describe('RecordConsentUseCase', () => {
     expect(verify).toHaveBeenCalledWith(DIAGNOSTIC_ID, USER_ID);
     expect(consents.save).toHaveBeenCalledTimes(1);
 
-    const [name, event] = emitAsync.mock.calls[0] as [
-      string,
-      ConsentRecordedEvent,
-    ];
+    const [name, event] = emitAsync.mock.calls[0] as [string, ConsentRecordedEvent];
     expect(name).toBe(ConsentRecordedEvent.eventName);
     expect(event.payload).toEqual({ diagnosticId: DIAGNOSTIC_ID });
     expect(consents.save.mock.invocationCallOrder[0]).toBeLessThan(
@@ -64,20 +61,17 @@ describe('RecordConsentUseCase', () => {
   it.each([
     ['NotFoundError', new NotFoundError('Diagnosis', DIAGNOSTIC_ID)],
     ['ForbiddenError', new ForbiddenError('not yours')],
-  ])(
-    'returns %s and writes nothing when the ownership check fails',
-    async (_label, error) => {
-      verify.mockResolvedValueOnce(Result.err(error));
+  ])('returns %s and writes nothing when the ownership check fails', async (_label, error) => {
+    verify.mockResolvedValueOnce(Result.err(error));
 
-      const result = await useCase.execute(command);
+    const result = await useCase.execute(command);
 
-      expect(result.ok).toBe(false);
-      if (result.ok) throw new Error('expected err result');
-      expect(result.error).toBe(error);
-      expect(consents.save).not.toHaveBeenCalled();
-      expect(emitAsync).not.toHaveBeenCalled();
-    },
-  );
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected err result');
+    expect(result.error).toBe(error);
+    expect(consents.save).not.toHaveBeenCalled();
+    expect(emitAsync).not.toHaveBeenCalled();
+  });
 
   it('checks ownership before the terms version', async () => {
     verify.mockResolvedValueOnce(Result.err(new ForbiddenError('not yours')));

@@ -15,6 +15,7 @@ import {
 import { AppModule } from '../../../../src/app.module.js';
 import { configureApp } from '../../../../src/shared/kernel/infrastructure/http/configure-app.js';
 import { authenticateAgainst } from '../../support/authenticated-app.js';
+import { agroconectaAnswers } from '../../support/agroconecta-case.js';
 
 /**
  * E2E — recorrido completo de enrutamiento al portafolio para AgroConecta.
@@ -30,19 +31,10 @@ import { authenticateAgainst } from '../../support/authenticated-app.js';
  * Las 48 respuestas están calculadas para producir exactamente el perfil
  * del caso. Con 8 respuestas por dimensión y la tabla de conversión SA-06:
  *
- *   TRL  suma 25 → 3.125 → IRL 6      IPRL suma  9 → 1.125 → IRL 1
+ *   TRL  suma 26 → 3.250 → IRL 6      IPRL suma  9 → 1.125 → IRL 1
  *   CRL  suma 19 → 2.375 → IRL 4      TmRL suma 22 → 2.750 → IRL 5
- *   BRL  suma 16 → 2.000 → IRL 3      FRL  suma 12 → 1.500 → IRL 2
+ *   BRL  suma 15 → 1.875 → IRL 3      FRL  suma 13 → 1.625 → IRL 2
  */
-
-const ANSWERS_BY_DIMENSION: Record<string, number[]> = {
-  TRL: [4, 3, 3, 3, 3, 3, 3, 3],
-  CRL: [3, 2, 2, 2, 2, 2, 3, 3],
-  BRL: [2, 2, 2, 2, 2, 2, 2, 2],
-  IPRL: [2, 1, 1, 1, 1, 1, 1, 1],
-  TmRL: [3, 3, 3, 3, 3, 3, 2, 2],
-  FRL: [2, 2, 2, 2, 1, 1, 1, 1],
-};
 
 describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
   let app: NestFastifyApplication;
@@ -81,7 +73,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     // por las llamadas HTTP correspondientes.
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
-         (id, keycloak_user_id, state, irl_framework_version)
+         (id, cognito_user_id, state, irl_framework_version)
        VALUES ($1, 'usuario-e2e', 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
       [diagnosticId],
     );
@@ -94,11 +86,13 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
 
     await dataSource.query(
       `INSERT INTO irl_diagnostic.initiative
-         (id, id_diagnostic, id_sector, name, short_description,
-          id_stage, team_size, academic_linkage)
+         (id, id_diagnostic, id_sector, name, product_type,
+          id_stage, declared_stage, team_size, team_description,
+          academic_linkage, target_market, current_funding)
        SELECT $1, $2, s.id, 'AgroConecta',
               'Plataforma de trazabilidad y comercialización de café',
-              e.id, 3, false
+              e.id, 'Piloto completado', 3, 'Fundadora, coordinadora y desarrollador externo',
+              false, 'Productores de café del suroccidente', 'Ahorros de la fundadora'
          FROM irl_catalog.sector s, irl_catalog.initiative_stage e
         WHERE s.name = 'Agroindustria' AND e.code = 'validacion'`,
       [randomUUID(), diagnosticId],
@@ -114,10 +108,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
         ORDER BY d.sequence, a.sequence`,
     );
 
-    const answers = statements.map((a) => ({
-      statementId: String(a.id_statement),
-      value: ANSWERS_BY_DIMENSION[a.code][a.sequence - 1],
-    }));
+    const answers = agroconectaAnswers(statements);
 
     await agent
       .post(`/api/v1/diagnostics/${diagnosticId}/finalize-initial`)
@@ -253,7 +244,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     const otro = randomUUID();
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
-         (id, keycloak_user_id, state, irl_framework_version)
+         (id, cognito_user_id, state, irl_framework_version)
        VALUES ($1, 'usuario-e2e', 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
       [otro],
     );

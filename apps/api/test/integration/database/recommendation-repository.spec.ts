@@ -94,7 +94,7 @@ describe('Recomendación — persistencia (integration)', () => {
     diagnosticId = randomUUID();
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
-         (id, keycloak_user_id, state, irl_framework_version)
+         (id, cognito_user_id, state, irl_framework_version)
        VALUES ($1,'u','PROFILE_GENERATED','KTH-IRL-1.0')`,
       [diagnosticId],
     );

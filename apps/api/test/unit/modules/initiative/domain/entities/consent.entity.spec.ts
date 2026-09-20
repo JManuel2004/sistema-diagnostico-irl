@@ -10,7 +10,7 @@ describe('Consent', () => {
       const consent = Consent.accept({
         id: Uuid.generate(),
         diagnosticId: Uuid.create(DIAGNOSTIC_ID),
-        keycloakUserId: 'user-1',
+        cognitoUserId: 'user-1',
         termsVersion: 'v1',
       });
 
@@ -22,7 +22,7 @@ describe('Consent', () => {
       const consent = Consent.accept({
         id: Uuid.generate(),
         diagnosticId: Uuid.create(DIAGNOSTIC_ID),
-        keycloakUserId: 'user-1',
+        cognitoUserId: 'user-1',
         termsVersion: 'v1',
       });
       const after = Date.now();
@@ -38,7 +38,7 @@ describe('Consent', () => {
           Consent.accept({
             id: Uuid.generate(),
             diagnosticId: Uuid.create(DIAGNOSTIC_ID),
-            keycloakUserId: 'user-1',
+            cognitoUserId: 'user-1',
             termsVersion,
           }),
         ).not.toThrow();
@@ -52,7 +52,7 @@ describe('Consent', () => {
           Consent.accept({
             id: Uuid.generate(),
             diagnosticId: Uuid.create(DIAGNOSTIC_ID),
-            keycloakUserId: 'user-1',
+            cognitoUserId: 'user-1',
             termsVersion,
           }),
         ).toThrow(InvariantViolationError);
@@ -66,7 +66,7 @@ describe('Consent', () => {
       const row = {
         id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',
         diagnosticId: DIAGNOSTIC_ID,
-        keycloakUserId: 'user-1',
+        cognitoUserId: 'user-1',
         accepted: true,
         acceptedAt,
         termsVersion: 'v1',

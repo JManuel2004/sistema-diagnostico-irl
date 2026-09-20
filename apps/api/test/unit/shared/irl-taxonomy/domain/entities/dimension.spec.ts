@@ -9,6 +9,7 @@ const VALID_ROW = {
   description: 'Madurez tecnológica de la solución.',
   sequence: 1,
   minimumExpectedLevel: 4,
+  isCriticalDimension: false,
 };
 
 describe('Dimension', () => {

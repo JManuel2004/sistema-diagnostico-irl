@@ -48,15 +48,10 @@ describe('RequestDeepAnalysisUseCase', () => {
       diagnosticId: DIAGNOSTIC_ID,
       state: 'DEEP_ANALYSIS_IN_PROGRESS',
     });
-    expect(diagnostics.save.mock.calls[0][0].state.value).toBe(
-      'DEEP_ANALYSIS_IN_PROGRESS',
-    );
+    expect(diagnostics.save.mock.calls[0][0].state.value).toBe('DEEP_ANALYSIS_IN_PROGRESS');
 
     expect(emitAsync).toHaveBeenCalledTimes(1);
-    const [name, event] = emitAsync.mock.calls[0] as [
-      string,
-      DeepAnalysisRequestedEvent,
-    ];
+    const [name, event] = emitAsync.mock.calls[0] as [string, DeepAnalysisRequestedEvent];
     expect(name).toBe(DeepAnalysisRequestedEvent.eventName);
     expect(event).toBeInstanceOf(DeepAnalysisRequestedEvent);
     expect(event.payload).toEqual({ diagnosticId: DIAGNOSTIC_ID });

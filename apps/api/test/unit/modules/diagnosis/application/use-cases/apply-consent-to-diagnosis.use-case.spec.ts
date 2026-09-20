@@ -46,17 +46,14 @@ describe('ApplyConsentToDiagnosisUseCase', () => {
     'QUESTIONNAIRE_IN_PROGRESS',
     'PROFILE_GENERATED',
     'DEEP_ANALYSIS_IN_PROGRESS',
-  ])(
-    'leaves a diagnostic already in %s untouched and succeeds',
-    async (state) => {
-      diagnostics.findById.mockResolvedValueOnce(diagnosisIn(state));
+  ])('leaves a diagnostic already in %s untouched and succeeds', async (state) => {
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn(state));
 
-      const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
 
-      expect(result.ok).toBe(true);
-      expect(diagnostics.save).not.toHaveBeenCalled();
-    },
-  );
+    expect(result.ok).toBe(true);
+    expect(diagnostics.save).not.toHaveBeenCalled();
+  });
 
   it('returns NotFoundError when the diagnostic does not exist', async () => {
     diagnostics.findById.mockResolvedValueOnce(null);

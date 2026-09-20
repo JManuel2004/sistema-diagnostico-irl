@@ -22,6 +22,7 @@ import {
   E2E_USER,
   authenticateAgainst,
 } from '../../support/authenticated-app.js';
+import { agroconectaAnswers } from '../../support/agroconecta-case.js';
 
 /**
  * E2E — caso de aceptación de AgroConecta a través del flujo por eventos.
@@ -41,15 +42,6 @@ import {
  * Perfil de partida (SA-06): TRL 6, CRL 4, BRL 3, IPRL 1, TmRL 5, FRL 2.
  * Requiere la base migrada y sembrada.
  */
-const ANSWERS_BY_DIMENSION: Record<string, number[]> = {
-  TRL: [4, 3, 3, 3, 3, 3, 3, 3],
-  CRL: [3, 2, 2, 2, 2, 2, 3, 3],
-  BRL: [2, 2, 2, 2, 2, 2, 2, 2],
-  IPRL: [2, 1, 1, 1, 1, 1, 1, 1],
-  TmRL: [3, 3, 3, 3, 3, 3, 2, 2],
-  FRL: [2, 2, 2, 2, 1, 1, 1, 1],
-};
-
 describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
   let app: NestFastifyApplication;
   let dataSource: DataSource;
@@ -98,7 +90,7 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
 
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
-         (id, keycloak_user_id, state, irl_framework_version)
+         (id, cognito_user_id, state, irl_framework_version)
        VALUES ($1, $2, 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0'),
               ($3, $2, 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
       [diagnosticId, E2E_USER.sub, sinPerfil],
@@ -110,11 +102,13 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
     );
     await dataSource.query(
       `INSERT INTO irl_diagnostic.initiative
-         (id, id_diagnostic, id_sector, name, short_description,
-          id_stage, team_size, academic_linkage)
+         (id, id_diagnostic, id_sector, name, product_type,
+          id_stage, declared_stage, team_size, team_description,
+          academic_linkage, target_market, current_funding)
        SELECT $1, $2, s.id, 'AgroConecta',
               'Plataforma de trazabilidad y comercialización de café',
-              e.id, 3, false
+              e.id, 'Piloto completado', 3, 'Fundadora, coordinadora y desarrollador externo',
+              false, 'Productores de café del suroccidente', 'Ahorros de la fundadora'
          FROM irl_catalog.sector s, irl_catalog.initiative_stage e
         WHERE s.name = 'Agroindustria' AND e.code = 'validacion'`,
       [randomUUID(), diagnosticId],
@@ -128,10 +122,7 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
          JOIN irl_catalog.dimension d ON d.id_dimension = a.id_dimension
         ORDER BY d.sequence, a.sequence`,
     );
-    const answers = statements.map((a) => ({
-      statementId: String(a.id_statement),
-      value: ANSWERS_BY_DIMENSION[a.code][a.sequence - 1],
-    }));
+    const answers = agroconectaAnswers(statements);
 
     await agent
       .post(`/api/v1/diagnostics/${diagnosticId}/finalize-initial`)

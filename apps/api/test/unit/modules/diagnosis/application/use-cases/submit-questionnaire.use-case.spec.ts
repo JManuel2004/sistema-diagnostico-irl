@@ -11,9 +11,7 @@ describe('SubmitQuestionnaireUseCase', () => {
 
   beforeEach(() => {
     mockRepo = {
-      save: jest
-        .fn<AnswerSheetRepositoryPort['save']>()
-        .mockResolvedValue(undefined),
+      save: jest.fn<AnswerSheetRepositoryPort['save']>().mockResolvedValue(undefined),
       findByDiagnosticId: jest
         .fn<AnswerSheetRepositoryPort['findByDiagnosticId']>()
         .mockResolvedValue(null),
@@ -25,6 +23,7 @@ describe('SubmitQuestionnaireUseCase', () => {
     const answers = Array.from({ length: 48 }, (_, i) => ({
       statementId: String(i + 1),
       value: 3,
+      justification: 'Justificación de prueba',
     }));
 
     const result = await useCase.execute({
@@ -41,9 +40,9 @@ describe('SubmitQuestionnaireUseCase', () => {
   });
 
   it('throws for invalid diagnostic UUID', async () => {
-    await expect(
-      useCase.execute({ diagnosticId: 'not-a-uuid', answers: [] }),
-    ).rejects.toThrow(InvariantViolationError);
+    await expect(useCase.execute({ diagnosticId: 'not-a-uuid', answers: [] })).rejects.toThrow(
+      InvariantViolationError,
+    );
     expect(mockRepo.save).not.toHaveBeenCalled();
   });
 
@@ -51,7 +50,7 @@ describe('SubmitQuestionnaireUseCase', () => {
     await expect(
       useCase.execute({
         diagnosticId: DIAGNOSTIC_ID,
-        answers: [{ statementId: '1', value: 6 }],
+        answers: [{ statementId: '1', value: 6, justification: 'Justificación de prueba' }],
       }),
     ).rejects.toThrow(InvariantViolationError);
     expect(mockRepo.save).not.toHaveBeenCalled();
@@ -59,12 +58,13 @@ describe('SubmitQuestionnaireUseCase', () => {
 
   it('upserts duplicate statementId (last write wins)', async () => {
     const answers = [
-      { statementId: '1', value: 2 },
+      { statementId: '1', value: 2, justification: 'Justificación de prueba' },
       ...Array.from({ length: 47 }, (_, i) => ({
         statementId: String(i + 2),
         value: 3,
+        justification: 'Justificación de prueba',
       })),
-      { statementId: '1', value: 5 },
+      { statementId: '1', value: 5, justification: 'Justificación de prueba' },
     ];
 
     const result = await useCase.execute({
@@ -83,6 +83,7 @@ describe('SubmitQuestionnaireUseCase', () => {
     const answers = Array.from({ length: 47 }, (_, i) => ({
       statementId: String(i + 1),
       value: 3,
+      justification: 'Justificación de prueba',
     }));
 
     const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers });
@@ -97,6 +98,7 @@ describe('SubmitQuestionnaireUseCase', () => {
     const answers = Array.from({ length: 49 }, (_, i) => ({
       statementId: String(i + 1),
       value: 3,
+      justification: 'Justificación de prueba',
     }));
 
     const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers });

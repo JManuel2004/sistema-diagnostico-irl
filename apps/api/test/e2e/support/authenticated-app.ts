@@ -52,9 +52,17 @@ export const E2E_USER = {
  *   const auth = authenticateAgainst(app);
  *   await request(server).get(url).set('Authorization', auth);
  *
+ * `subject` cambia el `sub` del token. Las suites corren en paralelo sobre la
+ * misma base y `POST /diagnostics` es idempotente por usuario, así que una
+ * suite que inicia diagnósticos necesita su propio usuario para no reanudar el
+ * de otra.
+ *
  * Recuerda `nock.cleanAll()` en el `afterAll` de la suite.
  */
-export function authenticateAgainst(app: INestApplication): string {
+export function authenticateAgainst(
+  app: INestApplication,
+  subject: string = E2E_USER.sub,
+): string {
   const config = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
   const { jwksUri, issuer } = config.cognito;
 
@@ -71,7 +79,7 @@ export function authenticateAgainst(app: INestApplication): string {
   );
   const now = Math.floor(Date.now() / 1000);
   const payload = base64url(
-    JSON.stringify({ iss: issuer, iat: now, exp: now + 3600, ...E2E_USER }),
+    JSON.stringify({ iss: issuer, iat: now, exp: now + 3600, ...E2E_USER, sub: subject }),
   );
   const signature = sign(
     'RSA-SHA256',

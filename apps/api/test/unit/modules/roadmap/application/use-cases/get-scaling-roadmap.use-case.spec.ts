@@ -1,11 +1,10 @@
 import { jest } from '@jest/globals';
 import { roadmapResponseSchema } from '@innlab/contracts';
 import { GetScalingRoadmapUseCase } from '../../../../../../src/modules/roadmap/application/use-cases/get-scaling-roadmap.use-case.js';
-import type { GenerateScalingRoadmapUseCase } from '../../../../../../src/modules/roadmap/application/use-cases/generate-scaling-roadmap.use-case.js';
+import type { RoadmapRepositoryPort } from '../../../../../../src/modules/roadmap/domain/repositories/roadmap.repository.port.js';
+import { RoadmapNotGeneratedError } from '../../../../../../src/modules/roadmap/domain/exceptions/roadmap.errors.js';
 import type { TaxonomyRepositoryPort } from '../../../../../../src/shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
 import { ScalingRoadmap } from '../../../../../../src/modules/roadmap/domain/entities/scaling-roadmap.aggregate.js';
-import { ConflictError } from '../../../../../../src/shared/kernel/domain/errors/conflict.error.js';
-import { Result } from '../../../../../../src/shared/kernel/domain/result.js';
 import { Uuid } from '../../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
 import { aDimensionCatalog } from '../../../../support/dimension-catalog.js';
 
@@ -24,12 +23,18 @@ function aRoadmap(): ScalingRoadmap {
             currentLevel: 3,
             targetLevel: 4,
             enables: ['FRL'],
+            inclusionReason: 'BELOW_EXPECTED_MINIMUM',
+            expectedMinimum: 4,
+            targetDrivenBy: null,
           },
           {
             dimensionCode: 'IPRL',
             currentLevel: 1,
             targetLevel: 4,
             enables: ['FRL'],
+            inclusionReason: 'BELOW_EXPECTED_MINIMUM',
+            expectedMinimum: 3,
+            targetDrivenBy: 'FRL',
           },
         ],
       },
@@ -41,6 +46,9 @@ function aRoadmap(): ScalingRoadmap {
             currentLevel: 2,
             targetLevel: 4,
             enables: [],
+            inclusionReason: 'REQUIRED_ENABLER',
+            expectedMinimum: 2,
+            targetDrivenBy: null,
           },
         ],
       },
@@ -49,13 +57,13 @@ function aRoadmap(): ScalingRoadmap {
 }
 
 describe('GetScalingRoadmapUseCase', () => {
-  let generate: jest.Mock<GenerateScalingRoadmapUseCase['execute']>;
+  let findByDiagnosticId: jest.Mock<RoadmapRepositoryPort['findByDiagnosticId']>;
   let useCase: GetScalingRoadmapUseCase;
 
   beforeEach(() => {
-    generate = jest.fn();
+    findByDiagnosticId = jest.fn();
     useCase = new GetScalingRoadmapUseCase(
-      { execute: generate } as unknown as GenerateScalingRoadmapUseCase,
+      { findByDiagnosticId, save: jest.fn() } as unknown as RoadmapRepositoryPort,
       {
         findAllDimensions: () => Promise.resolve(aDimensionCatalog()),
       } as unknown as TaxonomyRepositoryPort,
@@ -64,8 +72,8 @@ describe('GetScalingRoadmapUseCase', () => {
 
   // Backlog 4.5: the roadmap names its dimensions from the catalog, so the
   // frontend keeps no name map.
-  it('names every dimension of the roadmap from the catalog', async () => {
-    generate.mockResolvedValueOnce(Result.ok(aRoadmap()));
+  it('names every dimension of the saved roadmap from the catalog', async () => {
+    findByDiagnosticId.mockResolvedValueOnce(aRoadmap());
 
     const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
 
@@ -74,6 +82,7 @@ describe('GetScalingRoadmapUseCase', () => {
     const dto = result.value;
 
     expect(() => roadmapResponseSchema.parse(dto)).not.toThrow();
+    expect(dto.generatedAt).toBe('2026-01-01T00:00:00.000Z');
     expect(dto.phases[0].dimensions[0]).toMatchObject({
       dimensionCode: 'BRL',
       name: 'Nombre completo BRL',
@@ -94,13 +103,38 @@ describe('GetScalingRoadmapUseCase', () => {
     });
   });
 
-  it('propagates the profile error', async () => {
-    generate.mockResolvedValueOnce(
-      Result.err(new ConflictError('PROFILE_NOT_YET_COMPUTED')),
-    );
+  // Backlog 10.1: the response says why a dimension is in the plan and what
+  // sets its target, with the driving dimension named from the catalog.
+  it('explains the inclusion and the target of each dimension', async () => {
+    findByDiagnosticId.mockResolvedValueOnce(aRoadmap());
+
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+
+    if (!result.ok) throw new Error('expected ok result');
+    const [brl, iprl] = result.value.phases[0].dimensions;
+    const frl = result.value.phases[1].dimensions[0];
+
+    expect(brl).toMatchObject({
+      inclusionReason: 'BELOW_EXPECTED_MINIMUM',
+      expectedMinimum: 4,
+      targetDrivenBy: null,
+    });
+    expect(iprl.targetDrivenBy).toEqual({
+      code: 'FRL',
+      name: 'Nombre completo FRL',
+      shortName: 'Corto FRL',
+    });
+    expect(frl.inclusionReason).toBe('REQUIRED_ENABLER');
+  });
+
+  it('returns ROADMAP_NOT_GENERATED when nothing was saved', async () => {
+    findByDiagnosticId.mockResolvedValueOnce(null);
 
     const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
 
     expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected err result');
+    expect(result.error).toBeInstanceOf(RoadmapNotGeneratedError);
+    expect(result.error.code).toBe('ROADMAP_NOT_GENERATED');
   });
 });

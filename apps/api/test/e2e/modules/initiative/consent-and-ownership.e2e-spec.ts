@@ -14,6 +14,7 @@ import {
   E2E_USER,
   authenticateAgainst,
 } from '../../support/authenticated-app.js';
+import { agroconectaInitiative } from '../../support/agroconecta-case.js';
 
 /**
  * E2E — consentimiento (RF-03) y registro de iniciativa (RF-04) contra el
@@ -33,6 +34,7 @@ describe('Consentimiento e iniciativa (e2e)', () => {
   let dataSource: DataSource;
   let agent: ReturnType<typeof request.agent>;
   let sectorId: string;
+  let stageId: string;
 
   const propio = randomUUID();
   const propioSinConsentir = randomUUID();
@@ -42,7 +44,7 @@ describe('Consentimiento e iniciativa (e2e)', () => {
   async function crearDiagnostico(id: string, userId: string): Promise<void> {
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
-         (id, keycloak_user_id, state, irl_framework_version)
+         (id, cognito_user_id, state, irl_framework_version)
        VALUES ($1, $2, 'STARTED', 'KTH-IRL-1.0')`,
       [id, userId],
     );
@@ -93,6 +95,10 @@ describe('Consentimiento e iniciativa (e2e)', () => {
       `SELECT id::text AS id FROM irl_catalog.sector WHERE name = 'Agroindustria'`,
     );
     sectorId = sector.id;
+    const [stage] = await dataSource.query<{ id: string }[]>(
+      `SELECT id::text AS id FROM irl_catalog.initiative_stage WHERE code = 'validacion'`,
+    );
+    stageId = stage.id;
   }, 60_000);
 
   afterAll(async () => {
@@ -170,11 +176,7 @@ describe('Consentimiento e iniciativa (e2e)', () => {
   });
 
   describe('registro de iniciativa', () => {
-    const cuerpo = () => ({
-      sectorId,
-      name: 'AgroConecta',
-      shortDescription: 'Plataforma de trazabilidad de café',
-    });
+    const cuerpo = () => agroconectaInitiative({ sectorId, stageId });
 
     it('registra la iniciativa de un diagnóstico propio', async () => {
       const res = await agent
@@ -184,6 +186,8 @@ describe('Consentimiento e iniciativa (e2e)', () => {
 
       expect((res.body as { diagnosticId: string }).diagnosticId).toBe(propio);
       expect(await contar('initiative', propio)).toBe(1);
+      // `diagnosis/` reacts to the event and moves the diagnostic on.
+      expect(await estadoDe(propio)).toBe('WITH_INITIATIVE');
     });
 
     it('rechaza con 403 un diagnóstico ajeno y no escribe nada', async () => {

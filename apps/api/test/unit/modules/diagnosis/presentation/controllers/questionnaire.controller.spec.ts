@@ -24,7 +24,7 @@ describe('QuestionnaireController', () => {
       };
       mockUseCase.execute.mockResolvedValueOnce(Result.ok(expected) as never);
 
-      const body = { answers: [{ statementId: '1', value: 3 }] };
+      const body = { answers: [{ statementId: '1', value: 3, justification: 'Justificación de prueba' }] };
       const result = await controller.submitQuestionnaire(DIAGNOSTIC_ID, body);
 
       expect(mockUseCase.execute).toHaveBeenCalledWith({

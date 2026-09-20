@@ -8,10 +8,7 @@ import { Uuid } from '../../../../../../src/shared/kernel/domain/value-objects/u
 
 const CODES = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;
 
-function resultFor(
-  code: (typeof CODES)[number],
-  level: number,
-): DimensionResult {
+function resultFor(code: (typeof CODES)[number], level: number): DimensionResult {
   return DimensionResult.create({
     dimensionCode: DimensionCode.create(code),
     averageLikert: 3.0,
@@ -41,6 +38,40 @@ describe('toMaturityProfileResponse', () => {
 
     expect(dto.gaps.threshold).toBe(3);
     expect(dto.gaps.dimensions).toEqual(['CRL', 'BRL', 'IPRL', 'FRL']);
+  });
+
+  // RF-13 / backlog 4: the critical state comes from the backend. A gap in TRL,
+  // IPRL or FRL is a gap, not a critical state.
+  it('exposes the critical dimensions: only CRL, BRL and TmRL, and only when in gap', () => {
+    const profile = MaturityProfile.create({
+      diagnosticId,
+      computedAt,
+      dimensionResults: [
+        resultFor('TRL', 2),
+        resultFor('CRL', 3),
+        resultFor('BRL', 4),
+        resultFor('IPRL', 1),
+        resultFor('TmRL', 2),
+        resultFor('FRL', 3),
+      ],
+    });
+
+    const dto = toMaturityProfileResponse(profile, [], aDimensionCatalog());
+
+    expect(dto.gaps.dimensions).toEqual(['TRL', 'CRL', 'IPRL', 'TmRL', 'FRL']);
+    expect(dto.criticalState.dimensions).toEqual(['CRL', 'TmRL']);
+  });
+
+  it('exposes an empty critical state when no susceptible dimension is in gap', () => {
+    const profile = MaturityProfile.create({
+      diagnosticId,
+      computedAt,
+      dimensionResults: CODES.map((c) => resultFor(c, 6)),
+    });
+
+    expect(toMaturityProfileResponse(profile, [], aDimensionCatalog()).criticalState).toEqual({
+      dimensions: [],
+    });
   });
 
   it('exposes an empty gaps list when no dimension is at or below the threshold', () => {
@@ -90,9 +121,9 @@ describe('toMaturityProfileResponse', () => {
 
     const dto = toMaturityProfileResponse(profile, [], aDimensionCatalog());
 
-    expect(
-      dto.dimensionResults.map((r) => [r.dimensionCode, r.name, r.shortName]),
-    ).toEqual(CODES.map((c) => [c, `Nombre completo ${c}`, `Corto ${c}`]));
+    expect(dto.dimensionResults.map((r) => [r.dimensionCode, r.name, r.shortName])).toEqual(
+      CODES.map((c) => [c, `Nombre completo ${c}`, `Corto ${c}`]),
+    );
   });
 
   it('fails when the catalog is missing a dimension of the profile', () => {
@@ -102,8 +133,8 @@ describe('toMaturityProfileResponse', () => {
       dimensionResults: CODES.map((c) => resultFor(c, 5)),
     });
 
-    expect(() =>
-      toMaturityProfileResponse(profile, [], aDimensionCatalog().slice(1)),
-    ).toThrow(/catalog has no entry/);
+    expect(() => toMaturityProfileResponse(profile, [], aDimensionCatalog().slice(1))).toThrow(
+      /catalog has no entry/,
+    );
   });
 });

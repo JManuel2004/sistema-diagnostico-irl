@@ -17,14 +17,14 @@ describe('ScalingRoadmap', () => {
       {
         order: 1,
         dimensions: [
-          { dimensionCode: 'BRL', currentLevel: 3, targetLevel: 4, enables: ['FRL'] },
-          { dimensionCode: 'IPRL', currentLevel: 1, targetLevel: 4, enables: ['FRL'] },
+          { dimensionCode: 'BRL', currentLevel: 3, targetLevel: 4, enables: ['FRL'], inclusionReason: 'BELOW_EXPECTED_MINIMUM' as const, expectedMinimum: 4, targetDrivenBy: null },
+          { dimensionCode: 'IPRL', currentLevel: 1, targetLevel: 4, enables: ['FRL'], inclusionReason: 'BELOW_EXPECTED_MINIMUM' as const, expectedMinimum: 4, targetDrivenBy: null },
         ],
       },
       {
         order: 2,
         dimensions: [
-          { dimensionCode: 'FRL', currentLevel: 2, targetLevel: 4, enables: [] },
+          { dimensionCode: 'FRL', currentLevel: 2, targetLevel: 4, enables: [], inclusionReason: 'BELOW_EXPECTED_MINIMUM' as const, expectedMinimum: 4, targetDrivenBy: null },
         ],
       },
     ]);
@@ -45,13 +45,13 @@ describe('ScalingRoadmap', () => {
         {
           order: 1,
           dimensions: [
-            { dimensionCode: 'BRL', currentLevel: 3, targetLevel: 4, enables: [] },
+            { dimensionCode: 'BRL', currentLevel: 3, targetLevel: 4, enables: [], inclusionReason: 'BELOW_EXPECTED_MINIMUM' as const, expectedMinimum: 4, targetDrivenBy: null },
           ],
         },
         {
           order: 2,
           dimensions: [
-            { dimensionCode: 'BRL', currentLevel: 3, targetLevel: 4, enables: [] },
+            { dimensionCode: 'BRL', currentLevel: 3, targetLevel: 4, enables: [], inclusionReason: 'BELOW_EXPECTED_MINIMUM' as const, expectedMinimum: 4, targetDrivenBy: null },
           ],
         },
       ]),
@@ -66,7 +66,7 @@ describe('ScalingRoadmap', () => {
         {
           order: 1,
           dimensions: [
-            { dimensionCode: 'BRL', currentLevel: 4, targetLevel: 4, enables: [] },
+            { dimensionCode: 'BRL', currentLevel: 4, targetLevel: 4, enables: [], inclusionReason: 'BELOW_EXPECTED_MINIMUM' as const, expectedMinimum: 4, targetDrivenBy: null },
           ],
         },
       ]),
@@ -79,7 +79,7 @@ describe('ScalingRoadmap', () => {
         {
           order: 2,
           dimensions: [
-            { dimensionCode: 'BRL', currentLevel: 3, targetLevel: 4, enables: [] },
+            { dimensionCode: 'BRL', currentLevel: 3, targetLevel: 4, enables: [], inclusionReason: 'BELOW_EXPECTED_MINIMUM' as const, expectedMinimum: 4, targetDrivenBy: null },
           ],
         },
       ]),

@@ -16,8 +16,8 @@ describe('AnswerSheet', () => {
   describe('fromPersistence', () => {
     it('reconstructs sheet from rows', () => {
       const sheet = AnswerSheet.fromPersistence(DIAGNOSTIC_ID, [
-        { statementId: '1', value: 3 },
-        { statementId: '2', value: 5 },
+        { statementId: '1', value: 3, justification: 'Justificación de prueba' },
+        { statementId: '2', value: 5, justification: 'Justificación de prueba' },
       ]);
       expect(sheet.answeredCount).toBe(2);
       expect(sheet.getAnswer('1')?.value.value).toBe(3);
@@ -28,15 +28,15 @@ describe('AnswerSheet', () => {
   describe('setAnswer', () => {
     it('adds a new answer', () => {
       const sheet = AnswerSheet.create(DIAGNOSTIC_ID);
-      sheet.setAnswer('1', LikertValue.create(4));
+      sheet.setAnswer('1', LikertValue.create(4), 'Justificación de prueba');
       expect(sheet.answeredCount).toBe(1);
       expect(sheet.getAnswer('1')?.value.value).toBe(4);
     });
 
     it('upserts an existing answer', () => {
       const sheet = AnswerSheet.create(DIAGNOSTIC_ID);
-      sheet.setAnswer('1', LikertValue.create(3));
-      sheet.setAnswer('1', LikertValue.create(5));
+      sheet.setAnswer('1', LikertValue.create(3), 'Justificación de prueba');
+      sheet.setAnswer('1', LikertValue.create(5), 'Justificación de prueba');
       expect(sheet.answeredCount).toBe(1);
       expect(sheet.getAnswer('1')?.value.value).toBe(5);
     });
@@ -44,7 +44,7 @@ describe('AnswerSheet', () => {
     it('accumulates distinct answers', () => {
       const sheet = AnswerSheet.create(DIAGNOSTIC_ID);
       for (let i = 1; i <= 48; i++) {
-        sheet.setAnswer(String(i), LikertValue.create(3));
+        sheet.setAnswer(String(i), LikertValue.create(3), 'Justificación de prueba');
       }
       expect(sheet.answeredCount).toBe(48);
     });
@@ -53,8 +53,8 @@ describe('AnswerSheet', () => {
   describe('toPersistence', () => {
     it('serialises all answers', () => {
       const sheet = AnswerSheet.create(DIAGNOSTIC_ID);
-      sheet.setAnswer('10', LikertValue.create(2));
-      sheet.setAnswer('20', LikertValue.create(4));
+      sheet.setAnswer('10', LikertValue.create(2), 'Justificación de prueba');
+      sheet.setAnswer('20', LikertValue.create(4), 'Justificación de prueba');
       const rows = sheet.toPersistence();
       expect(rows).toHaveLength(2);
       expect(rows.find((r) => r.statementId === '10')?.value).toBe(2);

@@ -14,6 +14,7 @@ function makeDimension(code: string, sequence: number): Dimension {
     description: `Desc ${code}`,
     sequence,
     minimumExpectedLevel: 4,
+    isCriticalDimension: false,
   });
 }
 
@@ -38,16 +39,12 @@ function buildFullCatalog(): {
   dimensions: Dimension[];
   statements: Statement[];
 } {
-  const dimensions = DIMENSION_CODES.map((code, i) =>
-    makeDimension(code, i + 1),
-  );
+  const dimensions = DIMENSION_CODES.map((code, i) => makeDimension(code, i + 1));
   const statements: Statement[] = [];
   let idCounter = 1;
   DIMENSION_CODES.forEach((code, dimIdx) => {
     for (let seq = 1; seq <= 8; seq++) {
-      statements.push(
-        makeStatement(String(idCounter++), code, dimIdx + 1, seq),
-      );
+      statements.push(makeStatement(String(idCounter++), code, dimIdx + 1, seq));
     }
   });
   return { dimensions, statements };
@@ -149,8 +146,7 @@ describe('GetQuestionnaireStructureQuery', () => {
     statementCatalog.findAllStatements.mockResolvedValue(statements);
 
     const result = await query.execute();
-    const firstTrlStatement = result.dimensions.find((d) => d.code === 'TRL')!
-      .statements[0];
+    const firstTrlStatement = result.dimensions.find((d) => d.code === 'TRL')!.statements[0];
 
     expect(firstTrlStatement).toMatchObject({
       id: '1',

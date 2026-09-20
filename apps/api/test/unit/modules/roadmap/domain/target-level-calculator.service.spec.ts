@@ -71,4 +71,47 @@ describe('TargetLevelCalculatorService', () => {
     const g = DependencyGraph.create([], minimos(4));
     expect(service.compute(new Set<DimensionCode>(), g).size).toBe(0);
   });
+
+  describe('demandedBy', () => {
+    it('es null cuando la meta es el mínimo esperado', () => {
+      const g = DependencyGraph.create([e('BRL', 'FRL', 2)], minimos(4));
+      const closure = new Set<DimensionCode>(['BRL', 'FRL']);
+      expect(service.demandedBy('BRL', closure, g)).toBeNull();
+    });
+
+    it('es null cuando la exigencia iguala el mínimo (no lo fija nadie más)', () => {
+      const g = DependencyGraph.create([e('BRL', 'FRL', 4)], minimos(4));
+      const closure = new Set<DimensionCode>(['BRL', 'FRL']);
+      expect(service.demandedBy('BRL', closure, g)).toBeNull();
+    });
+
+    it('nombra al sucesor cuya exigencia supera el mínimo', () => {
+      const g = DependencyGraph.create([e('BRL', 'FRL', 6)], minimos(4));
+      const closure = new Set<DimensionCode>(['BRL', 'FRL']);
+      expect(service.demandedBy('BRL', closure, g)).toBe('FRL');
+    });
+
+    it('nombra al de mayor exigencia entre varios sucesores', () => {
+      const g = DependencyGraph.create(
+        [e('TRL', 'CRL', 5), e('TRL', 'IPRL', 8)],
+        minimos(4),
+      );
+      const closure = new Set<DimensionCode>(['TRL', 'CRL', 'IPRL']);
+      expect(service.demandedBy('TRL', closure, g)).toBe('IPRL');
+    });
+
+    it('ante igual exigencia gana la primera en el orden canónico del marco', () => {
+      const g = DependencyGraph.create(
+        [e('TRL', 'FRL', 7), e('TRL', 'CRL', 7)],
+        minimos(4),
+      );
+      const closure = new Set<DimensionCode>(['TRL', 'CRL', 'FRL']);
+      expect(service.demandedBy('TRL', closure, g)).toBe('CRL');
+    });
+
+    it('ignora sucesores fuera del conjunto a intervenir', () => {
+      const g = DependencyGraph.create([e('BRL', 'FRL', 8)], minimos(4));
+      expect(service.demandedBy('BRL', new Set<DimensionCode>(['BRL']), g)).toBeNull();
+    });
+  });
 });

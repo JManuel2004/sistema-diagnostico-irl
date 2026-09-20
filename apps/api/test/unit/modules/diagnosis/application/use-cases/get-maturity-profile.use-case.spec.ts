@@ -30,27 +30,9 @@ function aProfile(): MaturityProfile {
 }
 
 const STORED_PAIRS: ImbalanceResult[] = [
-  new ImbalanceResult(
-    1,
-    DimensionCode.create('TRL'),
-    DimensionCode.create('CRL'),
-    2,
-    'MODERATE',
-  ),
-  new ImbalanceResult(
-    2,
-    DimensionCode.create('TRL'),
-    DimensionCode.create('BRL'),
-    0,
-    'ACCEPTABLE',
-  ),
-  new ImbalanceResult(
-    3,
-    DimensionCode.create('CRL'),
-    DimensionCode.create('BRL'),
-    0,
-    'ACCEPTABLE',
-  ),
+  new ImbalanceResult(1, DimensionCode.create('TRL'), DimensionCode.create('CRL'), 2, 'MODERATE'),
+  new ImbalanceResult(2, DimensionCode.create('TRL'), DimensionCode.create('BRL'), 0, 'ACCEPTABLE'),
+  new ImbalanceResult(3, DimensionCode.create('CRL'), DimensionCode.create('BRL'), 0, 'ACCEPTABLE'),
   new ImbalanceResult(
     4,
     DimensionCode.create('TmRL'),
@@ -65,13 +47,7 @@ const STORED_PAIRS: ImbalanceResult[] = [
     1,
     'ACCEPTABLE',
   ),
-  new ImbalanceResult(
-    6,
-    DimensionCode.create('TRL'),
-    DimensionCode.create('IPRL'),
-    4,
-    'CRITICAL',
-  ),
+  new ImbalanceResult(6, DimensionCode.create('TRL'), DimensionCode.create('IPRL'), 4, 'CRITICAL'),
 ];
 
 describe('GetMaturityProfileUseCase', () => {
@@ -104,9 +80,7 @@ describe('GetMaturityProfileUseCase', () => {
     if (!result.ok) throw new Error('expected ok result');
     const dto = result.value;
     expect(dto.imbalances).toHaveLength(6);
-    expect(
-      dto.imbalances?.find((p) => p.left === 'TRL' && p.right === 'IPRL'),
-    ).toEqual({
+    expect(dto.imbalances?.find((p) => p.left === 'TRL' && p.right === 'IPRL')).toEqual({
       left: 'TRL',
       right: 'IPRL',
       difference: 4,

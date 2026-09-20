@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import type { DimensionCode } from '@innlab/contracts';
 import { GenerateScalingRoadmapUseCase } from '../../../../../../src/modules/roadmap/application/use-cases/generate-scaling-roadmap.use-case.js';
 import type { DependencyGraphRepositoryPort } from '../../../../../../src/modules/roadmap/domain/repositories/dependency-graph.repository.port.js';
+import type { RoadmapRepositoryPort } from '../../../../../../src/modules/roadmap/domain/repositories/roadmap.repository.port.js';
 import type { GetMaturityProfileUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/get-maturity-profile.use-case.js';
 import { RoadmapClosureService } from '../../../../../../src/modules/roadmap/domain/services/roadmap-closure.service.js';
 import { TopologicalLayeringService } from '../../../../../../src/modules/roadmap/domain/services/topological-layering.service.js';
@@ -34,9 +35,11 @@ function profileOf(levels: Record<DimensionCode, number>) {
 describe('GenerateScalingRoadmapUseCase', () => {
   let profiles: jest.Mock<GetMaturityProfileUseCase['execute']>;
   let useCase: GenerateScalingRoadmapUseCase;
+  let save: jest.Mock<RoadmapRepositoryPort['save']>;
 
   beforeEach(() => {
     profiles = jest.fn();
+    save = jest.fn<RoadmapRepositoryPort['save']>().mockResolvedValue(undefined);
     const graphs: DependencyGraphRepositoryPort = {
       findEdges: () =>
         Promise.resolve(
@@ -60,6 +63,7 @@ describe('GenerateScalingRoadmapUseCase', () => {
       new RoadmapClosureService(),
       new TopologicalLayeringService(),
       new TargetLevelCalculatorService(),
+      { save, findByDiagnosticId: jest.fn() } as unknown as RoadmapRepositoryPort,
     );
   });
 
@@ -73,6 +77,49 @@ describe('GenerateScalingRoadmapUseCase', () => {
     expect(
       result.value.phases.map((p) => p.dimensions.map((d) => d.dimensionCode)),
     ).toEqual([['BRL', 'IPRL'], ['FRL']]);
+  });
+
+  it('saves the roadmap it calculates', async () => {
+    profiles.mockResolvedValueOnce(Result.ok(profileOf(AGROCONECTA_LEVELS)));
+
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+
+    if (!result.ok) throw new Error('expected ok result');
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith(result.value);
+  });
+
+  it('records why each dimension is in the plan and what sets its target', async () => {
+    profiles.mockResolvedValueOnce(Result.ok(profileOf(AGROCONECTA_LEVELS)));
+
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+
+    if (!result.ok) throw new Error('expected ok result');
+    const byCode = new Map(
+      result.value.phases.flatMap((p) => p.dimensions).map((d) => [d.dimensionCode, d]),
+    );
+    // Below its own minimum, and the target is that minimum.
+    expect(byCode.get('FRL')).toMatchObject({
+      inclusionReason: 'BELOW_EXPECTED_MINIMUM',
+      targetDrivenBy: null,
+    });
+    // Every dimension carries the minimum that explains its inclusion.
+    for (const d of byCode.values()) {
+      expect(d.expectedMinimum).toBeGreaterThan(0);
+      if (d.inclusionReason === 'BELOW_EXPECTED_MINIMUM') {
+        expect(d.currentLevel).toBeLessThan(d.expectedMinimum);
+      }
+    }
+  });
+
+  it('does not save when the profile is missing', async () => {
+    profiles.mockResolvedValueOnce(
+      Result.err(new ConflictError('PROFILE_NOT_YET_COMPUTED')),
+    );
+
+    await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+
+    expect(save).not.toHaveBeenCalled();
   });
 
   it('propagates the profile error', async () => {

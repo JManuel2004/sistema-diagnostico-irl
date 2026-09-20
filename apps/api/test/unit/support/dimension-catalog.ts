@@ -17,6 +17,8 @@ export function aDimensionCatalog(): Dimension[] {
       description: `Descripción ${code}`,
       sequence: index + 1,
       minimumExpectedLevel: 4,
+      // RF-13: only CRL, BRL and TmRL can be in critical state.
+      isCriticalDimension: ['CRL', 'BRL', 'TmRL'].includes(code),
     }),
   );
 }
