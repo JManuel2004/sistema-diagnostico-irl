@@ -156,21 +156,19 @@ export async function submitQuestionnaire(cmd: SubmitCommand) {
 React Router 6, with two route element layers:
 
 - **`ProtectedRoute`** — requires an INNLAB ecosystem session. Redirects to the INNLAB Hub for SSO otherwise. `/auth/callback` is deliberately left outside it.
-- **`DiagnosticGuard`** — enforces the diagnostic state machine. You can't reach `/diagnosticos/:id/cuestionario` until the user has consented and registered an initiative.
+- **The wizard** (`DiagnosticWizardPage`) — enforces the order of the steps from what the server already has: you can't open the questionnaire until the initiative is registered and the consent is recorded. See `docs/MODULES.md`.
 
 Route map:
 
 ```
-/                                       HomePage
+/                                       LandingPage (public, no navigation)
 /auth/callback                          AuthCallbackPage (public: exchanges ?code=)
-/diagnosticos                           HomePage (list + start new)
-/diagnosticos/nuevo                     ConsentPage
-/diagnosticos/:id/consentimiento        ConsentPage
-/diagnosticos/:id/iniciativa            InitiativePage
-/diagnosticos/:id/cuestionario          QuestionnairePage
-/diagnosticos/:id/perfil                MaturityProfilePage
-/403                                    UnauthorizedPage
-/404                                    NotFoundPage
+/diagnosticos/nuevo                     StartDiagnosticPage (starts or resumes, opens the wizard)
+/diagnosticos/:id/asistente/:paso?      DiagnosticWizardPage (iniciativa, consentimiento, cuestionario, resumen)
+/diagnosticos/:id/resultados            ResultsPage (profile + deep analysis; first screen with navigation)
+/panel                                  DashboardPage
+/diagnosticos/:id/iniciativa            InitiativePage (correct a registered initiative)
+*                                       NotFoundPage
 ```
 
 ## Forms

@@ -11,16 +11,55 @@ The rule that overrides everything else: **features cannot import from other fea
 | Feature | Talks to (backend) | Page |
 | --- | --- | --- |
 | `auth` | `shared/identity` — INNLAB SSO session, `me/context` | `AuthCallbackPage` |
-| `questionnaire` | `diagnosis` — questionnaire structure, finalize | `QuestionnairePage` |
-| `maturity-profile` | `diagnosis` — profile | `MaturityProfilePage` |
-| `portfolio-recommendation` | `diagnosis` (accepts deep analysis) and `routing` (reads the recommendation and its trace) | `RecommendationPage` |
-| `scaling-roadmap` | `roadmap` — reads the roadmap | `ScalingRoadmapPage` |
+| `questionnaire` | `diagnosis` — questionnaire structure; the draft of the 48 answers and their justifications (Zustand); the summary table | `DiagnosticWizardPage` (steps 3 and 4) |
+| `consent` | `initiative` — reads and records the privacy consent (Law 1581) and holds its text | `DiagnosticWizardPage` (step 2) |
+| `initiative` | `initiative` — profile registration and reading, sector and stage catalogs; the browser draft of the form | `DiagnosticWizardPage` (step 1), `InitiativePage`, `DashboardPage` |
+| `maturity-profile` | `diagnosis` — profile | `ResultsPage` |
+| `portfolio-recommendation` | `diagnosis` (accepts deep analysis) and `routing` (reads the recommendation and its trace) | `ResultsPage` |
+| `scaling-roadmap` | `roadmap` — reads the saved roadmap | `ResultsPage` |
 
-There are **no** `consent`, `initiative` or `diagnostic` features yet: the backend endpoints for consent and initiative exist (`initiative` module), but their forms are not built (`InProgressPage` stands in — `backlog-deuda-tecnica.md` 11.2).
+There is no `diagnostic` feature: starting, reading and processing a diagnostic go through `shared/api/diagnostic.api.ts` and `shared/hooks/`, because several pages and features need them.
+
+## Pages and flow
+
+`/` (landing, public, no navigation, one button) → **Iniciar diagnóstico** → `/diagnosticos/nuevo` (protected: without a session it goes through the INNLAB sign-in and continues here on return; with one it just proceeds) → asks the backend for the user's diagnostic, which **resumes the unfinished one** or creates one → the wizard `/diagnosticos/:id/asistente/:paso` (no navigation) → `/diagnosticos/:id/resultados` (the first screen with navigation) → `/panel`.
+
+The wizard has four steps, in this order: `iniciativa` (initiative profile), `consentimiento` (privacy consent), `cuestionario` (48 statements, each with its justification) and `resumen` (a table per dimension, in tabs, with **Statement / Score / Justification**; «Procesar diagnóstico» sends the answers and computes the profile). Which step applies is decided by what the server already has (initiative registered, consent recorded), not by a local flag: resuming lands on the first missing step and a later step cannot be opened by URL. A diagnostic that already has results is not resumed: its results open.
+
+- **Nothing about the initiative is stored before the consent** (RF-03, RNF-06). The form is asked first but, until the consent is accepted, it is a browser draft (`useInitiativeDraftStore`, `sessionStorage`); accepting sends the consent and then the initiative. The backend also refuses the initiative without a consent (409).
+- The old `/perfil`, `/recomendacion` and `/roadmap` routes redirect to `/resultados`; `/cuestionario` and `/consentimiento` redirect to their wizard step; `/diagnosticos` redirects to `/`.
+- `/panel` shows the initiative of the latest diagnostic **with results**, offers to continue one still in the wizard, and reserves the space for the history of past diagnostics (a future story). `/diagnosticos/:id/iniciativa` is only for correcting an already registered initiative; the first registration is wizard step 1.
 
 ## Where things live
 
 - **Server state → React Query; UI/draft state → Zustand**, never both for the same piece of state — see [`STATE_MANAGEMENT.md`](./STATE_MANAGEMENT.md).
 - Each feature owns its API module under `features/<name>/api/`; calls shared by several features live in `shared/api/` (for example `diagnostic.api.ts`).
-- The recommendation is not triggered by the client: when the user presses «Aceptar análisis profundo», `RecommendationPage` accepts deep analysis (`POST diagnostics/:id/deep-analysis`) and the backend calculates through domain events. Nothing is sent by merely opening the page.
+- **One results page.** `ResultsPage` shows the maturity profile and, only when the backend says the deep analysis was accepted (`deepAnalysisAccepted` on `GET diagnostics/:id`), also the imbalanced pairs, the critical-state alerts, the roadmap and the recommendation. The accept button (`AcceptDeepAnalysisCard`) lives in that page; nothing is sent by merely opening it. The recommendation and the roadmap are not even requested before acceptance.
+- Pages compose features: `ResultsPage` uses three (`maturity-profile`, `scaling-roadmap`, `portfolio-recommendation`); a feature may not import another, a page may.
+- **The radar, its legend and the summary cards share one highlight** (`useRadarHighlight`, local state of the page, no global store): hovering or focusing a card, a legend item or a pair highlights its dimensions in the radar; a click on a legend item pins it.
+- **Starting a diagnostic** is `POST diagnostics` (`useStartDiagnostic`), idempotent per user while one is unfinished; `StartDiagnosticPage` and the panel use it and open the wizard, which decides the step. `completed` on the diagnostic (derived by the backend) tells a diagnostic with results from one still in the wizard.
+- **The questionnaire does not scroll on mount.** `DimensionTabs` scrolls to the top of its panel only when the dimension changes (compared with the last shown), so the page loads from the top, also under StrictMode; every wizard step opens from the top of the page.
+- **Development autofill.** `src/dev/` holds the AgroConecta case (initiative profile and the 48 answers with their justifications) and two buttons. They exist only when `VITE_DEV_AUTOFILL` is `true` **at build time**, which only `.env.development` sets; a production build does not contain the data or the buttons (`src/dev/__tests__/production-bundle.test.ts` builds and checks). The backend e2e suites use the same 48 scores (`apps/api/test/e2e/support/agroconecta-case.ts`).
+- **Typecheck.** `pnpm typecheck` and `pnpm build` run `tsc -p tsconfig.app.json`; the bare `tsc --noEmit` at the root checked nothing because that tsconfig only has references.
 - **The frontend keeps no dimension names.** `name` and `shortName` come from the responses that name dimensions (profile, roadmap) and from the questionnaire catalog; only the visual metadata (colors, order) lives in `shared/lib/dimensions.ts`. The public landing page keeps its own editorial copy.
+
+## Design system (`shared/ui`, `shared/lib`)
+
+Brand and visual rules are in `DESIGN.md` at the project root. What the code offers so no screen writes its own:
+
+| Piece | Use |
+| --- | --- |
+| `shared/lib/palette.ts` | **Single source of the brand, semantic and dimension colors.** `tailwind.config.ts` imports it to build the utilities and SVG code (the radar) reads the same constants. Surface, text and border tokens are HSL variables in `styles/globals.css` (`hsl(var(--border))` in SVG). Never write `var(--color-…)`: no stylesheet defines it. |
+| `Card` | Content box: `rounded-md`, hairline border, no shadow. |
+| `Alert` | State message (error, notice, info, confirmation) with icon and ARIA role; `critical` is `role="alert"`. Not a `Card`. |
+| `LoadingState` | The one loading treatment. The questionnaire skeleton stays apart because it reproduces the shape of the 48 cards. |
+| `PageHeader` | Overline, `text-h1` title, description, and optional metadata below. |
+| `ResultMeta` | «Resultado guardado el …», under the title of profile, recommendation and roadmap. |
+| `DisclosurePanel` | Collapsible «how we got here» panel (recommendation trace, roadmap explanation). |
+| `AcceptDeepAnalysisCard` | The invitation to accept deep analysis, on the results page and for retrying a calculation that failed. |
+| `SectionHeader` | Title of a section inside a page (`h2`), with its description and result metadata. |
+| `Tooltip`, `GlossaryTerm` | One-sentence explanations of the technical terms (`shared/lib/glossary.ts`), reachable by hover and by keyboard. Radix, like `Dialog`. |
+| `Field`, `Input`, `Textarea`, `Select` | Form controls with label, hint and error wired with `aria-describedby`, from the `DESIGN.md` form input. |
+| `AppNav` | Navigation after the institutional descriptor: panel and results of the active diagnostic (the one in the URL, else the latest with results). Only on the screens after the wizard (results, panel, correcting the initiative); opt-in per page (`PageShell showNavigation`). |
+| `BrandDescriptor` | The institutional descriptor; it links to `/panel` where the page has navigation and to `/` (the landing) where it does not (landing, wizard). |
+| `WizardStepper` | The steps of the wizard and the current one (number or check, `aria-current="step"`); earlier steps are links, later ones are not. |

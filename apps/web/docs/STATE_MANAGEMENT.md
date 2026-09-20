@@ -86,7 +86,7 @@ The questionnaire is the exception that proves the rule. RHF works beautifully f
 Zustand wins because:
 
 - Components subscribe to the slice they care about (`useQuestionnaireDraft(s => s.progressByDimension.TRL)` only re-renders that one tab badge).
-- The draft survives navigation away from `/cuestionario` and back, automatically, via `persist`.
+- The draft survives navigation away from the questionnaire step and back, automatically, via `persist`.
 - The store can be reset on submission without remount tricks.
 
 ### `useState` for state shared across siblings
