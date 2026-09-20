@@ -22,4 +22,5 @@ There are **no** `consent`, `initiative` or `diagnostic` features yet: the backe
 
 - **Server state → React Query; UI/draft state → Zustand**, never both for the same piece of state — see [`STATE_MANAGEMENT.md`](./STATE_MANAGEMENT.md).
 - Each feature owns its API module under `features/<name>/api/`; calls shared by several features live in `shared/api/` (for example `diagnostic.api.ts`).
-- The recommendation is not triggered by the client: `RecommendationPage` accepts deep analysis (`POST diagnostics/:id/deep-analysis`) and the backend calculates through domain events.
+- The recommendation is not triggered by the client: when the user presses «Aceptar análisis profundo», `RecommendationPage` accepts deep analysis (`POST diagnostics/:id/deep-analysis`) and the backend calculates through domain events. Nothing is sent by merely opening the page.
+- **The frontend keeps no dimension names.** `name` and `shortName` come from the responses that name dimensions (profile, roadmap) and from the questionnaire catalog; only the visual metadata (colors, order) lives in `shared/lib/dimensions.ts`. The public landing page keeps its own editorial copy.

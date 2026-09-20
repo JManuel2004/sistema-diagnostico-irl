@@ -127,6 +127,16 @@ The split is enforced at the database level via role grants — defense in depth
 
 **Never** enable `synchronize: true`. Schema changes go through migrations.
 
+**There is a single migration**, `20260518001-InitialSchema.ts`, and the project keeps it that way while no environment holds real data (`convenciones-objetivo.md` §6). To change the schema, **edit that file** (`up()`, and `down()` if needed) and rebuild the database — do not add a new migration:
+
+```bash
+docker compose down -v && docker compose up -d postgres   # empty database
+pnpm --filter @innlab/api db:migration:run
+pnpm --filter @innlab/api db:seed
+```
+
+A unit test (`single-migration.spec.ts`) fails if a second migration file appears. The day an environment with real data exists this flips: every change becomes a new incremental migration and the initial one is never edited again.
+
 ## Authentication
 
 The identity provider is the **Amazon Cognito User Pool shared across the INNLAB

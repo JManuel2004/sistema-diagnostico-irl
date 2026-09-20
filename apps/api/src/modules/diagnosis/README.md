@@ -6,6 +6,7 @@ Ejecuta el cuestionario IRL (48 afirmaciones, escala Likert 1..5) y calcula el p
 ## Reglas que deben respetarse
 - Seis dimensiones (`TRL`, `CRL`, `BRL`, `IPRL`, `TmRL`, `FRL`), ocho afirmaciones por dimensión, 48 en total; la tabla de conversión SA-06 es fija. Un envío con un número de respuestas distinto de 48 es un `InvariantViolationError`.
 - Los seis pares de desequilibrio son exactamente TRL–CRL, TRL–BRL, CRL–BRL, TmRL–FRL, BRL–IPRL, TRL–IPRL; ante empate, el cuello de botella incluye **todas** las dimensiones empatadas.
+- **Estado crítico (RF-13):** solo CRL, BRL y TmRL pueden estar en estado crítico (una brecha en ellas); TRL, IPRL y FRL no reciben esa alerta cualquiera que sea su nivel. Lo dice `dimension.is_critical_dimension` y lo aplica `MaturityProfile.criticalState()`; `dimension_result.in_critical_state` se deriva de ahí.
 - Las transiciones de estado son lineales (`diagnosis-state.vo.ts`); nunca se salta ni se retrocede.
 - `diagnosis/` no llama a `routing/` ni a `roadmap/`: publica `DeepAnalysisRequestedEvent` y cada uno reacciona por su cuenta. El evento se publica solo **después** de guardar la transición.
 - Los casos de uso devuelven `Result<T, E>` para los resultados de negocio previsibles; solo los invariantes de dominio y los fallos de infraestructura se lanzan.
@@ -24,7 +25,7 @@ Ejecuta el cuestionario IRL (48 afirmaciones, escala Likert 1..5) y calcula el p
 - **Puertos:** `DIAGNOSIS_REPOSITORY`, `ANSWER_SHEET_REPOSITORY`, `MATURITY_PROFILE_REPOSITORY`; casos de uso `GetMaturityProfileUseCase` y `ComputeMaturityProfileUseCase`.
 - **Eventos que publica:** `DeepAnalysisRequestedEvent` (`shared/kernel/events/`).
 - **Eventos que escucha:** `ConsentRecordedEvent` (publicado por `initiative/`).
-- **HTTP:** `diagnostics/:id/finalize-initial`, `diagnostics/:id/deep-analysis`, `diagnostics/:id/questionnaire`, `diagnostics/:id/profile`, `catalog/questionnaire`. El detalle de contratos está en Swagger (`/api/docs`).
+- **HTTP:** `diagnostics/:id/finalize-initial`, `diagnostics/:id/deep-analysis`, `diagnostics/:id/questionnaire`, `diagnostics/:id/profile`, `catalog/questionnaire`. El detalle de contratos está en Swagger (`/api/docs`). El perfil nombra cada dimensión con `name` y `shortName` del catálogo (`GetMaturityProfileUseCase`); el frontend no mantiene nombres propios.
 
 ## De qué depende
 - `shared/irl-taxonomy` a través de `TAXONOMY_REPOSITORY` (solo `GetQuestionnaireStructureQuery`).

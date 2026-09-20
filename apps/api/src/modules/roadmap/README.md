@@ -22,7 +22,7 @@ Implementado: cierre transitivo, capas topológicas, nivel objetivo por dimensi�
 ## Qué expone hacia afuera
 - **Eventos que publica:** `ScalingRoadmapCalculatedEvent` (`shared/kernel/events/`, pensado para `reporting/`).
 - **Eventos que escucha:** `DeepAnalysisRequestedEvent`.
-- **HTTP:** `diagnostics/:id/roadmap`. Contrato en Swagger.
+- **HTTP:** `diagnostics/:id/roadmap`. Contrato en Swagger. Nombra cada dimensión con su `name` y `shortName` del catálogo (`GetScalingRoadmapUseCase`); el frontend no mantiene nombres propios.
 
 ## De qué depende
 `diagnosis/` por `GetMaturityProfileUseCase`; `shared/irl-taxonomy` por `TAXONOMY_REPOSITORY`.
