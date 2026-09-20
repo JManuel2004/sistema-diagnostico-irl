@@ -1,6 +1,8 @@
-import { useState, type JSX } from 'react';
-import { AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
+import type { JSX } from 'react';
 import type { LayerTraceResponse } from '@innlab/contracts';
+import { Alert } from '@/shared/ui/alert';
+import { DisclosurePanel } from '@/shared/ui/disclosure-panel';
+import { LoadingState } from '@/shared/ui/loading-state';
 
 interface Props {
   readonly trace: LayerTraceResponse | undefined;
@@ -28,155 +30,120 @@ interface Props {
  *     existe para impedir.
  */
 export function LayerTracePanel({ trace, isLoading, onOpen }: Props): JSX.Element {
-  const [abierto, setAbierto] = useState(false);
-
-  function alternar(): void {
-    const siguiente = !abierto;
-    setAbierto(siguiente);
-    if (siguiente) onOpen();
-  }
-
   return (
-    <section className="border-border mt-8 rounded-lg border">
-      <h2>
-        <button
-          type="button"
-          onClick={alternar}
-          aria-expanded={abierto}
-          aria-controls="trace-layers"
-          className="text-foreground flex w-full items-center gap-2 px-5 py-4 text-left text-sm font-semibold"
-        >
-          {abierto ? (
-            <ChevronDown className="size-4 shrink-0" aria-hidden="true" />
-          ) : (
-            <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
+    <DisclosurePanel
+      id="trace-layers"
+      title="Cómo se llegó a esta recomendación"
+      tag="Equipo INNLAB"
+      onOpen={onOpen}
+    >
+      {isLoading && <LoadingState label="Cargando el detalle del cálculo…" />}
+
+      {trace && (
+        <div className="flex flex-col gap-6">
+          {trace.adjustedByException && (
+            <Alert
+              tone="moderate"
+              title="Esta recomendación proviene de un ajuste puntual del centro, no del resultado del cálculo."
+            />
           )}
-          Cómo se llegó a esta recomendación
-          <span className="text-muted-foreground ml-auto text-xs font-normal">
-            Equipo INNLAB
-          </span>
-        </button>
-      </h2>
 
-      <div id="trace-layers" hidden={!abierto} className="px-5 pb-6">
-        {isLoading && (
-          <p className="text-muted-foreground text-sm">Cargando la trace…</p>
-        )}
+          {trace.incompleteCharacterization.length > 0 && (
+            <p className="text-muted-foreground border-border rounded-md border border-dashed p-3 text-xs leading-relaxed">
+              La iniciativa no tiene registro de{' '}
+              {trace.incompleteCharacterization.map(campoLegible).join(', ')}. El cálculo los trató
+              como ausentes, así que la recomendación es menos precisa de lo que podría ser.
+            </p>
+          )}
 
-        {trace && (
-          <div className="flex flex-col gap-6">
-            {trace.adjustedByException && (
-              <p
-                role="status"
-                className="border-moderate/30 bg-moderate/5 text-moderate flex items-start gap-2 rounded-md border p-3 text-sm"
-              >
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                <span>
-                  Esta recomendación proviene de un ajuste puntual del centro, no
-                  del resultado del cálculo.
-                </span>
-              </p>
-            )}
-
-            {trace.incompleteCharacterization.length > 0 && (
-              <p className="text-muted-foreground border-border rounded-md border border-dashed p-3 text-xs leading-relaxed">
-                La iniciativa no tiene registrados{' '}
-                {trace.incompleteCharacterization.join(', ')}. El cálculo los trató
-                como ausentes, así que la recomendación es menos precisa de lo que
-                podría ser.
-              </p>
-            )}
-
-            <Bloque titulo="1 · Servicios descartados">
-              {trace.layer1Excluded.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  Ningún service quedó excluido.
-                </p>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {trace.layer1Excluded.map((e) => (
-                    <li key={e.idService} className="text-sm">
-                      <span className="text-foreground font-medium">{e.name}</span>
-                      <span className="text-muted-foreground">
-                        {' '}
-                        — {e.exclusionMessage}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Bloque>
-
-            <Bloque titulo="2 · Orden según el cálculo">
-              <ol className="flex flex-col gap-3">
-                {trace.rankingBeforeExceptions.map((r) => (
-                  <li key={r.idService} className="text-sm">
-                    <span className="text-foreground font-medium">
-                      {r.position}. {r.name}
-                    </span>
-                    {r.contributions && (
-                      <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                        {describirAportes(r.contributions)}
-                      </p>
-                    )}
+          <Bloque titulo="1 · Servicios descartados">
+            {trace.layer1Excluded.length === 0 ? (
+              <p className="text-muted-foreground text-sm">Ningún servicio quedó excluido.</p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {trace.layer1Excluded.map((e) => (
+                  <li key={e.idService} className="text-sm">
+                    <span className="text-foreground font-medium">{e.name}</span>
+                    <span className="text-muted-foreground"> — {e.exclusionMessage}</span>
                   </li>
                 ))}
-              </ol>
-            </Bloque>
+              </ul>
+            )}
+          </Bloque>
 
-            <Bloque titulo="3 · Ajustes puntuales">
-              {trace.appliedExceptions.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No se aplicó ningún ajuste: el order es el del cálculo.
-                </p>
-              ) : (
-                <ul className="flex flex-col gap-4">
-                  {trace.appliedExceptions.map((e) => (
-                    <li key={e.code} className="text-sm">
-                      <p className="text-foreground font-medium">
-                        {e.code} · {e.action} {e.targetService}
-                      </p>
-                      <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                        {e.declaredReason}
-                      </p>
-                      <p className="text-muted-foreground mt-1 text-xs italic">
-                        {e.effect}
-                      </p>
+          <Bloque titulo="2 · Orden según el cálculo">
+            <ol className="flex flex-col gap-3">
+              {trace.rankingBeforeExceptions.map((r) => (
+                <li key={r.idService} className="text-sm">
+                  <span className="text-foreground font-medium">
+                    {r.position}. {r.name}
+                  </span>
+                  {r.contributions && (
+                    <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+                      {describirAportes(r.contributions)}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </Bloque>
+
+          <Bloque titulo="3 · Ajustes puntuales">
+            {trace.appliedExceptions.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No se aplicó ningún ajuste: el orden es el del cálculo.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-4">
+                {trace.appliedExceptions.map((e) => (
+                  <li key={e.code} className="text-sm">
+                    <p className="text-foreground font-medium">
+                      {e.code} · {e.action} {e.targetService}
+                    </p>
+                    <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+                      {e.declaredReason}
+                    </p>
+                    <p className="text-muted-foreground mt-1 text-xs">{e.effect}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {trace.discardedExceptions.length > 0 && (
+              <details className="mt-4">
+                <summary className="text-muted-foreground cursor-pointer text-xs">
+                  {trace.discardedExceptions.length} ajuste(s) evaluados y no aplicados
+                </summary>
+                <ul className="mt-2 flex flex-col gap-1">
+                  {trace.discardedExceptions.map((e) => (
+                    <li key={e.code} className="text-muted-foreground text-xs">
+                      <span className="font-medium">{e.code}</span> — {e.reason}
                     </li>
                   ))}
                 </ul>
-              )}
-
-              {trace.discardedExceptions.length > 0 && (
-                <details className="mt-4">
-                  <summary className="text-muted-foreground cursor-pointer text-xs">
-                    {trace.discardedExceptions.length} ajuste(s) evaluados y no
-                    aplicados
-                  </summary>
-                  <ul className="mt-2 flex flex-col gap-1">
-                    {trace.discardedExceptions.map((e) => (
-                      <li key={e.code} className="text-muted-foreground text-xs">
-                        <span className="font-medium">{e.code}</span> — {e.reason}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-            </Bloque>
-
-            <p className="text-muted-foreground border-border border-t pt-4 text-xs">
-              Evaluado el{' '}
-              {new Date(trace.evaluatedAt).toLocaleString('es-CO', {
-                dateStyle: 'long',
-                timeStyle: 'short',
-              })}
-              .
-            </p>
-          </div>
-        )}
-      </div>
-    </section>
+              </details>
+            )}
+          </Bloque>
+        </div>
+      )}
+    </DisclosurePanel>
   );
+}
+
+/**
+ * Nombres legibles de los campos de caracterización que el backend reporta
+ * como ausentes. El código es estable; el texto que ve el usuario es de esta
+ * pantalla.
+ */
+const CAMPOS_LEGIBLES: Readonly<Record<string, string>> = {
+  stage: 'la etapa',
+  sector: 'el sector',
+  teamSize: 'el tamaño del equipo',
+  academicLinkage: 'la vinculación académica',
+};
+
+function campoLegible(campo: string): string {
+  return CAMPOS_LEGIBLES[campo] ?? campo;
 }
 
 function Bloque({
@@ -201,13 +168,13 @@ function Bloque({
  * los `no_aplica` alargaría la explicación sin añadir información.
  */
 function describirAportes(
-  contributions: NonNullable<LayerTraceResponse['rankingBeforeExceptions'][number]['contributions']>,
+  contributions: NonNullable<
+    LayerTraceResponse['rankingBeforeExceptions'][number]['contributions']
+  >,
 ): string {
   const partes: string[] = [];
 
-  const cuello = contributions.bottleneck.details.filter(
-    (d) => d.sourceLabel !== 'not_applicable',
-  );
+  const cuello = contributions.bottleneck.details.filter((d) => d.sourceLabel !== 'not_applicable');
   if (cuello.length > 0) {
     partes.push(
       `atiende la dimensión más rezagada (${cuello
@@ -216,34 +183,28 @@ function describirAportes(
     );
   }
 
-  const gaps = contributions.gaps.details.filter(
-    (d) => d.sourceLabel !== 'not_applicable',
-  );
+  const gaps = contributions.gaps.details.filter((d) => d.sourceLabel !== 'not_applicable');
   if (gaps.length > 0) {
     partes.push(
-      `cubre gaps en ${gaps
-        .map((d) => `${d.dimension} (${d.sourceLabel})`)
-        .join(', ')}`,
+      `cubre brechas en ${gaps.map((d) => `${d.dimension} (${d.sourceLabel})`).join(', ')}`,
     );
   }
 
   if (contributions.imbalances.details.length > 0) {
     partes.push(
-      `incide en imbalances ${contributions.imbalances.details
+      `incide en los desequilibrios ${contributions.imbalances.details
         .map((d) => d.pair)
         .join(', ')}`,
     );
   }
 
   if (contributions.stageAffinity.matches) {
-    partes.push('encaja con la stage de la iniciativa');
+    partes.push('encaja con la etapa de la iniciativa');
   }
 
   if (contributions.rangePenalty.applied) {
     partes.push('penalizado por estar fuera de su rango de madurez habitual');
   }
 
-  return partes.length > 0
-    ? partes.join('; ') + '.'
-    : 'Sin afinidad destacable con este perfil.';
+  return partes.length > 0 ? partes.join('; ') + '.' : 'Sin afinidad destacable con este perfil.';
 }

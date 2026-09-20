@@ -1,48 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import type { RoadmapResponse } from '@innlab/contracts';
 import { dimensionRefFixture } from '@/test/fixtures/dimensions';
+import { agroconectaRoadmapFixture, roadmapDimensionFixture } from '@/test/fixtures/roadmap';
 import { RoadmapPhaseList } from '../RoadmapPhaseList';
 
-function target(code: 'BRL' | 'IPRL' | 'FRL') {
-  const { name, shortName } = dimensionRefFixture(code);
-  return { dimensionCode: code, name, shortName };
-}
-
-const AGROCONECTA: RoadmapResponse = {
-  diagnosticId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-  generatedAt: '2026-09-08T10:00:00.000Z',
-  phases: [
-    {
-      order: 1,
-      dimensions: [
-        {
-          ...target('BRL'),
-          currentLevel: 3,
-          targetLevel: 4,
-          enables: [dimensionRefFixture('FRL')],
-        },
-        {
-          ...target('IPRL'),
-          currentLevel: 1,
-          targetLevel: 4,
-          enables: [dimensionRefFixture('FRL')],
-        },
-      ],
-    },
-    {
-      order: 2,
-      dimensions: [
-        { ...target('FRL'), currentLevel: 2, targetLevel: 4, enables: [] },
-      ],
-    },
-  ],
-  dimensionsWithoutIntervention: [
-    dimensionRefFixture('TRL'),
-    dimensionRefFixture('CRL'),
-    dimensionRefFixture('TmRL'),
-  ],
-};
+const AGROCONECTA = agroconectaRoadmapFixture();
 
 describe('RoadmapPhaseList', () => {
   it('muestra las dos fases del caso AgroConecta', () => {
@@ -71,7 +33,7 @@ describe('RoadmapPhaseList', () => {
   it('muestra el salto de nivel de cada dimensión', () => {
     render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
 
-    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('article')!;
+    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('[role="article"]') as HTMLElement;
     expect(within(negocio).getByText('Nivel 3')).toBeInTheDocument();
     expect(within(negocio).getByText('Nivel 4')).toBeInTheDocument();
   });
@@ -81,7 +43,7 @@ describe('RoadmapPhaseList', () => {
 
     const pi = screen
       .getByRole('heading', { name: 'Propiedad Intelectual' })
-      .closest('article')!;
+      .closest('[role="article"]') as HTMLElement;
     expect(within(pi).getByText(/desbloquea Financiación/)).toBeInTheDocument();
   });
 
@@ -90,8 +52,46 @@ describe('RoadmapPhaseList', () => {
 
     const financiacion = screen
       .getByRole('heading', { name: 'Financiación' })
-      .closest('article')!;
+      .closest('[role="article"]') as HTMLElement;
     expect(within(financiacion).queryByText(/desbloquea/)).toBeNull();
+  });
+
+  // Backlog 10.1: each card says why the dimension is in the plan and what
+  // sets its target, from the fields the backend sends.
+  it('dice por qué una dimensión está en el plan: por debajo de su mínimo', () => {
+    render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
+
+    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('[role="article"]') as HTMLElement;
+    expect(within(negocio).getByText(/Está por debajo del mínimo esperado \(nivel 4\)/)).toBeInTheDocument();
+    expect(within(negocio).getByText(/La meta es su mínimo esperado/)).toBeInTheDocument();
+  });
+
+  it('dice cuando una dimensión entra porque otra la necesita, y quién fija su meta', () => {
+    const roadmap = {
+      ...AGROCONECTA,
+      phases: [
+        {
+          order: 1,
+          dimensions: [
+            roadmapDimensionFixture('TmRL', {
+              currentLevel: 4,
+              targetLevel: 6,
+              enables: ['BRL', 'FRL'],
+              inclusionReason: 'REQUIRED_ENABLER',
+              expectedMinimum: 4,
+              targetDrivenBy: dimensionRefFixture('BRL'),
+            }),
+          ],
+        },
+      ],
+    };
+    render(<RoadmapPhaseList roadmap={roadmap} />);
+
+    const equipo = screen.getByRole('heading', { name: 'Equipo' }).closest('[role="article"]') as HTMLElement;
+    expect(
+      within(equipo).getByText(/Cumple su mínimo esperado, pero Negocio y Financiación la necesitan/),
+    ).toBeInTheDocument();
+    expect(within(equipo).getByText(/La meta la fija Negocio, que la necesita en nivel 6/)).toBeInTheDocument();
   });
 
   it('nombra las dimensiones que quedaron fuera del plan', () => {
@@ -116,14 +116,9 @@ describe('RoadmapPhaseList', () => {
         roadmap={{
           ...AGROCONECTA,
           phases: [],
-          dimensionsWithoutIntervention: [
-            'TRL',
-            'CRL',
-            'BRL',
-            'IPRL',
-            'TmRL',
-            'FRL',
-          ],
+          dimensionsWithoutIntervention: (['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const).map(
+            dimensionRefFixture,
+          ),
         }}
       />,
     );

@@ -1,43 +1,44 @@
-import type { JSX } from 'react';
-import { AlertCircle, ArrowLeftRight, CheckCircle2, Scale, TrendingDown } from 'lucide-react';
+import type { JSX, ReactNode } from 'react';
+import { AlertCircle, CheckCircle2, Scale, TrendingDown } from 'lucide-react';
 import type {
   Asymmetry,
   Bottleneck,
+  DimensionCode,
   DimensionResult,
   Gaps,
   ImbalanceClassification,
-  ImbalancePairResult,
 } from '@innlab/contracts';
 import { Card, CardContent } from '@/shared/ui/card';
+import { GlossaryTerm } from '@/shared/ui/glossary-term';
+import type { GlossaryKey } from '@/shared/lib/glossary';
 
 /**
- * Las etiquetas cortas viven en `shared/lib/dimensions` y no aquí: el
- * roadmap también las necesita, y el aislamiento por feature impide que
- * las tome de este componente. Duplicarlas habría añadido una fuente más
- * de nombres a las que el repositorio ya arrastra.
+ * Las etiquetas cortas vienen de la respuesta (`shortName` de cada resultado
+ * de dimensión), no de un mapa del frontend: el frontend no mantiene nombres
+ * de dimensión (backlog 4.5).
  */
 
-const TONE_STYLES: Record<
+export const TONE_STYLES: Record<
   ImbalanceClassification | 'neutral',
   { ring: string; iconColor: string; chipBg: string; chipText: string }
 > = {
   critical: {
-    ring: 'border-[var(--color-critical,#A53221)]/30 bg-[var(--color-critical,#A53221)]/5',
-    iconColor: 'text-[var(--color-critical,#A53221)]',
-    chipBg: 'bg-[var(--color-critical,#A53221)]/10',
-    chipText: 'text-[var(--color-critical,#A53221)]',
+    ring: 'border-critical/30 bg-critical/5',
+    iconColor: 'text-critical',
+    chipBg: 'bg-critical/10',
+    chipText: 'text-critical',
   },
   moderate: {
-    ring: 'border-[var(--color-moderate,#8C3811)]/30 bg-[var(--color-moderate,#8C3811)]/5',
-    iconColor: 'text-[var(--color-moderate,#8C3811)]',
-    chipBg: 'bg-[var(--color-moderate,#8C3811)]/10',
-    chipText: 'text-[var(--color-moderate,#8C3811)]',
+    ring: 'border-moderate/30 bg-moderate/5',
+    iconColor: 'text-moderate',
+    chipBg: 'bg-moderate/10',
+    chipText: 'text-moderate',
   },
   acceptable: {
-    ring: 'border-[var(--color-acceptable,#1F633D)]/30 bg-[var(--color-acceptable,#1F633D)]/5',
-    iconColor: 'text-[var(--color-acceptable,#1F633D)]',
-    chipBg: 'bg-[var(--color-acceptable,#1F633D)]/10',
-    chipText: 'text-[var(--color-acceptable,#1F633D)]',
+    ring: 'border-acceptable/30 bg-acceptable/5',
+    iconColor: 'text-acceptable',
+    chipBg: 'bg-acceptable/10',
+    chipText: 'text-acceptable',
   },
   neutral: {
     ring: 'border-border bg-background',
@@ -47,22 +48,52 @@ const TONE_STYLES: Record<
   },
 };
 
-function SummaryCard({
-  icon: Icon,
-  tone,
-  eyebrow,
-  title,
-  children,
-}: {
+/** Lo que una tarjeta hace al pasar el cursor o al enfocarla: resaltar en el radar. */
+export type HighlightHandler = (codes: readonly DimensionCode[]) => void;
+
+interface SummaryCardProps {
   icon: typeof CheckCircle2;
   tone: ImbalanceClassification | 'neutral';
   eyebrow: string;
+  /** Término del glosario que explica el `eyebrow` en un tooltip. */
+  glossary?: GlossaryKey;
   title: string;
-  children?: React.ReactNode;
-}): JSX.Element {
+  /** Dimensiones que esta tarjeta señala: se resaltan en el radar. */
+  codes: readonly DimensionCode[];
+  onHighlight?: HighlightHandler;
+  children?: ReactNode;
+}
+
+export function SummaryCard({
+  icon: Icon,
+  tone,
+  eyebrow,
+  glossary,
+  title,
+  codes,
+  onHighlight,
+  children,
+}: SummaryCardProps): JSX.Element {
   const styles = TONE_STYLES[tone];
+  const highlight = onHighlight
+    ? {
+        tabIndex: 0,
+        onMouseEnter: () => {
+          onHighlight(codes);
+        },
+        onMouseLeave: () => {
+          onHighlight([]);
+        },
+        onFocus: () => {
+          onHighlight(codes);
+        },
+        onBlur: () => {
+          onHighlight([]);
+        },
+      }
+    : {};
   return (
-    <Card role="group" aria-label={`${eyebrow}: ${title}`} className={styles.ring}>
+    <Card role="group" aria-label={`${eyebrow}: ${title}`} className={styles.ring} {...highlight}>
       <CardContent className="flex gap-3 p-4">
         <Icon
           className={`mt-0.5 h-5 w-5 shrink-0 ${styles.iconColor}`}
@@ -70,7 +101,9 @@ function SummaryCard({
           aria-hidden
         />
         <div className="min-w-0 flex-1">
-          <p className="text-overline text-muted-foreground">{eyebrow}</p>
+          <p className="text-overline text-muted-foreground">
+            {glossary ? <GlossaryTerm term={glossary}>{eyebrow}</GlossaryTerm> : eyebrow}
+          </p>
           <p className="text-foreground mt-1 text-sm font-semibold leading-snug">{title}</p>
           {children !== undefined && <div className="mt-2 text-xs leading-relaxed">{children}</div>}
         </div>
@@ -85,25 +118,30 @@ interface MaturityProfileSummaryProps {
   strength?: Bottleneck;
   asymmetry?: Asymmetry;
   gaps?: Gaps;
-  imbalances?: readonly ImbalancePairResult[];
+  /** Resalta en el radar las dimensiones de la tarjeta bajo el cursor. */
+  onHighlight?: HighlightHandler;
 }
 
+/**
+ * Las señales del perfil: fortaleza, cuello de botella, asimetría y brechas.
+ * Los pares desequilibrados y el estado crítico no están aquí: pertenecen al
+ * análisis profundo (`ImbalanceInsights`).
+ */
 export function MaturityProfileSummary({
   dimensionResults,
   bottleneck,
   strength,
   asymmetry,
   gaps,
-  imbalances,
+  onHighlight,
 }: MaturityProfileSummaryProps): JSX.Element {
   // The names come from the response itself (the six results carry them), not
   // from a map kept in the frontend.
   const shortNameByCode = new Map(dimensionResults.map((r) => [r.dimensionCode, r.shortName]));
-  const dimensionLabel = (code: string): string => shortNameByCode.get(code as DimensionCode) ?? code;
+  const dimensionLabel = (code: DimensionCode): string => shortNameByCode.get(code) ?? code;
   const strengthNames = (strength?.dimensions ?? []).map(dimensionLabel);
   const gapNames = (gaps?.dimensions ?? []).map(dimensionLabel);
   const gapThreshold = gaps?.threshold;
-  const flaggedPairs = (imbalances ?? []).filter((p) => p.classification !== 'acceptable');
 
   if (dimensionResults.length === 0) {
     return (
@@ -125,6 +163,9 @@ export function MaturityProfileSummary({
           icon={CheckCircle2}
           tone="acceptable"
           eyebrow="Fortaleza clara"
+          glossary="strength"
+          codes={strength.dimensions}
+          onHighlight={onHighlight}
           title={
             strengthNames.length === 1
               ? `${strengthNames[0]} — nivel ${strength.level}`
@@ -142,6 +183,9 @@ export function MaturityProfileSummary({
           icon={AlertCircle}
           tone="neutral"
           eyebrow="Cuello de botella"
+          glossary="bottleneck"
+          codes={bottleneck.dimensions}
+          onHighlight={onHighlight}
           title={
             bottleneck.dimensions.length === 1
               ? `${dimensionLabel(bottleneck.dimensions[0])} — nivel ${bottleneck.level}`
@@ -161,6 +205,10 @@ export function MaturityProfileSummary({
           icon={Scale}
           tone={asymmetry.classification}
           eyebrow="Asimetría"
+          glossary="asymmetry"
+          // The asymmetry is between the highest and the lowest dimension.
+          codes={[...(strength?.dimensions ?? []), ...(bottleneck?.dimensions ?? [])]}
+          onHighlight={onHighlight}
           title={`${asymmetry.difference} ${asymmetry.difference === 1 ? 'nivel' : 'niveles'} entre la dimensión más alta y la más baja`}
         >
           <p className="text-muted-foreground">
@@ -177,52 +225,14 @@ export function MaturityProfileSummary({
           icon={TrendingDown}
           tone="critical"
           eyebrow={`Brecha (nivel ≤ ${gapThreshold})`}
+          glossary="gap"
+          codes={gaps?.dimensions ?? []}
+          onHighlight={onHighlight}
           title={`${gapNames.length} ${gapNames.length === 1 ? 'dimensión requiere' : 'dimensiones requieren'} atención`}
         >
           <p className="text-muted-foreground">{gapNames.join(', ')}</p>
         </SummaryCard>
       )}
-
-      {imbalances !== undefined &&
-        (flaggedPairs.length > 0 ? (
-          <SummaryCard
-            icon={ArrowLeftRight}
-            tone={
-              flaggedPairs.some((p) => p.classification === 'critical') ? 'critical' : 'moderate'
-            }
-            eyebrow="Pares desequilibrados"
-            title={`${flaggedPairs.length} de ${imbalances.length} pares KTH fuera de balance`}
-          >
-            <ul className="flex flex-col gap-1.5">
-              {flaggedPairs.map((p) => {
-                const chip = TONE_STYLES[p.classification];
-                return (
-                  <li key={`${p.left}-${p.right}`} className="flex items-center gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${chip.chipBg} ${chip.chipText}`}
-                    >
-                      <span>{p.left}</span>
-                      <span aria-hidden className="opacity-60">
-                        —
-                      </span>
-                      <span>{p.right}</span>
-                    </span>
-                    <span className="text-muted-foreground">
-                      Δ {p.difference} · {p.classification === 'critical' ? 'crítico' : 'moderado'}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </SummaryCard>
-        ) : (
-          <SummaryCard
-            icon={CheckCircle2}
-            tone="acceptable"
-            eyebrow="Pares KTH"
-            title={`Los ${imbalances.length} pares se mantienen dentro del rango aceptable`}
-          />
-        ))}
     </aside>
   );
 }

@@ -9,22 +9,27 @@ import {
 } from 'recharts';
 import type { DimensionCode, DimensionResult, ImbalancePairResult } from '@innlab/contracts';
 import { getDimensionVisual, type DimensionVisualMeta } from '@/shared/lib/dimensions';
-import {
-  buildImbalancedVertices,
-  type RadarPoint,
-} from '../utils/radar-helpers';
+import { PALETTE } from '@/shared/lib/palette';
+import { buildImbalancedVertices, dotStyle, type RadarPoint } from '../utils/radar-helpers';
 
 /**
  * Color of the points and of the bottleneck ring. Neutral on purpose: the
  * radar does not color a dimension by its level. Severity that the product
  * defines (the imbalances) comes from the backend and is drawn separately.
  */
-const POINT_COLOR = 'var(--color-azul-icesi, #5454E9)';
+const POINT_COLOR = PALETTE['azul-icesi'];
+
+/** Chart chrome comes from the same tokens as the rest of the page. */
+const GRID_COLOR = 'hsl(var(--border))';
+const MUTED_TEXT = 'hsl(var(--muted-foreground))';
+const BACKGROUND = 'hsl(var(--background))';
 
 interface MaturityRadarChartProps {
   dimensionResults: readonly DimensionResult[];
   bottleneckDimensions?: readonly string[];
   imbalances?: readonly ImbalancePairResult[];
+  /** Dimensions to emphasize (legend, summary cards); see `effectiveHighlight`. */
+  highlighted?: readonly DimensionCode[];
 }
 
 function asRadarPoints(results: readonly DimensionResult[]): readonly RadarPoint[] {
@@ -36,47 +41,57 @@ function asRadarPoints(results: readonly DimensionResult[]): readonly RadarPoint
   }));
 }
 
+interface AxisLabelProps {
+  payload?: { value?: unknown };
+  x?: number | string;
+  y?: number | string;
+  textAnchor?: string;
+  pointsByCode: Map<string, RadarPoint>;
+  highlighted: readonly DimensionCode[];
+}
+
 function AxisLabel({
   payload,
   x,
   y,
   textAnchor,
   pointsByCode,
-}: {
-  payload?: { value?: string };
-  x?: number;
-  y?: number;
-  textAnchor?: 'start' | 'middle' | 'end';
-  pointsByCode: Map<string, RadarPoint>;
-}): JSX.Element | null {
-  const dimensionName = payload?.value;
+  highlighted,
+}: AxisLabelProps): JSX.Element | null {
+  const dimensionName = typeof payload?.value === 'string' ? payload.value : undefined;
   if (!dimensionName || x === undefined || y === undefined) return null;
+  const px = Number(x);
+  const py = Number(y);
 
   const point = [...pointsByCode.values()].find((p) => p.dimension === dimensionName);
   if (!point) return null;
 
   // Unknown codes are not in the map; `getDimensionVisual` yields undefined.
   const visual: DimensionVisualMeta | undefined = getDimensionVisual(point.code as DimensionCode);
-  const codeColor = visual?.color ?? '#1A1A24';
+  const codeColor = visual?.color ?? 'hsl(var(--foreground))';
 
   const isTopLabel = point.code === 'TRL';
   const nameOffset = isTopLabel ? -42 : -6;
   const codeOffset = isTopLabel ? -24 : 12;
 
+  const isHighlighted = highlighted.includes(point.code as DimensionCode);
+  const receded = highlighted.length > 0 && !isHighlighted;
+  const anchor = textAnchor === 'start' || textAnchor === 'end' ? textAnchor : 'middle';
+
   return (
-    <g>
+    <g opacity={receded ? 0.5 : 1}>
       <text
-        x={x}
-        y={y + nameOffset}
-        textAnchor={textAnchor}
-        className="fill-foreground text-base font-semibold"
+        x={px}
+        y={py + nameOffset}
+        textAnchor={anchor}
+        className={`fill-foreground text-base ${isHighlighted ? 'font-bold' : 'font-semibold'}`}
       >
         {dimensionName}
       </text>
       <text
-        x={x}
-        y={y + codeOffset}
-        textAnchor={textAnchor}
+        x={px}
+        y={py + codeOffset}
+        textAnchor={anchor}
         className="font-mono text-xs uppercase tracking-widest"
       >
         <tspan fill={codeColor}>{point.code}</tspan>
@@ -93,6 +108,7 @@ export function MaturityRadarChart({
   dimensionResults,
   bottleneckDimensions = [],
   imbalances,
+  highlighted = [],
 }: MaturityRadarChartProps): JSX.Element {
   const points = asRadarPoints(dimensionResults);
   const pointsByCode = new Map(points.map((p) => [p.code, p]));
@@ -109,16 +125,20 @@ export function MaturityRadarChart({
           <title>Perfil de madurez IRL — gráfico radar</title>
           <desc>{accessibleDescription}</desc>
 
-          <PolarGrid stroke="var(--color-border, #CECFD4)" strokeDasharray="2 2" />
+          <PolarGrid stroke={GRID_COLOR} strokeDasharray="2 2" />
 
           <PolarAngleAxis
             dataKey="dimension"
-            tick={(props: {
-              payload?: { value?: string };
-              x?: number;
-              y?: number;
-              textAnchor?: 'start' | 'middle' | 'end';
-            }) => <AxisLabel {...props} pointsByCode={pointsByCode} />}
+            tick={(props) => (
+              <AxisLabel
+                payload={props.payload as AxisLabelProps['payload']}
+                x={props.x}
+                y={props.y}
+                textAnchor={props.textAnchor}
+                pointsByCode={pointsByCode}
+                highlighted={highlighted}
+              />
+            )}
           />
 
           <PolarRadiusAxis
@@ -126,19 +146,19 @@ export function MaturityRadarChart({
             domain={[0, 9]}
             tickCount={4}
             tick={{
-              fill: 'var(--color-muted-foreground, #4A4A55)',
+              fill: MUTED_TEXT,
               fontSize: 11,
             }}
-            stroke="var(--color-border, #CECFD4)"
+            stroke={GRID_COLOR}
             axisLine={false}
           />
 
           <Radar
             name="Nivel IRL"
             dataKey="level"
-            stroke="var(--color-azul-icesi, #5454E9)"
+            stroke={POINT_COLOR}
             strokeWidth={2}
-            fill="var(--color-azul-icesi, #5454E9)"
+            fill={POINT_COLOR}
             fillOpacity={0.2}
             dot={(props: { cx?: number; cy?: number; payload?: RadarPoint; index?: number }) => {
               const { cx, cy, payload, index } = props;
@@ -146,16 +166,36 @@ export function MaturityRadarChart({
                 return <g key={`empty-${String(index ?? 0)}`} />;
               }
               const isBottleneck = bottleneckDimensions.includes(payload.code);
+              const style = dotStyle(
+                highlighted.includes(payload.code as DimensionCode),
+                highlighted.length > 0,
+              );
+              const ringColor =
+                getDimensionVisual(payload.code as DimensionCode)?.color ?? POINT_COLOR;
               const imbalanceLevel = imbalancedVertices.get(payload.code);
               return (
-                <g key={payload.code}>
+                <g key={payload.code} opacity={style.opacity}>
+                  {style.ringWidth > 0 && (
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={style.radius + 4}
+                      fill="none"
+                      stroke={ringColor}
+                      strokeWidth={style.ringWidth}
+                    />
+                  )}
                   {imbalanceLevel && (
                     <circle
                       cx={cx}
                       cy={cy}
                       r={imbalanceLevel === 'critical' ? 13 : 11}
                       fill="none"
-                      stroke={imbalanceLevel === 'critical' ? '#D97706' : '#CA8A04'}
+                      stroke={
+                        imbalanceLevel === 'critical'
+                          ? PALETTE.critical.DEFAULT
+                          : PALETTE.moderate.DEFAULT
+                      }
                       strokeOpacity={0.7}
                       strokeWidth={2}
                       strokeDasharray={imbalanceLevel === 'critical' ? '3 2' : 'none'}
@@ -175,9 +215,9 @@ export function MaturityRadarChart({
                   <circle
                     cx={cx}
                     cy={cy}
-                    r={5}
+                    r={style.radius}
                     fill={POINT_COLOR}
-                    stroke="var(--color-background, #FFFFFF)"
+                    stroke={BACKGROUND}
                     strokeWidth={1.5}
                   />
                 </g>

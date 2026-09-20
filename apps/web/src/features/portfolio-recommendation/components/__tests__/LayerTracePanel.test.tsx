@@ -159,9 +159,31 @@ describe('LayerTracePanel', () => {
     );
     await userEvent.click(screen.getByRole('button'));
 
+    // El código del campo es estable; lo que lee el usuario está en español.
     expect(
-      screen.getByText(/no tiene registrados stage, teamSize/),
+      screen.getByText(/no tiene registro de la etapa, el tamaño del equipo/),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/teamSize/)).not.toBeInTheDocument();
+  });
+
+  // Backlog 10.3: the date lives in `ResultMeta`, once, under the page title;
+  // the panel no longer repeats it.
+  it('no repite la fecha del resultado', async () => {
+    render(<LayerTracePanel trace={trace()} isLoading={false} onOpen={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button'));
+
+    expect(screen.queryByText(/Evaluado el/)).not.toBeInTheDocument();
+  });
+
+  it('está en español: sin services, gaps ni imbalances en el texto', async () => {
+    render(<LayerTracePanel trace={trace()} isLoading={false} onOpen={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button'));
+
+    const texto = document.body.textContent;
+    expect(texto).toMatch(/cubre brechas en/);
+    expect(texto).toMatch(/los desequilibrios/);
+    expect(texto).toMatch(/etapa de la iniciativa/);
+    expect(texto).not.toMatch(/\bgaps\b|\bimbalances\b|\bstage\b|\bservice\b/);
   });
 });
 

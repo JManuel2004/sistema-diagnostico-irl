@@ -1,7 +1,9 @@
 import type { JSX } from 'react';
 import { ArrowRight } from 'lucide-react';
 import type { RoadmapPhase } from '@innlab/contracts';
+import { Card } from '@/shared/ui/card';
 import { getDimensionVisual } from '@/shared/lib/dimensions';
+import { inclusionSentence, targetSentence } from '../utils/roadmap-explanation';
 
 interface Props {
   readonly phase: RoadmapPhase;
@@ -50,10 +52,7 @@ export function RoadmapPhaseCard({ phase, isLast }: Props): JSX.Element {
             {phase.dimensions.map((d) => {
               const visual = getDimensionVisual(d.dimensionCode);
               return (
-                <article
-                  key={d.dimensionCode}
-                  className="border-border bg-surface rounded-lg border p-4"
-                >
+                <Card key={d.dimensionCode} role="article" className="p-4">
                   <div className="flex items-center gap-2">
                     <span
                       className={`${visual.bg} size-2.5 rounded-full`}
@@ -72,13 +71,17 @@ export function RoadmapPhaseCard({ phase, isLast }: Props): JSX.Element {
                     <span className="font-semibold">Nivel {d.targetLevel}</span>
                   </p>
 
+                  <p className="text-foreground mt-3 text-xs leading-relaxed">
+                    {inclusionSentence(d)} {targetSentence(d)}
+                  </p>
+
                   {d.enables.length > 0 && (
                     <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
                       Al alcanzarlo desbloquea{' '}
                       {d.enables.map((e) => e.shortName).join(', ')}.
                     </p>
                   )}
-                </article>
+                </Card>
               );
             })}
           </div>

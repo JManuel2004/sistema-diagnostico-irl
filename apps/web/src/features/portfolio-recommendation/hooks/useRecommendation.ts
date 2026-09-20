@@ -65,6 +65,12 @@ export function useAcceptDeepAnalysis(diagnosticId: string | undefined) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.diagnostic.roadmap(diagnosticId),
         }),
+        // La página de resultados decide qué mostrar con `deepAnalysisAccepted`,
+        // que cambia al aceptar.
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.diagnostic.detail(diagnosticId),
+        }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.diagnostic.list }),
       ]);
     },
   });

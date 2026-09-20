@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { Compass, Info } from 'lucide-react';
+import { Compass } from 'lucide-react';
 import type { RecommendationResponse } from '@innlab/contracts';
 import { Card, CardContent } from '@/shared/ui/card';
 
@@ -87,18 +87,6 @@ export function RecommendationSummary({ recommendation }: Props): JSX.Element {
               </ul>
             </div>
           )}
-
-          <p className="text-muted-foreground mt-6 flex items-start gap-2 text-xs leading-relaxed">
-            <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            <span>
-              Generada el{' '}
-              {new Date(recommendation.generatedAt).toLocaleString('es-CO', {
-                dateStyle: 'long',
-                timeStyle: 'short',
-              })}{' '}
-              con el criterio de enrutamiento vigente de INNLAB.
-            </span>
-          </p>
         </CardContent>
       </Card>
     </section>
