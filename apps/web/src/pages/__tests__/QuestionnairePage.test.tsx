@@ -9,6 +9,7 @@ import type { QuestionnaireStructure } from '@innlab/contracts';
 import { createTestQueryClient } from '../../test/render-with-client';
 import { useQuestionnaireDraftStore } from '../../features/questionnaire/store/questionnaire-draft.store';
 import QuestionnairePage from '../QuestionnairePage';
+import { dimensionResultFixture } from '@/test/fixtures/dimensions';
 
 const DIAG_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 const DIMENSION_CODES = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;
@@ -53,12 +54,7 @@ function buildProfileFixture(): unknown {
   return {
     diagnosticId: DIAG_ID,
     computedAt: '2026-01-01T00:00:00.000Z',
-    dimensionResults: DIMENSION_CODES.map((code) => ({
-      dimensionCode: code,
-      name: `${code} — Nombre`,
-      averageLikert: 3,
-      irlLevel: 6,
-    })),
+    dimensionResults: DIMENSION_CODES.map((code) => dimensionResultFixture(code, 6)),
     bottleneck: { dimensions: ['TRL'], level: 6 },
     strength: { dimensions: ['TRL'], level: 6 },
     asymmetry: { difference: 0, classification: 'acceptable' },

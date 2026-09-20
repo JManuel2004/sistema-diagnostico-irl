@@ -1,4 +1,4 @@
-import { useEffect, useState, type JSX } from 'react';
+import { useState, type JSX } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import {
   LayerTracePanel,
@@ -8,6 +8,7 @@ import {
   useRecommendationTrace,
 } from '@features/portfolio-recommendation';
 import { PageShell } from '@/shared/ui/page-shell';
+import { Button } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
 import { ApiError } from '@/shared/api/http';
 
@@ -16,16 +17,16 @@ import { ApiError } from '@/shared/api/http';
  *
  * Si la recomendación aún no existe el backend responde 409 con
  * `ROUTING_RECOMMENDATION_NOT_GENERATED`; eso no es un fallo sino el
- * state inicial. Quien llega a esta ruta lo hace porque quiere ver la
- * recomendación de portafolio, así que la página acepta el análisis
- * profundo automáticamente en vez de exigir un click adicional — no hay
- * ninguna otra razón para visitar esta URL.
+ * estado inicial: el usuario todavía no ha aceptado el análisis profundo.
  *
- * La página ya no dispara el cálculo de `routing/` directamente: acepta el
- * análisis profundo en `diagnosis/`, que publica un evento de dominio al
- * que `routing/` y `roadmap/` reaccionan cada uno por su cuenta. Como esas
- * reacciones son independientes, un fallo de `routing/` (p. ej. sin
- * configuración activa) ya no llega como error de la aceptación: se
+ * Aceptarlo (RF-11) es una acción del usuario, no un efecto de navegar a
+ * esta URL: cambia el estado del diagnóstico y dispara el cálculo, así que
+ * la página muestra un botón y no envía nada por sí sola (backlog 4.6).
+ *
+ * La aceptación se hace en `diagnosis/`, que publica un evento de dominio
+ * al que `routing/` y `roadmap/` reaccionan cada uno por su cuenta. Como
+ * esas reacciones son independientes, un fallo de `routing/` (p. ej. sin
+ * configuración activa) no llega como error de la aceptación: se
  * manifiesta como que, tras aceptar, la recomendación sigue sin existir.
  * Distinguir ese 409 de un error real depende del `code` que el
  * interceptor conserva.
@@ -36,22 +37,12 @@ export default function RecommendationPage(): JSX.Element {
 
   const { data: recommendation, error, isPending } = useRecommendation(diagnosticId);
   const aceptar = useAcceptDeepAnalysis(diagnosticId);
-  const { mutate: aceptarAnalisis, isIdle: aceptarEsIdle } = aceptar;
   // Al aceptar, la mutación invalida la traza, así que si el panel está
   // abierto se refresca solo. No hace falta cerrarlo ni sincronizar state.
   const trace = useRecommendationTrace(diagnosticId, trazaSolicitada);
 
   const noGenerada =
     error instanceof ApiError && error.code === 'ROUTING_RECOMMENDATION_NOT_GENERATED';
-
-  // `aceptarEsIdle` es lo que evita relanzar la mutación en cada render:
-  // una vez que pasa a 'pending' (o falla), deja de ser idle y este efecto
-  // no vuelve a dispararse aunque `noGenerada` siga en true.
-  useEffect(() => {
-    if (noGenerada && aceptarEsIdle) {
-      aceptarAnalisis();
-    }
-  }, [noGenerada, aceptarEsIdle, aceptarAnalisis]);
 
   // La aceptación tuvo éxito y la relectura sigue sin encontrar la
   // recomendación: el cálculo de `routing/` falló del lado del servidor.
@@ -76,8 +67,25 @@ export default function RecommendationPage(): JSX.Element {
 
       {isPending && <p className="text-muted-foreground text-base">Cargando…</p>}
 
-      {noGenerada && !aceptar.isError && !calculoFallo && (
+      {noGenerada && aceptar.isPending && (
         <p className="text-muted-foreground text-base">Generando recomendación…</p>
+      )}
+
+      {noGenerada && !aceptar.isPending && (
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-foreground text-lg font-semibold">
+              Acepta el análisis profundo para ver tu recomendación
+            </h2>
+            <p className="text-muted-foreground mt-2 max-w-prose text-sm leading-relaxed">
+              El análisis profundo calcula la recomendación de portafolio y el roadmap de
+              escalamiento a partir de tu perfil de madurez.
+            </p>
+            <Button className="mt-4" onClick={() => aceptar.mutate()}>
+              {aceptar.isError || calculoFallo ? 'Intentar de nuevo' : 'Aceptar análisis profundo'}
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {error && !noGenerada && (

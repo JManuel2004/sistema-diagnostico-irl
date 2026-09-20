@@ -1,7 +1,6 @@
 import type { JSX } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import type { RoadmapResponse } from '@innlab/contracts';
-import { getDimensionShortName } from '@/shared/lib/dimensions';
 import { Card, CardContent } from '@/shared/ui/card';
 import { RoadmapPhaseCard } from './RoadmapPhaseCard';
 
@@ -58,7 +57,7 @@ export function RoadmapPhaseList({ roadmap }: Props): JSX.Element {
             <h2 className="text-foreground text-sm font-semibold">Sin intervención en este plan</h2>
             <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
               {roadmap.dimensionsWithoutIntervention
-                .map((c) => getDimensionShortName(c))
+                .map((d) => d.shortName)
                 .join(', ')}{' '}
               ya alcanzan el nivel esperado. Se consideraron al construir el roadmap y no requieren
               acción.

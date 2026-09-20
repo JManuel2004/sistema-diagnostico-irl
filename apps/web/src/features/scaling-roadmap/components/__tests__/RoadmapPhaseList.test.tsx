@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import type { RoadmapResponse } from '@innlab/contracts';
+import { dimensionRefFixture } from '@/test/fixtures/dimensions';
 import { RoadmapPhaseList } from '../RoadmapPhaseList';
+
+function target(code: 'BRL' | 'IPRL' | 'FRL') {
+  const { name, shortName } = dimensionRefFixture(code);
+  return { dimensionCode: code, name, shortName };
+}
 
 const AGROCONECTA: RoadmapResponse = {
   diagnosticId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
@@ -10,18 +16,32 @@ const AGROCONECTA: RoadmapResponse = {
     {
       order: 1,
       dimensions: [
-        { dimensionCode: 'BRL', currentLevel: 3, targetLevel: 4, enables: ['FRL'] },
-        { dimensionCode: 'IPRL', currentLevel: 1, targetLevel: 4, enables: ['FRL'] },
+        {
+          ...target('BRL'),
+          currentLevel: 3,
+          targetLevel: 4,
+          enables: [dimensionRefFixture('FRL')],
+        },
+        {
+          ...target('IPRL'),
+          currentLevel: 1,
+          targetLevel: 4,
+          enables: [dimensionRefFixture('FRL')],
+        },
       ],
     },
     {
       order: 2,
       dimensions: [
-        { dimensionCode: 'FRL', currentLevel: 2, targetLevel: 4, enables: [] },
+        { ...target('FRL'), currentLevel: 2, targetLevel: 4, enables: [] },
       ],
     },
   ],
-  dimensionsWithoutIntervention: ['TRL', 'CRL', 'TmRL'],
+  dimensionsWithoutIntervention: [
+    dimensionRefFixture('TRL'),
+    dimensionRefFixture('CRL'),
+    dimensionRefFixture('TmRL'),
+  ],
 };
 
 describe('RoadmapPhaseList', () => {

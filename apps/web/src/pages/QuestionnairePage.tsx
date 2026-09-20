@@ -13,8 +13,6 @@ import { Button } from '@/shared/ui/button';
 import { queryKeys } from '@/shared/api/query-keys';
 import { finalizeInitialDiagnostic } from '@/shared/api/diagnostic.api';
 
-const STATEMENTS_PER_DIM = 8;
-
 /**
  * Shell de la página `/diagnosticos/:id/cuestionario` (HU-07 / HU-09 / RF-06).
  *
@@ -54,7 +52,7 @@ export default function QuestionnairePage(): JSX.Element {
   const incompleteDimensions =
     catalog?.dimensions.filter(
       (dim) =>
-        dim.statements.filter((s) => answers[s.id] !== undefined).length < STATEMENTS_PER_DIM,
+        dim.statements.filter((s) => answers[s.id] !== undefined).length < dim.statements.length,
     ) ?? [];
 
   const isComplete = catalog !== undefined && incompleteDimensions.length === 0;
@@ -118,7 +116,7 @@ export default function QuestionnairePage(): JSX.Element {
                 const answered = dim.statements.filter((s) => answers[s.id] !== undefined).length;
                 return (
                   <li key={dim.code}>
-                    {dim.code} — {dim.name} ({answered}/{STATEMENTS_PER_DIM})
+                    {dim.code} — {dim.name} ({answered}/{dim.statements.length})
                   </li>
                 );
               })}

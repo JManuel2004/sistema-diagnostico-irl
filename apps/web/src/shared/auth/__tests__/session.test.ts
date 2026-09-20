@@ -44,6 +44,40 @@ describe('sesión del ecosistema', () => {
     expect(hasStoredSession()).toBe(false);
   });
 
+  // El almacenamiento se puede editar fuera de la aplicación: lo que no
+  // cumple el contrato es «sin sesión», nunca una sesión a medias.
+  it.each([
+    ['accessToken que no es texto', { token: 'id', accessToken: 42 }],
+    ['accessToken vacío', { token: 'id', accessToken: '' }],
+    ['token que no es texto', { token: { x: 1 }, accessToken: 'access' }],
+    ['un valor que no es un objeto', 'una-cadena'],
+    ['null', null],
+    ['un arreglo', ['access']],
+  ])('descarta una sesión guardada con %s', (_caso, valor) => {
+    window.localStorage.setItem('innlab.session.v1', JSON.stringify(valor));
+
+    expect(readSession()).toBeNull();
+    expect(hasStoredSession()).toBe(false);
+  });
+
+  it('acepta una sesión sin id_token y lo toma como cadena vacía', () => {
+    window.localStorage.setItem(
+      'innlab.session.v1',
+      JSON.stringify({ accessToken: 'access-token-xyz' }),
+    );
+
+    expect(readSession()).toEqual({ token: '', accessToken: 'access-token-xyz' });
+  });
+
+  it('ignora campos que no son del contrato', () => {
+    window.localStorage.setItem(
+      'innlab.session.v1',
+      JSON.stringify({ ...SESSION, isAdmin: true }),
+    );
+
+    expect(readSession()).toEqual(SESSION);
+  });
+
   it('sobrevive a un localStorage con JSON corrupto', () => {
     window.localStorage.setItem('innlab.session.v1', 'no-es-json');
 

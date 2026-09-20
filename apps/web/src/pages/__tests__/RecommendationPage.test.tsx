@@ -97,21 +97,29 @@ describe('RecommendationPage', () => {
     return estado;
   }
 
-  it('acepta el análisis profundo automáticamente cuando la recomendación todavía no existe', async () => {
-    // 409 con ROUTING_RECOMMENDATION_NOT_GENERATED no es un error: es el
-    // state inicial. Quien llega a esta ruta quiere ver la recomendación,
-    // así que la página acepta el análisis sola — no hay botón que pulsar.
+  const BOTON_ACEPTAR = { name: 'Aceptar análisis profundo' };
+
+  // Backlog 4.6: aceptar el análisis profundo cambia el estado del diagnóstico
+  // y dispara el cálculo; no puede ser un efecto de navegar a la URL.
+  it('no acepta el análisis profundo al entrar: ofrece un botón y espera al usuario', async () => {
     const estado = backendQueCalculaAlAceptar({ calculaRecomendacion: true });
 
     renderPage();
 
-    expect(
-      screen.queryByRole('button', { name: /Generar recomendación/ }),
-    ).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', BOTON_ACEPTAR)).toBeInTheDocument();
+    // Damos tiempo a que un envío automático, si existiera, ocurriera.
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(estado.aceptaciones).toBe(0);
+    expect(screen.queryByRole('heading', { name: 'Consultoría' })).not.toBeInTheDocument();
+  });
 
-    expect(
-      await screen.findByRole('heading', { name: 'Consultoría' }),
-    ).toBeInTheDocument();
+  it('al pulsar el botón acepta el análisis y muestra la recomendación', async () => {
+    const estado = backendQueCalculaAlAceptar({ calculaRecomendacion: true });
+
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', BOTON_ACEPTAR));
+
+    expect(await screen.findByRole('heading', { name: 'Consultoría' })).toBeInTheDocument();
     expect(estado.aceptaciones).toBe(1);
   });
 
@@ -126,12 +134,13 @@ describe('RecommendationPage', () => {
     );
 
     renderPage();
+    await userEvent.click(await screen.findByRole('button', BOTON_ACEPTAR));
     await screen.findByRole('heading', { name: 'Consultoría' });
 
     expect(postsDirectos).toBe(0);
   });
 
-  it('muestra un state de carga mientras el análisis está en curso', async () => {
+  it('muestra un estado de carga mientras el análisis está en curso', async () => {
     let resolvePost!: () => void;
     let calculada = false;
     server.use(
@@ -153,33 +162,35 @@ describe('RecommendationPage', () => {
     );
 
     renderPage();
+    await userEvent.click(await screen.findByRole('button', BOTON_ACEPTAR));
 
     await screen.findByText('Generando recomendación…');
+    expect(screen.queryByRole('button', BOTON_ACEPTAR)).not.toBeInTheDocument();
 
     resolvePost();
 
-    expect(
-      await screen.findByRole('heading', { name: 'Consultoría' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Consultoría' })).toBeInTheDocument();
   });
 
-  it('avisa, sin reintentar, cuando el análisis se acepta pero el cálculo de routing/ falló', async () => {
+  it('avisa cuando el análisis se acepta pero el cálculo de routing/ falló, y deja reintentar', async () => {
     // Los listeners son independientes: un fallo de `routing/` (p. ej. sin
     // configuración activa) no hace fallar la aceptación; se ve porque,
     // tras aceptar, la recomendación sigue sin existir.
     const estado = backendQueCalculaAlAceptar({ calculaRecomendacion: false });
 
     renderPage();
+    await userEvent.click(await screen.findByRole('button', BOTON_ACEPTAR));
 
     await waitFor(() => {
       expect(screen.getByRole('alert').textContent).toContain(
         'No fue posible generar la recomendación',
       );
     });
-
-    // Un solo intento: el efecto se apaga en cuanto la mutación deja de
-    // estar "idle", así que un fallo no debe desatar un bucle.
     expect(estado.aceptaciones).toBe(1);
+
+    // Con un fallo el usuario decide reintentar; nada se reenvía solo.
+    await userEvent.click(screen.getByRole('button', { name: 'Intentar de nuevo' }));
+    await waitFor(() => expect(estado.aceptaciones).toBe(2));
   });
 
   it('avisa cuando el diagnóstico aún no puede aceptar el análisis profundo', async () => {
@@ -193,6 +204,7 @@ describe('RecommendationPage', () => {
     );
 
     renderPage();
+    await userEvent.click(await screen.findByRole('button', BOTON_ACEPTAR));
 
     await waitFor(() => {
       expect(screen.getByRole('alert').textContent).toContain(

@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import type { DimensionResult } from '@innlab/contracts';
+import { dimensionResultFixture } from '@/test/fixtures/dimensions';
 import { MaturityProfileSummary } from '../MaturityProfileSummary';
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
 function dr(code: DimensionResult['dimensionCode'], level: number): DimensionResult {
-  return { dimensionCode: code, name: code, averageLikert: level, irlLevel: level };
+  return dimensionResultFixture(code, level);
 }
 
 // PayFlow levels: TRL 5, CRL 3, BRL 3, IPRL 2, TmRL 4, FRL 3

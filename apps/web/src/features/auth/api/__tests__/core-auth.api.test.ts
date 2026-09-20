@@ -43,6 +43,30 @@ describe('exchangeSsoCode', () => {
     await expect(exchangeSsoCode('code-123')).rejects.toThrow('sin accessToken');
   });
 
+  it.each([
+    ['un accessToken que no es texto', { token: 'id', accessToken: 42 }],
+    ['un accessToken vacío', { token: 'id', accessToken: '' }],
+    ['un cuerpo que no es un objeto', 'ok'],
+    ['un cuerpo nulo', null],
+  ])('rechaza una respuesta con %s en vez de fiarse del tipo', async (_caso, cuerpo) => {
+    server.use(http.get(`${CORE}/auth/sso/exchange`, () => HttpResponse.json(cuerpo)));
+
+    await expect(exchangeSsoCode('code-123')).rejects.toThrow(/sin accessToken|inválido/);
+  });
+
+  it('acepta una respuesta sin id_token y devuelve solo los campos del contrato', async () => {
+    server.use(
+      http.get(`${CORE}/auth/sso/exchange`, () =>
+        HttpResponse.json({ accessToken: 'access-token', extra: 'ignorado' }),
+      ),
+    );
+
+    await expect(exchangeSsoCode('code-123')).resolves.toEqual({
+      token: '',
+      accessToken: 'access-token',
+    });
+  });
+
   it('explica en claro que el código ya se usó o caducó', async () => {
     server.use(
       http.get(`${CORE}/auth/sso/exchange`, () => new HttpResponse(null, { status: 404 })),

@@ -7,12 +7,6 @@ export interface RadarPoint {
   averageLikert: number;
 }
 
-export function severityColorForLevel(level: number): string {
-  if (level <= 3) return 'var(--color-critical, #A53221)';
-  if (level <= 5) return 'var(--color-moderate, #8C3811)';
-  return 'var(--color-acceptable, #1F633D)';
-}
-
 export function buildImbalancedVertices(
   imbalances: readonly ImbalancePairResult[] | undefined,
   pointsByCode: Map<string, RadarPoint>,

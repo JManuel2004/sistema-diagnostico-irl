@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { CoreSession } from '@/shared/auth/session';
+import { coreSessionSchema, type CoreSession } from '@innlab/contracts';
 
 /**
  * Cliente hacia la API de INNLAB Core (`innlab-core-api`).
@@ -25,10 +25,10 @@ const coreApi = axios.create({
  * flujo completo desde el Hub.
  */
 export async function exchangeSsoCode(code: string): Promise<CoreSession> {
-  let data: CoreSession;
+  let data: unknown;
 
   try {
-    ({ data } = await coreApi.get<CoreSession>('/auth/sso/exchange', {
+    ({ data } = await coreApi.get<unknown>('/auth/sso/exchange', {
       params: { code },
     }));
   } catch (cause) {
@@ -53,11 +53,16 @@ export async function exchangeSsoCode(code: string): Promise<CoreSession> {
     throw cause;
   }
 
-  if (typeof data.accessToken !== 'string' || data.accessToken === '') {
-    throw new Error('Core devolvió una respuesta de intercambio sin accessToken.');
+  // La respuesta viene de un servicio externo: se valida contra el contrato
+  // en vez de confiar en un genérico de TypeScript.
+  const session = coreSessionSchema.safeParse(data);
+  if (!session.success) {
+    throw new Error(
+      'Core devolvió una respuesta de intercambio sin accessToken o con un formato inválido.',
+    );
   }
 
-  return { token: data.token, accessToken: data.accessToken };
+  return session.data;
 }
 
 /**
@@ -89,9 +94,5 @@ export async function isSessionAlive(accessToken: string): Promise<boolean> {
  * esto no es un logout local: afecta a todos los productos INNLAB.
  */
 export async function logoutFromCore(accessToken: string): Promise<void> {
-  await coreApi.post(
-    '/auth/logout',
-    {},
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-  );
+  await coreApi.post('/auth/logout', {}, { headers: { Authorization: `Bearer ${accessToken}` } });
 }

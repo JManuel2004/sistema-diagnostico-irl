@@ -8,16 +8,18 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { DimensionCode, DimensionResult, ImbalancePairResult } from '@innlab/contracts';
-import {
-  getDimensionShortName,
-  getDimensionVisual,
-  type DimensionVisualMeta,
-} from '@/shared/lib/dimensions';
+import { getDimensionVisual, type DimensionVisualMeta } from '@/shared/lib/dimensions';
 import {
   buildImbalancedVertices,
-  severityColorForLevel,
   type RadarPoint,
 } from '../utils/radar-helpers';
+
+/**
+ * Color of the points and of the bottleneck ring. Neutral on purpose: the
+ * radar does not color a dimension by its level. Severity that the product
+ * defines (the imbalances) comes from the backend and is drawn separately.
+ */
+const POINT_COLOR = 'var(--color-azul-icesi, #5454E9)';
 
 interface MaturityRadarChartProps {
   dimensionResults: readonly DimensionResult[];
@@ -27,7 +29,7 @@ interface MaturityRadarChartProps {
 
 function asRadarPoints(results: readonly DimensionResult[]): readonly RadarPoint[] {
   return results.map((r) => ({
-    dimension: getDimensionShortName(r.dimensionCode),
+    dimension: r.shortName,
     code: r.dimensionCode,
     level: r.irlLevel,
     averageLikert: r.averageLikert,
@@ -56,7 +58,6 @@ function AxisLabel({
   // Unknown codes are not in the map; `getDimensionVisual` yields undefined.
   const visual: DimensionVisualMeta | undefined = getDimensionVisual(point.code as DimensionCode);
   const codeColor = visual?.color ?? '#1A1A24';
-  const levelColor = severityColorForLevel(point.level);
 
   const isTopLabel = point.code === 'TRL';
   const nameOffset = isTopLabel ? -42 : -6;
@@ -80,7 +81,7 @@ function AxisLabel({
       >
         <tspan fill={codeColor}>{point.code}</tspan>
         <tspan className="fill-muted-foreground"> · </tspan>
-        <tspan fill={levelColor} fontWeight={700}>
+        <tspan className="fill-foreground" fontWeight={700}>
           {point.level}
         </tspan>
       </text>
@@ -144,7 +145,6 @@ export function MaturityRadarChart({
               if (cx === undefined || cy === undefined || !payload) {
                 return <g key={`empty-${String(index ?? 0)}`} />;
               }
-              const dotColor = severityColorForLevel(payload.level);
               const isBottleneck = bottleneckDimensions.includes(payload.code);
               const imbalanceLevel = imbalancedVertices.get(payload.code);
               return (
@@ -167,7 +167,7 @@ export function MaturityRadarChart({
                       cy={cy}
                       r={9}
                       fill="none"
-                      stroke={dotColor}
+                      stroke={POINT_COLOR}
                       strokeOpacity={0.35}
                       strokeWidth={3}
                     />
@@ -176,7 +176,7 @@ export function MaturityRadarChart({
                     cx={cx}
                     cy={cy}
                     r={5}
-                    fill={dotColor}
+                    fill={POINT_COLOR}
                     stroke="var(--color-background, #FFFFFF)"
                     strokeWidth={1.5}
                   />

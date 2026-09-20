@@ -8,7 +8,6 @@ import type {
   ImbalanceClassification,
   ImbalancePairResult,
 } from '@innlab/contracts';
-import { getDimensionShortName } from '@/shared/lib/dimensions';
 import { Card, CardContent } from '@/shared/ui/card';
 
 /**
@@ -17,7 +16,6 @@ import { Card, CardContent } from '@/shared/ui/card';
  * las tome de este componente. Duplicarlas habría añadido una fuente más
  * de nombres a las que el repositorio ya arrastra.
  */
-const dimensionLabel = getDimensionShortName;
 
 const TONE_STYLES: Record<
   ImbalanceClassification | 'neutral',
@@ -81,12 +79,6 @@ function SummaryCard({
   );
 }
 
-function bottleneckTone(level: number): ImbalanceClassification | 'neutral' {
-  if (level <= 3) return 'critical';
-  if (level <= 5) return 'moderate';
-  return 'acceptable';
-}
-
 interface MaturityProfileSummaryProps {
   dimensionResults: readonly DimensionResult[];
   bottleneck?: Bottleneck;
@@ -104,6 +96,10 @@ export function MaturityProfileSummary({
   gaps,
   imbalances,
 }: MaturityProfileSummaryProps): JSX.Element {
+  // The names come from the response itself (the six results carry them), not
+  // from a map kept in the frontend.
+  const shortNameByCode = new Map(dimensionResults.map((r) => [r.dimensionCode, r.shortName]));
+  const dimensionLabel = (code: string): string => shortNameByCode.get(code as DimensionCode) ?? code;
   const strengthNames = (strength?.dimensions ?? []).map(dimensionLabel);
   const gapNames = (gaps?.dimensions ?? []).map(dimensionLabel);
   const gapThreshold = gaps?.threshold;
@@ -144,7 +140,7 @@ export function MaturityProfileSummary({
       {bottleneck !== undefined && (
         <SummaryCard
           icon={AlertCircle}
-          tone={bottleneckTone(bottleneck.level)}
+          tone="neutral"
           eyebrow="Cuello de botella"
           title={
             bottleneck.dimensions.length === 1

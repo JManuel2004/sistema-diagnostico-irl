@@ -1,3 +1,7 @@
+import { coreSessionSchema, type CoreSession } from '@innlab/contracts';
+
+export type { CoreSession };
+
 /**
  * Sesión del ecosistema INNLAB — almacenamiento y arranque del SSO.
  *
@@ -25,13 +29,6 @@ const STORAGE_KEY = 'innlab.session.v1';
 /** Ruta a la que volver una vez completado el intercambio del código. */
 const RETURN_TO_KEY = 'innlab.session.return-to';
 
-export interface CoreSession {
-  /** id_token. Identifica al usuario; no sirve para autenticar. */
-  readonly token: string;
-  /** access_token. El único válido como Bearer. */
-  readonly accessToken: string;
-}
-
 function coreUrl(): string {
   return String(import.meta.env.VITE_CORE_URL ?? '');
 }
@@ -46,12 +43,10 @@ export function readSession(): CoreSession | null {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw === null) return null;
 
-    const parsed = JSON.parse(raw) as Partial<CoreSession>;
-    if (typeof parsed.accessToken !== 'string' || parsed.accessToken === '') {
-      return null;
-    }
-
-    return { token: String(parsed.token ?? ''), accessToken: parsed.accessToken };
+    // El almacenamiento del navegador se puede editar fuera de la aplicación:
+    // lo leído es `unknown` hasta que pasa el schema del contrato.
+    const parsed = coreSessionSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
   } catch {
     // localStorage bloqueado o JSON corrupto: sin sesión utilizable.
     return null;

@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import { ArrowRight } from 'lucide-react';
 import type { RoadmapPhase } from '@innlab/contracts';
-import { getDimensionShortName, getDimensionVisual } from '@/shared/lib/dimensions';
+import { getDimensionVisual } from '@/shared/lib/dimensions';
 
 interface Props {
   readonly phase: RoadmapPhase;
@@ -60,7 +60,7 @@ export function RoadmapPhaseCard({ phase, isLast }: Props): JSX.Element {
                       aria-hidden="true"
                     />
                     <h4 className={`${visual.textInk} text-sm font-semibold`}>
-                      {getDimensionShortName(d.dimensionCode)}
+                      {d.shortName}
                     </h4>
                   </div>
 
@@ -75,7 +75,7 @@ export function RoadmapPhaseCard({ phase, isLast }: Props): JSX.Element {
                   {d.enables.length > 0 && (
                     <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
                       Al alcanzarlo desbloquea{' '}
-                      {d.enables.map((e) => getDimensionShortName(e)).join(', ')}.
+                      {d.enables.map((e) => e.shortName).join(', ')}.
                     </p>
                   )}
                 </article>
