@@ -27,7 +27,7 @@ export function Tooltip({ content, children, className }: TooltipProps): JSX.Ele
           <TooltipPrimitive.Content
             sideOffset={6}
             className={cn(
-              'bg-popover text-popover-foreground border-border z-50 max-w-xs rounded-md border px-3 py-2 text-xs leading-relaxed shadow-md',
+              'bg-popover text-popover-foreground border-border z-50 max-w-xs rounded-md border px-3 py-2 text-sm leading-relaxed shadow-md',
               className,
             )}
           >

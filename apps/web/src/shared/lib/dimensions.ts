@@ -1,5 +1,7 @@
 import type { DimensionCode } from '@innlab/contracts';
 import { DIMENSION_CODES } from '@innlab/contracts';
+import { Briefcase, Cpu, CircleDollarSign, ShieldCheck, Users, UsersRound } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { PALETTE } from './palette';
 
 /**
@@ -22,7 +24,7 @@ import { PALETTE } from './palette';
  *
  * Qué SÍ va aquí:
  *  - Mapeo `code → clases Tailwind` para que ningún componente repita
- *    `{ TRL: 'bg-dimension-trl', ... }`.
+ *    `{ TRL: 'bg-dimension-trl', ... }`, y el icono de cada dimensión.
  *  - Orden canónico de presentación (`DIMENSION_ORDER`).
  */
 export interface DimensionVisualMeta {
@@ -30,6 +32,21 @@ export interface DimensionVisualMeta {
   readonly bg: string;
   /** Clase Tailwind para texto oscurecido a AA sobre fondo blanco. */
   readonly textInk: string;
+  /** Borde del color de la dimensión (acentos de tarjetas y pestañas). */
+  readonly border: string;
+  /** Borde inferior del color de la dimensión en una pestaña activa (clase literal para Tailwind). */
+  readonly tabActive: string;
+  /** Fondo suave del color de la dimensión, para cabeceras y chips. */
+  readonly tint: string;
+  /** Fondo intermedio (tramo por recorrer en una barra de nivel). */
+  readonly soft: string;
+  /** Icono de la dimensión. */
+  readonly icon: LucideIcon;
+  /**
+   * Relleno de la dimensión para SVG (los puntos del radar): el color pleno,
+   * el mismo de `bg`; `color` es la variante oscura, para texto.
+   */
+  readonly fill: string;
   /**
    * Color de la dimensión para lo que no admite clases: atributos SVG y
    * estilos en línea (p. ej. el radar de recharts). Es la variante `-ink`,
@@ -43,31 +60,67 @@ const DIMENSION_VISUAL: Record<DimensionCode, DimensionVisualMeta> = {
   TRL: {
     bg: 'bg-dimension-trl',
     textInk: 'text-dimension-trl-ink',
+    border: 'border-dimension-trl',
+    tabActive: 'data-[state=active]:border-dimension-trl',
+    tint: 'bg-dimension-trl/10',
+    soft: 'bg-dimension-trl/35',
+    icon: Cpu,
+    fill: PALETTE.dimension.trl,
     color: PALETTE.dimension['trl-ink'],
   },
   CRL: {
     bg: 'bg-dimension-crl',
     textInk: 'text-dimension-crl-ink',
+    border: 'border-dimension-crl',
+    tabActive: 'data-[state=active]:border-dimension-crl',
+    tint: 'bg-dimension-crl/10',
+    soft: 'bg-dimension-crl/35',
+    icon: Users,
+    fill: PALETTE.dimension.crl,
     color: PALETTE.dimension['crl-ink'],
   },
   BRL: {
     bg: 'bg-dimension-brl',
     textInk: 'text-dimension-brl-ink',
+    border: 'border-dimension-brl',
+    tabActive: 'data-[state=active]:border-dimension-brl',
+    tint: 'bg-dimension-brl/10',
+    soft: 'bg-dimension-brl/35',
+    icon: Briefcase,
+    fill: PALETTE.dimension.brl,
     color: PALETTE.dimension['brl-ink'],
   },
   IPRL: {
     bg: 'bg-dimension-iprl',
     textInk: 'text-dimension-iprl-ink',
+    border: 'border-dimension-iprl',
+    tabActive: 'data-[state=active]:border-dimension-iprl',
+    tint: 'bg-dimension-iprl/10',
+    soft: 'bg-dimension-iprl/35',
+    icon: ShieldCheck,
+    fill: PALETTE.dimension.iprl,
     color: PALETTE.dimension['iprl-ink'],
   },
   TmRL: {
     bg: 'bg-dimension-tmrl',
     textInk: 'text-dimension-tmrl-ink',
+    border: 'border-dimension-tmrl',
+    tabActive: 'data-[state=active]:border-dimension-tmrl',
+    tint: 'bg-dimension-tmrl/10',
+    soft: 'bg-dimension-tmrl/35',
+    icon: UsersRound,
+    fill: PALETTE.dimension.tmrl,
     color: PALETTE.dimension['tmrl-ink'],
   },
   FRL: {
     bg: 'bg-dimension-frl',
     textInk: 'text-dimension-frl-ink',
+    border: 'border-dimension-frl',
+    tabActive: 'data-[state=active]:border-dimension-frl',
+    tint: 'bg-dimension-frl/10',
+    soft: 'bg-dimension-frl/35',
+    icon: CircleDollarSign,
+    fill: PALETTE.dimension.frl,
     color: PALETTE.dimension['frl-ink'],
   },
 };

@@ -22,7 +22,7 @@ export function PageHeader({
 }: PageHeaderProps): JSX.Element {
   return (
     <header className="mb-8">
-      <p className="text-overline text-azul-icesi">{overline}</p>
+      <p className="text-azul-icesi text-sm font-bold">{overline}</p>
       <h1 className="text-h1 text-foreground mt-2">{title}</h1>
       {description !== undefined && (
         <p className="text-muted-foreground mt-3 max-w-prose text-base leading-relaxed">

@@ -23,7 +23,7 @@ export function SectionHeader({
 }: SectionHeaderProps): JSX.Element {
   return (
     <header className="mb-6">
-      {overline && <p className="text-overline text-azul-icesi">{overline}</p>}
+      {overline && <p className="text-azul-icesi text-sm font-bold">{overline}</p>}
       <h2 id={id} className="text-foreground mt-1 text-2xl font-bold leading-tight tracking-tight">
         {title}
       </h2>

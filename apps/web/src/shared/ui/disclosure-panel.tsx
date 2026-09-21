@@ -1,5 +1,6 @@
 import { useState, type JSX, type ReactNode } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Card } from './card';
 
 /**
@@ -18,8 +19,10 @@ interface DisclosurePanelProps {
   /** Identificador del bloque de contenido, para `aria-controls`. */
   readonly id: string;
   readonly title: string;
-  /** Texto pequeño a la derecha del título (p. ej. la audiencia). */
+  /** Texto a la derecha del título (p. ej. la audiencia). */
   readonly tag?: string;
+  /** Icono a la izquierda del título, para que el panel se lea como una invitación. */
+  readonly icon?: LucideIcon;
   readonly onOpen?: () => void;
   readonly children: ReactNode;
 }
@@ -28,6 +31,7 @@ export function DisclosurePanel({
   id,
   title,
   tag,
+  icon: Icon,
   onOpen,
   children,
 }: DisclosurePanelProps): JSX.Element {
@@ -50,13 +54,19 @@ export function DisclosurePanel({
             onClick={toggle}
             aria-expanded={open}
             aria-controls={id}
-            className="text-foreground flex w-full items-center gap-2 px-5 py-4 text-left text-sm font-semibold"
+            className="text-foreground flex w-full items-center gap-3 px-5 py-4 text-left text-base font-semibold"
           >
-            <Chevron className="size-4 shrink-0" aria-hidden="true" />
+            {Icon !== undefined && (
+              <Icon className="text-azul-icesi size-5 shrink-0" aria-hidden="true" />
+            )}
             {title}
             {tag !== undefined && (
-              <span className="text-muted-foreground ml-auto text-xs font-normal">{tag}</span>
+              <span className="text-muted-foreground ml-auto text-sm font-normal">{tag}</span>
             )}
+            <Chevron
+              className={`size-5 shrink-0 ${tag === undefined ? 'ml-auto' : ''}`}
+              aria-hidden="true"
+            />
           </button>
         </h2>
         <div id={id} hidden={!open} className="px-5 pb-6">
