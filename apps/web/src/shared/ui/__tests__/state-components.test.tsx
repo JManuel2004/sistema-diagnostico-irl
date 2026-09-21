@@ -7,7 +7,7 @@ import { LoadingState } from '../loading-state';
 import { ResultMeta } from '../result-meta';
 import { PageHeader } from '../page-header';
 import { DisclosurePanel } from '../disclosure-panel';
-import { AcceptDeepAnalysisCard } from '../accept-deep-analysis-card';
+import { AcceptDeepAnalysisCard, RetryDeepAnalysisCard } from '../accept-deep-analysis-card';
 
 describe('Alert', () => {
   it('un error crítico se anuncia como alert y trae título y texto', () => {
@@ -96,23 +96,86 @@ describe('DisclosurePanel', () => {
 });
 
 describe('AcceptDeepAnalysisCard', () => {
-  it('ofrece aceptar y ejecuta la acción solo al pulsar', async () => {
-    const onAccept = vi.fn();
-    render(
+  function renderCard(props: Partial<Parameters<typeof AcceptDeepAnalysisCard>[0]> = {}) {
+    return render(
       <MemoryRouter>
-        <AcceptDeepAnalysisCard onAccept={onAccept} failed={false} />
+        <AcceptDeepAnalysisCard onAccept={vi.fn()} failed={false} {...props} />
       </MemoryRouter>,
     );
+  }
+
+  it('la invita a profundizar el diagnóstico de la iniciativa, por su nombre', () => {
+    renderCard({ subject: 'AgroConecta' });
+
+    expect(
+      screen.getByRole('heading', { name: '¿Quieres profundizar el diagnóstico de AgroConecta?' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Conecta AgroConecta con una ruta de acompañamiento' }),
+    ).toBeInTheDocument();
+  });
+
+  it('promociona el análisis con lo que incluye, a la vista', () => {
+    renderCard();
+
+    expect(screen.getByText(/Análisis profundo · Recomendado/)).toBeInTheDocument();
+    for (const item of [
+      /desequilibrios entre seis pares/i,
+      /Alertas de las dimensiones clave/i,
+      /plan de escalamiento por fases/i,
+      /recomendación del servicio de INNLAB/i,
+    ]) {
+      expect(screen.getByText(item)).toBeInTheDocument();
+    }
+  });
+
+  it('ofrece aceptar y ejecuta la acción solo al pulsar', async () => {
+    const onAccept = vi.fn();
+    renderCard({ onAccept });
     expect(onAccept).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Aceptar análisis profundo' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Solicitar análisis profundo' }));
 
     expect(onAccept).toHaveBeenCalledTimes(1);
   });
 
   it('tras un fallo el botón pasa a «Intentar de nuevo»', () => {
-    render(<AcceptDeepAnalysisCard onAccept={vi.fn()} failed />);
+    renderCard({ failed: true });
 
     expect(screen.getByRole('button', { name: 'Intentar de nuevo' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Solicitar análisis profundo' })).not.toBeInTheDocument();
+  });
+
+  it('ofrece el otro camino, «por ahora no», sin ejecutar nada: lleva al panel', () => {
+    const onAccept = vi.fn();
+    renderCard({ onAccept });
+
+    expect(screen.getByText('Por ahora no')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ir a mi panel' })).toHaveAttribute('href', '/panel');
+    expect(onAccept).not.toHaveBeenCalled();
+  });
+
+  it('dice que es voluntario y que puede pedirse cuando se quiera', () => {
+    renderCard();
+
+    expect(screen.getByText(/El análisis profundo es voluntario/)).toBeInTheDocument();
+  });
+
+  it('no promete un registro de la decisión ni afirma un precio que el sistema no maneja', () => {
+    const { container } = renderCard();
+
+    expect(container.textContent).not.toMatch(/gratuito|costo|precio|registrada como parte/i);
+  });
+});
+
+describe('RetryDeepAnalysisCard', () => {
+  it('pide volver a intentar el cálculo y solo lo ejecuta al pulsar', async () => {
+    const onRetry = vi.fn();
+    render(<RetryDeepAnalysisCard onRetry={onRetry} />);
+    expect(onRetry).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Intentar de nuevo' }));
+
+    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 });
