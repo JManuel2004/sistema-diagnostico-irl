@@ -43,6 +43,13 @@ export const maturityProfileResponseSchema = z
       .array(dimensionResultSchema)
       .length(6)
       .describe('Resultado por dimensión — exactamente 6 entradas'),
+    globalAverage: z
+      .number()
+      .min(1)
+      .max(9)
+      .describe(
+        'Promedio IRL global (RF-09): promedio simple de los seis niveles, a un decimal — calculado en el backend; no recalcular en el cliente',
+      ),
     bottleneck: bottleneckSchema.describe('Cuello de botella — RF-08 / DIAGIRL-35'),
     strength: bottleneckSchema.describe(
       'Dimensión(es) con el IRL más alto — calculado en el backend a partir de los niveles persistidos',
