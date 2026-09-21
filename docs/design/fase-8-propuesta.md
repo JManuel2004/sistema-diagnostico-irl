@@ -307,3 +307,20 @@ Continuación de las decisiones de la sección 8; el detalle por oleada está en
 
 La ejecución y su verificación están en `backlog-deuda-tecnica.md`, sección 16.
 
+---
+
+## 11. Rediseño visual de resultados, explicabilidad y promoción (2026-09-20)
+
+Solicitud posterior al asistente: una interfaz **vibrante sin perder explicabilidad**, comprensible para quien no conoce ni el sistema ni el marco IRL. Es la primera tarea que cambia el aspecto (las anteriores fijaban «ningún cambio de color, tipografía, radio o sombra»); aun así **no se añadió ningún color, radio ni sombra**: todo sale de `tailwind.config.ts` y de `palette.ts` (colores de dimensión, semánticos, azul institucional). Cambió la escala de lectura: el texto de contenido no baja de `text-sm`.
+
+| Tema | Decisión |
+|---|---|
+| Resumen del asistente | Suma el resumen de la iniciativa (con enlace para corregirla) antes de las respuestas; la tabla por dimensión lleva el color de su dimensión y una barra para el puntaje. |
+| Radar | Sin leyenda. Cada punta lleva el color de su dimensión y un tooltip que explica qué mide; pasar el cursor la resalta. El estado «fijar con clic» de la leyenda se retiró con ella. |
+| Cabecera de resultados | Nombre de la iniciativa, descripción breve (el tipo de producto), sector y etapa como insignias, y el nivel IRL global al lado, con la distribución de la primera imagen y los colores del proyecto. |
+| Nivel IRL global | Promedio simple de los seis niveles (RF-09), calculado por el backend. No se le puso etiqueta de estado («en progreso», nombre del nivel): el marco no define nombres de nivel y no se inventaron. |
+| Análisis profundo | Sin códigos ni símbolos, sin texto de nota; las trazas y el plan cuentan qué se hizo y por qué, en pasos; los desequilibrios se ordenan por gravedad y las dimensiones críticas tienen su propia tarjeta con el siguiente paso del plan. |
+| Invitación al análisis profundo | Propuesta con dos caminos, con lo que incluye a la vista. Sin promesas de precio ni de programa: no constan en el producto. «Por ahora no» lleva al panel y no registra nada (no hay endpoint que registre el rechazo). |
+
+La ejecución y su verificación están en `backlog-deuda-tecnica.md`, sección 17.
+

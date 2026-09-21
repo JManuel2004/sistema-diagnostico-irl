@@ -436,3 +436,26 @@ Reversión de la decisión 10.6 (saltar el consentimiento y la iniciativa al ini
 - **API:** el e2e de `start-diagnosis` se reescribió (crea en `STARTED`, reanuda, crea uno nuevo si el anterior está terminado, un usuario por suite); `registration-flow` recorre inicio → consentimiento → iniciativa → cuestionario → perfil y comprueba el 409 sin consentimiento; unitarias de `StartDiagnosis` (todos los estados), de la guarda de consentimiento y de `completed`. Las suites de la Fase 8c que no dependían del flujo (`roadmap`, `generate-recommendation`, `deep-analysis-events`, `consent-and-ownership`) pasaron sin cambios de lógica.
 - **Web:** `DiagnosticWizardPage` (orden, borrador, consentimiento antes de la iniciativa, reintento, 409, reanudar, scroll), `StartDiagnosticPage`, `LandingPage`, `QuestionnaireStep`, `SummaryStep`, reglas de pasos, borrador de la iniciativa, rutas (incluida la de continuar tras el inicio de sesión), navegación y destino del descriptor.
 
+## 17. Rediseño visual de resultados y explicabilidad (2026-09-20)
+
+Decisiones de producto en `docs/design/fase-8-propuesta.md`, sección 11.
+
+| Punto | Qué se hizo |
+|---|---|
+| Resumen del asistente | `InitiativeSummary` rediseñado (nombre y sector arriba, bloques con icono, texto de lectura) y usado también en el panel; el resumen del asistente lo muestra con «Corregir iniciativa». La tabla de respuestas usa el color de cada dimensión (pestaña, cabecera y barra de cinco tramos del puntaje). |
+| Radar | Se eliminó `RadarLegend`. Puntas con el color de su dimensión, nombre y nivel coloreados, y tooltip por punta (`DimensionTooltipContent`) con lo que mide la dimensión (descripción del catálogo). Ver 14.29. |
+| Cabecera y nivel global | `ProfileHero`. El perfil expone `globalAverage` (RF-09), calculado en `MaturityProfile.globalAverage()`. |
+| Análisis profundo | Pares (`PairCard`) ordenados por gravedad, con color, insignia y frase en lenguaje llano; las dimensiones críticas (`Prioridad máxima`) con barra de nivel, descripción y siguiente paso tomado del roadmap; las demás brechas como prioridad media. La explicación del roadmap y la traza de la recomendación se reescribieron en pasos, sin códigos de ajuste, sin etiquetas ordinales en inglés y con nombres de dimensión. |
+| Invitación | `AcceptDeepAnalysisCard` con dos caminos y la lista de lo que incluye; `RetryDeepAnalysisCard` para reintentar un cálculo que falló. |
+| Texto | `text-sm` es el mínimo para contenido; `Tooltip`, `PageHeader`, `SectionHeader` y `DisclosurePanel` subieron de tamaño. |
+
+### 14.5 Encontrados en el rediseño visual
+
+| # | Ubicación | Hallazgo | Impacto / estado |
+|---|---|---|---|
+| 14.29 | `MaturityRadarChart` | **Error real, resuelto.** Pasar el cursor por una punta o una tarjeta cambiaba el estado de resaltado y volvía a renderizar el radar con un `data` nuevo: recharts reiniciaba la animación y remontaba las puntas (unos 300 nodos por segundo en el navegador), lo que cierra cualquier tooltip bajo el cursor. Con la leyenda pasaba igual, pero no se notaba. | El radar se dibuja una vez (`memo`, datos con identidad estable) y el resaltado es CSS gobernado por `data-highlighted` en el contenedor. Verificado en Chromium: 0 nodos remontados al pasar el cursor y el tooltip abre. |
+| 14.30 | `recommendation.justification` (backend) | La justificación de la recomendación que ve el líder de iniciativa decía «IPRL (primary)»: el código y la etiqueta ordinal interna, en inglés. | **Resuelto:** nombra la dimensión por su nombre corto del catálogo. Las recomendaciones ya guardadas conservan el texto anterior. |
+| 14.31 | Seed de reglas de excepción (`routing.ts`) | Los textos declarados de E-02 y E-03 tenían palabras en inglés («dimensions», «services»). | **Corregido en el seed;** una base ya sembrada conserva el texto hasta volver a sembrarla. |
+| 14.32 | Nivel IRL global | La imagen de referencia mostraba una etiqueta de estado y el nombre del nivel; el marco no los define. | **A confirmar con INNLAB:** si se quieren nombres de nivel, son una decisión de producto y un catálogo. |
+| 14.33 | «Por ahora no» | La imagen de referencia decía que la decisión queda registrada; no existe endpoint para rechazar el análisis profundo (el estado `DEEP_ANALYSIS_DECLINED` existe, nada lo dispara). | **Abierto:** hoy el botón lleva al panel y no registra nada; el texto no promete un registro. |
+

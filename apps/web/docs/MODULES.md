@@ -43,6 +43,13 @@ The wizard has four steps, in this order: `iniciativa` (initiative profile), `co
 - **Typecheck.** `pnpm typecheck` and `pnpm build` run `tsc -p tsconfig.app.json`; the bare `tsc --noEmit` at the root checked nothing because that tsconfig only has references.
 - **The frontend keeps no dimension names.** `name` and `shortName` come from the responses that name dimensions (profile, roadmap) and from the questionnaire catalog; only the visual metadata (colors, order) lives in `shared/lib/dimensions.ts`. The public landing page keeps its own editorial copy.
 
+## Results page: how it reads
+
+- **The page opens with the initiative** (`ProfileHero`): its name as the page title, a short description (the product type) and its sector and stage as badges, and next to it the global IRL level (RF-09, the simple average of the six levels, computed by the backend as `globalAverage`) with the strongest and the weakest dimension. The sections then address the initiative by name.
+- **No radar legend.** Each point of the radar has the color of its dimension and, on hover or keyboard focus, a tooltip that says what the dimension measures (the description comes from the questionnaire catalog) and its level. The emphasis (a hovered point or card fades the rest) is CSS driven by a `data-highlighted` attribute on the radar wrapper (`globals.css`, «Radar emphasis»), and the chart itself is memoized: re-rendering recharts on every hover restarts its animation and remounts the points, which closes the tooltip under the cursor.
+- **The deep analysis is written for someone who knows neither the system nor the IRL framework:** dimension names instead of codes, sentences instead of arrows or symbols, no internal identifiers (the trace and the roadmap explanation say what an adjustment did and why the center declared it, never its code), and no reading text below `text-sm`. Imbalances are ordered by severity and weighed by color and badge; critical dimensions get their own prominent card with the next step from the roadmap.
+- **The invitation to the deep analysis** (`AcceptDeepAnalysisCard`) is a proposal with two paths, ask for it or continue later from the panel; it sends nothing until the user asks.
+
 ## Design system (`shared/ui`, `shared/lib`)
 
 Brand and visual rules are in `DESIGN.md` at the project root. What the code offers so no screen writes its own:
@@ -62,4 +69,5 @@ Brand and visual rules are in `DESIGN.md` at the project root. What the code off
 | `Field`, `Input`, `Textarea`, `Select` | Form controls with label, hint and error wired with `aria-describedby`, from the `DESIGN.md` form input. |
 | `AppNav` | Navigation after the institutional descriptor: panel and results of the active diagnostic (the one in the URL, else the latest with results). Only on the screens after the wizard (results, panel, correcting the initiative); opt-in per page (`PageShell showNavigation`). |
 | `BrandDescriptor` | The institutional descriptor; it links to `/panel` where the page has navigation and to `/` (the landing) where it does not (landing, wizard). |
+| `Badge`, `LevelBar`, `DimensionChip` | Small pieces that make a result readable at a glance: a labelled category or severity (`Badge`, with a solid `critical-solid` tone for what is urgent), the 1 to 9 scale as nine segments with an optional goal and gap threshold (`LevelBar`), and a dimension with its icon and color (`DimensionChip`). The icon, `bg`, `tint`, `border` and `fill` of each dimension come from `getDimensionVisual` (`shared/lib/dimensions.ts`). |
 | `WizardStepper` | The steps of the wizard and the current one (number or check, `aria-current="step"`); earlier steps are links, later ones are not. |
