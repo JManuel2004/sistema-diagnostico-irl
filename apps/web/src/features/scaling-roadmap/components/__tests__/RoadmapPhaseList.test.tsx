@@ -3,6 +3,8 @@ import { render, screen, within } from '@testing-library/react';
 import { dimensionRefFixture } from '@/test/fixtures/dimensions';
 import { agroconectaRoadmapFixture, roadmapDimensionFixture } from '@/test/fixtures/roadmap';
 import { RoadmapPhaseList } from '../RoadmapPhaseList';
+import { RoadmapExplanationPanel } from '../RoadmapExplanationPanel';
+import userEvent from '@testing-library/user-event';
 
 const AGROCONECTA = agroconectaRoadmapFixture();
 
@@ -21,7 +23,7 @@ describe('RoadmapPhaseList', () => {
     render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
 
     expect(
-      screen.getByText(/2 dimensiones se trabajan en paralelo/),
+      screen.getByText(/2 dimensiones se trabajan al mismo tiempo/),
     ).toBeInTheDocument();
   });
 
@@ -30,12 +32,14 @@ describe('RoadmapPhaseList', () => {
     expect(screen.queryByText(/1 dimensiones se trabajan/)).not.toBeInTheDocument();
   });
 
-  it('muestra el salto de nivel de cada dimensión', () => {
+  it('muestra de qué nivel a qué nivel va cada dimensión, en palabras y en una barra', () => {
     render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
 
-    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('[role="article"]') as HTMLElement;
-    expect(within(negocio).getByText('Nivel 3')).toBeInTheDocument();
-    expect(within(negocio).getByText('Nivel 4')).toBeInTheDocument();
+    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('article') as HTMLElement;
+    expect(negocio).toHaveTextContent('De nivel 3 a nivel 4');
+    expect(
+      within(negocio).getByRole('img', { name: 'Nivel 3 de 9, con meta en el nivel 4' }),
+    ).toBeInTheDocument();
   });
 
   it('explica qué desbloquea cada dimensión, para que el orden sea refutable', () => {
@@ -43,8 +47,8 @@ describe('RoadmapPhaseList', () => {
 
     const pi = screen
       .getByRole('heading', { name: 'Propiedad Intelectual' })
-      .closest('[role="article"]') as HTMLElement;
-    expect(within(pi).getByText(/desbloquea Financiación/)).toBeInTheDocument();
+      .closest('article') as HTMLElement;
+    expect(within(pi).getByText(/Al llegar a su meta, Financiación podrá avanzar/)).toBeInTheDocument();
   });
 
   it('omite la nota de desbloqueo cuando la dimensión no habilita a nadie', () => {
@@ -52,8 +56,8 @@ describe('RoadmapPhaseList', () => {
 
     const financiacion = screen
       .getByRole('heading', { name: 'Financiación' })
-      .closest('[role="article"]') as HTMLElement;
-    expect(within(financiacion).queryByText(/desbloquea/)).toBeNull();
+      .closest('article') as HTMLElement;
+    expect(within(financiacion).queryByText(/podrá avanzar|podrán avanzar/)).toBeNull();
   });
 
   // Backlog 10.1: each card says why the dimension is in the plan and what
@@ -61,9 +65,9 @@ describe('RoadmapPhaseList', () => {
   it('dice por qué una dimensión está en el plan: por debajo de su mínimo', () => {
     render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
 
-    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('[role="article"]') as HTMLElement;
-    expect(within(negocio).getByText(/Está por debajo del mínimo esperado \(nivel 4\)/)).toBeInTheDocument();
-    expect(within(negocio).getByText(/La meta es su mínimo esperado/)).toBeInTheDocument();
+    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('article') as HTMLElement;
+    expect(negocio).toHaveTextContent('debería llegar al menos al nivel 4');
+    expect(negocio).toHaveTextContent('La meta es el nivel que se espera de ella: 4');
   });
 
   it('dice cuando una dimensión entra porque otra la necesita, y quién fija su meta', () => {
@@ -87,11 +91,11 @@ describe('RoadmapPhaseList', () => {
     };
     render(<RoadmapPhaseList roadmap={roadmap} />);
 
-    const equipo = screen.getByRole('heading', { name: 'Equipo' }).closest('[role="article"]') as HTMLElement;
-    expect(
-      within(equipo).getByText(/Cumple su mínimo esperado, pero Negocio y Financiación la necesitan/),
-    ).toBeInTheDocument();
-    expect(within(equipo).getByText(/La meta la fija Negocio, que la necesita en nivel 6/)).toBeInTheDocument();
+    const equipo = screen.getByRole('heading', { name: 'Equipo' }).closest('article') as HTMLElement;
+    expect(equipo).toHaveTextContent(
+      'Ya cumple lo que se espera, pero Negocio y Financiación necesitan que suba para poder avanzar.',
+    );
+    expect(equipo).toHaveTextContent('Negocio necesita que llegue al nivel 6, por eso esa es su meta.');
   });
 
   it('nombra las dimensiones que quedaron fuera del plan', () => {
@@ -127,5 +131,66 @@ describe('RoadmapPhaseList', () => {
       screen.getByRole('heading', { name: 'Sin fases pendientes' }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});
+
+describe('RoadmapPhaseList — lenguaje llano', () => {
+  it('no usa flechas ni símbolos de código en las tarjetas', () => {
+    const { container } = render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
+
+    expect(container.textContent).not.toMatch(/[→⇄⇔↔≤≥]/);
+  });
+
+  it('no deja texto de tamaño de nota: nada de text-xs', () => {
+    const { container } = render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
+
+    expect(container.innerHTML).not.toContain('text-xs');
+    expect(container.innerHTML).not.toContain('text-[10px]');
+  });
+});
+
+describe('RoadmapExplanationPanel', () => {
+  async function opened(roadmap = AGROCONECTA) {
+    render(<RoadmapExplanationPanel roadmap={roadmap} />);
+    await userEvent.click(screen.getByRole('button', { name: /Cómo se armó este plan/ }));
+    return document.getElementById('roadmap-explanation') as HTMLElement;
+  }
+
+  it('explica la lógica en tres pasos con títulos claros', async () => {
+    await opened();
+
+    expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      '1. Qué dimensiones entran',
+      '2. A qué nivel debe llegar cada una',
+      '3. Qué va primero',
+      'Qué quedó fuera',
+    ]);
+  });
+
+  it('cuenta qué espera a qué con frases, no con flechas', async () => {
+    const panel = await opened();
+
+    expect(panel.textContent).toContain('Financiación avanza cuando Propiedad Intelectual llega a su meta.');
+    expect(panel.textContent).not.toMatch(/[→⇄⇔↔]/);
+  });
+
+  it('nombra lo que quedó fuera y por qué', async () => {
+    const panel = await opened();
+
+    expect(panel.textContent).toContain('alcanzan el nivel esperado');
+    expect(within(panel).getByText('Tecnología')).toBeInTheDocument();
+  });
+
+  it('no muestra identificadores ni una tabla de columnas técnicas', async () => {
+    const panel = await opened();
+
+    expect(within(panel).queryByRole('table')).not.toBeInTheDocument();
+    expect(panel.textContent).not.toMatch(/\b(E-?0?\d|TRL|CRL|BRL|IPRL|TmRL|FRL)\b/);
+  });
+
+  it('el texto de lectura no baja de text-sm', async () => {
+    const panel = await opened();
+
+    expect(panel.innerHTML).not.toContain('text-xs');
   });
 });

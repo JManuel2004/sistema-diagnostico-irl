@@ -25,10 +25,10 @@ export function RoadmapPhaseList({ roadmap }: Props): JSX.Element {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="text-acceptable mt-0.5 size-5 shrink-0" aria-hidden="true" />
             <div>
-              <h2 className="text-foreground text-lg font-semibold tracking-tight">
+              <h2 className="text-foreground text-xl font-bold tracking-tight">
                 Sin fases pendientes
               </h2>
-              <p className="text-muted-foreground mt-2 max-w-prose text-sm leading-relaxed">
+              <p className="text-muted-foreground mt-2 max-w-prose text-base leading-relaxed">
                 La iniciativa alcanza el nivel esperado en las seis dimensiones del marco, así que
                 no hay una secuencia de escalamiento que proponer.
               </p>
@@ -53,9 +53,9 @@ export function RoadmapPhaseList({ roadmap }: Props): JSX.Element {
 
       {roadmap.dimensionsWithoutIntervention.length > 0 && (
         <Card className="mt-2 border-dashed">
-          <CardContent className="p-4">
-            <h2 className="text-foreground text-sm font-semibold">Sin intervención en este plan</h2>
-            <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+          <CardContent className="p-5">
+            <h2 className="text-foreground text-base font-semibold">Sin intervención en este plan</h2>
+            <p className="text-muted-foreground mt-1 text-base leading-relaxed">
               {roadmap.dimensionsWithoutIntervention
                 .map((d) => d.shortName)
                 .join(', ')}{' '}
