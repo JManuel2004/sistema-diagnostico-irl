@@ -343,6 +343,15 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
       expect(profile.criticalState.dimensions).toEqual(['BRL']);
     });
 
+    it('el perfil trae el promedio IRL global (RF-09) de las seis dimensiones del caso', async () => {
+      const id = await withProfile();
+
+      const res = await agent.get(`/api/v1/diagnostics/${id}/profile`).expect(200);
+
+      // AgroConecta: (6 + 4 + 3 + 1 + 5 + 2) / 6 = 3.5
+      expect(maturityProfileResponseSchema.parse(res.body).globalAverage).toBe(3.5);
+    });
+
     it('el diagnóstico dice que el análisis profundo no fue aceptado, hasta que se acepta', async () => {
       const id = await withProfile();
 

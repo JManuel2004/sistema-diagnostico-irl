@@ -110,6 +110,25 @@ describe('toMaturityProfileResponse', () => {
     });
   });
 
+  it('exposes the global average computed by the aggregate, not derived by the client', () => {
+    const profile = MaturityProfile.create({
+      diagnosticId,
+      computedAt,
+      dimensionResults: [
+        resultFor('TRL', 6),
+        resultFor('CRL', 4),
+        resultFor('BRL', 3),
+        resultFor('IPRL', 1),
+        resultFor('TmRL', 5),
+        resultFor('FRL', 2),
+      ],
+    });
+
+    const dto = toMaturityProfileResponse(profile, [], aDimensionCatalog());
+
+    expect(dto.globalAverage).toBe(3.5);
+  });
+
   // Backlog 4.5: `name` used to be the dimension code, so the frontend kept
   // its own name maps. The names come from the catalog.
   it('names each dimension from the catalog, never by its code', () => {

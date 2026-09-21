@@ -254,6 +254,37 @@ describe('MaturityProfile (aggregate root)', () => {
     });
   });
 
+  // RF-09: the global IRL is the simple average of the six levels.
+  describe('globalAverage (RF-09)', () => {
+    function profileWith(levels: readonly number[]): MaturityProfile {
+      return MaturityProfile.create({
+        diagnosticId,
+        computedAt,
+        dimensionResults: CODES.map((c, i) => resultFor(c, levels[i])),
+      });
+    }
+
+    it('is the simple average of the six levels', () => {
+      expect(profileWith([6, 4, 3, 1, 5, 2]).globalAverage()).toBe(3.5);
+    });
+
+    it('is exact when the levels are all equal', () => {
+      expect(profileWith([5, 5, 5, 5, 5, 5]).globalAverage()).toBe(5);
+    });
+
+    it('rounds to one decimal', () => {
+      // 1+1+1+1+1+2 = 7 → 1.1666…
+      expect(profileWith([1, 1, 1, 1, 1, 2]).globalAverage()).toBe(1.2);
+      // 9+9+9+9+9+8 = 53 → 8.8333…
+      expect(profileWith([9, 9, 9, 9, 9, 8]).globalAverage()).toBe(8.8);
+    });
+
+    it('stays inside the 1..9 scale at the extremes', () => {
+      expect(profileWith([1, 1, 1, 1, 1, 1]).globalAverage()).toBe(1);
+      expect(profileWith([9, 9, 9, 9, 9, 9]).globalAverage()).toBe(9);
+    });
+  });
+
   describe('asymmetry', () => {
     it('classifies a spread of 3 as MODERATE', () => {
       const results = [

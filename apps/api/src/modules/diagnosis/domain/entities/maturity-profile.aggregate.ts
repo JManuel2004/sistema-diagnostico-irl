@@ -102,6 +102,18 @@ export class MaturityProfile {
     return { dimensions, level: minLevel };
   }
 
+  /**
+   * RF-09 — Promedio IRL global: promedio simple de los seis niveles
+   * dimensionales, redondeado a un decimal. No sustituye al cuello de botella
+   * (RF-08): el progreso de la iniciativa sigue siendo el conjunto de sus seis
+   * dimensiones; este es un indicador complementario.
+   */
+  globalAverage(): number {
+    const levels = this._dimensionResults.map((r) => r.irlLevel.value);
+    const mean = levels.reduce((sum, level) => sum + level, 0) / levels.length;
+    return Math.round(mean * 10) / 10;
+  }
+
   /** Dimensión(es) con el nivel IRL más alto — la fortaleza del perfil. */
   strength(): { readonly dimensions: readonly DimensionResult[]; readonly level: number } {
     const maxLevel = Math.max(...this._dimensionResults.map((r) => r.irlLevel.value));

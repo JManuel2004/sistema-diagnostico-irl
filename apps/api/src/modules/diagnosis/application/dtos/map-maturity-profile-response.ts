@@ -41,6 +41,7 @@ export function toMaturityProfileResponse(
         irlLevel: r.irlLevel.value,
       };
     }),
+    globalAverage: profile.globalAverage(),
     bottleneck: {
       dimensions: bottleneck.dimensions.map((r) => r.dimensionCode.value),
       level: bottleneck.level,
