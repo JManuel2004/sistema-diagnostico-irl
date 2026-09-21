@@ -1,13 +1,17 @@
-import { useState, type JSX } from 'react';
+import { useMemo, useState, type JSX } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { LogoutButton } from '@features/auth';
 import {
   ImbalanceInsights,
   ProfileContext,
+  ProfileHero,
   ProfileOverview,
   useMaturityProfile,
   useRadarHighlight,
 } from '@features/maturity-profile';
+import { useInitiative } from '@features/initiative';
+import { useQuestionnaireStructure } from '@features/questionnaire';
+import type { DimensionCode } from '@innlab/contracts';
 import {
   LayerTracePanel,
   RecommendationSummary,
@@ -26,7 +30,10 @@ import { SectionHeader } from '@/shared/ui/section-header';
 import { ResultMeta } from '@/shared/ui/result-meta';
 import { Alert } from '@/shared/ui/alert';
 import { LoadingState } from '@/shared/ui/loading-state';
-import { AcceptDeepAnalysisCard } from '@/shared/ui/accept-deep-analysis-card';
+import {
+  AcceptDeepAnalysisCard,
+  RetryDeepAnalysisCard,
+} from '@/shared/ui/accept-deep-analysis-card';
 import { ApiError } from '@/shared/api/http';
 import { useDiagnostic } from '@/shared/hooks/useDiagnostics';
 import { wizardPath } from './wizard/wizard-steps';
@@ -62,7 +69,20 @@ export default function ResultsPage(): JSX.Element {
 
   const diagnostic = useDiagnostic(diagnosticId);
   const profile = useMaturityProfile(diagnosticId);
+  const initiative = useInitiative(diagnosticId);
+  const catalog = useQuestionnaireStructure();
   const accepted = diagnostic.data?.deepAnalysisAccepted === true;
+
+  // What each dimension measures, for the radar tooltips and the alerts. It comes
+  // from the questionnaire catalog; without it the explanations simply omit it.
+  const descriptions = useMemo(
+    () =>
+      Object.fromEntries((catalog.data?.dimensions ?? []).map((d) => [d.code, d.description])) as Partial<
+        Record<DimensionCode, string>
+      >,
+    [catalog.data],
+  );
+  const subject = initiative.data?.name;
 
   const highlight = useRadarHighlight();
   const accept = useAcceptDeepAnalysis(diagnosticId);
@@ -79,13 +99,26 @@ export default function ResultsPage(): JSX.Element {
 
   return (
     <PageShell width="standard" showAttribution showNavigation headerActions={<LogoutButton />}>
-      <PageHeader
-        overline="Resultados del diagnóstico"
-        title="Tu perfil de madurez IRL"
-        description="Así está tu iniciativa hoy en cada dimensión del marco."
-      >
-        {profile.data && <ResultMeta savedAt={profile.data.computedAt} />}
-      </PageHeader>
+      {profile.data ? (
+        <ProfileHero
+          initiativeName={subject}
+          description={initiative.data?.productType}
+          sectorName={initiative.data?.sector.name}
+          stageName={initiative.data?.stage.name}
+          globalAverage={profile.data.globalAverage}
+          dimensionResults={profile.data.dimensionResults}
+          strength={profile.data.strength}
+          bottleneck={profile.data.bottleneck}
+        >
+          <ResultMeta savedAt={profile.data.computedAt} />
+        </ProfileHero>
+      ) : (
+        <PageHeader
+          overline="Resultados del diagnóstico"
+          title="Resultados del diagnóstico"
+          description="Aquí verás el perfil de madurez de tu iniciativa."
+        />
+      )}
 
       {profile.isPending && <LoadingState label="Cargando perfil…" />}
 
@@ -98,10 +131,15 @@ export default function ResultsPage(): JSX.Element {
       )}
 
       {profile.data && (
-        <div className="flex flex-col gap-10">
+        <div className="mt-10 flex flex-col gap-14">
           <ProfileContext dimensionResults={profile.data.dimensionResults} />
 
-          <ProfileOverview profile={profile.data} highlight={highlight} showImbalances={accepted} />
+          <ProfileOverview
+            profile={profile.data}
+            highlight={highlight}
+            showImbalances={accepted}
+            descriptions={descriptions}
+          />
 
           {diagnostic.isError && (
             <Alert tone="critical" title="No fue posible saber si aceptaste el análisis profundo">
@@ -119,7 +157,7 @@ export default function ResultsPage(): JSX.Element {
                     accept.mutate();
                   }}
                   failed={accept.isError}
-                  description="El análisis profundo suma a este perfil los desequilibrios entre dimensiones, las alertas de estado crítico, el roadmap de escalamiento y la recomendación de portafolio de INNLAB."
+                  subject={subject}
                 />
               )}
               {accept.isError && <Alert tone="critical" title={acceptErrorMessage(accept.error)} />}
@@ -131,6 +169,8 @@ export default function ResultsPage(): JSX.Element {
               diagnosticId={diagnosticId}
               profile={profile.data}
               highlight={highlight}
+              descriptions={descriptions}
+              subject={subject}
               traceRequested={traceRequested}
               onTraceOpen={() => {
                 setTraceRequested(true);
@@ -157,6 +197,9 @@ interface DeepAnalysisProps {
   readonly diagnosticId: string;
   readonly profile: NonNullable<ReturnType<typeof useMaturityProfile>['data']>;
   readonly highlight: ReturnType<typeof useRadarHighlight>;
+  readonly descriptions: Partial<Record<DimensionCode, string>>;
+  /** Nombre de la iniciativa; sin él las secciones hablan de «tu iniciativa». */
+  readonly subject: string | undefined;
   readonly traceRequested: boolean;
   readonly onTraceOpen: () => void;
   readonly onRetry: () => void;
@@ -176,6 +219,8 @@ function DeepAnalysis({
   diagnosticId,
   profile,
   highlight,
+  descriptions,
+  subject,
   traceRequested,
   onTraceOpen,
   onRetry,
@@ -191,23 +236,44 @@ function DeepAnalysis({
     recommendation.error instanceof ApiError &&
     recommendation.error.code === 'ROUTING_RECOMMENDATION_NOT_GENERATED';
 
+  const who = subject ?? 'tu iniciativa';
+  const dimensionNames = Object.fromEntries(
+    profile.dimensionResults.map((r) => [r.dimensionCode, r.shortName]),
+  );
+  // The goal and phase of each dimension in the plan, so the alerts can say what to do next.
+  const plan = Object.fromEntries(
+    (roadmap.data?.phases ?? []).flatMap((phase) =>
+      phase.dimensions.map((d) => [
+        d.dimensionCode,
+        { targetLevel: d.targetLevel, phase: phase.order },
+      ]),
+    ),
+  );
+
   return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-16">
       <section aria-labelledby="deep-imbalances">
         <SectionHeader
           id="deep-imbalances"
           overline="Análisis profundo"
           title="Desequilibrios y alertas"
-          description="Dónde tu iniciativa avanza de forma despareja y qué dimensiones clave necesitan atención primero."
+          description={`Dónde ${who} avanza de forma despareja y qué dimensiones clave necesitan atención primero.`}
         />
-        <ImbalanceInsights profile={profile} onHighlight={highlight.setHovered} />
+        <ImbalanceInsights
+          profile={profile}
+          onHighlight={highlight.setHovered}
+          descriptions={descriptions}
+          plan={plan}
+          subject={subject}
+        />
       </section>
 
       <section aria-labelledby="deep-roadmap">
         <SectionHeader
           id="deep-roadmap"
-          title="Roadmap de escalamiento"
-          description="Las dimensiones por debajo del nivel esperado, ordenadas según qué habilita qué: cada fase reúne lo que puede avanzarse a la vez, y espera a que lo anterior esté resuelto."
+          overline="Análisis profundo"
+          title={`El plan de escalamiento de ${who}`}
+          description="Las dimensiones que todavía tienen que avanzar, ordenadas según qué habilita qué: cada fase reúne lo que puede trabajarse a la vez y espera a que la anterior esté resuelta."
         >
           {roadmap.data && <ResultMeta savedAt={roadmap.data.generatedAt} />}
         </SectionHeader>
@@ -233,8 +299,9 @@ function DeepAnalysis({
       <section aria-labelledby="deep-recommendation">
         <SectionHeader
           id="deep-recommendation"
-          title="Recomendación de portafolio"
-          description="A partir de tu perfil de madurez, el sistema identifica cuál de los servicios de INNLAB corresponde mejor al estado actual de la iniciativa, con el criterio de enrutamiento vigente."
+          overline="Análisis profundo"
+          title={`El servicio de INNLAB para ${who}`}
+          description="A partir del perfil de madurez, el sistema identifica cuál de los servicios de INNLAB corresponde mejor al estado actual de la iniciativa."
         >
           {recommendation.data && <ResultMeta savedAt={recommendation.data.generatedAt} />}
         </SectionHeader>
@@ -252,8 +319,13 @@ function DeepAnalysis({
         )}
         {recommendation.data && (
           <>
-            <RecommendationSummary recommendation={recommendation.data} />
-            <LayerTracePanel trace={trace.data} isLoading={trace.isFetching} onOpen={onTraceOpen} />
+            <RecommendationSummary recommendation={recommendation.data} subject={subject} />
+            <LayerTracePanel
+              trace={trace.data}
+              isLoading={trace.isFetching}
+              onOpen={onTraceOpen}
+              dimensionNames={dimensionNames}
+            />
           </>
         )}
       </section>
@@ -279,7 +351,7 @@ function MissingResult({
         className="mb-4"
         title={`No fue posible generar ${what}. Intenta de nuevo en unos minutos o contacta al equipo de INNLAB.`}
       />
-      <AcceptDeepAnalysisCard onAccept={onRetry} failed />
+      <RetryDeepAnalysisCard onRetry={onRetry} />
     </>
   );
 }

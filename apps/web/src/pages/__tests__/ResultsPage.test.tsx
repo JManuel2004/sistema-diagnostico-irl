@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -9,6 +9,8 @@ import ResultsPage from '../ResultsPage';
 import { renderWithClient } from '@/test/render-with-client';
 import { dimensionResultFixture } from '@/test/fixtures/dimensions';
 import { agroconectaRoadmapFixture } from '@/test/fixtures/roadmap';
+import { initiativeFixture } from '@/test/fixtures/initiative';
+import { questionnaireFixture } from '@/test/fixtures/questionnaire';
 
 const ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 const CODES: DimensionCode[] = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'];
@@ -20,9 +22,23 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
+// The page also reads the initiative (its name, description and sector) and the
+// questionnaire catalog (what each dimension measures, for the tooltips).
+beforeEach(() => {
+  server.use(
+    mswHttp.get('*/diagnostics/:id/initiative', () =>
+      HttpResponse.json(
+        initiativeFixture({ productType: 'Aplicación web y módulo de trazabilidad para cooperativas' }),
+      ),
+    ),
+    mswHttp.get('*/api/v1/catalog/questionnaire', () => HttpResponse.json(questionnaireFixture())),
+  );
+});
+
 const PROFILE = {
   diagnosticId: ID,
   computedAt: '2026-03-05T15:30:00.000Z',
+  globalAverage: 3.5,
   dimensionResults: CODES.map((c) => dimensionResultFixture(c, LEVELS[c])),
   bottleneck: { dimensions: ['IPRL'], level: 1 },
   strength: { dimensions: ['TRL'], level: 6 },
@@ -165,14 +181,10 @@ describe('ResultsPage — sin análisis profundo', () => {
 
     renderPage();
 
-    expect(
-      await screen.findByRole('heading', { name: 'Tu perfil de madurez IRL' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'AgroConecta' })).toBeInTheDocument();
     expect(await screen.findByRole('group', { name: /Cuello de botella/ })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /Brecha/ })).toBeInTheDocument();
-    // The six levels, in the legend that goes with the radar.
-    const legend = screen.getByRole('list', { name: 'Leyenda del radar' });
-    expect(within(legend).getAllByRole('button')).toHaveLength(6);
+    expect(screen.getByRole('group', { name: 'Perfil IRL — gráfico radar' })).toBeInTheDocument();
   });
 
   it('no muestra los pares desequilibrados ni las alertas de estado crítico', async () => {
@@ -196,10 +208,10 @@ describe('ResultsPage — sin análisis profundo', () => {
 
     await screen.findByRole('group', { name: /Cuello de botella/ });
     expect(
-      screen.queryByRole('heading', { name: 'Roadmap de escalamiento' }),
+      screen.queryByRole('heading', { name: /plan de escalamiento/ }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('heading', { name: 'Recomendación de portafolio' }),
+      screen.queryByRole('heading', { name: /servicio de INNLAB para/ }),
     ).not.toBeInTheDocument();
     expect(requests.roadmap).toBe(0);
     expect(requests.recommendation).toBe(0);
@@ -217,7 +229,7 @@ describe('ResultsPage — sin análisis profundo', () => {
     renderPage();
 
     expect(
-      await screen.findByRole('button', { name: 'Aceptar análisis profundo' }),
+      await screen.findByRole('button', { name: 'Solicitar análisis profundo' }),
     ).toBeInTheDocument();
     expect(requests.deepAnalysis).toBe(0);
   });
@@ -250,7 +262,7 @@ describe('ResultsPage — sin análisis profundo', () => {
     const user = userEvent.setup();
 
     renderPage();
-    await user.click(await screen.findByRole('button', { name: 'Aceptar análisis profundo' }));
+    await user.click(await screen.findByRole('button', { name: 'Solicitar análisis profundo' }));
 
     expect(
       await screen.findByRole('heading', { name: 'Desequilibrios y alertas' }),
@@ -258,7 +270,7 @@ describe('ResultsPage — sin análisis profundo', () => {
     expect(await screen.findByRole('heading', { name: 'Fase 1' })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Consultoría' })).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Aceptar análisis profundo' }),
+      screen.queryByRole('button', { name: 'Solicitar análisis profundo' }),
     ).not.toBeInTheDocument();
   });
 
@@ -268,7 +280,7 @@ describe('ResultsPage — sin análisis profundo', () => {
     const user = userEvent.setup();
 
     renderPage();
-    await user.click(await screen.findByRole('button', { name: 'Aceptar análisis profundo' }));
+    await user.click(await screen.findByRole('button', { name: 'Solicitar análisis profundo' }));
 
     expect(await screen.findByRole('button', { name: 'Intentar de nuevo' })).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent(
@@ -286,12 +298,16 @@ describe('ResultsPage — con análisis profundo', () => {
     expect(
       await screen.findByRole('heading', { name: 'Desequilibrios y alertas' }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/5 de 6 pares fuera de balance/)).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent('Negocio está en estado crítico');
+    expect(
+      screen.getByRole('region', { name: 'Qué tan parejo avanza AgroConecta' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('article', { name: 'Negocio está en estado crítico' }),
+    ).toHaveTextContent('Prioridad máxima');
     expect(await screen.findByRole('heading', { name: 'Fase 1' })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Consultoría' })).toBeInTheDocument();
     // The profile is still there, on the same page.
-    expect(screen.getByRole('heading', { name: 'Tu perfil de madurez IRL' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'AgroConecta' })).toBeInTheDocument();
   });
 
   it('todo en una sola página: una vista, no pantallas separadas', async () => {
@@ -304,9 +320,10 @@ describe('ResultsPage — con análisis profundo', () => {
     expect(headings).toEqual(
       expect.arrayContaining([
         'Cómo leer estos resultados',
+        'Tu radar IRL',
         'Desequilibrios y alertas',
-        'Roadmap de escalamiento',
-        'Recomendación de portafolio',
+        'El plan de escalamiento de AgroConecta',
+        'El servicio de INNLAB para AgroConecta',
       ]),
     );
   });
@@ -318,7 +335,7 @@ describe('ResultsPage — con análisis profundo', () => {
 
     await screen.findByRole('heading', { name: 'Consultoría' });
     expect(
-      screen.queryByRole('button', { name: /Aceptar análisis profundo/ }),
+      screen.queryByRole('button', { name: /Solicitar análisis profundo/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -340,7 +357,7 @@ describe('ResultsPage — con análisis profundo', () => {
     renderPage();
 
     await screen.findByRole('heading', { name: 'Consultoría' });
-    expect(screen.getByRole('button', { name: /Cómo se construyó este roadmap/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /Cómo se armó este plan/ })).toHaveAttribute(
       'aria-expanded',
       'false',
     );
@@ -392,11 +409,19 @@ describe('ResultsPage — explicabilidad para quien no conoce el marco (Oleada 4
 
     renderPage();
 
-    expect(
-      await screen.findByText(
-        /Son seis: Tecnología, Cliente, Negocio, Propiedad Intelectual, Equipo, Financiación/,
-      ),
-    ).toBeInTheDocument();
+    const context = (
+      await screen.findByRole('heading', { name: 'Cómo leer estos resultados' })
+    ).closest('div')!.parentElement!;
+    for (const name of [
+      'Tecnología',
+      'Cliente',
+      'Negocio',
+      'Propiedad Intelectual',
+      'Equipo',
+      'Financiación',
+    ]) {
+      expect(within(context).getByText(name)).toBeInTheDocument();
+    }
   });
 
   it('explica cada término técnico en una frase, al pasar el cursor', async () => {
@@ -412,80 +437,191 @@ describe('ResultsPage — explicabilidad para quien no conoce el marco (Oleada 4
     await user.hover(screen.getByRole('button', { name: /^Brecha/ }));
     expect((await screen.findAllByText(/parte más baja de la escala/)).length).toBeGreaterThan(0);
 
-    await user.hover(screen.getByRole('button', { name: /Desequilibrios/ }));
+    await user.hover(screen.getByRole('button', { name: /desequilibrio/i }));
     expect((await screen.findAllByText(/deberían avanzar juntas/)).length).toBeGreaterThan(0);
 
-    await user.hover(screen.getByRole('button', { name: /estado crítico/ }));
+    await user.hover(screen.getByRole('button', { name: /críticas/i }));
     expect((await screen.findAllByText(/dimensión clave del marco/)).length).toBeGreaterThan(0);
   });
 });
 
-describe('ResultsPage — el resumen y el radar están vinculados (Oleada 5)', () => {
-  it('al pasar el cursor por una tarjeta se resalta su dimensión en la leyenda del radar', async () => {
+describe('ResultsPage — el radar explica cada dimensión en su punta', () => {
+  it('no tiene leyenda aparte: el color y el nombre están en la punta del radar', async () => {
+    backend({ accepted: false });
+
+    renderPage();
+
+    await screen.findByRole('group', { name: 'Perfil IRL — gráfico radar' });
+    expect(screen.queryByRole('list', { name: 'Leyenda del radar' })).not.toBeInTheDocument();
+  });
+
+  it('avisa que se puede pasar el cursor por cada punta para ver qué mide la dimensión', async () => {
+    backend({ accepted: false });
+
+    renderPage();
+
+    expect(
+      await screen.findByText('Pasa el cursor por cada punta para ver qué mide esa dimensión.'),
+    ).toBeInTheDocument();
+  });
+
+  it('pasar por una tarjeta del resumen no rompe el radar compartido', async () => {
     backend({ accepted: false });
     const user = userEvent.setup();
 
     renderPage();
     const card = await screen.findByRole('group', { name: /Cuello de botella/ });
-    const legend = screen.getByRole('list', { name: 'Leyenda del radar' });
-    const iprl = within(legend).getByRole('button', { name: /Propiedad Intelectual/ });
-    expect(iprl).not.toHaveClass('border-border-strong');
 
     await user.hover(card);
-    expect(iprl).toHaveClass('border-border-strong');
-    expect(within(legend).getByRole('button', { name: /Tecnología/ })).not.toHaveClass(
-      'border-border-strong',
-    );
-
     await user.unhover(card);
-    expect(iprl).not.toHaveClass('border-border-strong');
-  });
 
-  it('la tarjeta de brecha resalta todas las dimensiones en brecha', async () => {
+    expect(screen.getByRole('group', { name: 'Perfil IRL — gráfico radar' })).toBeInTheDocument();
+  });
+});
+
+describe('ResultsPage — la iniciativa como protagonista', () => {
+  it('abre con su nombre, una descripción breve y el sector', async () => {
     backend({ accepted: false });
-    const user = userEvent.setup();
 
     renderPage();
-    await user.hover(await screen.findByRole('group', { name: /Brecha/ }));
 
-    const legend = screen.getByRole('list', { name: 'Leyenda del radar' });
-    for (const name of [/Negocio/, /Propiedad Intelectual/, /Financiación/]) {
-      expect(within(legend).getByRole('button', { name })).toHaveClass('border-border-strong');
-    }
-    expect(within(legend).getByRole('button', { name: /Tecnología/ })).not.toHaveClass(
-      'border-border-strong',
-    );
+    expect(await screen.findByRole('heading', { level: 1, name: 'AgroConecta' })).toBeInTheDocument();
+    expect(
+      screen.getByText('Aplicación web y módulo de trazabilidad para cooperativas'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Agroindustria / AgriTech')).toBeInTheDocument();
   });
 
-  it('un clic en la leyenda fija la dimensión aunque el cursor salga', async () => {
+  it('muestra al lado el nivel IRL global que calcula el backend', async () => {
     backend({ accepted: false });
-    const user = userEvent.setup();
 
     renderPage();
-    await screen.findByRole('group', { name: /Cuello de botella/ });
-    const legend = screen.getByRole('list', { name: 'Leyenda del radar' });
-    const cliente = within(legend).getByRole('button', { name: /Cliente/ });
 
-    await user.click(cliente);
-    await user.unhover(cliente);
-    expect(cliente).toHaveAttribute('aria-pressed', 'true');
-    expect(cliente).toHaveClass('border-border-strong');
-
-    await user.click(cliente);
-    expect(cliente).toHaveAttribute('aria-pressed', 'false');
+    const level = (await screen.findByText('Nivel IRL global')).closest('div')!;
+    expect(level).toHaveTextContent('3,5');
+    expect(level).toHaveTextContent('de 9');
   });
 
-  it('con el análisis profundo, pasar por un par o una alerta resalta sus dimensiones', async () => {
+  it('se dirige a la iniciativa por su nombre en la invitación al análisis profundo', async () => {
+    backend({ accepted: false });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole('heading', { name: '¿Quieres profundizar el diagnóstico de AgroConecta?' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ir a mi panel' })).toHaveAttribute('href', '/panel');
+  });
+
+  it('con el análisis profundo, sus secciones hablan de la iniciativa por su nombre', async () => {
     backend({ accepted: true });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Qué atender primero en AgroConecta' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Recomendado para AgroConecta')).toBeInTheDocument();
+  });
+
+  it('si la iniciativa no carga, la cabecera habla de «tu iniciativa» y el resto sigue', async () => {
+    backend({ accepted: false });
+    server.use(
+      mswHttp.get('*/diagnostics/:id/initiative', () => problem('INTERNAL', 500)),
+    );
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Tu iniciativa' })).toBeInTheDocument();
+    expect(await screen.findByRole('group', { name: /Cuello de botella/ })).toBeInTheDocument();
+  });
+});
+
+describe('ResultsPage — el análisis profundo se entiende sin conocer el sistema', () => {
+  const TRACE = {
+    diagnosticId: ID,
+    layer1Excluded: [
+      { idService: 6, name: 'Proyectos de Grado', exclusionMessage: 'Requieren vinculación académica.' },
+    ],
+    rankingBeforeExceptions: [
+      {
+        position: 1,
+        idService: 2,
+        name: 'Mentoría',
+        score: 4,
+        contributions: {
+          bottleneck: { value: 1, details: [{ dimension: 'IPRL', sourceLabel: 'primary', value: 1 }] },
+          gaps: { value: 0, details: [] },
+          imbalances: {
+            value: 1,
+            details: [{ pair: 'TRL-IPRL', classification: 'CRITICAL', sourceLabel: 'secondary', value: 0.5 }],
+          },
+          stageAffinity: { value: 1, matches: true },
+          rangePenalty: { value: 0, applied: false },
+        },
+      },
+    ],
+    appliedExceptions: [
+      {
+        code: 'E-01',
+        order: 1,
+        action: 'FORCE',
+        targetService: 'Consultoría',
+        declaredReason: 'Un riesgo legal crítico requiere asesoría especializada.',
+        rankingBefore: [{ position: 2, idService: 3, name: 'Consultoría', score: 3 }],
+        rankingAfter: [{ position: 1, idService: 3, name: 'Consultoría', score: 3 }],
+        effect: 'Consultoría pasa del puesto 2 al puesto 1',
+      },
+    ],
+    discardedExceptions: [{ code: 'E-02', order: 2, reason: 'La condición no se cumple' }],
+    rankingAfterExceptions: [],
+    adjustedByException: true,
+    incompleteCharacterization: [],
+    factsHash: 'a'.repeat(64),
+    evaluatedAt: '2026-09-07T14:30:00.000Z',
+  };
+
+  it('ninguna sección expone flechas, códigos de ajuste ni siglas del marco, ni siquiera abiertas', async () => {
+    backend({ accepted: true });
+    server.use(
+      mswHttp.get('*/diagnostics/:id/recommendation/trace', () => HttpResponse.json(TRACE)),
+    );
     const user = userEvent.setup();
 
     renderPage();
-    await user.hover(await screen.findByRole('alert'));
+    await screen.findByRole('heading', { name: 'Consultoría' });
+    await user.click(screen.getByRole('button', { name: /Cómo se llegó a esta recomendación/ }));
+    await user.click(screen.getByRole('button', { name: /Cómo se armó este plan/ }));
+    await screen.findByText('Se dejó Consultoría como primera opción');
 
-    const legend = screen.getByRole('list', { name: 'Leyenda del radar' });
-    expect(within(legend).getByRole('button', { name: /Negocio/ })).toHaveClass(
-      'border-border-strong',
+    const deep = ['deep-imbalances', 'deep-roadmap', 'deep-recommendation'].map((id) =>
+      document.getElementById(id)!.closest('section')!.textContent,
     );
+    for (const text of deep) {
+      expect(text).not.toMatch(/[→⇄⇔↔Δ≤≥]/);
+      expect(text).not.toMatch(/\bE-?0\d\b/);
+      expect(text).not.toMatch(/\b(TRL|CRL|BRL|IPRL|TmRL|FRL)\b/);
+      expect(text).not.toMatch(/\b(FORCE|PROMOTE|DEMOTE|VETO|primary|secondary)\b/);
+    }
+  });
+
+  it('no usa texto de tamaño de nota (text-xs) en la sección del análisis profundo', async () => {
+    backend({ accepted: true });
+    server.use(
+      mswHttp.get('*/diagnostics/:id/recommendation/trace', () => HttpResponse.json(TRACE)),
+    );
+    const user = userEvent.setup();
+
+    renderPage();
+    await screen.findByRole('heading', { name: 'Consultoría' });
+    await user.click(screen.getByRole('button', { name: /Cómo se llegó a esta recomendación/ }));
+    await screen.findByText('Se dejó Consultoría como primera opción');
+
+    for (const id of ['deep-imbalances', 'deep-roadmap', 'deep-recommendation']) {
+      const html = document.getElementById(id)!.closest('section')!.innerHTML;
+      expect(html).not.toContain('text-xs');
+      expect(html).not.toContain('text-[10px]');
+    }
   });
 });
 
@@ -524,7 +660,7 @@ describe('ResultsPage — estados de error y de carga', () => {
       await screen.findByText('No fue posible saber si aceptaste el análisis profundo'),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Aceptar análisis profundo' }),
+      screen.queryByRole('button', { name: 'Solicitar análisis profundo' }),
     ).not.toBeInTheDocument();
   });
 });

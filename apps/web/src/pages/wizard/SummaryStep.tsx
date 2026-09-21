@@ -8,6 +8,7 @@ import {
   useQuestionnaireCompletion,
   useQuestionnaireDraftStore,
 } from '@features/questionnaire';
+import { InitiativeSummary, useInitiative } from '@features/initiative';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
 import { Button, buttonVariants } from '@/shared/ui/button';
@@ -21,7 +22,8 @@ interface Props {
 }
 
 /**
- * Resumen de todas las respuestas antes de procesar el diagnóstico.
+ * Resumen de todo lo que se va a procesar: la iniciativa (con la opción de
+ * corregirla) y las respuestas, con la justificación de cada una.
  *
  * «Procesar diagnóstico» es lo que envía el cuestionario al servidor (con la
  * justificación de cada respuesta) y calcula el perfil; al terminar se abren
@@ -34,6 +36,7 @@ export function SummaryStep({ diagnosticId }: Props): JSX.Element {
   const answers = useQuestionnaireDraftStore(selectAnswers);
   const justifications = useQuestionnaireDraftStore(selectJustifications);
   const { catalog, isComplete } = useQuestionnaireCompletion();
+  const initiative = useInitiative(diagnosticId);
 
   const process = useMutation({
     mutationFn: () =>
@@ -64,11 +67,43 @@ export function SummaryStep({ diagnosticId }: Props): JSX.Element {
     <>
       <PageHeader
         overline="Resumen"
-        title="Revisa tus respuestas"
-        description="Estas son tus 48 respuestas con la justificación de cada una. Al procesar el diagnóstico se envían y se calcula tu perfil de madurez; si quieres cambiar algo, vuelve al cuestionario."
+        title="Revisa lo que vamos a procesar"
+        description="Esta es tu iniciativa y tus 48 respuestas con la justificación de cada una. Al procesar el diagnóstico se envían y se calcula tu perfil de madurez; si quieres cambiar algo, vuelve al paso correspondiente."
       />
 
-      <AnswersSummary dimensions={catalog.dimensions} />
+      <div className="flex flex-col gap-10">
+        <section aria-labelledby="summary-initiative">
+          <h2 id="summary-initiative" className="sr-only">
+            Tu iniciativa
+          </h2>
+          {initiative.isPending && <LoadingState label="Cargando tu iniciativa…" />}
+          {initiative.isError && (
+            <Alert tone="critical" title="No fue posible cargar tu iniciativa">
+              Puedes procesar el diagnóstico igualmente; la verás en tu panel.
+            </Alert>
+          )}
+          {initiative.data && (
+            <InitiativeSummary
+              initiative={initiative.data}
+              action={
+                <Link
+                  to={wizardPath(diagnosticId, 'iniciativa')}
+                  className={buttonVariants({ variant: 'secondary' })}
+                >
+                  Corregir iniciativa
+                </Link>
+              }
+            />
+          )}
+        </section>
+
+        <section aria-labelledby="summary-answers">
+          <h2 id="summary-answers" className="text-foreground mb-4 text-2xl font-bold">
+            Tus respuestas
+          </h2>
+          <AnswersSummary dimensions={catalog.dimensions} />
+        </section>
+      </div>
 
       {process.isError && (
         <Alert

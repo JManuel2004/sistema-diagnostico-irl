@@ -1,5 +1,8 @@
 import { useState, type JSX } from 'react';
 import type { DimensionCode, QuestionnaireStructure } from '@innlab/contracts';
+import { getDimensionVisual } from '@/shared/lib/dimensions';
+import { cn } from '@/shared/lib/utils';
+import { LevelBar } from '@/shared/ui/level-bar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { selectAnswers, selectJustifications, useQuestionnaireDraftStore } from '../store/questionnaire-draft.store';
 import { likertText } from '../lib/likert-options';
@@ -11,6 +14,10 @@ import { likertText } from '../lib/likert-options';
  * Justificación**. Las seis dimensiones se recorren por pestañas, como en el
  * cuestionario, y no se apilan las seis tablas. Es de solo lectura: se corrige
  * volviendo al cuestionario.
+ *
+ * Cada dimensión lleva su color —en la pestaña, en la cabecera de la tabla y en
+ * la barra del puntaje— para que se reconozca la misma dimensión que se vio en
+ * el cuestionario.
  */
 interface Props {
   readonly dimensions: QuestionnaireStructure['dimensions'];
@@ -34,52 +41,97 @@ export function AnswersSummary({ dimensions }: Props): JSX.Element {
           aria-label="Dimensiones del resumen"
           className="grid h-auto w-full min-w-max grid-cols-6 gap-1 p-1"
         >
-          {dimensions.map((d) => (
-            <TabsTrigger key={d.code} value={d.code} className="h-10 px-3" title={d.name}>
-              <span className="text-overline">{d.code}</span>
-            </TabsTrigger>
-          ))}
+          {dimensions.map((d) => {
+            const visual = getDimensionVisual(d.code);
+            const Icon = visual.icon;
+            return (
+              <TabsTrigger
+                key={d.code}
+                value={d.code}
+                title={d.name}
+                className={cn('h-12 gap-2 border-b-4 border-transparent px-3', visual.tabActive)}
+              >
+                <Icon className={cn('size-4 shrink-0', visual.textInk)} aria-hidden="true" />
+                <span className="text-overline">{d.code}</span>
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
       </div>
 
-      {dimensions.map((d) => (
-        <TabsContent key={d.code} value={d.code}>
-          <div className="border-border overflow-x-auto rounded-md border">
-            <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
-              <caption className="sr-only">Respuestas de {d.name}</caption>
-              <thead className="bg-surface-muted">
-                <tr className="border-border border-b">
-                  <th scope="col" className="text-overline text-muted-foreground w-[34%] px-4 py-3">
-                    Afirmación
-                  </th>
-                  <th scope="col" className="text-overline text-muted-foreground w-[22%] px-4 py-3">
-                    Puntaje seleccionado
-                  </th>
-                  <th scope="col" className="text-overline text-muted-foreground px-4 py-3">
-                    Justificación
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {d.statements.map((statement) => {
-                  const value = answers[statement.id];
-                  return (
-                    <tr key={statement.id} className="border-border border-b align-top last:border-b-0">
-                      <td className="text-foreground px-4 py-3 leading-relaxed">{statement.text}</td>
-                      <td className="text-foreground px-4 py-3 font-medium">
-                        {value === undefined ? '—' : likertText(value)}
-                      </td>
-                      <td className="text-muted-foreground whitespace-pre-wrap px-4 py-3 leading-relaxed">
-                        {(justifications[statement.id] ?? '').trim() || '—'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </TabsContent>
-      ))}
+      {dimensions.map((d) => {
+        const visual = getDimensionVisual(d.code);
+        const Icon = visual.icon;
+        return (
+          <TabsContent key={d.code} value={d.code}>
+            <div
+              className={cn(
+                'border-border overflow-x-auto rounded-md border border-t-4',
+                visual.border,
+              )}
+            >
+              <div className={cn('flex items-center gap-3 px-4 py-3', visual.tint)}>
+                <Icon className={cn('size-6 shrink-0', visual.textInk)} aria-hidden="true" />
+                <p className={cn('text-lg font-bold', visual.textInk)}>{d.name}</p>
+              </div>
+              <table className="w-full min-w-[40rem] border-collapse text-left">
+                <caption className="sr-only">Respuestas de {d.name}</caption>
+                <thead>
+                  <tr className="border-border border-b">
+                    <th scope="col" className={cn('w-[34%] px-4 py-3 text-sm font-bold', visual.textInk)}>
+                      Afirmación
+                    </th>
+                    <th scope="col" className={cn('w-[24%] px-4 py-3 text-sm font-bold', visual.textInk)}>
+                      Puntaje seleccionado
+                    </th>
+                    <th scope="col" className={cn('px-4 py-3 text-sm font-bold', visual.textInk)}>
+                      Justificación
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {d.statements.map((statement, index) => {
+                    const value = answers[statement.id];
+                    return (
+                      <tr
+                        key={statement.id}
+                        className={cn(
+                          'border-border border-b align-top last:border-b-0',
+                          index % 2 === 1 && visual.tint,
+                        )}
+                      >
+                        <td className="text-foreground px-4 py-3 text-base leading-relaxed">
+                          {statement.text}
+                        </td>
+                        <td className="px-4 py-3">
+                          {value === undefined ? (
+                            <span className="text-muted-foreground text-base">—</span>
+                          ) : (
+                            <div className="flex flex-col gap-2">
+                              <span className="text-foreground text-base font-semibold">
+                                {likertText(value)}
+                              </span>
+                              <LevelBar
+                                level={value}
+                                fillClass={visual.bg}
+                                className="w-28"
+                                segments={5}
+                              />
+                            </div>
+                          )}
+                        </td>
+                        <td className="text-muted-foreground whitespace-pre-wrap px-4 py-3 text-base leading-relaxed">
+                          {(justifications[statement.id] ?? '').trim() || '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+        );
+      })}
     </Tabs>
   );
 }

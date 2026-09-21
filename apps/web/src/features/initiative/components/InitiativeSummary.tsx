@@ -1,45 +1,74 @@
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { Milestone, Package, Target, Users, Wallet } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { Initiative } from '@innlab/contracts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
+import { Badge } from '@/shared/ui/badge';
+import { Card } from '@/shared/ui/card';
 
 /**
- * La iniciativa tal como se registró: lo que el panel muestra del perfil.
- * Es una lista de definición (etiqueta y valor), sin controles.
+ * La iniciativa tal como se registró: el resumen que se ve en el panel y antes
+ * de procesar el diagnóstico.
+ *
+ * Abre con su nombre y su sector y baja a lo demás en bloques con su icono,
+ * a tamaño de lectura: es lo que el usuario contó de sí mismo y tiene que
+ * poder releerlo de un vistazo, no descifrarlo de una lista de definiciones.
  */
 interface Props {
   readonly initiative: Initiative;
+  /** A la derecha del nombre: p. ej. el enlace para corregirla. */
+  readonly action?: ReactNode;
 }
 
-export function InitiativeSummary({ initiative }: Props): JSX.Element {
-  const rows: readonly (readonly [string, string])[] = [
-    ['Sector', initiative.sector.name],
-    ['Tipo de producto o servicio', initiative.productType],
-    ['Etapa', `${initiative.stage.name} — ${initiative.declaredStage}`],
-    [
-      'Equipo',
-      `${String(initiative.teamSize)} ${initiative.teamSize === 1 ? 'persona' : 'personas'} — ${initiative.teamDescription}`,
-    ],
-    ['Mercado objetivo', initiative.targetMarket],
-    ['Financiamiento actual', initiative.currentFunding],
+interface Row {
+  readonly label: string;
+  readonly value: string;
+  readonly icon: LucideIcon;
+}
+
+export function InitiativeSummary({ initiative, action }: Props): JSX.Element {
+  const rows: readonly Row[] = [
+    { label: 'Qué ofrece', value: initiative.productType, icon: Package },
+    {
+      label: 'Etapa',
+      value: `${initiative.stage.name} — ${initiative.declaredStage}`,
+      icon: Milestone,
+    },
+    {
+      label: 'Equipo',
+      value: `${String(initiative.teamSize)} ${initiative.teamSize === 1 ? 'persona' : 'personas'} — ${initiative.teamDescription}`,
+      icon: Users,
+    },
+    { label: 'Mercado objetivo', value: initiative.targetMarket, icon: Target },
+    { label: 'Financiamiento actual', value: initiative.currentFunding, icon: Wallet },
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <p className="text-overline text-azul-icesi">Tu iniciativa</p>
-        <CardTitle>{initiative.name}</CardTitle>
-        <CardDescription>Lo que registraste antes del cuestionario.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
-          {rows.map(([label, value]) => (
-            <div key={label}>
-              <dt className="text-overline text-muted-foreground">{label}</dt>
-              <dd className="text-foreground mt-1 text-sm leading-relaxed">{value}</dd>
+    <Card className="overflow-hidden">
+      <div className="border-border bg-azul-wash flex flex-wrap items-start justify-between gap-4 border-b p-6">
+        <div>
+          <p className="text-azul-icesi text-sm font-bold">Tu iniciativa</p>
+          <h2 className="text-foreground mt-1 text-2xl font-bold leading-tight">
+            {initiative.name}
+          </h2>
+          <p className="mt-3 flex flex-wrap gap-2">
+            <Badge tone="info">{initiative.sector.name}</Badge>
+          </p>
+        </div>
+        {action}
+      </div>
+      <dl className="grid gap-x-8 gap-y-6 p-6 sm:grid-cols-2">
+        {rows.map(({ label, value, icon: Icon }) => (
+          <div key={label} className="flex gap-3">
+            <span className="bg-azul-icesi/10 text-azul-icesi flex size-10 shrink-0 items-center justify-center rounded-md">
+              <Icon className="size-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <dt className="text-foreground text-base font-bold">{label}</dt>
+              <dd className="text-muted-foreground mt-0.5 text-base leading-relaxed">{value}</dd>
             </div>
-          ))}
-        </dl>
-      </CardContent>
+          </div>
+        ))}
+      </dl>
     </Card>
   );
 }
