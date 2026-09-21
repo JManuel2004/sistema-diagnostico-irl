@@ -82,7 +82,7 @@ export class GenerateRecommendationUseCase {
     if (!hechos.ok) {
       return Result.err(hechos.error);
     }
-    const facts = hechos.value;
+    const { facts, nombres } = hechos.value;
 
     // ── Capa 0: traducir el vocabulario ordinal a números ──────────────
     const fichasNumericas = this.traductor.translate(config.profiles, config.scale);
@@ -110,7 +110,7 @@ export class GenerateRecommendationUseCase {
       finalRanking: rankingPost,
       minimumThreshold: config.parameters.minimumThreshold,
       alternativesCount: config.parameters.alternativesCount,
-      justification: construirJustificacion(rankingPost, applied),
+      justification: construirJustificacion(rankingPost, applied, nombres),
       noRecommendationReason: null,
       trace: {
         layer1Excluded: excluded,
@@ -146,7 +146,12 @@ export class GenerateRecommendationUseCase {
    */
   private async construirHechos(
     diagnosticId: string,
-  ): Promise<Result<DiagnosticFacts, ProfileNotComputedError>> {
+  ): Promise<
+    Result<
+      { facts: DiagnosticFacts; nombres: ReadonlyMap<string, string> },
+      ProfileNotComputedError
+    >
+  > {
     const resultado = await this.perfiles.execute({ diagnosticId });
     if (!resultado.ok) {
       return Result.err(new ProfileNotComputedError(diagnosticId));
@@ -163,7 +168,11 @@ export class GenerateRecommendationUseCase {
     const niveles = perfil.dimensionResults.map((r) => r.irlLevel);
     const averageLevel = niveles.reduce((a, b) => a + b, 0) / niveles.length;
 
-    return Result.ok({
+    // Names for the justification, which the initiative leader reads: it must
+    // say «Negocio», not `BRL`.
+    const nombres = new Map(perfil.dimensionResults.map((r) => [r.dimensionCode, r.shortName]));
+
+    const facts: DiagnosticFacts = {
       diagnosticId,
       levelByDimension,
       bottlenecks: perfil.bottleneck.dimensions,
@@ -183,7 +192,8 @@ export class GenerateRecommendationUseCase {
       })),
       averageLevel,
       characterization,
-    });
+    };
+    return Result.ok({ facts, nombres });
   }
 }
 
@@ -225,16 +235,20 @@ function hashDe(facts: DiagnosticFacts): string {
 }
 
 /**
- * Justificación en el vocabulario del marco, no en números.
+ * Justificación en el vocabulario del marco, no en números ni en códigos.
  *
  * Cuando un ajuste puntual decide el primer puesto, se dice
  * explícitamente y se cita su reason declarado: una recomendación que
  * proviene de una decisión del centro y no del cálculo tiene que
  * presentarse como tal.
+ *
+ * Las dimensiones se nombran con su nombre corto del catálogo: el texto lo
+ * lee el líder de la iniciativa, que no conoce las siglas del marco.
  */
-function construirJustificacion(
+export function construirJustificacion(
   ranking: readonly { serviceName: string; contributions: { bottleneck: { details: readonly { dimension: string; sourceLabel: string }[] } } }[],
   applied: readonly { targetService: string; declaredReason: string }[],
+  nombres: ReadonlyMap<string, string>,
 ): string | null {
   const ganador = ranking[0];
   if (!ganador) return null;
@@ -248,10 +262,11 @@ function construirJustificacion(
 
   const foco = ganador.contributions.bottleneck.details
     .filter((d) => d.sourceLabel !== 'not_applicable')
-    .map((d) => `${d.dimension} (${d.sourceLabel})`)
-    .join(', ');
+    .map((d) => nombres.get(d.dimension) ?? d.dimension);
+  const enumerado =
+    foco.length > 1 ? `${foco.slice(0, -1).join(', ')} y ${foco[foco.length - 1]}` : foco.join('');
 
   return foco.length > 0
-    ? `${ganador.serviceName} atiende de forma directa la dimensión más rezagada del perfil: ${foco}.`
+    ? `${ganador.serviceName} atiende de forma directa la dimensión más rezagada de tu iniciativa: ${enumerado}.`
     : `${ganador.serviceName} es el servicio con mayor afinidad global con el perfil de la iniciativa.`;
 }

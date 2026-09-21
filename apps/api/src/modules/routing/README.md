@@ -34,3 +34,6 @@ Escribe: `irl_diagnostic.portfolio_recommendation`, `recommendation_alternative`
 - **Unitarias:** dominio del motor, aceptación AgroConecta (`acceptance/agroconecta.spec.ts`), casos de uso, listener.
 - **Integración:** `recommendation-repository` (persistencia y atomicidad).
 - **E2E:** `generate-recommendation`, `deep-analysis-events`.
+
+- **La justificación de la recomendación la lee el líder de la iniciativa:** nombra las dimensiones por su nombre corto del catálogo y no por su código ni por la etiqueta ordinal interna (`primary`, `secondary`); cuando decide un ajuste, cita la razón declarada por el centro.
+

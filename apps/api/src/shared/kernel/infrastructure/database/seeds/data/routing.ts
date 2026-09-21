@@ -331,8 +331,8 @@ export const EXCEPTION_RULES: readonly ExceptionRuleSeed[] = [
     targetService: 'Retos en el Aula',
     positions: 2,
     declaredReason:
-      'Un perfil débil de forma generalizada en múltiples dimensions se beneficia de ' +
-      'exposición amplia a estudiantes; pero cede ante urgencias legales o técnicas puntuales.',
+      'Un perfil débil de forma generalizada en múltiples dimensiones se beneficia de ' +
+      'exposición amplia a estudiantes, pero cede ante urgencias legales o técnicas puntuales.',
   },
   {
     code: 'E-03',
@@ -349,6 +349,6 @@ export const EXCEPTION_RULES: readonly ExceptionRuleSeed[] = [
     positions: 1,
     declaredReason:
       'Cuando la separación cliente-modelo es crítica en una iniciativa muy temprana, ' +
-      'mentoría 1:1 abre el diálogo antes que services masivos.',
+      'mentoría 1:1 abre el diálogo antes que servicios masivos.',
   },
 ];
