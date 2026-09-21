@@ -112,8 +112,6 @@ export const useQuestionnaireDraftStore = create<DraftStore>()(
   ),
 );
 
-export default useQuestionnaireDraftStore;
-
 // Stable selectors — defined at module scope so Zustand can rely on
 // referential identity to skip re-renders.
 export const selectDraftDiagnosticId = (s: DraftStore) => s.diagnosticId;

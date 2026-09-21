@@ -15,7 +15,6 @@ export default tseslint.config(
       'apps/web/eslint.config.js',
       'apps/web/postcss.config.js',
       'apps/web/tailwind.config.ts',
-      'apps/web/playwright.config.ts',
     ],
   },
   js.configs.recommended,

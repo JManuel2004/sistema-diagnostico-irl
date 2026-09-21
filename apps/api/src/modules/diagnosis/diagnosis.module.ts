@@ -124,9 +124,6 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
   ],
   exports: [
     DIAGNOSIS_REPOSITORY,
-    ANSWER_SHEET_REPOSITORY,
-    MATURITY_PROFILE_REPOSITORY,
-    ComputeMaturityProfileUseCase,
     // Consumed by RoutingModule/RoadmapModule: the recommendation and
     // roadmap engines read the profile through this read use case, never
     // reaching the tables directly.

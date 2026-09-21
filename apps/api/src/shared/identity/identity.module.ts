@@ -42,6 +42,5 @@ import { MeController } from './presentation/controllers/me.controller.js';
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
   controllers: [MeController],
-  exports: [ResolveUserContextUseCase, USER_CONTEXT_PORT, PassportModule],
 })
 export class IdentityModule {}

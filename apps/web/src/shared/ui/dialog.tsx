@@ -27,9 +27,6 @@ import { cn } from '@/shared/lib/utils';
  *       </DialogFooter>
  *     </DialogContent>
  *   </Dialog>
- *
- * El `IncompleteSubmitDialog` del feature `questionnaire` lo usará en
- * Stage 2 (HU-10).
  */
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;

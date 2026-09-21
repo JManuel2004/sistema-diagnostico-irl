@@ -87,6 +87,5 @@ import { InitiativeModule } from '../initiative/initiative.module.js';
     },
   ],
   controllers: [RecommendationController],
-  exports: [ACTIVE_CONFIGURATION_REPOSITORY, RECOMMENDATION_REPOSITORY],
 })
 export class RoutingModule {}

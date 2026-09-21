@@ -1,4 +1,3 @@
-import type { UseCase } from '../../../kernel/application/use-case.interface.js';
 import type { UserContext } from '../../domain/entities/user-context.vo.js';
 import type { UserContextCachePort } from '../../domain/repositories/user-context.cache.port.js';
 import type { UserContextPort } from '../../domain/repositories/user-context.repository.port.js';
@@ -30,9 +29,7 @@ export interface ResolveUserContextQuery {
  * use case's own logic. It is left to propagate unwrapped, same as
  * before.
  */
-export class ResolveUserContextUseCase
-  implements UseCase<ResolveUserContextQuery, UserContext>
-{
+export class ResolveUserContextUseCase {
   constructor(
     private readonly userContext: UserContextPort,
     private readonly cache: UserContextCachePort,

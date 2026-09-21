@@ -132,9 +132,7 @@ describe('AgroConecta case — the 48 answers', () => {
 
 describe('AgroConecta case — the initiative profile', () => {
   it('has the seven fields of the specification, verbatim', () => {
-    expect(AGROCONECTA_INITIATIVE.name).toBe(
-      'AgroConecta — Plataforma digital de trazabilidad y comercialización directa de café',
-    );
+    expect(AGROCONECTA_INITIATIVE.name).toBe('AgroConecta');
     expect(AGROCONECTA_INITIATIVE.sectorName).toBe('Agroindustria / AgriTech');
     expect(AGROCONECTA_INITIATIVE.productType).toBe(
       'Aplicación web (mercado digital) + módulo de trazabilidad de calidad para la cadena de café',

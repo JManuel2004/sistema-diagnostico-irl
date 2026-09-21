@@ -61,7 +61,7 @@ apps/api/
 │   ├── shared/
 │   │   ├── kernel/              # generic primitives, no bounded context
 │   │   │   ├── domain/          # Uuid, LikertValue, IrlLevel, DomainError hierarchy, Result<T, E>
-│   │   │   ├── application/     # use-case interface, unwrapResult()
+│   │   │   ├── application/     # unwrapResult()
 │   │   │   ├── events/          # domain events that cross module boundaries
 │   │   │   ├── infrastructure/
 │   │   │   │   ├── database/    # data-source.ts, migrations/, seeds/

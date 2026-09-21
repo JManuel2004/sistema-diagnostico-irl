@@ -6,15 +6,6 @@ import type { UserContext } from '../../domain/entities/user-context.vo.js';
 import type { UserContextPort } from '../../domain/repositories/user-context.repository.port.js';
 
 /**
- * Slug registered for this product in the `Product` table of INNLAB Core.
- *
- * It is the value that travels in `?product=` on several `/internal/*`
- * endpoints. PENDING: the Core team must register it on their side —
- * until they confirm, calls that carry it will not resolve.
- */
-export const PRODUCT_SLUG = 'DIAG-IRL';
-
-/**
  * EXTERNAL INTEGRATION — not domain logic of this system (SEMI).
  *
  * This class is the single point of HTTP contact with INNLAB Core, a
@@ -49,37 +40,6 @@ export class InnlabCoreHttpClient implements UserContextPort {
       `/internal/users/${encodeURIComponent(userId)}/context`,
       'user context',
       userId,
-    );
-  }
-
-  /**
-   * Features enabled for this user in this product.
-   *
-   * Not consumed yet — kept because it is part of the same contract and
-   * the next story that needs per-product gating starts here.
-   */
-  async getUserFeatures(userId: string): Promise<{ features: string[] }> {
-    return this.get<{ features: string[] }>(
-      `/internal/users/${encodeURIComponent(userId)}/features?product=${PRODUCT_SLUG}`,
-      'user features',
-      userId,
-    );
-  }
-
-  /**
-   * Whether a company has access to this product. This — not the JWT — is
-   * where per-product authorization is decided in the INNLAB ecosystem
-   * (see the note in `cognito-jwt.strategy.ts`).
-   */
-  async getProductAccess(companyId: string): Promise<{
-    hasAccess: boolean;
-    plan: string | null;
-    expiresAt: string | null;
-  }> {
-    return this.get(
-      `/internal/companies/${encodeURIComponent(companyId)}/product-access?product=${PRODUCT_SLUG}`,
-      'acceso a producto',
-      companyId,
     );
   }
 

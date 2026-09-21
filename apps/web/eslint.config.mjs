@@ -27,9 +27,7 @@ export default [
     ignores: [
       'dist/**',
       'coverage/**',
-      'playwright-report/**',
       'vitest.config.js',
-      'playwright.config.ts',
       'postcss.config.js',
       'tailwind.config.ts',
     ],

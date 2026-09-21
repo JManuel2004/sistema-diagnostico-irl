@@ -56,6 +56,5 @@ import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module
     },
   ],
   controllers: [RoadmapController],
-  exports: [GenerateScalingRoadmapUseCase, DEPENDENCY_GRAPH_REPOSITORY],
 })
 export class RoadmapModule {}

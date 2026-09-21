@@ -25,10 +25,10 @@ Ejecuta el cuestionario IRL (48 afirmaciones, escala Likert 1..5) y calcula el p
 "Hacer el diagnóstico": responder las 48 afirmaciones, obtener el nivel de madurez de la iniciativa en cada dimensión y saber dónde está el cuello de botella y qué desequilibrios hay entre dimensiones.
 
 ## Conceptos de dominio
-`Diagnosis` (agregado + `DiagnosisState`), `AnswerSheet` / `Answer`, `Statement`, `MaturityProfile` con `DimensionResult`, `ImbalanceResult` y `CompletenessReport`; servicios de dominio `IrlCalculatorService` e `ImbalanceEvaluatorService`.
+`Diagnosis` (agregado + `DiagnosisState`), `AnswerSheet` / `Answer`, `Statement`, `MaturityProfile` con `DimensionResult` e `ImbalanceResult`; servicios de dominio `IrlCalculatorService` e `ImbalanceEvaluatorService`.
 
 ## Qué expone hacia afuera
-- **Puertos:** `DIAGNOSIS_REPOSITORY`, `ANSWER_SHEET_REPOSITORY`, `MATURITY_PROFILE_REPOSITORY`; casos de uso `GetMaturityProfileUseCase` y `ComputeMaturityProfileUseCase`.
+- **Puertos:** `DIAGNOSIS_REPOSITORY`; caso de uso `GetMaturityProfileUseCase`.
 - **Eventos que publica:** `DeepAnalysisRequestedEvent` (`shared/kernel/events/`).
 - **Eventos que escucha:** `ConsentRecordedEvent` e `InitiativeRegisteredEvent` (publicados por `initiative/`).
 - **HTTP:** `diagnostics` (`POST`, inicia un diagnóstico del usuario autenticado), `diagnostics/:id` (`GET`, uno propio), `diagnostics/:id/finalize-initial`, `diagnostics/:id/deep-analysis`, `diagnostics/:id/questionnaire`, `diagnostics/:id/profile`, `catalog/questionnaire`. El detalle de contratos está en Swagger (`/api/docs`). El perfil nombra cada dimensión con `name` y `shortName` del catálogo (`GetMaturityProfileUseCase`); el frontend no mantiene nombres propios.
