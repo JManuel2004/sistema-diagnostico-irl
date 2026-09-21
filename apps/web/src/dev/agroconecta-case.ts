@@ -21,7 +21,7 @@ export interface AgroconectaAnswer {
 }
 
 export const AGROCONECTA_INITIATIVE = {
-  name: 'AgroConecta — Plataforma digital de trazabilidad y comercialización directa de café',
+  name: 'AgroConecta',
   sectorName: 'Agroindustria / AgriTech',
   productType:
     'Aplicación web (mercado digital) + módulo de trazabilidad de calidad para la cadena de café',
