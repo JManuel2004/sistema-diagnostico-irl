@@ -175,3 +175,67 @@
     align-self: stretch;
   }
 }
+
+@layer components {
+  /*
+   * Radar emphasis. The chart is drawn once and is NOT re-rendered when the
+   * cursor moves over a point or a card: the wrapper's `data-highlighted`
+   * (a space-separated list of dimension codes) drives the emphasis from here.
+   * Re-rendering recharts on every hover restarts its animation and remounts
+   * the points, which closes the tooltip under the cursor.
+   */
+  .radar-emphasis [data-dim] {
+    transition: opacity 150ms ease;
+  }
+
+  .radar-emphasis:not([data-highlighted='']) [data-dim] {
+    opacity: 0.4;
+  }
+
+.radar-emphasis[data-highlighted~="TRL"] [data-dim="TRL"],
+.radar-emphasis[data-highlighted~="CRL"] [data-dim="CRL"],
+.radar-emphasis[data-highlighted~="BRL"] [data-dim="BRL"],
+.radar-emphasis[data-highlighted~="IPRL"] [data-dim="IPRL"],
+.radar-emphasis[data-highlighted~="TmRL"] [data-dim="TmRL"],
+.radar-emphasis[data-highlighted~="FRL"] [data-dim="FRL"] {
+    opacity: 1;
+  }
+
+  .radar-emphasis .radar-ring {
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+
+.radar-emphasis[data-highlighted~="TRL"] [data-dim="TRL"] .radar-ring,
+.radar-emphasis[data-highlighted~="CRL"] [data-dim="CRL"] .radar-ring,
+.radar-emphasis[data-highlighted~="BRL"] [data-dim="BRL"] .radar-ring,
+.radar-emphasis[data-highlighted~="IPRL"] [data-dim="IPRL"] .radar-ring,
+.radar-emphasis[data-highlighted~="TmRL"] [data-dim="TmRL"] .radar-ring,
+.radar-emphasis[data-highlighted~="FRL"] [data-dim="FRL"] .radar-ring {
+    opacity: 1;
+  }
+
+  .radar-emphasis .radar-dot {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 150ms ease;
+  }
+
+.radar-emphasis[data-highlighted~="TRL"] [data-dim="TRL"] .radar-dot,
+.radar-emphasis[data-highlighted~="CRL"] [data-dim="CRL"] .radar-dot,
+.radar-emphasis[data-highlighted~="BRL"] [data-dim="BRL"] .radar-dot,
+.radar-emphasis[data-highlighted~="IPRL"] [data-dim="IPRL"] .radar-dot,
+.radar-emphasis[data-highlighted~="TmRL"] [data-dim="TmRL"] .radar-dot,
+.radar-emphasis[data-highlighted~="FRL"] [data-dim="FRL"] .radar-dot {
+    transform: scale(1.5);
+  }
+
+.radar-emphasis[data-highlighted~="TRL"] [data-dim="TRL"] .radar-label-name,
+.radar-emphasis[data-highlighted~="CRL"] [data-dim="CRL"] .radar-label-name,
+.radar-emphasis[data-highlighted~="BRL"] [data-dim="BRL"] .radar-label-name,
+.radar-emphasis[data-highlighted~="IPRL"] [data-dim="IPRL"] .radar-label-name,
+.radar-emphasis[data-highlighted~="TmRL"] [data-dim="TmRL"] .radar-label-name,
+.radar-emphasis[data-highlighted~="FRL"] [data-dim="FRL"] .radar-label-name {
+    font-weight: 800;
+  }
+}

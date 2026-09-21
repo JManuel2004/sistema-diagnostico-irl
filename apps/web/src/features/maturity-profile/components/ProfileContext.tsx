@@ -1,6 +1,8 @@
 import type { JSX } from 'react';
+import { Gauge, Layers, Route } from 'lucide-react';
 import type { DimensionResult } from '@innlab/contracts';
 import { Card, CardContent } from '@/shared/ui/card';
+import { DimensionChip } from '@/shared/ui/dimension-chip';
 
 /**
  * Contexto para quien nunca ha oído hablar de IRL: qué es un nivel, qué es
@@ -15,26 +17,45 @@ interface Props {
 }
 
 export function ProfileContext({ dimensionResults }: Props): JSX.Element {
-  const names = dimensionResults.map((r) => r.shortName);
   return (
-    <Card className="bg-surface-emphasis">
-      <CardContent className="p-5 md:p-6">
-        <h2 className="text-foreground text-base font-semibold">Cómo leer estos resultados</h2>
-        <div className="text-muted-foreground mt-2 grid gap-3 text-sm leading-relaxed md:grid-cols-3">
-          <p>
-            <span className="text-foreground font-medium">Qué es el IRL.</span> El marco IRL
-            (Innovation Readiness Level) mide qué tan preparada está una iniciativa para seguir
-            avanzando: cuánto ha logrado y cuánto le falta.
-          </p>
-          <p>
-            <span className="text-foreground font-medium">Qué es una dimensión.</span> Es un área
-            que se evalúa por separado. Son seis: {names.join(', ')}.
-          </p>
-          <p>
-            <span className="text-foreground font-medium">Qué es un nivel.</span> Cada dimensión
-            recibe un nivel de 1 (muy inicial) a 9 (muy avanzado). El radar dibuja los seis: entre
-            más lejos del centro está un punto, más avanzada es esa dimensión.
-          </p>
+    <Card className="border-azul-icesi/20 bg-surface-emphasis">
+      <CardContent className="p-6 md:p-8">
+        <h2 className="text-foreground text-xl font-bold">Cómo leer estos resultados</h2>
+        <div className="mt-5 grid gap-6 md:grid-cols-3">
+          <div className="flex gap-4">
+            <span className="bg-azul-icesi/15 text-azul-icesi flex size-11 shrink-0 items-center justify-center rounded-full">
+              <Route className="size-6" aria-hidden="true" />
+            </span>
+            <p className="text-muted-foreground text-base leading-relaxed">
+              <span className="text-foreground block font-semibold">Qué es el IRL</span>
+              El marco IRL (Innovation Readiness Level) mide qué tan preparada está una iniciativa
+              para seguir avanzando: cuánto ha logrado y cuánto le falta.
+            </p>
+          </div>
+          <div className="flex gap-4">
+            <span className="bg-azul-icesi/15 text-azul-icesi flex size-11 shrink-0 items-center justify-center rounded-full">
+              <Layers className="size-6" aria-hidden="true" />
+            </span>
+            <div className="text-muted-foreground text-base leading-relaxed">
+              <span className="text-foreground block font-semibold">Qué es una dimensión</span>
+              Es un área que se evalúa por separado. Son seis:
+              <span className="mt-2 flex flex-wrap gap-2">
+                {dimensionResults.map((r) => (
+                  <DimensionChip key={r.dimensionCode} code={r.dimensionCode} name={r.shortName} />
+                ))}
+              </span>
+            </div>
+          </div>
+          <div className="flex gap-4">
+            <span className="bg-azul-icesi/15 text-azul-icesi flex size-11 shrink-0 items-center justify-center rounded-full">
+              <Gauge className="size-6" aria-hidden="true" />
+            </span>
+            <p className="text-muted-foreground text-base leading-relaxed">
+              <span className="text-foreground block font-semibold">Qué es un nivel</span>
+              Cada dimensión recibe un nivel de 1 (muy inicial) a 9 (muy avanzado). El radar dibuja
+              los seis: entre más lejos del centro está un punto, más avanzada es esa dimensión.
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>

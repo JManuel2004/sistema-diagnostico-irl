@@ -82,7 +82,10 @@ describe('MaturityProfileSummary — bottleneck card (RF-08)', () => {
           bottleneck={{ dimensions: ['CRL', 'BRL', 'FRL'], level: 3 }}
         />,
       );
-      expect(screen.getByText('Cliente, Negocio, Financiación')).toBeInTheDocument();
+      // One chip per tied dimension, each with its own name.
+      for (const name of ['Cliente', 'Negocio', 'Financiación']) {
+        expect(screen.getByText(name)).toBeInTheDocument();
+      }
     });
 
     it('does not show a name list inside the bottleneck card when there is only one dimension', () => {
@@ -163,7 +166,8 @@ describe('Strength card', () => {
       />,
     );
     const card = screen.getByRole('group', { name: /Fortaleza clara/i });
-    expect(within(card).getByText(/Tecnología.*Cliente|Cliente.*Tecnología/i)).toBeInTheDocument();
+    expect(within(card).getByText('Tecnología')).toBeInTheDocument();
+    expect(within(card).getByText('Cliente')).toBeInTheDocument();
   });
 });
 
@@ -192,7 +196,7 @@ describe('Asymmetry card', () => {
     expect(within(card).getByText(/0 niveles/i)).toBeInTheDocument();
   });
 
-  it('shows "Perfil balanceado" text for acceptable asymmetry', () => {
+  it('says the profile advances evenly for acceptable asymmetry', () => {
     render(
       <MaturityProfileSummary
         dimensionResults={UNIFORM}
@@ -200,10 +204,10 @@ describe('Asymmetry card', () => {
       />,
     );
     const card = screen.getByRole('group', { name: /Asimetría/i });
-    expect(within(card).getByText(/Perfil balanceado/i)).toBeInTheDocument();
+    expect(within(card).getByText(/avanza de forma pareja/i)).toBeInTheDocument();
   });
 
-  it('shows "Asimetría crítica" text for extreme spread', () => {
+  it('says the gap is very large for a critical asymmetry', () => {
     render(
       <MaturityProfileSummary
         dimensionResults={EXTREME}
@@ -211,10 +215,10 @@ describe('Asymmetry card', () => {
       />,
     );
     const card = screen.getByRole('group', { name: /Asimetría/i });
-    expect(within(card).getByText(/Asimetría crítica/i)).toBeInTheDocument();
+    expect(within(card).getByText(/diferencia muy grande/i)).toBeInTheDocument();
   });
 
-  it('shows "Asimetría moderada" text for moderate spread', () => {
+  it('says the gap is important for a moderate asymmetry', () => {
     render(
       <MaturityProfileSummary
         dimensionResults={PAYFLOW}
@@ -222,7 +226,7 @@ describe('Asymmetry card', () => {
       />,
     );
     const card = screen.getByRole('group', { name: /Asimetría/i });
-    expect(within(card).getByText(/Asimetría moderada/i)).toBeInTheDocument();
+    expect(within(card).getByText(/diferencia importante/i)).toBeInTheDocument();
   });
 
   it('uses singular "nivel" when asymmetry is 1', () => {
@@ -280,14 +284,15 @@ describe('Gap card (server-provided gaps)', () => {
       <MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />,
     );
     const card = screen.getByRole('group', { name: /Brecha/i });
-    expect(within(card).getByText(/Propiedad Intelectual/i)).toBeInTheDocument();
+    expect(within(card).getByText('Propiedad Intelectual')).toBeInTheDocument();
   });
 
-  it('renders the threshold supplied by the server in the eyebrow', () => {
+  it('states the threshold supplied by the server in words, without symbols', () => {
     render(
       <MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />,
     );
-    expect(screen.getByText('Brecha (nivel ≤ 3)')).toBeInTheDocument();
+    expect(screen.getByText('4 dimensiones en nivel 3 o menos')).toBeInTheDocument();
+    expect(screen.queryByText(/≤/)).not.toBeInTheDocument();
   });
 });
 

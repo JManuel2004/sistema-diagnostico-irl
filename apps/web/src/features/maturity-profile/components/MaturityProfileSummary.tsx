@@ -10,6 +10,7 @@ import type {
 } from '@innlab/contracts';
 import { Card, CardContent } from '@/shared/ui/card';
 import { GlossaryTerm } from '@/shared/ui/glossary-term';
+import { DimensionChip } from '@/shared/ui/dimension-chip';
 import type { GlossaryKey } from '@/shared/lib/glossary';
 
 /**
@@ -20,29 +21,33 @@ import type { GlossaryKey } from '@/shared/lib/glossary';
 
 export const TONE_STYLES: Record<
   ImbalanceClassification | 'neutral',
-  { ring: string; iconColor: string; chipBg: string; chipText: string }
+  { ring: string; iconColor: string; iconBg: string; chipBg: string; chipText: string }
 > = {
   critical: {
-    ring: 'border-critical/30 bg-critical/5',
+    ring: 'border-critical/40 bg-critical-bg',
     iconColor: 'text-critical',
+    iconBg: 'bg-critical/15',
     chipBg: 'bg-critical/10',
     chipText: 'text-critical',
   },
   moderate: {
-    ring: 'border-moderate/30 bg-moderate/5',
+    ring: 'border-moderate/40 bg-moderate-bg',
     iconColor: 'text-moderate',
+    iconBg: 'bg-moderate/15',
     chipBg: 'bg-moderate/10',
     chipText: 'text-moderate',
   },
   acceptable: {
-    ring: 'border-acceptable/30 bg-acceptable/5',
+    ring: 'border-acceptable/40 bg-acceptable-bg',
     iconColor: 'text-acceptable',
+    iconBg: 'bg-acceptable/15',
     chipBg: 'bg-acceptable/10',
     chipText: 'text-acceptable',
   },
   neutral: {
-    ring: 'border-border bg-background',
+    ring: 'border-azul-icesi/30 bg-info-bg',
     iconColor: 'text-azul-icesi',
+    iconBg: 'bg-azul-icesi/15',
     chipBg: 'bg-azul-icesi/10',
     chipText: 'text-azul-icesi',
   },
@@ -94,18 +99,20 @@ export function SummaryCard({
     : {};
   return (
     <Card role="group" aria-label={`${eyebrow}: ${title}`} className={styles.ring} {...highlight}>
-      <CardContent className="flex gap-3 p-4">
-        <Icon
-          className={`mt-0.5 h-5 w-5 shrink-0 ${styles.iconColor}`}
-          strokeLinejoin="miter"
-          aria-hidden
-        />
+      <CardContent className="flex gap-4 p-5">
+        <span
+          className={`flex size-11 shrink-0 items-center justify-center rounded-full ${styles.iconBg}`}
+        >
+          <Icon className={`size-6 ${styles.iconColor}`} strokeLinejoin="miter" aria-hidden />
+        </span>
         <div className="min-w-0 flex-1">
-          <p className="text-overline text-muted-foreground">
+          <p className={`${styles.iconColor} text-sm font-bold`}>
             {glossary ? <GlossaryTerm term={glossary}>{eyebrow}</GlossaryTerm> : eyebrow}
           </p>
-          <p className="text-foreground mt-1 text-sm font-semibold leading-snug">{title}</p>
-          {children !== undefined && <div className="mt-2 text-xs leading-relaxed">{children}</div>}
+          <p className="text-foreground mt-1 text-base font-semibold leading-snug">{title}</p>
+          {children !== undefined && (
+            <div className="text-muted-foreground mt-2 text-sm leading-relaxed">{children}</div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -121,6 +128,12 @@ interface MaturityProfileSummaryProps {
   /** Resalta en el radar las dimensiones de la tarjeta bajo el cursor. */
   onHighlight?: HighlightHandler;
 }
+
+const ASYMMETRY_TEXT: Record<ImbalanceClassification, string> = {
+  critical: 'Es una diferencia muy grande: conviene atender primero lo más rezagado.',
+  moderate: 'Es una diferencia importante: vale la pena equilibrar.',
+  acceptable: 'Tu iniciativa avanza de forma pareja.',
+};
 
 /**
  * Las señales del perfil: fortaleza, cuello de botella, asimetría y brechas.
@@ -139,6 +152,13 @@ export function MaturityProfileSummary({
   // from a map kept in the frontend.
   const shortNameByCode = new Map(dimensionResults.map((r) => [r.dimensionCode, r.shortName]));
   const dimensionLabel = (code: DimensionCode): string => shortNameByCode.get(code) ?? code;
+  const chips = (codes: readonly DimensionCode[]): JSX.Element => (
+    <span className="flex flex-wrap gap-2">
+      {codes.map((code) => (
+        <DimensionChip key={code} code={code} name={dimensionLabel(code)} />
+      ))}
+    </span>
+  );
   const strengthNames = (strength?.dimensions ?? []).map(dimensionLabel);
   const gapNames = (gaps?.dimensions ?? []).map(dimensionLabel);
   const gapThreshold = gaps?.threshold;
@@ -152,10 +172,12 @@ export function MaturityProfileSummary({
   }
 
   return (
-    <aside aria-label="Señales del perfil" className="flex flex-col gap-3">
-      <header className="mb-1">
-        <p className="text-overline text-azul-icesi">Señales que vemos</p>
-        <h2 className="text-foreground mt-1 text-xl font-bold leading-tight">en tu radar</h2>
+    <aside aria-label="Señales del perfil" className="flex flex-col gap-4">
+      <header>
+        <p className="text-azul-icesi text-sm font-bold">Lectura visual</p>
+        <h2 className="text-foreground mt-1 text-2xl font-bold leading-tight">
+          Señales que vemos en tu radar
+        </h2>
       </header>
 
       {strength !== undefined && (
@@ -168,12 +190,14 @@ export function MaturityProfileSummary({
           onHighlight={onHighlight}
           title={
             strengthNames.length === 1
-              ? `${strengthNames[0]} — nivel ${strength.level}`
-              : `${strengthNames.length} dimensiones empatadas en nivel ${strength.level}`
+              ? `${strengthNames[0]} — nivel ${String(strength.level)}`
+              : `${String(strengthNames.length)} dimensiones empatadas en nivel ${String(strength.level)}`
           }
         >
-          {strengthNames.length > 1 && (
-            <p className="text-muted-foreground">{strengthNames.join(', ')}</p>
+          {strengthNames.length > 1 ? (
+            chips(strength.dimensions)
+          ) : (
+            <p>Es lo más sólido de tu iniciativa hoy.</p>
           )}
         </SummaryCard>
       )}
@@ -188,14 +212,14 @@ export function MaturityProfileSummary({
           onHighlight={onHighlight}
           title={
             bottleneck.dimensions.length === 1
-              ? `${dimensionLabel(bottleneck.dimensions[0])} — nivel ${bottleneck.level}`
-              : `${bottleneck.dimensions.length} dimensiones empatadas en nivel ${bottleneck.level}`
+              ? `${dimensionLabel(bottleneck.dimensions[0])} — nivel ${String(bottleneck.level)}`
+              : `${String(bottleneck.dimensions.length)} dimensiones empatadas en nivel ${String(bottleneck.level)}`
           }
         >
-          {bottleneck.dimensions.length > 1 && (
-            <p className="text-muted-foreground">
-              {bottleneck.dimensions.map(dimensionLabel).join(', ')}
-            </p>
+          {bottleneck.dimensions.length > 1 ? (
+            chips(bottleneck.dimensions)
+          ) : (
+            <p>Es lo que más frena el avance del conjunto.</p>
           )}
         </SummaryCard>
       )}
@@ -209,14 +233,9 @@ export function MaturityProfileSummary({
           // The asymmetry is between the highest and the lowest dimension.
           codes={[...(strength?.dimensions ?? []), ...(bottleneck?.dimensions ?? [])]}
           onHighlight={onHighlight}
-          title={`${asymmetry.difference} ${asymmetry.difference === 1 ? 'nivel' : 'niveles'} entre la dimensión más alta y la más baja`}
+          title={`${String(asymmetry.difference)} ${asymmetry.difference === 1 ? 'nivel' : 'niveles'} entre la dimensión más alta y la más baja`}
         >
-          <p className="text-muted-foreground">
-            {asymmetry.classification === 'critical' && 'Asimetría crítica — atención prioritaria.'}
-            {asymmetry.classification === 'moderate' &&
-              'Asimetría moderada — vale la pena equilibrar.'}
-            {asymmetry.classification === 'acceptable' && 'Perfil balanceado dentro del rango KTH.'}
-          </p>
+          <p>{ASYMMETRY_TEXT[asymmetry.classification]}</p>
         </SummaryCard>
       )}
 
@@ -224,13 +243,13 @@ export function MaturityProfileSummary({
         <SummaryCard
           icon={TrendingDown}
           tone="critical"
-          eyebrow={`Brecha (nivel ≤ ${gapThreshold})`}
+          eyebrow="Brecha"
           glossary="gap"
           codes={gaps?.dimensions ?? []}
           onHighlight={onHighlight}
-          title={`${gapNames.length} ${gapNames.length === 1 ? 'dimensión requiere' : 'dimensiones requieren'} atención`}
+          title={`${String(gapNames.length)} ${gapNames.length === 1 ? 'dimensión en nivel' : 'dimensiones en nivel'} ${String(gapThreshold)} o menos`}
         >
-          <p className="text-muted-foreground">{gapNames.join(', ')}</p>
+          {chips(gaps?.dimensions ?? [])}
         </SummaryCard>
       )}
     </aside>

@@ -122,8 +122,9 @@ describe('buildImbalancedVertices', () => {
 describe('MaturityRadarChart', () => {
   it('renders the accessible container with the correct role and label', () => {
     render(<MaturityRadarChart dimensionResults={ALL_SIX} />);
+    // A group and not an image: an image role would hide the focusable points.
     expect(
-      screen.getByRole('img', { name: 'Perfil IRL — gráfico radar' }),
+      screen.getByRole('group', { name: 'Perfil IRL — gráfico radar' }),
     ).toBeInTheDocument();
   });
 
