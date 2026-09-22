@@ -79,9 +79,7 @@ function trace(over: Partial<LayerTraceResponse> = {}): LayerTraceResponse {
         effect: 'Consultoría pasa del puesto 2 al puesto 1',
       },
     ],
-    discardedExceptions: [
-      { code: 'E-02', order: 2, reason: 'La condición no se cumple' },
-    ],
+    discardedExceptions: [{ code: 'E-02', order: 2, reason: 'La condición no se cumple' }],
     rankingAfterExceptions: [],
     adjustedByException: false,
     incompleteCharacterization: [],
@@ -92,9 +90,7 @@ function trace(over: Partial<LayerTraceResponse> = {}): LayerTraceResponse {
 }
 
 async function openPanel(t: LayerTraceResponse = trace()) {
-  render(
-    <LayerTracePanel trace={t} isLoading={false} onOpen={vi.fn()} dimensionNames={NAMES} />,
-  );
+  render(<LayerTracePanel trace={t} isLoading={false} onOpen={vi.fn()} dimensionNames={NAMES} />);
   await userEvent.click(screen.getByRole('button'));
   return document.getElementById('trace-layers')!;
 }
@@ -117,14 +113,31 @@ describe('LayerTracePanel', () => {
     expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'true');
   });
 
+  // La respuesta va primero: quien no quiera el detalle lee una sola frase.
+  it('abre con el veredicto: qué servicio quedó primero y por qué', async () => {
+    const panel = await openPanel();
+
+    expect(panel.textContent).toContain(
+      'Consultoría fue la primera en el cálculo y, además, el centro la fija como primera opción.',
+    );
+  });
+
+  it('cuando la recomendación sale de un ajuste, el veredicto lo dice', async () => {
+    const panel = await openPanel(trace({ adjustedByException: true }));
+
+    expect(panel.textContent).toContain(
+      'Consultoría es la recomendación porque el centro la eligió por encima del resultado del cálculo.',
+    );
+  });
+
   it('cuenta el cálculo en tres pasos', async () => {
     await openPanel();
 
     const titulos = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
     expect(titulos).toHaveLength(3);
-    expect(titulos[0]).toContain('Paso 1: Descartamos lo que no aplica');
-    expect(titulos[1]).toContain('Paso 2: Ordenamos los servicios según tu perfil');
-    expect(titulos[2]).toContain('Paso 3: Revisamos si hace falta un ajuste');
+    expect(titulos[0]).toContain('Paso 1: Lo que no aplica');
+    expect(titulos[1]).toContain('Paso 2: El orden según tu perfil');
+    expect(titulos[2]).toContain('Paso 3: Ajuste del centro');
   });
 
   describe('paso 1 — lo que se descartó', () => {
@@ -143,20 +156,41 @@ describe('LayerTracePanel', () => {
   });
 
   describe('paso 2 — el orden', () => {
-    it('explica los aportes en palabras y con los nombres de las dimensiones, sin códigos', async () => {
+    it('resume los aportes en etiquetas, con los nombres de las dimensiones y sin códigos', async () => {
       const panel = await openPanel();
 
-      expect(panel.textContent).toContain(
-        'Es un servicio de apoyo para Propiedad Intelectual, lo que más frena tu avance.',
-      );
+      expect(panel.textContent).toContain('Cuello de botella: Propiedad Intelectual');
+      expect(panel.textContent).toContain('1 brecha');
+      expect(panel.textContent).toContain('1 desequilibrio');
+      expect(panel.textContent).toContain('Encaja con tu etapa');
+      expect(panel.textContent).not.toMatch(/\b(TRL|BRL|IPRL|FRL)\b/);
+      // The ordinal labels are internal, in English: never shown as they come.
+      expect(panel.textContent).not.toMatch(/primary|secondary|marginal|not_applicable/);
+    });
+
+    // Una cuenta que no se puede abrir no explica nada: la etiqueta dice cuántas
+    // y, en su detalle, cuáles. El texto viaja también para quien no tiene puntero.
+    it('dice cuáles son las brechas y los desequilibrios que resume', async () => {
+      const panel = await openPanel();
+
       expect(panel.textContent).toContain('Ayuda a cerrar las brechas en Negocio.');
       expect(panel.textContent).toContain(
         'Ayuda con el desequilibrio entre Tecnología y Propiedad Intelectual.',
       );
-      expect(panel.textContent).toContain('Encaja con la etapa de tu iniciativa.');
-      expect(panel.textContent).not.toMatch(/\b(TRL|BRL|IPRL|FRL)\b/);
-      // The ordinal labels are internal, in English: never shown as they come.
-      expect(panel.textContent).not.toMatch(/primary|secondary|marginal|not_applicable/);
+      expect(panel.textContent).toContain(
+        'Es un servicio de apoyo para Propiedad Intelectual, lo que más frena tu avance.',
+      );
+    });
+
+    it('muestra ese detalle al pasar el cursor por la etiqueta', async () => {
+      const user = userEvent.setup();
+      await openPanel();
+
+      await user.hover(screen.getByRole('button', { name: /1 brecha/ }));
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        'Ayuda a cerrar las brechas en Negocio.',
+      );
     });
 
     it('no expone los puntajes de la calibración', async () => {
@@ -235,7 +269,9 @@ describe('LayerTracePanel', () => {
       const mismo = [{ position: 1, idService: 3, name: 'Consultoría', score: 5 }];
       const panel = await openPanel({
         ...t,
-        appliedExceptions: [{ ...t.appliedExceptions[0], rankingBefore: mismo, rankingAfter: mismo }],
+        appliedExceptions: [
+          { ...t.appliedExceptions[0], rankingBefore: mismo, rankingAfter: mismo },
+        ],
       });
 
       expect(panel.textContent).toContain('Ya estaba en el lugar 1.');
