@@ -92,7 +92,6 @@ export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props)
   return (
     <>
       <PageHeader
-        overline="Paso 2 de 3"
         title="Consentimiento para el tratamiento de datos"
         description="Antes de guardar la información de tu iniciativa y tus respuestas necesitamos tu autorización, conforme a la Ley 1581 de 2012."
       />
@@ -119,7 +118,9 @@ export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props)
               }}
               className="mt-0.5 size-4 shrink-0 cursor-pointer"
             />
-            <span className="text-foreground text-sm leading-relaxed">{CONSENT_CHECKBOX_LABEL}</span>
+            <span className="text-foreground text-sm leading-relaxed">
+              {CONSENT_CHECKBOX_LABEL}
+            </span>
           </label>
         )}
 

@@ -75,7 +75,6 @@ export function InitiativeStep({
   return (
     <>
       <PageHeader
-        overline="Paso 1 de 3"
         title="Cuéntanos de tu iniciativa"
         description="Estos datos contextualizan tus resultados y ayudan a INNLAB a recomendarte el servicio adecuado. Todos los campos son obligatorios."
       />

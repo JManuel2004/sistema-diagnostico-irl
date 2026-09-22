@@ -66,7 +66,6 @@ export function SummaryStep({ diagnosticId }: Props): JSX.Element {
   return (
     <>
       <PageHeader
-        overline="Resumen"
         title="Revisa lo que vamos a procesar"
         description="Esta es tu iniciativa y tus 48 respuestas con la justificación de cada una. Al procesar el diagnóstico se envían y se calcula tu perfil de madurez; si quieres cambiar algo, vuelve al paso correspondiente."
       />

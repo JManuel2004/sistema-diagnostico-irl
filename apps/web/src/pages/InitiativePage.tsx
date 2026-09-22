@@ -44,7 +44,7 @@ export default function InitiativePage(): JSX.Element {
   const failed = sectors.isError || stages.isError || initiative.isError;
 
   return (
-    <PageShell width="reading" showAttribution showNavigation headerActions={<LogoutButton />}>
+    <PageShell width="standard" showAttribution showNavigation headerActions={<LogoutButton />}>
       <PageHeader
         overline="Tu iniciativa"
         title="Corrige la información de tu iniciativa"

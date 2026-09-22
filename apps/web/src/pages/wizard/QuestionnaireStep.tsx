@@ -41,7 +41,6 @@ export function QuestionnaireStep({ diagnosticId }: Props): JSX.Element {
   return (
     <>
       <PageHeader
-        overline="Paso 3 de 3 · Cuestionario IRL"
         title="Cuestionario IRL"
         description="Responde 8 afirmaciones por dimensión con la escala Likert de 1 a 5 y explica en cada una por qué elegiste ese nivel. Sé lo más objetivo posible; la honestidad en las respuestas garantiza un diagnóstico más preciso y útil."
       />
@@ -74,20 +73,22 @@ export function QuestionnaireStep({ diagnosticId }: Props): JSX.Element {
           </Alert>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
           <Link
             to={wizardPath(diagnosticId, 'consentimiento')}
             className={buttonVariants({ variant: 'ghost' })}
           >
             Atrás
           </Link>
-          <div className="flex items-center gap-4">
-            <p className="text-muted-foreground text-xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <p className="text-muted-foreground text-sm">
               {isComplete
                 ? 'Todas las afirmaciones completas — listo para revisar.'
                 : `Faltan respuestas o justificaciones en ${String(incompleteDimensions.length)} dimensión(es).`}
             </p>
-            <Button onClick={handleAdvance}>Revisar resumen</Button>
+            <Button size="lg" className="w-full sm:w-auto" onClick={handleAdvance}>
+              Revisar resumen
+            </Button>
           </div>
         </div>
       </div>

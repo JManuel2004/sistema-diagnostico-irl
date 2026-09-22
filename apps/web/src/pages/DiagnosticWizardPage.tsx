@@ -96,7 +96,7 @@ export default function DiagnosticWizardPage(): JSX.Element {
 
     return (
       <PageShell
-        width={paso === 'cuestionario' || paso === 'resumen' ? 'standard' : 'reading'}
+        width={paso === 'consentimiento' ? 'reading' : 'standard'}
         showAttribution
         headerActions={<LogoutButton />}
       >
