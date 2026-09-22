@@ -47,9 +47,13 @@ describe('palette', () => {
         import: 'default',
         eager: true,
       },
-    ) as Record<string, string>;
+    );
 
+    // Vite doesn't type the glob's eagerly-imported values as `string`: `?raw` +
+    // `import: 'default'` guarantees it at runtime, but that's not reflected in
+    // `import.meta.glob`'s typing, so it's narrowed explicitly instead of trusted.
     const offenders = Object.entries(sources)
+      .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
       .filter(([, text]) => text.includes('var(--color-'))
       .map(([path]) => path);
 

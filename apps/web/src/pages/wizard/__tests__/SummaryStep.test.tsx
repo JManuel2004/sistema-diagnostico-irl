@@ -57,7 +57,7 @@ function renderStep(): ReturnType<typeof render> {
 function fill(count = 48): void {
   useQuestionnaireDraftStore.getState().initialize(DIAG_ID);
   for (let id = 1; id <= count; id += 1) {
-    useQuestionnaireDraftStore.getState().setAnswer(String(id), ((id % 5) + 1) as 1 | 2 | 3 | 4 | 5);
+    useQuestionnaireDraftStore.getState().setAnswer(String(id), ((id % 5) + 1));
     useQuestionnaireDraftStore.getState().setJustification(String(id), `Porque sí ${String(id)}`);
   }
 }

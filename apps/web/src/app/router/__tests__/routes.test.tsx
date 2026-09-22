@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
+import type * as SessionModule from '@/shared/auth/session';
 import { AppRoutes } from '../routes';
 
 // The pages are not under test here, only where each route leads and who can open it.
@@ -13,7 +14,7 @@ vi.mock('@pages/InitiativePage', () => ({ default: () => <p>INICIATIVA_PAGE</p> 
 
 const session = vi.hoisted(() => ({ active: true, redirectToSso: vi.fn() }));
 vi.mock('@/shared/auth/session', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/auth/session')>()),
+  ...(await importOriginal<typeof SessionModule>()),
   hasStoredSession: () => session.active,
   redirectToSso: session.redirectToSso,
 }));

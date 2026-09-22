@@ -154,24 +154,32 @@ export function ImbalanceInsights({
               const Icon = visual.icon;
               const level = levels.get(code) ?? 0;
               const description = descriptions?.[code];
+              // Built as a spread, like `PairCard` and `MaturityProfileSummary`: the
+              // `<article>` is a static block that only becomes a tab stop when there
+              // is something to highlight, not an interactive element in itself.
+              const highlight = onHighlight
+                ? {
+                    tabIndex: 0,
+                    onMouseEnter: () => {
+                      onHighlight([code]);
+                    },
+                    onMouseLeave: () => {
+                      onHighlight([]);
+                    },
+                    onFocus: () => {
+                      onHighlight([code]);
+                    },
+                    onBlur: () => {
+                      onHighlight([]);
+                    },
+                  }
+                : {};
               return (
                 <li key={code}>
                   <article
                     aria-label={`${label(code)} está en estado crítico`}
-                    tabIndex={onHighlight ? 0 : undefined}
-                    onMouseEnter={() => {
-                      onHighlight?.([code]);
-                    }}
-                    onMouseLeave={() => {
-                      onHighlight?.([]);
-                    }}
-                    onFocus={() => {
-                      onHighlight?.([code]);
-                    }}
-                    onBlur={() => {
-                      onHighlight?.([]);
-                    }}
                     className="border-border border-t-critical bg-card flex flex-col gap-4 border border-t-[3px] p-5 md:p-7"
+                    {...highlight}
                   >
                     <div className="flex flex-wrap items-start gap-4">
                       <span

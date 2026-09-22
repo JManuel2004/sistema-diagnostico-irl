@@ -8,6 +8,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { createTestQueryClient } from '@/test/render-with-client';
 import { DIMENSION_CODES, questionnaireFixture } from '@/test/fixtures/questionnaire';
 import { useQuestionnaireDraftStore } from '@features/questionnaire';
+import type * as QuestionnaireModule from '@features/questionnaire';
 import { QuestionnaireStep } from '../QuestionnaireStep';
 
 const DIAG_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
@@ -15,7 +16,7 @@ const ADVANCE = 'Revisar resumen';
 
 // The view of the 48 statements is not under test here; the step's own rules are.
 vi.mock('@features/questionnaire', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@features/questionnaire')>()),
+  ...(await importOriginal<typeof QuestionnaireModule>()),
   QuestionnaireView: () => null,
 }));
 

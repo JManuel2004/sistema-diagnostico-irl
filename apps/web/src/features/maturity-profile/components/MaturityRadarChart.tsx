@@ -193,7 +193,7 @@ const RadarCanvas = memo(function RadarCanvas({
   return (
     <ResponsiveContainer width="100%" aspect={1} maxHeight={560}>
       <RadarChart
-        data={points as RadarPoint[]}
+        data={points}
         outerRadius="92%"
         margin={{ top: 64, right: 96, bottom: 56, left: 96 }}
       >
@@ -204,12 +204,12 @@ const RadarCanvas = memo(function RadarCanvas({
 
         <PolarAngleAxis
           dataKey="dimension"
-          tick={(props) => (
+          tick={({ payload, x, y, textAnchor }) => (
             <AxisLabel
-              payload={props.payload as AxisLabelProps['payload']}
-              x={props.x}
-              y={props.y}
-              textAnchor={props.textAnchor}
+              payload={payload}
+              x={x}
+              y={y}
+              textAnchor={textAnchor}
               pointsByCode={pointsByCode}
               descriptions={descriptions}
               onHover={onHover}

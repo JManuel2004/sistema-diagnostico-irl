@@ -35,7 +35,7 @@ describe('RoadmapPhaseList', () => {
   it('muestra de qué nivel a qué nivel va cada dimensión, en palabras y en una barra', () => {
     render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
 
-    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('article') as HTMLElement;
+    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('article')!;
     expect(negocio).toHaveTextContent('De nivel 3 a nivel 4');
     expect(
       within(negocio).getByRole('img', { name: 'Nivel 3 de 9, con meta en el nivel 4' }),
@@ -47,7 +47,7 @@ describe('RoadmapPhaseList', () => {
 
     const pi = screen
       .getByRole('heading', { name: 'Propiedad Intelectual' })
-      .closest('article') as HTMLElement;
+      .closest('article')!;
     expect(within(pi).getByText(/Al llegar a su meta, Financiación podrá avanzar/)).toBeInTheDocument();
   });
 
@@ -56,7 +56,7 @@ describe('RoadmapPhaseList', () => {
 
     const financiacion = screen
       .getByRole('heading', { name: 'Financiación' })
-      .closest('article') as HTMLElement;
+      .closest('article')!;
     expect(within(financiacion).queryByText(/podrá avanzar|podrán avanzar/)).toBeNull();
   });
 
@@ -65,7 +65,7 @@ describe('RoadmapPhaseList', () => {
   it('dice por qué una dimensión está en el plan: por debajo de su mínimo', () => {
     render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
 
-    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('article') as HTMLElement;
+    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('article')!;
     expect(negocio).toHaveTextContent('debería llegar al menos al nivel 4');
     expect(negocio).toHaveTextContent('La meta es el nivel que se espera de ella: 4');
   });
@@ -91,7 +91,7 @@ describe('RoadmapPhaseList', () => {
     };
     render(<RoadmapPhaseList roadmap={roadmap} />);
 
-    const equipo = screen.getByRole('heading', { name: 'Equipo' }).closest('article') as HTMLElement;
+    const equipo = screen.getByRole('heading', { name: 'Equipo' }).closest('article')!;
     expect(equipo).toHaveTextContent(
       'Ya cumple lo que se espera, pero Negocio y Financiación necesitan que suba para poder avanzar.',
     );
@@ -153,7 +153,7 @@ describe('RoadmapExplanationPanel', () => {
   async function opened(roadmap = AGROCONECTA) {
     render(<RoadmapExplanationPanel roadmap={roadmap} />);
     await userEvent.click(screen.getByRole('button', { name: /Cómo se armó este plan/ }));
-    return document.getElementById('roadmap-explanation') as HTMLElement;
+    return document.getElementById('roadmap-explanation')!;
   }
 
   it('explica la lógica en tres pasos con títulos claros', async () => {

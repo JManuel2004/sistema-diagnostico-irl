@@ -276,7 +276,7 @@ describe('the switch is a build-time variable (Oleada 8)', () => {
     const { QuestionnaireAutofill: Lazy } = await import('../dev-autofill');
     const { Suspense } = await import('react');
 
-    await act(async () => {
+    act(() => {
       render(<Suspense fallback={null}>{Lazy && <Lazy dimensions={catalog()} />}</Suspense>);
     });
 
