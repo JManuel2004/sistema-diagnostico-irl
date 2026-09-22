@@ -45,9 +45,8 @@ There is **no refresh token**. A session is kept alive by passive polling (`useS
 ```
 features/auth/
 ├── components/
-│   ├── CurrentUserBadge.tsx        # name, email and company in the header
-│   ├── UserContextGate.tsx         # withholds actions that need an identity
-│   └── LogoutButton.tsx            # ends the session, here and at Core
+│   ├── UserMenu.tsx                # avatar → dropdown with name, email and logout
+│   └── UserContextGate.tsx         # withholds actions that need an identity
 ├── hooks/
 │   ├── useSsoExchange.ts           # drives /auth/callback
 │   ├── useSessionLiveness.ts       # re-checks the session on tab focus
@@ -79,13 +78,17 @@ it. If Core cannot be reached, the gate says the service is temporarily
 unavailable and offers a manual retry instead of leaving the action armed and
 failing later.
 
+`UserMenu` is the header's only account affordance: an avatar (initial of the
+resolved name, falling back to the email's) that opens a dropdown with name,
+email and "Cerrar sesión" — the Google-account-menu pattern, rather than
+spelling the profile out permanently in the header.
+
 ### Public surface
 
 ```ts
-export { CurrentUserBadge } from './components/CurrentUserBadge';
+export { UserMenu } from './components/UserMenu';
 export { UserContextGate } from './components/UserContextGate';
 export { useCurrentUser } from './hooks/useCurrentUser';
-export { LogoutButton } from './components/LogoutButton';
 export { useLogout } from './hooks/useLogout';
 export { useSessionLiveness } from './hooks/useSessionLiveness';
 export { useSsoExchange } from './hooks/useSsoExchange';
