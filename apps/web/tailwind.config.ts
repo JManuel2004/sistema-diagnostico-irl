@@ -86,11 +86,18 @@ const config: Config = {
 
         dimension: PALETTE.dimension,
       },
+      // Esquinas rectas en todo, como innlab.org. `rounded-full` sigue
+      // disponible para círculos (escala Likert, pasos, puntos).
       borderRadius: {
-        sm: '4px',
-        md: '8px',
-        lg: '12px',
-        xl: '16px',
+        none: '0',
+        DEFAULT: '0',
+        sm: '0',
+        md: '0',
+        control: '0',
+        lg: '0',
+        xl: '0',
+        '2xl': '0',
+        '3xl': '0',
       },
       fontFamily: {
         sans: [
@@ -107,11 +114,13 @@ const config: Config = {
       },
       fontSize: {
         // Custom display sizes per DESIGN.md typography scale.
-        display: ['3rem', { lineHeight: '1.1', letterSpacing: '-0.02em', fontWeight: '700' }],
-        // DESIGN.md h1 (36px): the page title. Named so no page writes the
-        // pixel value by hand.
-        h1: ['2.25rem', { lineHeight: '1.2', letterSpacing: '-0.015em', fontWeight: '700' }],
-        overline: ['0.6875rem', { lineHeight: '1.3', letterSpacing: '0.08em', fontWeight: '600' }],
+        display: ['3.5rem', { lineHeight: '1.05', letterSpacing: '-0.03em', fontWeight: '800' }],
+        // One heading scale (h1 40 / h2 28 / h3 20), named so no page writes
+        // the pixel value by hand.
+        h1: ['2.5rem', { lineHeight: '1.15', letterSpacing: '-0.02em', fontWeight: '700' }],
+        h2: ['1.75rem', { lineHeight: '1.25', letterSpacing: '-0.015em', fontWeight: '700' }],
+        h3: ['1.25rem', { lineHeight: '1.35', fontWeight: '600' }],
+        overline: ['0.75rem', { lineHeight: '1.3', letterSpacing: '0.06em', fontWeight: '700' }],
       },
       letterSpacing: {
         tightest: '-0.02em',

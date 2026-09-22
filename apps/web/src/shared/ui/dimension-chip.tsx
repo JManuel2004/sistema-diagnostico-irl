@@ -20,8 +20,8 @@ export function DimensionChip({ code, name, className }: DimensionChipProps): JS
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold',
-        visual.tint,
+        'inline-flex items-center gap-1.5 px-2.5 py-1 text-sm font-semibold',
+        visual.chip,
         visual.textInk,
         className,
       )}

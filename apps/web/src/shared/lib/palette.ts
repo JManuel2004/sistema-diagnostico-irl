@@ -24,11 +24,13 @@ export const PALETTE = {
   'gris-1': '#88898C',
   'gris-2': '#CECFD4',
 
-  // Semánticos, ligados a las clasificaciones de desequilibrio (RF-10).
-  critical: { DEFAULT: '#A53221', bg: '#FBEDEA', foreground: '#FFFFFF' },
-  moderate: { DEFAULT: '#8C3811', bg: '#FBEDE5', foreground: '#FFFFFF' },
-  acceptable: { DEFAULT: '#1F633D', bg: '#E5F2EB', foreground: '#FFFFFF' },
-  info: { DEFAULT: '#5454E9', bg: '#EFEFFB' },
+  // Semánticos, ligados a las clasificaciones de desequilibrio (RF-10). Su
+  // fondo es blanco: el estado se lee en el texto, el icono y el borde, no en
+  // un relleno de color (regla de color de innlab.org).
+  critical: { DEFAULT: '#C0392B', bg: '#FFFFFF', foreground: '#FFFFFF' },
+  moderate: { DEFAULT: '#B45309', bg: '#FFFFFF', foreground: '#FFFFFF' },
+  acceptable: { DEFAULT: '#1B7A48', bg: '#FFFFFF', foreground: '#FFFFFF' },
+  info: { DEFAULT: '#5454E9', bg: '#FFFFFF' },
 
   dimension: {
     trl: '#5454E9',
@@ -39,10 +41,10 @@ export const PALETTE = {
     frl: '#E4EB60',
 
     'trl-ink': '#3737BD',
-    'crl-ink': '#6037D1',
+    'crl-ink': '#7C4FEA',
     'brl-ink': '#1F8550',
     'iprl-ink': '#3D3D8C',
-    'tmrl-ink': '#B84F2A',
+    'tmrl-ink': '#C2512A',
     'frl-ink': '#8C7818',
   },
 } as const;

@@ -36,8 +36,10 @@ export interface DimensionVisualMeta {
   readonly border: string;
   /** Borde inferior del color de la dimensión en una pestaña activa (clase literal para Tailwind). */
   readonly tabActive: string;
-  /** Fondo suave del color de la dimensión, para cabeceras y chips. */
+  /** Fondo de cabeceras y chips: neutro para todas; el color de la dimensión va en su icono, su texto y sus barras. */
   readonly tint: string;
+  /** Fondo suave del chip de la dimensión: su color al 10 %. */
+  readonly chip: string;
   /** Fondo intermedio (tramo por recorrer en una barra de nivel). */
   readonly soft: string;
   /** Icono de la dimensión. */
@@ -62,7 +64,8 @@ const DIMENSION_VISUAL: Record<DimensionCode, DimensionVisualMeta> = {
     textInk: 'text-dimension-trl-ink',
     border: 'border-dimension-trl',
     tabActive: 'data-[state=active]:border-dimension-trl',
-    tint: 'bg-dimension-trl/10',
+    tint: 'bg-surface-muted',
+    chip: 'bg-dimension-trl/10',
     soft: 'bg-dimension-trl/35',
     icon: Cpu,
     fill: PALETTE.dimension.trl,
@@ -73,7 +76,8 @@ const DIMENSION_VISUAL: Record<DimensionCode, DimensionVisualMeta> = {
     textInk: 'text-dimension-crl-ink',
     border: 'border-dimension-crl',
     tabActive: 'data-[state=active]:border-dimension-crl',
-    tint: 'bg-dimension-crl/10',
+    tint: 'bg-surface-muted',
+    chip: 'bg-dimension-crl/10',
     soft: 'bg-dimension-crl/35',
     icon: Users,
     fill: PALETTE.dimension.crl,
@@ -84,7 +88,8 @@ const DIMENSION_VISUAL: Record<DimensionCode, DimensionVisualMeta> = {
     textInk: 'text-dimension-brl-ink',
     border: 'border-dimension-brl',
     tabActive: 'data-[state=active]:border-dimension-brl',
-    tint: 'bg-dimension-brl/10',
+    tint: 'bg-surface-muted',
+    chip: 'bg-dimension-brl/10',
     soft: 'bg-dimension-brl/35',
     icon: Briefcase,
     fill: PALETTE.dimension.brl,
@@ -95,7 +100,8 @@ const DIMENSION_VISUAL: Record<DimensionCode, DimensionVisualMeta> = {
     textInk: 'text-dimension-iprl-ink',
     border: 'border-dimension-iprl',
     tabActive: 'data-[state=active]:border-dimension-iprl',
-    tint: 'bg-dimension-iprl/10',
+    tint: 'bg-surface-muted',
+    chip: 'bg-dimension-iprl/10',
     soft: 'bg-dimension-iprl/35',
     icon: ShieldCheck,
     fill: PALETTE.dimension.iprl,
@@ -106,7 +112,8 @@ const DIMENSION_VISUAL: Record<DimensionCode, DimensionVisualMeta> = {
     textInk: 'text-dimension-tmrl-ink',
     border: 'border-dimension-tmrl',
     tabActive: 'data-[state=active]:border-dimension-tmrl',
-    tint: 'bg-dimension-tmrl/10',
+    tint: 'bg-surface-muted',
+    chip: 'bg-dimension-tmrl/10',
     soft: 'bg-dimension-tmrl/35',
     icon: UsersRound,
     fill: PALETTE.dimension.tmrl,
@@ -117,7 +124,8 @@ const DIMENSION_VISUAL: Record<DimensionCode, DimensionVisualMeta> = {
     textInk: 'text-dimension-frl-ink',
     border: 'border-dimension-frl',
     tabActive: 'data-[state=active]:border-dimension-frl',
-    tint: 'bg-dimension-frl/10',
+    tint: 'bg-surface-muted',
+    chip: 'bg-dimension-frl/10',
     soft: 'bg-dimension-frl/35',
     icon: CircleDollarSign,
     fill: PALETTE.dimension.frl,
