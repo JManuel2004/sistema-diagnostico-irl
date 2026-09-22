@@ -7,7 +7,8 @@ import type { JSX, ReactNode } from 'react';
  * tamaño de título ni su propio espaciado.
  */
 interface PageHeaderProps {
-  readonly overline: string;
+  /** Sobretítulo. En el asistente se omite: el indicador de pasos ya dice dónde se está. */
+  readonly overline?: string;
   readonly title: string;
   readonly description?: string;
   /** Debajo de la descripción: p. ej. `ResultMeta`. */
@@ -21,11 +22,11 @@ export function PageHeader({
   children,
 }: PageHeaderProps): JSX.Element {
   return (
-    <header className="mb-8">
-      <p className="text-azul-icesi text-sm font-bold">{overline}</p>
-      <h1 className="text-h1 text-foreground mt-2">{title}</h1>
+    <header className="mb-8 sm:mb-10">
+      {overline !== undefined && <p className="text-eyebrow mb-3">{overline}</p>}
+      <h1 className="text-h1 text-foreground max-sm:text-[1.875rem]">{title}</h1>
       {description !== undefined && (
-        <p className="text-muted-foreground mt-3 max-w-prose text-base leading-relaxed">
+        <p className="text-muted-foreground mt-3 max-w-prose text-base leading-relaxed sm:text-lg">
           {description}
         </p>
       )}
