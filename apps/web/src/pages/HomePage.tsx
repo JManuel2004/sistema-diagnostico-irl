@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 import type { DimensionCode } from '@innlab/contracts';
-import { CurrentUserBadge, LogoutButton, UserContextGate } from '@features/auth';
+import { UserContextGate, UserMenu } from '@features/auth';
 import { buttonVariants } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
 import { PageShell } from '@/shared/ui/page-shell';
@@ -68,12 +68,7 @@ export default function HomePage(): JSX.Element {
     <PageShell
       width="wide"
       showAttribution
-      headerActions={
-        <>
-          <CurrentUserBadge />
-          <LogoutButton />
-        </>
-      }
+      headerActions={<UserMenu />}
     >
       {/* Hero — institutional layout, left-aligned per brand manual */}
       <section className="grid gap-10 lg:grid-cols-12 lg:items-center">

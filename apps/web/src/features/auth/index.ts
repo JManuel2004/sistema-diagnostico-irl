@@ -1,6 +1,5 @@
-export { CurrentUserBadge } from './components/CurrentUserBadge';
+export { UserMenu } from './components/UserMenu';
 export { UserContextGate } from './components/UserContextGate';
-export { LogoutButton } from './components/LogoutButton';
 export { useLogout } from './hooks/useLogout';
 export { useSessionLiveness } from './hooks/useSessionLiveness';
 export { useSsoExchange } from './hooks/useSsoExchange';
