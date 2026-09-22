@@ -71,17 +71,18 @@ export function DimensionNav({ previousDimension, nextDimension, onNavigate }: P
   return (
     <nav
       aria-label="Navegación entre dimensiones"
-      className="border-border mt-8 flex items-center justify-between gap-3 border-t pt-6"
+      className="border-border mt-8 flex items-stretch justify-between gap-2 border-t pt-6 sm:items-center sm:gap-3"
     >
       {previousDimension ? (
         <Button
           variant="ghost"
+          className="h-auto min-h-12 whitespace-normal py-2 text-left"
           onClick={() => onNavigate(previousDimension.code)}
           aria-label={`Ir a la dimensión anterior: ${previousDimension.name}`}
         >
           <ArrowLeftIcon />
           <span>
-            <span className="text-muted-foreground text-xs">Anterior · </span>
+            <span className="text-muted-foreground font-medium">Anterior · </span>
             {previousDimension.name}
           </span>
         </Button>
@@ -92,11 +93,12 @@ export function DimensionNav({ previousDimension, nextDimension, onNavigate }: P
       {nextDimension ? (
         <Button
           variant="secondary"
+          className="h-auto min-h-12 whitespace-normal py-2 text-left"
           onClick={() => onNavigate(nextDimension.code)}
           aria-label={`Ir a la siguiente dimensión: ${nextDimension.name}`}
         >
           <span>
-            <span className="text-muted-foreground text-xs">Siguiente · </span>
+            <span className="text-muted-foreground font-medium">Siguiente · </span>
             {nextDimension.name}
           </span>
           <ArrowRightIcon />

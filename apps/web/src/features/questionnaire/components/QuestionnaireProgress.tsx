@@ -18,6 +18,9 @@ import {
  * (`sessionStorage`) y no llega al servidor hasta «Procesar diagnóstico»;
  * no promete guardado entre sesiones ni entre pestañas (backlog 10.2).
  *
+ * En móvil el aviso del borrador se oculta: su `title` sigue en el DOM y la
+ * barra y el porcentaje bastan en una fila de 358px.
+ *
  * El componente es presentacional: deriva todo del store y no muta
  * estado.
  */
@@ -40,28 +43,28 @@ export function QuestionnaireProgress({ dimensions }: Props) {
   return (
     <section
       aria-label="Progreso del cuestionario"
-      className="border-border bg-surface-muted mb-6 rounded-md border p-4"
+      className="border-border bg-background mb-6 border px-4 py-3 sm:px-5"
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-baseline gap-3">
-          <p className="text-overline text-azul-icesi">Progreso</p>
-          <p className="text-foreground text-sm font-medium">
-            {answered}
-            <span className="text-muted-foreground"> / {total} afirmaciones completas</span>
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <p className="text-foreground text-[0.9375rem] font-bold">
+          {answered}
+          <span className="text-muted-foreground font-medium">
+            {' '}
+            / {total} afirmaciones completas
+          </span>
+        </p>
 
         <div className="flex items-center gap-4">
-          <p className="text-muted-foreground text-xs tabular-nums" aria-live="polite">
+          <p className="text-muted-foreground text-sm tabular-nums" aria-live="polite">
             {pct}% completado
           </p>
           <span
-            className="text-muted-foreground inline-flex items-center gap-2 text-xs"
+            className="text-muted-foreground hidden items-center gap-2 text-sm sm:inline-flex"
             title="Tu borrador se conserva mientras no cierres esta pestaña. Se envía al procesar el diagnóstico."
           >
             <span
               aria-hidden="true"
-              className="bg-acceptable inline-block h-1.5 w-1.5 rounded-full"
+              className="bg-dimension-brl inline-block size-2 rounded-full"
             />
             Borrador guardado en esta pestaña
           </span>
@@ -74,10 +77,10 @@ export function QuestionnaireProgress({ dimensions }: Props) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={`${answered} de ${total} afirmaciones completas`}
-        className="bg-border/60 mt-3 h-1.5 w-full overflow-hidden rounded-full"
+        className="bg-border mt-2.5 h-1.5 w-full overflow-hidden rounded-full"
       >
         <div
-          className="bg-azul-icesi h-full rounded-full transition-[width] duration-300 ease-out"
+          className="bg-primary h-full rounded-full transition-[width] duration-300 ease-out"
           style={{ width: `${pct}%` }}
         />
       </div>

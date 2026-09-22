@@ -4,7 +4,11 @@ import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { cn } from '@/shared/lib/utils';
 import { LevelBar } from '@/shared/ui/level-bar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
-import { selectAnswers, selectJustifications, useQuestionnaireDraftStore } from '../store/questionnaire-draft.store';
+import {
+  selectAnswers,
+  selectJustifications,
+  useQuestionnaireDraftStore,
+} from '../store/questionnaire-draft.store';
 import { likertText } from '../lib/likert-options';
 
 /**
@@ -39,7 +43,7 @@ export function AnswersSummary({ dimensions }: Props): JSX.Element {
       <div className="overflow-x-auto">
         <TabsList
           aria-label="Dimensiones del resumen"
-          className="grid h-auto w-full min-w-max grid-cols-6 gap-1 p-1"
+          className="grid h-auto w-full min-w-max grid-cols-6 gap-1"
         >
           {dimensions.map((d) => {
             const visual = getDimensionVisual(d.code);
@@ -78,10 +82,16 @@ export function AnswersSummary({ dimensions }: Props): JSX.Element {
                 <caption className="sr-only">Respuestas de {d.name}</caption>
                 <thead>
                   <tr className="border-border border-b">
-                    <th scope="col" className={cn('w-[34%] px-4 py-3 text-sm font-bold', visual.textInk)}>
+                    <th
+                      scope="col"
+                      className={cn('w-[34%] px-4 py-3 text-sm font-bold', visual.textInk)}
+                    >
                       Afirmación
                     </th>
-                    <th scope="col" className={cn('w-[24%] px-4 py-3 text-sm font-bold', visual.textInk)}>
+                    <th
+                      scope="col"
+                      className={cn('w-[24%] px-4 py-3 text-sm font-bold', visual.textInk)}
+                    >
                       Puntaje seleccionado
                     </th>
                     <th scope="col" className={cn('px-4 py-3 text-sm font-bold', visual.textInk)}>

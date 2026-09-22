@@ -33,35 +33,33 @@ export function DimensionPanel({ dimension }: Props) {
     >
       {/* Sidebar — contexto de la dimensión */}
       <aside className="lg:sticky lg:top-24">
-        <div className="border-border bg-surface-muted/40 rounded-md border p-5">
-          <div className="flex items-start gap-3">
-            <span
-              aria-hidden="true"
-              className={`mt-1 h-10 w-1 shrink-0 rounded-full ${visual.bg}`}
-            />
-            <div className="flex-1">
-              <p className={`text-overline ${visual.textInk}`}>
-                Dimensión {dimension.sequence} de 6 · {dimension.code}
-              </p>
-              <h2
-                id={`dim-${dimension.code}-heading`}
-                className="text-foreground mt-1.5 text-xl font-bold leading-tight tracking-tight"
-              >
-                {dimension.name}
-              </h2>
-            </div>
-          </div>
+        <div className="bg-surface-muted rounded-2xl p-5 sm:p-6">
+          <span
+            aria-hidden="true"
+            className={`border-border bg-background ${visual.textInk} mb-4 flex size-12 items-center justify-center border`}
+          >
+            <visual.icon className="size-6" />
+          </span>
+          <p className={`text-overline ${visual.textInk}`}>
+            Dimensión {dimension.sequence} de 6 · {dimension.code}
+          </p>
+          <h2
+            id={`dim-${dimension.code}-heading`}
+            className="text-foreground mt-2 text-2xl font-bold leading-tight tracking-tight"
+          >
+            {dimension.name}
+          </h2>
 
-          <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
+          <p className="text-muted-foreground mt-3 text-[0.9375rem] leading-relaxed">
             {dimension.description}
           </p>
 
-          <div className="border-border/70 mt-5 border-t pt-4">
-            <p className="text-overline text-muted-foreground">Cómo responder</p>
-            <ul className="text-muted-foreground mt-2 space-y-1.5 text-xs leading-relaxed">
+          <div className="border-border mt-5 border-t pt-4">
+            <p className="text-foreground text-sm font-bold">Cómo responder</p>
+            <ul className="text-muted-foreground mt-2 space-y-1.5 text-sm leading-relaxed">
               <li>
                 Cada afirmación describe una práctica concreta de tu iniciativa{' '}
-                <span className="text-foreground/80">hoy</span>.
+                <span className="text-foreground font-semibold">hoy</span>.
               </li>
               <li>Indica qué tan de acuerdo estás con que describe la realidad actual.</li>
               <li>Es normal que los niveles más altos sean &quot;En desacuerdo&quot;.</li>
@@ -71,7 +69,7 @@ export function DimensionPanel({ dimension }: Props) {
       </aside>
 
       {/* Lista de afirmaciones */}
-      <ol className="space-y-4">
+      <ol className="space-y-4 sm:space-y-5">
         {dimension.statements.map((statement) => (
           <li key={statement.id}>
             <StatementCard statement={statement} />

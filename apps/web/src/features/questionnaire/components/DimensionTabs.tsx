@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import type { DimensionCode, QuestionnaireStructure } from '@innlab/contracts';
+import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { DimensionPanel } from './DimensionPanel';
 import { DimensionNav } from './DimensionNav';
 import { QuestionnaireProgress } from './QuestionnaireProgress';
@@ -104,10 +105,10 @@ export function DimensionTabs({ dimensions }: Props) {
     >
       <QuestionnaireProgress dimensions={dimensions} />
 
-      <div ref={panelTopRef} className="overflow-x-auto">
+      <div ref={panelTopRef} className="scroll-mt-36">
         <TabsList
           aria-label="Dimensiones IRL"
-          className="grid h-auto w-full min-w-max grid-cols-6 gap-1 p-1"
+          className="grid h-auto w-full grid-cols-3 gap-2 border-0 bg-transparent p-0 sm:grid-cols-6"
         >
           {dimensions.map((d) => {
             const answered = d.statements.filter((st) =>
@@ -115,18 +116,24 @@ export function DimensionTabs({ dimensions }: Props) {
             ).length;
             const total = d.statements.length;
             const isComplete = answered === total && total > 0;
+            const visual = getDimensionVisual(d.code);
 
             return (
               <TabsTrigger
                 key={d.code}
                 value={d.code}
-                className="flex h-12 flex-col items-center justify-center gap-0.5 px-3 py-2"
+                className="border-border bg-background data-[state=active]:border-primary data-[state=active]:bg-surface-emphasis flex h-16 flex-col items-start justify-center gap-1 rounded-xl border px-3 py-2 data-[state=active]:border-[1.5px] data-[state=active]:shadow-none"
                 title={d.name}
               >
-                <span className="text-overline">{d.code}</span>
+                <span
+                  className={`${visual.textInk} flex items-center gap-1.5 text-[0.8125rem] font-extrabold tracking-normal`}
+                >
+                  <visual.icon className="size-4 shrink-0" aria-hidden="true" />
+                  {d.code}
+                </span>
                 <span
                   aria-hidden="true"
-                  className="text-muted-foreground inline-flex items-center gap-1 text-[0.6875rem] font-normal tracking-normal"
+                  className="text-muted-foreground inline-flex items-center gap-1 text-[0.8125rem] font-semibold tracking-normal"
                 >
                   {isComplete ? (
                     <span
@@ -139,7 +146,7 @@ export function DimensionTabs({ dimensions }: Props) {
                     </span>
                   ) : (
                     <span>
-                      {answered}/{total}
+                      {answered} de {total}
                     </span>
                   )}
                 </span>
