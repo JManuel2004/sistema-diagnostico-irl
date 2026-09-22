@@ -43,11 +43,11 @@ export function InitiativeSummary({ initiative, action }: Props): JSX.Element {
   ];
 
   return (
-    <Card className="overflow-hidden">
-      <div className="border-border bg-azul-wash flex flex-wrap items-start justify-between gap-4 border-b p-6">
+    <Card className="overflow-hidden rounded-2xl">
+      <div className="border-border flex flex-wrap items-start justify-between gap-4 border-b p-5 sm:p-8">
         <div>
-          <p className="text-azul-icesi text-sm font-bold">Tu iniciativa</p>
-          <h2 className="text-foreground mt-1 text-2xl font-bold leading-tight">
+          <p className="text-eyebrow">Tu iniciativa</p>
+          <h2 className="text-foreground mt-2 text-[1.625rem] font-bold leading-tight tracking-tight sm:text-[1.75rem]">
             {initiative.name}
           </h2>
           <p className="mt-3 flex flex-wrap gap-2">
@@ -56,10 +56,10 @@ export function InitiativeSummary({ initiative, action }: Props): JSX.Element {
         </div>
         {action}
       </div>
-      <dl className="grid gap-x-8 gap-y-6 p-6 sm:grid-cols-2">
+      <dl className="grid gap-x-8 gap-y-6 p-5 sm:grid-cols-2 sm:p-8">
         {rows.map(({ label, value, icon: Icon }) => (
           <div key={label} className="flex gap-3">
-            <span className="bg-azul-icesi/10 text-azul-icesi flex size-10 shrink-0 items-center justify-center rounded-md">
+            <span className="bg-azul-icesi text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full">
               <Icon className="size-5" aria-hidden="true" />
             </span>
             <div className="min-w-0">
