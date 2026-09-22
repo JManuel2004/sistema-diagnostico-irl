@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { MousePointerClick } from 'lucide-react';
+import { Layers, MousePointerClick } from 'lucide-react';
 import type { DimensionCode, MaturityProfileResponse } from '@innlab/contracts';
 import { Card, CardContent } from '@/shared/ui/card';
 import type { RadarHighlight } from '../hooks/useRadarHighlight';
@@ -34,18 +34,26 @@ export function ProfileOverview({
 }: Props): JSX.Element {
   return (
     <section aria-labelledby="radar-heading" className="flex flex-col gap-4">
-      <div>
-        <p className="text-azul-icesi text-sm font-bold">Perfil de madurez</p>
-        <h2 id="radar-heading" className="text-foreground mt-1 text-2xl font-bold leading-tight">
-          Tu radar IRL
-        </h2>
-        <p className="text-muted-foreground mt-2 flex items-center gap-2 text-base">
-          <MousePointerClick className="text-azul-icesi size-5 shrink-0" aria-hidden="true" />
-          Pasa el cursor por cada punta para ver qué mide esa dimensión.
-        </p>
+      <div className="flex gap-4 sm:gap-5">
+        <span
+          aria-hidden="true"
+          className="bg-azul-icesi text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full sm:size-12"
+        >
+          <Layers className="size-5 sm:size-6" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-eyebrow">Perfil de madurez</p>
+          <h2 id="radar-heading" className="text-h2 text-foreground mt-2 max-sm:text-[1.625rem]">
+            Tu radar IRL
+          </h2>
+          <p className="text-muted-foreground mt-2 flex items-center gap-2 text-base">
+            <MousePointerClick className="text-azul-icesi size-5 shrink-0" aria-hidden="true" />
+            Pasa el cursor por cada punta para ver qué mide esa dimensión.
+          </p>
+        </div>
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
-        <Card className="bg-surface-emphasis">
+        <Card className="bg-surface-muted rounded-2xl border-0">
           <CardContent className="flex h-full items-center p-4 md:p-6">
             <MaturityRadarChart
               dimensionResults={profile.dimensionResults}

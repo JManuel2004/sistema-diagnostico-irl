@@ -25,14 +25,10 @@ export function RoadmapExplanationPanel({ roadmap }: Props): JSX.Element {
   );
 
   return (
-    <DisclosurePanel
-      id="roadmap-explanation"
-      title="Cómo se armó este plan"
-      icon={Lightbulb}
-    >
+    <DisclosurePanel id="roadmap-explanation" title="Cómo se armó este plan" icon={Lightbulb}>
       <ol className="flex flex-col gap-6">
         <li className="flex gap-4">
-          <span className="bg-azul-icesi/15 text-azul-icesi flex size-10 shrink-0 items-center justify-center rounded-full">
+          <span className="bg-azul-icesi text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full">
             <ListChecks className="size-5" aria-hidden="true" />
           </span>
           <div>
@@ -45,11 +41,13 @@ export function RoadmapExplanationPanel({ roadmap }: Props): JSX.Element {
         </li>
 
         <li className="flex gap-4">
-          <span className="bg-azul-icesi/15 text-azul-icesi flex size-10 shrink-0 items-center justify-center rounded-full">
+          <span className="bg-azul-icesi text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full">
             <Flag className="size-5" aria-hidden="true" />
           </span>
           <div>
-            <h3 className="text-foreground text-lg font-bold">2. A qué nivel debe llegar cada una</h3>
+            <h3 className="text-foreground text-lg font-bold">
+              2. A qué nivel debe llegar cada una
+            </h3>
             <p className="text-muted-foreground mt-1 max-w-prose text-base leading-relaxed">
               La meta es el nivel que se espera de la dimensión o, si es mayor, el que le exige la
               dimensión que depende de ella.
@@ -58,7 +56,7 @@ export function RoadmapExplanationPanel({ roadmap }: Props): JSX.Element {
         </li>
 
         <li className="flex gap-4">
-          <span className="bg-azul-icesi/15 text-azul-icesi flex size-10 shrink-0 items-center justify-center rounded-full">
+          <span className="bg-azul-icesi text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full">
             <LockOpen className="size-5" aria-hidden="true" />
           </span>
           <div className="min-w-0">

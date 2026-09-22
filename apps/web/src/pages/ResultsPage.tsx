@@ -1,4 +1,5 @@
 import { useMemo, useState, type JSX } from 'react';
+import { Compass, Layers, Route, Scale, type LucideIcon } from 'lucide-react';
 import { Navigate, useParams } from 'react-router-dom';
 import { LogoutButton } from '@features/auth';
 import {
@@ -77,9 +78,9 @@ export default function ResultsPage(): JSX.Element {
   // from the questionnaire catalog; without it the explanations simply omit it.
   const descriptions = useMemo(
     () =>
-      Object.fromEntries((catalog.data?.dimensions ?? []).map((d) => [d.code, d.description])) as Partial<
-        Record<DimensionCode, string>
-      >,
+      Object.fromEntries(
+        (catalog.data?.dimensions ?? []).map((d) => [d.code, d.description]),
+      ) as Partial<Record<DimensionCode, string>>,
     [catalog.data],
   );
   const subject = initiative.data?.name;
@@ -131,15 +132,19 @@ export default function ResultsPage(): JSX.Element {
       )}
 
       {profile.data && (
-        <div className="mt-10 flex flex-col gap-14">
+        <div className="mt-10 flex flex-col gap-14 sm:mt-14 sm:gap-20">
+          {diagnostic.data && accepted && <ResultSectionNav />}
+
           <ProfileContext dimensionResults={profile.data.dimensionResults} />
 
-          <ProfileOverview
-            profile={profile.data}
-            highlight={highlight}
-            showImbalances={accepted}
-            descriptions={descriptions}
-          />
+          <div id="perfil" className="scroll-mt-40">
+            <ProfileOverview
+              profile={profile.data}
+              highlight={highlight}
+              showImbalances={accepted}
+              descriptions={descriptions}
+            />
+          </div>
 
           {diagnostic.isError && (
             <Alert tone="critical" title="No fue posible saber si aceptaste el análisis profundo">
@@ -184,6 +189,40 @@ export default function ResultsPage(): JSX.Element {
         </div>
       )}
     </PageShell>
+  );
+}
+
+/**
+ * Con el análisis profundo aceptado la página crece a cuatro bloques: una
+ * barra fija, bajo la cabecera, lleva a cada uno sin recorrer todo el scroll.
+ */
+const RESULT_SECTIONS: readonly { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '#perfil', label: 'Perfil', icon: Layers },
+  { href: '#desequilibrios', label: 'Desequilibrios y alertas', icon: Scale },
+  { href: '#roadmap', label: 'Roadmap', icon: Route },
+  { href: '#servicio', label: 'Servicio INNLAB', icon: Compass },
+];
+
+function ResultSectionNav(): JSX.Element {
+  return (
+    <nav
+      aria-label="Secciones del resultado"
+      className="border-border bg-background/95 supports-[backdrop-filter]:bg-background/90 sticky top-16 z-10 -mx-4 -mb-6 overflow-x-auto border-y px-4 shadow-[0_6px_16px_-10px_rgba(43,43,61,0.18)] backdrop-blur sm:-mx-8 sm:-mb-10 sm:px-8 md:top-[4.75rem]"
+    >
+      <ul className="flex min-w-max gap-6">
+        {RESULT_SECTIONS.map((section) => (
+          <li key={section.href}>
+            <a
+              href={section.href}
+              className="text-muted-foreground hover:text-foreground hover:border-primary flex h-12 items-center gap-2 border-b-2 border-transparent text-[0.9375rem] font-semibold"
+            >
+              <section.icon className="size-4 shrink-0" aria-hidden="true" />
+              {section.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 
@@ -251,11 +290,12 @@ function DeepAnalysis({
   );
 
   return (
-    <div className="flex flex-col gap-16">
-      <section aria-labelledby="deep-imbalances">
+    <div className="flex flex-col gap-16 sm:gap-24">
+      <section id="desequilibrios" aria-labelledby="deep-imbalances" className="scroll-mt-40">
         <SectionHeader
           id="deep-imbalances"
           overline="Análisis profundo"
+          icon={Scale}
           title="Desequilibrios y alertas"
           description={`Dónde ${who} avanza de forma despareja y qué dimensiones clave necesitan atención primero.`}
         />
@@ -268,10 +308,11 @@ function DeepAnalysis({
         />
       </section>
 
-      <section aria-labelledby="deep-roadmap">
+      <section id="roadmap" aria-labelledby="deep-roadmap" className="scroll-mt-40">
         <SectionHeader
           id="deep-roadmap"
-          overline="Análisis profundo"
+          overline="Roadmap de escalamiento"
+          icon={Route}
           title={`El plan de escalamiento de ${who}`}
           description="Las dimensiones que todavía tienen que avanzar, ordenadas según qué habilita qué: cada fase reúne lo que puede trabajarse a la vez y espera a que la anterior esté resuelta."
         >
@@ -296,10 +337,11 @@ function DeepAnalysis({
         )}
       </section>
 
-      <section aria-labelledby="deep-recommendation">
+      <section id="servicio" aria-labelledby="deep-recommendation" className="scroll-mt-40">
         <SectionHeader
           id="deep-recommendation"
-          overline="Análisis profundo"
+          overline="Portafolio INNLAB"
+          icon={Compass}
           title={`El servicio de INNLAB para ${who}`}
           description="A partir del perfil de madurez, el sistema identifica cuál de los servicios de INNLAB corresponde mejor al estado actual de la iniciativa."
         >

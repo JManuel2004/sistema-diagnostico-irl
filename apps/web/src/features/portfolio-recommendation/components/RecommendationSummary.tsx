@@ -25,7 +25,7 @@ export function RecommendationSummary({
   if (recommendation.resultType === 'NO_RECOMMENDATION') {
     return (
       <section aria-labelledby="sin-recommendation">
-        <Card className="bg-surface-emphasis">
+        <Card className="bg-surface-muted rounded-2xl border-0">
           <CardContent className="p-6">
             <p className="text-azul-icesi text-sm font-bold">Portafolio INNLAB</p>
             <h2
@@ -47,15 +47,15 @@ export function RecommendationSummary({
 
   return (
     <section aria-labelledby="service-recomendado">
-      <Card className="border-azul-icesi/40 bg-azul-wash border-2">
-        <CardContent className="p-6 md:p-8">
+      <Card className="border-border border-t-primary border-t-[3px]">
+        <CardContent className="p-6 md:p-9">
           <Badge tone="info">
             <Sparkles className="size-4" aria-hidden="true" />
             Recomendado para {subject}
           </Badge>
 
           <div className="mt-4 flex items-start gap-4">
-            <span className="bg-azul-icesi text-primary-foreground flex size-14 shrink-0 items-center justify-center rounded-md">
+            <span className="bg-azul-icesi text-primary-foreground flex size-14 shrink-0 items-center justify-center rounded-full">
               <Compass className="size-7" aria-hidden="true" />
             </span>
             <div>
@@ -76,13 +76,13 @@ export function RecommendationSummary({
           )}
 
           {recommendation.alternatives.length > 0 && (
-            <div className="border-azul-icesi/20 mt-6 border-t pt-5">
+            <div className="border-border mt-6 border-t pt-5">
               <h3 className="text-foreground text-lg font-bold">También podrían encajar</h3>
               <ul className="mt-3 flex flex-wrap gap-3">
                 {recommendation.alternatives.map((alt) => (
                   <li
                     key={alt.idService}
-                    className="border-border bg-background text-foreground flex items-center gap-2 rounded-md border px-4 py-2 text-base font-medium"
+                    className="border-border bg-background text-foreground flex items-center gap-2 rounded-lg border px-4 py-2.5 text-base font-semibold"
                   >
                     <span
                       className="bg-azul-icesi/15 text-azul-icesi inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold"

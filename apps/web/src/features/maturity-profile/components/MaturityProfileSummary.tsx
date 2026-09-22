@@ -24,31 +24,31 @@ export const TONE_STYLES: Record<
   { ring: string; iconColor: string; iconBg: string; chipBg: string; chipText: string }
 > = {
   critical: {
-    ring: 'border-critical/40 bg-critical-bg',
+    ring: 'border-border bg-card',
     iconColor: 'text-critical',
-    iconBg: 'bg-critical/15',
-    chipBg: 'bg-critical/10',
+    iconBg: 'border border-border bg-background',
+    chipBg: 'bg-surface-muted',
     chipText: 'text-critical',
   },
   moderate: {
-    ring: 'border-moderate/40 bg-moderate-bg',
+    ring: 'border-border bg-card',
     iconColor: 'text-moderate',
-    iconBg: 'bg-moderate/15',
-    chipBg: 'bg-moderate/10',
+    iconBg: 'border border-border bg-background',
+    chipBg: 'bg-surface-muted',
     chipText: 'text-moderate',
   },
   acceptable: {
-    ring: 'border-acceptable/40 bg-acceptable-bg',
+    ring: 'border-border bg-card',
     iconColor: 'text-acceptable',
-    iconBg: 'bg-acceptable/15',
-    chipBg: 'bg-acceptable/10',
+    iconBg: 'border border-border bg-background',
+    chipBg: 'bg-surface-muted',
     chipText: 'text-acceptable',
   },
   neutral: {
-    ring: 'border-azul-icesi/30 bg-info-bg',
+    ring: 'border-border bg-card',
     iconColor: 'text-azul-icesi',
-    iconBg: 'bg-azul-icesi/15',
-    chipBg: 'bg-azul-icesi/10',
+    iconBg: 'border border-border bg-background',
+    chipBg: 'bg-surface-muted',
     chipText: 'text-azul-icesi',
   },
 };
@@ -99,7 +99,7 @@ export function SummaryCard({
     : {};
   return (
     <Card role="group" aria-label={`${eyebrow}: ${title}`} className={styles.ring} {...highlight}>
-      <CardContent className="flex gap-4 p-5">
+      <CardContent className="flex gap-4 p-4 sm:p-5">
         <span
           className={`flex size-11 shrink-0 items-center justify-center rounded-full ${styles.iconBg}`}
         >
@@ -174,8 +174,8 @@ export function MaturityProfileSummary({
   return (
     <aside aria-label="Señales del perfil" className="flex flex-col gap-4">
       <header>
-        <p className="text-azul-icesi text-sm font-bold">Lectura visual</p>
-        <h2 className="text-foreground mt-1 text-2xl font-bold leading-tight">
+        <p className="text-eyebrow">Lectura visual</p>
+        <h2 className="text-foreground mt-2 text-[1.375rem] font-bold leading-tight tracking-tight">
           Señales que vemos en tu radar
         </h2>
       </header>

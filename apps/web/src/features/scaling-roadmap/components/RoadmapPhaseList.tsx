@@ -20,7 +20,7 @@ interface Props {
 export function RoadmapPhaseList({ roadmap }: Props): JSX.Element {
   if (roadmap.phases.length === 0) {
     return (
-      <Card className="bg-surface-emphasis">
+      <Card className="bg-surface-muted rounded-2xl border-0">
         <CardContent className="p-6">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="text-acceptable mt-0.5 size-5 shrink-0" aria-hidden="true" />
@@ -54,13 +54,12 @@ export function RoadmapPhaseList({ roadmap }: Props): JSX.Element {
       {roadmap.dimensionsWithoutIntervention.length > 0 && (
         <Card className="mt-2 border-dashed">
           <CardContent className="p-5">
-            <h2 className="text-foreground text-base font-semibold">Sin intervención en este plan</h2>
+            <h2 className="text-foreground text-base font-semibold">
+              Sin intervención en este plan
+            </h2>
             <p className="text-muted-foreground mt-1 text-base leading-relaxed">
-              {roadmap.dimensionsWithoutIntervention
-                .map((d) => d.shortName)
-                .join(', ')}{' '}
-              ya alcanzan el nivel esperado. Se consideraron al construir el roadmap y no requieren
-              acción.
+              {roadmap.dimensionsWithoutIntervention.map((d) => d.shortName).join(', ')} ya alcanzan
+              el nivel esperado. Se consideraron al construir el roadmap y no requieren acción.
             </p>
           </CardContent>
         </Card>

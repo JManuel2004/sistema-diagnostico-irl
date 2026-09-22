@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { CircleCheck, Siren, Target } from 'lucide-react';
+import { CircleCheck, OctagonAlert, Siren, Target, TriangleAlert } from 'lucide-react';
 import type {
   DimensionCode,
   ImbalanceClassification,
@@ -40,10 +40,7 @@ interface Props {
 
 const RANK: Record<ImbalanceClassification, number> = { critical: 0, moderate: 1, acceptable: 2 };
 
-function nextStep(
-  level: number,
-  target: PlanTarget | undefined,
-): string {
+function nextStep(level: number, target: PlanTarget | undefined): string {
   if (target === undefined) {
     return `Está en el nivel ${String(level)}, en la parte baja de la escala. Conviene atenderla antes que el resto.`;
   }
@@ -71,11 +68,14 @@ export function ImbalanceInsights({
     pairs.filter((p) => p.classification === c).length;
 
   return (
-    <div className="flex flex-col gap-14">
+    <div className="flex flex-col gap-14 sm:gap-20">
       <section aria-labelledby="imbalances-heading" className="flex flex-col gap-5">
         <header>
-          <p className="text-azul-icesi text-sm font-bold">Análisis de desequilibrios</p>
-          <h3 id="imbalances-heading" className="text-foreground mt-1 text-2xl font-bold">
+          <p className="text-eyebrow">Análisis de desequilibrios</p>
+          <h3
+            id="imbalances-heading"
+            className="text-foreground mt-2 text-[1.375rem] font-bold leading-tight tracking-tight sm:text-2xl"
+          >
             Qué tan parejo avanza {subject}
           </h3>
           <p className="text-muted-foreground mt-2 max-w-prose text-base leading-relaxed">
@@ -89,24 +89,30 @@ export function ImbalanceInsights({
           <p className="text-muted-foreground text-base">No hay pares para evaluar todavía.</p>
         ) : (
           <>
-            <p className="flex flex-wrap items-center gap-2" aria-label="Resumen de los pares">
+            <p
+              className="flex flex-wrap items-center gap-x-5 gap-y-2"
+              aria-label="Resumen de los pares"
+            >
               {count('critical') > 0 && (
                 <Badge tone="critical">
+                  <OctagonAlert className="size-4" aria-hidden="true" />
                   {count('critical')} {count('critical') === 1 ? 'crítico' : 'críticos'}
                 </Badge>
               )}
               {count('moderate') > 0 && (
                 <Badge tone="moderate">
+                  <TriangleAlert className="size-4" aria-hidden="true" />
                   {count('moderate')} {count('moderate') === 1 ? 'moderado' : 'moderados'}
                 </Badge>
               )}
               {count('acceptable') > 0 && (
                 <Badge tone="acceptable">
+                  <CircleCheck className="size-4" aria-hidden="true" />
                   {count('acceptable')} {count('acceptable') === 1 ? 'equilibrado' : 'equilibrados'}
                 </Badge>
               )}
             </p>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
               {pairs.map((pair) => (
                 <PairCard
                   key={`${pair.left}-${pair.right}`}
@@ -124,10 +130,13 @@ export function ImbalanceInsights({
 
       <section aria-labelledby="critical-heading" className="flex flex-col gap-5">
         <header>
-          <p className="text-critical text-sm font-bold">
+          <p className="text-eyebrow !text-critical [&_button]:uppercase">
             Alertas de dimensiones <GlossaryTerm term="criticalState">críticas</GlossaryTerm>
           </p>
-          <h3 id="critical-heading" className="text-foreground mt-1 text-2xl font-bold">
+          <h3
+            id="critical-heading"
+            className="text-foreground mt-2 text-[1.375rem] font-bold leading-tight tracking-tight sm:text-2xl"
+          >
             Qué atender primero en {subject}
           </h3>
           <p className="text-muted-foreground mt-2 max-w-prose text-base leading-relaxed">
@@ -162,15 +171,15 @@ export function ImbalanceInsights({
                     onBlur={() => {
                       onHighlight?.([]);
                     }}
-                    className="border-critical/50 bg-critical-bg flex flex-col gap-4 rounded-md border-2 p-5 md:p-6"
+                    className="border-border border-t-critical bg-card flex flex-col gap-4 border border-t-[3px] p-5 md:p-7"
                   >
                     <div className="flex flex-wrap items-start gap-4">
                       <span
-                        className={`${visual.tint} ${visual.textInk} flex size-12 shrink-0 items-center justify-center rounded-md`}
+                        className={`border-border bg-background ${visual.textInk} flex size-12 shrink-0 items-center justify-center border`}
                       >
                         <Icon className="size-6" aria-hidden="true" />
                       </span>
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-[11rem] flex-1">
                         <h4 className="text-foreground text-xl font-bold">{label(code)}</h4>
                         {description !== undefined && (
                           <p className="text-muted-foreground mt-1 text-base leading-relaxed">
@@ -179,21 +188,23 @@ export function ImbalanceInsights({
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <span className="bg-critical text-critical-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold">
+                        <span className="text-critical inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-[0.06em]">
                           <Siren className="size-4" aria-hidden="true" />
                           Prioridad máxima
                         </span>
-                        <span className="text-critical text-2xl font-extrabold">Nivel {level}</span>
+                        <span className="text-foreground text-2xl font-extrabold">
+                          Nivel {level}
+                        </span>
                       </div>
                     </div>
 
                     <LevelBar
                       level={level}
-                      fillClass="bg-critical"
+                      fillClass={visual.bg}
                       thresholdLevel={profile.gaps.threshold}
                     />
 
-                    <p className="border-critical/30 bg-background text-foreground flex items-start gap-3 rounded-md border p-3 text-base leading-relaxed">
+                    <p className="bg-surface-muted text-foreground flex items-start gap-3 p-3.5 text-base leading-relaxed">
                       <Target className="text-critical mt-0.5 size-5 shrink-0" aria-hidden="true" />
                       <span>
                         <span className="font-semibold">Siguiente paso: </span>
@@ -215,7 +226,7 @@ export function ImbalanceInsights({
                 Prioridad media
               </span>
             </h4>
-            <ul className="flex flex-col gap-3">
+            <ul className="border-border flex flex-col border-t">
               {otherGaps.map((code) => {
                 const visual = getDimensionVisual(code);
                 const Icon = visual.icon;
@@ -223,7 +234,7 @@ export function ImbalanceInsights({
                 return (
                   <li
                     key={code}
-                    className="border-border bg-card flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border p-4"
+                    className="border-border flex flex-wrap items-center gap-x-4 gap-y-2 border-b py-4"
                     onMouseEnter={() => {
                       onHighlight?.([code]);
                     }}
@@ -232,7 +243,7 @@ export function ImbalanceInsights({
                     }}
                   >
                     <span
-                      className={`${visual.tint} ${visual.textInk} flex size-10 shrink-0 items-center justify-center rounded-md`}
+                      className={`border-border bg-background ${visual.textInk} flex size-10 shrink-0 items-center justify-center border`}
                     >
                       <Icon className="size-5" aria-hidden="true" />
                     </span>

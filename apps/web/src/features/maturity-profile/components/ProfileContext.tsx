@@ -18,12 +18,14 @@ interface Props {
 
 export function ProfileContext({ dimensionResults }: Props): JSX.Element {
   return (
-    <Card className="border-azul-icesi/20 bg-surface-emphasis">
+    <Card className="bg-surface-muted rounded-2xl border-0">
       <CardContent className="p-6 md:p-8">
-        <h2 className="text-foreground text-xl font-bold">Cómo leer estos resultados</h2>
+        <h2 className="text-foreground text-xl font-bold tracking-tight">
+          Cómo leer estos resultados
+        </h2>
         <div className="mt-5 grid gap-6 md:grid-cols-3">
           <div className="flex gap-4">
-            <span className="bg-azul-icesi/15 text-azul-icesi flex size-11 shrink-0 items-center justify-center rounded-full">
+            <span className="bg-azul-icesi text-primary-foreground flex size-11 shrink-0 items-center justify-center rounded-full">
               <Route className="size-6" aria-hidden="true" />
             </span>
             <p className="text-muted-foreground text-base leading-relaxed">
@@ -33,7 +35,7 @@ export function ProfileContext({ dimensionResults }: Props): JSX.Element {
             </p>
           </div>
           <div className="flex gap-4">
-            <span className="bg-azul-icesi/15 text-azul-icesi flex size-11 shrink-0 items-center justify-center rounded-full">
+            <span className="bg-azul-icesi text-primary-foreground flex size-11 shrink-0 items-center justify-center rounded-full">
               <Layers className="size-6" aria-hidden="true" />
             </span>
             <div className="text-muted-foreground text-base leading-relaxed">
@@ -47,7 +49,7 @@ export function ProfileContext({ dimensionResults }: Props): JSX.Element {
             </div>
           </div>
           <div className="flex gap-4">
-            <span className="bg-azul-icesi/15 text-azul-icesi flex size-11 shrink-0 items-center justify-center rounded-full">
+            <span className="bg-azul-icesi text-primary-foreground flex size-11 shrink-0 items-center justify-center rounded-full">
               <Gauge className="size-6" aria-hidden="true" />
             </span>
             <p className="text-muted-foreground text-base leading-relaxed">

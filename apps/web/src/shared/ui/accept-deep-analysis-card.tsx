@@ -1,6 +1,15 @@
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarClock, Check, Info, Sparkles } from 'lucide-react';
+import {
+  CalendarClock,
+  Compass,
+  Info,
+  Route,
+  Scale,
+  Siren,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react';
 import { Badge } from './badge';
 import { Button, buttonVariants } from './button';
 import { Card, CardContent } from './card';
@@ -26,11 +35,17 @@ interface AcceptDeepAnalysisCardProps {
   readonly subject?: string;
 }
 
-const INCLUDES: readonly string[] = [
-  'Los desequilibrios entre seis pares de dimensiones que deberían avanzar juntas.',
-  'Alertas de las dimensiones clave que hoy más frenan tu avance.',
-  'Un plan de escalamiento por fases, en el orden en que conviene avanzar.',
-  'La recomendación del servicio de INNLAB que mejor encaja con tu iniciativa.',
+const INCLUDES: readonly { text: string; icon: LucideIcon }[] = [
+  {
+    text: 'Los desequilibrios entre seis pares de dimensiones que deberían avanzar juntas.',
+    icon: Scale,
+  },
+  { text: 'Alertas de las dimensiones clave que hoy más frenan tu avance.', icon: Siren },
+  { text: 'Un plan de escalamiento por fases, en el orden en que conviene avanzar.', icon: Route },
+  {
+    text: 'La recomendación del servicio de INNLAB que mejor encaja con tu iniciativa.',
+    icon: Compass,
+  },
 ];
 
 export function AcceptDeepAnalysisCard({
@@ -41,8 +56,11 @@ export function AcceptDeepAnalysisCard({
   return (
     <section aria-labelledby="deep-analysis-offer" className="flex flex-col gap-5">
       <header>
-        <p className="text-azul-icesi text-sm font-bold">Continúa cuando quieras</p>
-        <h2 id="deep-analysis-offer" className="text-foreground mt-1 text-3xl font-bold">
+        <p className="text-eyebrow">Siguiente paso · Continúa cuando quieras</p>
+        <h2
+          id="deep-analysis-offer"
+          className="text-h2 text-foreground mt-2 max-sm:text-[1.625rem]"
+        >
           ¿Quieres profundizar el diagnóstico de {subject}?
         </h2>
         <p className="text-muted-foreground mt-3 max-w-prose text-lg leading-relaxed">
@@ -52,8 +70,8 @@ export function AcceptDeepAnalysisCard({
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <Card className="border-azul-icesi bg-azul-wash border-2">
-          <CardContent className="flex flex-col gap-5 p-6 md:p-8">
+        <Card className="border-border border-t-primary border-t-[3px]">
+          <CardContent className="flex flex-col gap-6 p-6 md:p-10">
             <div>
               <Badge tone="info">
                 <Sparkles className="size-4" aria-hidden="true" />
@@ -66,31 +84,39 @@ export function AcceptDeepAnalysisCard({
 
             <ul className="flex flex-col gap-3">
               {INCLUDES.map((item) => (
-                <li key={item} className="text-foreground flex items-start gap-3 text-base">
-                  <span className="bg-acceptable text-acceptable-foreground mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full">
-                    <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
+                <li
+                  key={item.text}
+                  className="text-foreground flex items-center gap-3 text-base leading-normal"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="bg-azul-icesi text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full"
+                  >
+                    <item.icon className="size-4" />
                   </span>
-                  {item}
+                  {item.text}
                 </li>
               ))}
             </ul>
 
             <div>
-              <Button size="lg" onClick={onAccept}>
+              <Button size="lg" className="w-full sm:w-auto" onClick={onAccept}>
                 {failed ? 'Intentar de nuevo' : 'Solicitar análisis profundo'}
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-3xl">
           <CardContent className="flex h-full flex-col gap-4 p-6 md:p-8">
-            <span className="bg-surface-muted text-muted-foreground flex size-11 items-center justify-center rounded-md">
+            <span className="bg-surface-muted text-muted-foreground flex size-11 items-center justify-center rounded-xl">
               <CalendarClock className="size-6" aria-hidden="true" />
             </span>
             <div>
               <p className="text-muted-foreground text-sm font-bold">Por ahora no</p>
-              <h3 className="text-foreground mt-1 text-xl font-bold">Guardar y continuar después</h3>
+              <h3 className="text-foreground mt-1 text-xl font-bold">
+                Guardar y continuar después
+              </h3>
             </div>
             <p className="text-muted-foreground text-base leading-relaxed">
               El perfil de madurez de {subject} queda guardado en tu cuenta. Puedes volver cuando
@@ -106,7 +132,7 @@ export function AcceptDeepAnalysisCard({
         </Card>
       </div>
 
-      <p className="border-border text-muted-foreground flex items-start gap-2 rounded-md border border-dashed p-4 text-base">
+      <p className="bg-surface-muted text-muted-foreground flex items-start gap-2 rounded-xl p-4 text-base">
         <Info className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
         El análisis profundo es voluntario: puedes pedirlo cuando quieras, sin límite de tiempo.
       </p>
@@ -118,11 +144,7 @@ export function AcceptDeepAnalysisCard({
  * Cuando el análisis ya fue aceptado pero uno de sus resultados no llegó a
  * calcularse: la misma acción, dicha como reintento.
  */
-export function RetryDeepAnalysisCard({
-  onRetry,
-}: {
-  readonly onRetry: () => void;
-}): JSX.Element {
+export function RetryDeepAnalysisCard({ onRetry }: { readonly onRetry: () => void }): JSX.Element {
   return (
     <Card>
       <CardContent className="p-6">

@@ -38,19 +38,19 @@ const SEVERITY: Record<
     label: 'Desequilibrio crítico',
     tone: 'critical-solid',
     icon: OctagonAlert,
-    card: 'border-critical bg-critical-bg',
+    card: 'border border-border border-t-[3px] border-t-critical bg-card',
   },
   moderate: {
     label: 'Desequilibrio moderado',
     tone: 'moderate',
     icon: TriangleAlert,
-    card: 'border-moderate/50 bg-card',
+    card: 'border border-border bg-card',
   },
   acceptable: {
     label: 'Equilibrado',
     tone: 'acceptable',
     icon: CircleCheck,
-    card: 'border-border bg-card',
+    card: 'border border-border bg-card',
   },
 };
 
@@ -70,13 +70,15 @@ function DimensionBox({
   const visual = getDimensionVisual(code);
   const Icon = visual.icon;
   return (
-    <div className="border-border bg-background rounded-md border p-3">
+    <div className="border-border border-t pt-2.5">
       <div className="flex items-center justify-between gap-2">
-        <span className={`${visual.textInk} flex items-center gap-2 text-base font-semibold`}>
-          <Icon className="size-5 shrink-0" aria-hidden="true" />
-          {name}
+        <span className="text-foreground flex min-w-0 items-center gap-1.5 text-sm font-semibold sm:gap-2 sm:text-[0.9375rem]">
+          <Icon className={`${visual.textInk} size-4 shrink-0`} aria-hidden="true" />
+          <span className="min-w-0">{name}</span>
         </span>
-        <span className="text-foreground text-lg font-extrabold tabular-nums">{level}</span>
+        <span className="text-foreground shrink-0 text-lg font-extrabold tabular-nums">
+          {level}
+        </span>
       </div>
       <LevelBar level={level} fillClass={visual.bg} className="mt-2" />
     </div>
@@ -129,10 +131,10 @@ export function PairCard({ pair, names, levels, bothInGap, onHighlight }: Props)
   return (
     <article
       aria-label={`${left} y ${right}: ${severity.label.toLowerCase()}`}
-      className={`flex flex-col gap-4 rounded-md border-2 p-5 ${severity.card}`}
+      className={`flex flex-col gap-4 rounded-2xl p-5 sm:p-6 ${severity.card}`}
       {...highlight}
     >
-      <header className="flex flex-wrap items-start justify-between gap-2">
+      <header className="flex flex-col-reverse items-start gap-1.5">
         <h4 className="text-foreground text-lg font-bold">
           {left} y {right}
         </h4>
@@ -142,7 +144,7 @@ export function PairCard({ pair, names, levels, bothInGap, onHighlight }: Props)
         </Badge>
       </header>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <DimensionBox code={pair.left} name={left} level={leftLevel} />
         <DimensionBox code={pair.right} name={right} level={rightLevel} />
       </div>

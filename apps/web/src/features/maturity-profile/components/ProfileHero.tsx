@@ -1,5 +1,5 @@
 import type { JSX, ReactNode } from 'react';
-import { Trophy, TriangleAlert } from 'lucide-react';
+import { Gauge, Trophy, TriangleAlert } from 'lucide-react';
 import type { Bottleneck, DimensionResult } from '@innlab/contracts';
 import { Badge } from '@/shared/ui/badge';
 import { Card, CardContent } from '@/shared/ui/card';
@@ -54,13 +54,15 @@ export function ProfileHero({
   return (
     <section
       aria-label="Resumen de la iniciativa"
-      className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start"
+      className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-start lg:gap-14"
     >
       <div>
-        <p className="text-azul-icesi text-sm font-bold">Diagnóstico de madurez IRL</p>
-        <h1 className="text-h1 text-foreground mt-2">{initiativeName ?? 'Tu iniciativa'}</h1>
+        <p className="text-eyebrow">Diagnóstico de madurez IRL</p>
+        <h1 className="text-foreground mt-3 text-[2.125rem] font-extrabold leading-[1.05] tracking-[-0.03em] sm:text-[3.25rem]">
+          {initiativeName ?? 'Tu iniciativa'}
+        </h1>
         {description !== undefined && description !== '' && (
-          <p className="text-muted-foreground mt-3 max-w-prose text-lg leading-relaxed">
+          <p className="text-muted-foreground mt-4 max-w-prose text-lg leading-relaxed sm:text-[1.1875rem]">
             {description}
           </p>
         )}
@@ -73,20 +75,19 @@ export function ProfileHero({
         {children}
       </div>
 
-      <Card className="border-azul-icesi/30 bg-azul-wash">
-        <CardContent className="p-6">
-          <p className="text-azul-icesi text-sm font-bold">Nivel IRL global</p>
+      <Card className="bg-surface-muted border-border">
+        <CardContent className="p-6 sm:p-7">
+          <p className="text-azul-icesi flex items-center gap-2 text-sm font-bold">
+            <Gauge className="size-[1.125rem]" aria-hidden="true" />
+            Nivel IRL global
+          </p>
           <p className="mt-2 flex items-baseline gap-2">
-            <span className="text-azul-icesi text-6xl font-extrabold leading-none tabular-nums">
+            <span className="text-azul-icesi text-6xl font-extrabold tabular-nums leading-none tracking-[-0.04em] sm:text-[4.75rem]">
               {formatGlobalAverage(globalAverage)}
             </span>
             <span className="text-muted-foreground text-xl font-semibold">de 9</span>
           </p>
-          <LevelBar
-            level={Math.round(globalAverage)}
-            fillClass="bg-azul-icesi"
-            className="mt-4"
-          />
+          <LevelBar level={Math.round(globalAverage)} fillClass="bg-azul-icesi" className="mt-4" />
           <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
             Es el promedio de tus seis dimensiones en la escala de 1 a 9.
           </p>

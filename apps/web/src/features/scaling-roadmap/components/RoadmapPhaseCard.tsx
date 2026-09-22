@@ -31,7 +31,7 @@ export function RoadmapPhaseCard({ phase, isLast }: Props): JSX.Element {
       <div className="flex items-start gap-4">
         <div className="flex flex-col items-center self-stretch">
           <span
-            className="bg-azul-icesi text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-base font-bold"
+            className="bg-azul-icesi text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-xl font-extrabold"
             aria-hidden="true"
           >
             {phase.order}
@@ -54,11 +54,11 @@ export function RoadmapPhaseCard({ phase, isLast }: Props): JSX.Element {
               return (
                 <article
                   key={d.dimensionCode}
-                  className={`border-border bg-card overflow-hidden rounded-md border border-t-4 ${visual.border}`}
+                  className="border-border bg-card overflow-hidden rounded-xl border"
                 >
-                  <div className={`${visual.tint} flex items-center gap-2 px-4 py-3`}>
+                  <div className="border-border flex items-center gap-2 border-b px-4 py-3">
                     <Icon className={`${visual.textInk} size-5 shrink-0`} aria-hidden="true" />
-                    <h4 className={`${visual.textInk} text-lg font-bold`}>{d.shortName}</h4>
+                    <h4 className="text-foreground text-lg font-bold">{d.shortName}</h4>
                   </div>
 
                   <div className="flex flex-col gap-3 p-4">
