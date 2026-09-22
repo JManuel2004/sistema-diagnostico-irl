@@ -23,7 +23,7 @@ Phase 1 covers user stories from epics **E-03 (Cuestionario IRL)** and **E-04 (D
 
 **Responsibility:** hold the INNLAB ecosystem session. Send a visitor without one to the INNLAB Hub, exchange the returned `?code=` for tokens, keep the session alive, and log out. There is no OIDC library: the flow is INNLAB's own SSO handshake against `innlab-core-api`, and Cognito is reached through the Hub, never by this app directly.
 
-**User stories:** HU-01 (RF-00, RF-01) — first authenticated session.
+**User stories:** HU-01 (RF-00) — first authenticated session. HU-25 (RF-01) — recognize the authenticated user's profile.
 
 ### The flow
 
@@ -45,13 +45,16 @@ There is **no refresh token**. A session is kept alive by passive polling (`useS
 ```
 features/auth/
 ├── components/
-│   └── LogoutButton.tsx            # ends the session, here and at Core
+│   ├── UserMenu.tsx                # avatar → dropdown with name, email and logout
+│   └── UserContextGate.tsx         # withholds actions that need an identity
 ├── hooks/
 │   ├── useSsoExchange.ts           # drives /auth/callback
 │   ├── useSessionLiveness.ts       # re-checks the session on tab focus
+│   ├── useCurrentUser.ts           # the profile behind GET /me/context
 │   └── useLogout.ts
 ├── api/
-│   └── core-auth.api.ts            # its own axios instance, aimed at Core
+│   ├── core-auth.api.ts            # its own axios instance, aimed at Core
+│   └── me.api.ts                   # our own backend, not Core
 └── index.ts
 ```
 
@@ -60,10 +63,32 @@ Two pieces deliberately live **outside** this feature:
 - `shared/auth/session.ts` — token storage and `redirectToSso()`. The interceptor in `shared/api/http.ts` needs the access token, and the boundary rules forbid `shared/` importing from a feature.
 - `app/router/ProtectedRoute.tsx` — the route element that redirects to the Hub when there is no session.
 
+### Where the profile comes from
+
+An access token from the shared pool carries **only** the `sub` — no email, no
+name. So the profile cannot be read from the token: `useCurrentUser` asks our
+backend (`GET /me/context`), which in turn asks INNLAB Core, the owner of that
+data. The response is validated against `meContextResponseSchema` in
+`@innlab/contracts`, and the backend's controller is typed with the same
+contract so drift fails at compile time.
+
+`UserContextGate` withholds any action that needs to know who the user is —
+starting a diagnostic, above all, since a diagnostic belongs to whoever runs
+it. If Core cannot be reached, the gate says the service is temporarily
+unavailable and offers a manual retry instead of leaving the action armed and
+failing later.
+
+`UserMenu` is the header's only account affordance: an avatar (initial of the
+resolved name, falling back to the email's) that opens a dropdown with name,
+email and "Cerrar sesión" — the Google-account-menu pattern, rather than
+spelling the profile out permanently in the header.
+
 ### Public surface
 
 ```ts
-export { LogoutButton } from './components/LogoutButton';
+export { UserMenu } from './components/UserMenu';
+export { UserContextGate } from './components/UserContextGate';
+export { useCurrentUser } from './hooks/useCurrentUser';
 export { useLogout } from './hooks/useLogout';
 export { useSessionLiveness } from './hooks/useSessionLiveness';
 export { useSsoExchange } from './hooks/useSsoExchange';
@@ -108,6 +133,21 @@ features/diagnostic/
 │   └── diagnostic.api.ts
 └── index.ts
 ```
+
+### Where the profile comes from
+
+An access token from the shared pool carries **only** the `sub` — no email, no
+name. So the profile cannot be read from the token: `useCurrentUser` asks our
+backend (`GET /me/context`), which in turn asks INNLAB Core, the owner of that
+data. The response is validated against `meContextResponseSchema` in
+`@innlab/contracts`, and the backend's controller is typed with the same
+contract so drift fails at compile time.
+
+`UserContextGate` withholds any action that needs to know who the user is —
+starting a diagnostic, above all, since a diagnostic belongs to whoever runs
+it. If Core cannot be reached, the gate says the service is temporarily
+unavailable and offers a manual retry instead of leaving the action armed and
+failing later.
 
 ### Public surface
 
@@ -160,6 +200,21 @@ features/consent/
 └── index.ts
 ```
 
+### Where the profile comes from
+
+An access token from the shared pool carries **only** the `sub` — no email, no
+name. So the profile cannot be read from the token: `useCurrentUser` asks our
+backend (`GET /me/context`), which in turn asks INNLAB Core, the owner of that
+data. The response is validated against `meContextResponseSchema` in
+`@innlab/contracts`, and the backend's controller is typed with the same
+contract so drift fails at compile time.
+
+`UserContextGate` withholds any action that needs to know who the user is —
+starting a diagnostic, above all, since a diagnostic belongs to whoever runs
+it. If Core cannot be reached, the gate says the service is temporarily
+unavailable and offers a manual retry instead of leaving the action armed and
+failing later.
+
 ### Public surface
 
 ```ts
@@ -203,6 +258,21 @@ features/initiative/
 │   └── initiative.api.ts
 └── index.ts
 ```
+
+### Where the profile comes from
+
+An access token from the shared pool carries **only** the `sub` — no email, no
+name. So the profile cannot be read from the token: `useCurrentUser` asks our
+backend (`GET /me/context`), which in turn asks INNLAB Core, the owner of that
+data. The response is validated against `meContextResponseSchema` in
+`@innlab/contracts`, and the backend's controller is typed with the same
+contract so drift fails at compile time.
+
+`UserContextGate` withholds any action that needs to know who the user is —
+starting a diagnostic, above all, since a diagnostic belongs to whoever runs
+it. If Core cannot be reached, the gate says the service is temporarily
+unavailable and offers a manual retry instead of leaving the action armed and
+failing later.
 
 ### Public surface
 
@@ -261,6 +331,21 @@ features/questionnaire/
 │   └── questionnaire.api.ts
 └── index.ts
 ```
+
+### Where the profile comes from
+
+An access token from the shared pool carries **only** the `sub` — no email, no
+name. So the profile cannot be read from the token: `useCurrentUser` asks our
+backend (`GET /me/context`), which in turn asks INNLAB Core, the owner of that
+data. The response is validated against `meContextResponseSchema` in
+`@innlab/contracts`, and the backend's controller is typed with the same
+contract so drift fails at compile time.
+
+`UserContextGate` withholds any action that needs to know who the user is —
+starting a diagnostic, above all, since a diagnostic belongs to whoever runs
+it. If Core cannot be reached, the gate says the service is temporarily
+unavailable and offers a manual retry instead of leaving the action armed and
+failing later.
 
 ### Public surface
 
@@ -333,6 +418,21 @@ features/maturity-profile/
 │   └── maturity-profile.api.ts
 └── index.ts
 ```
+
+### Where the profile comes from
+
+An access token from the shared pool carries **only** the `sub` — no email, no
+name. So the profile cannot be read from the token: `useCurrentUser` asks our
+backend (`GET /me/context`), which in turn asks INNLAB Core, the owner of that
+data. The response is validated against `meContextResponseSchema` in
+`@innlab/contracts`, and the backend's controller is typed with the same
+contract so drift fails at compile time.
+
+`UserContextGate` withholds any action that needs to know who the user is —
+starting a diagnostic, above all, since a diagnostic belongs to whoever runs
+it. If Core cannot be reached, the gate says the service is temporarily
+unavailable and offers a manual retry instead of leaving the action armed and
+failing later.
 
 ### Public surface
 

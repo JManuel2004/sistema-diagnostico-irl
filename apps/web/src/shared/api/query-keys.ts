@@ -1,4 +1,8 @@
 export const queryKeys = {
+  session: {
+    /** Contexto del usuario autenticado — `GET /me/context`. */
+    context: ['session', 'context'] as const,
+  },
   catalog: {
     questionnaire: ['catalog', 'questionnaire'] as const,
     sectors: ['catalog', 'sectors'] as const,

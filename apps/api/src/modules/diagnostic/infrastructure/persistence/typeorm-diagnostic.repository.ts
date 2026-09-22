@@ -26,7 +26,7 @@ export class TypeOrmDiagnosticRepository implements DiagnosticRepositoryPort {
 
   async findLatestByUserId(userId: string): Promise<Diagnostico | null> {
     const row = await this.orm.findOne({
-      where: { keycloakUserId: userId },
+      where: { idUsuario: userId },
       order: { fechaInicio: 'DESC' },
     });
     return row ? this.toDomain(row) : null;
@@ -34,7 +34,7 @@ export class TypeOrmDiagnosticRepository implements DiagnosticRepositoryPort {
 
   async findAllByUserId(userId: string): Promise<Diagnostico[]> {
     const rows = await this.orm.find({
-      where: { keycloakUserId: userId },
+      where: { idUsuario: userId },
       order: { fechaInicio: 'DESC' },
     });
     return rows.map((r) => this.toDomain(r));
@@ -58,7 +58,7 @@ export class TypeOrmDiagnosticRepository implements DiagnosticRepositoryPort {
     await this.orm.save(
       this.orm.create({
         idDiagnostico: snapshot.id,
-        keycloakUserId: snapshot.userId,
+        idUsuario: snapshot.userId,
         estado: snapshot.state,
         fechaInicio: snapshot.createdAt,
       }),
@@ -68,7 +68,7 @@ export class TypeOrmDiagnosticRepository implements DiagnosticRepositoryPort {
   private toDomain(row: DiagnosticoOrm): Diagnostico {
     return Diagnostico.fromPersistence({
       id: row.idDiagnostico,
-      userId: row.keycloakUserId,
+      userId: row.idUsuario,
       state: row.estado,
       createdAt: row.fechaInicio,
       updatedAt: row.fechaInicio,

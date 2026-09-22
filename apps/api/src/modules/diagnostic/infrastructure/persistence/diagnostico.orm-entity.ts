@@ -5,9 +5,9 @@ export class DiagnosticoOrm {
   @PrimaryColumn({ name: 'id_diagnostico', type: 'uuid' })
   idDiagnostico!: string;
 
-  @Index('ix_diagnostico_keycloak')
-  @Column({ name: 'keycloak_user_id', type: 'varchar', length: 64 })
-  keycloakUserId!: string;
+  @Index('ix_diagnostico_usuario')
+  @Column({ name: 'id_usuario', type: 'varchar', length: 64 })
+  idUsuario!: string;
 
   @Column({ name: 'fecha_inicio', type: 'timestamptz', default: () => 'now()' })
   fechaInicio!: Date;
