@@ -30,6 +30,7 @@ import { FinalizeInitialDiagnosisUseCase } from './application/use-cases/finaliz
 import { SubmitQuestionnaireUseCase } from './application/use-cases/submit-questionnaire.use-case.js';
 import { ComputeMaturityProfileUseCase } from './application/use-cases/compute-maturity-profile.use-case.js';
 import { GetMaturityProfileUseCase } from './application/use-cases/get-maturity-profile.use-case.js';
+import { ListUserDiagnosesQuery } from './application/use-cases/list-user-diagnoses.query.js';
 import { GetDiagnosisUseCase } from './application/use-cases/get-diagnosis.use-case.js';
 import { ApplyInitiativeToDiagnosisUseCase } from './application/use-cases/apply-initiative-to-diagnosis.use-case.js';
 import { InitiativeRegisteredListener } from './infrastructure/messaging/initiative-registered.listener.js';
@@ -72,6 +73,7 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     IrlTaxonomyModule,
   ],
   providers: [
+    ListUserDiagnosesQuery,
     { provide: DIAGNOSIS_REPOSITORY, useClass: TypeOrmDiagnosisRepository },
     { provide: ANSWER_SHEET_REPOSITORY, useClass: TypeOrmAnswerSheetRepository },
     {
@@ -113,6 +115,9 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
   ],
   exports: [
     DIAGNOSIS_REPOSITORY,
+    // Consumed by InitiativeModule: the history of a user's diagnostics,
+    // as summaries.
+    ListUserDiagnosesQuery,
     // Consumed by RoutingModule/RoadmapModule: the recommendation and
     // roadmap engines read the profile through this read use case, never
     // reaching the tables directly.

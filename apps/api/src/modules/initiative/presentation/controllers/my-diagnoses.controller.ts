@@ -11,7 +11,7 @@ import { ListMyDiagnosesUseCase } from '../../application/use-cases/list-my-diag
  * Kept as its own controller in `initiative/` rather than added to
  * `DiagnosisController` (which owns the rest of `/diagnostics`) to
  * avoid a circular module dependency: `initiative/` already depends on
- * `diagnosis/` for `DIAGNOSIS_REPOSITORY`, so `diagnosis/`'s own
+ * `diagnosis/` for its exported read queries, so `diagnosis/`'s own
  * controller cannot depend back on a use case from `initiative/`.
  */
 @ApiTags('diagnostics')

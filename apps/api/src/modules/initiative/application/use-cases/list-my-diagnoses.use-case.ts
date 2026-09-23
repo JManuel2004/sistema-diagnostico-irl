@@ -1,29 +1,26 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { toDiagnosticResponse } from '../../../diagnosis/application/dtos/map-diagnostic-response.js';
 import type { DiagnosticSummary } from '@innlab/contracts';
 import {
-  DIAGNOSIS_REPOSITORY,
-  type DiagnosisRepositoryPort,
-} from '../../../diagnosis/domain/repositories/diagnosis.repository.port.js';
+  USER_DIAGNOSES,
+  type UserDiagnosesPort,
+} from '../ports/user-diagnoses.port.js';
 
 /**
  * `ListMyDiagnosesUseCase` (HU-03).
  *
  * Lives in `initiative/`, not `diagnosis/`: the initiative's lifecycle
  * is what spans multiple diagnostics over time, so the read that lists them
- * belongs with that lifecycle, not with the single-diagnostic module.
- * `DiagnosisRepositoryPort.findAllByUserId` was already declared for
- * this; nothing called it until now.
+ * belongs with that lifecycle. The summaries themselves come from
+ * `diagnosis/` through `UserDiagnosesPort`.
  */
 @Injectable()
 export class ListMyDiagnosesUseCase {
   constructor(
-    @Inject(DIAGNOSIS_REPOSITORY)
-    private readonly diagnoses: DiagnosisRepositoryPort,
+    @Inject(USER_DIAGNOSES)
+    private readonly diagnoses: UserDiagnosesPort,
   ) {}
 
-  async execute(userId: string): Promise<DiagnosticSummary[]> {
-    const rows = await this.diagnoses.findAllByUserId(userId);
-    return rows.map(toDiagnosticResponse);
+  execute(userId: string): Promise<DiagnosticSummary[]> {
+    return this.diagnoses.listByUser(userId);
   }
 }

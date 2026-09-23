@@ -31,6 +31,8 @@ import { GetInitiativeCharacterizationUseCase } from './application/use-cases/ge
 
 import { InitiativeController } from './presentation/controllers/initiative.controller.js';
 import { ConsentController } from './presentation/controllers/consent.controller.js';
+import { USER_DIAGNOSES } from './application/ports/user-diagnoses.port.js';
+import { UserDiagnosesAdapter } from './infrastructure/user-diagnoses.adapter.js';
 import { MyDiagnosesController } from './presentation/controllers/my-diagnoses.controller.js';
 
 /**
@@ -43,11 +45,11 @@ import { MyDiagnosesController } from './presentation/controllers/my-diagnoses.c
  * initiative profile rather than staying as a gate inside the
  * questionnaire flow.
  *
- * Imports `DiagnosisModule` for `DIAGNOSIS_REPOSITORY`, which a
- * Supporting context may read as a Core context's exported port
- * for a read-only query. `ListMyDiagnosesUseCase`
- * reads it directly; `RegisterInitiativeUseCase` and
- * `RecordConsentUseCase` reach it through `DiagnosticOwnershipPort`
+ * Imports `DiagnosisModule` for its exported read queries, which a
+ * Supporting context may consume for read-only data.
+ * `ListMyDiagnosesUseCase` reaches them through `UserDiagnosesPort`;
+ * `RegisterInitiativeUseCase` and `RecordConsentUseCase` through
+ * `DiagnosticOwnershipPort`
  * (`DiagnosisOwnershipAdapter`), which verifies the diagnostic exists
  * and belongs to the caller before either writes anything.
  *
@@ -71,6 +73,7 @@ import { MyDiagnosesController } from './presentation/controllers/my-diagnoses.c
       useClass: TypeOrmInitiativeCatalogRepository,
     },
     { provide: DIAGNOSTIC_OWNERSHIP, useClass: DiagnosisOwnershipAdapter },
+    { provide: USER_DIAGNOSES, useClass: UserDiagnosesAdapter },
     RegisterInitiativeUseCase,
     GetInitiativeUseCase,
     RecordConsentUseCase,
