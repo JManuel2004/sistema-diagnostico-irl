@@ -10,7 +10,7 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
  * whole point of keeping the trace.
  *
  * Survives the retirement of the configuration versioning scheme
- * (backlog 5.6) unchanged in purpose: this is the audit trail of one
+ * unchanged in purpose: this is the audit trail of one
  * individual calculation, not versioning of configuration. It used to
  * also denormalise which configuration version/snapshots were pinned at
  * evaluation time; those three columns are dropped along with the

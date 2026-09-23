@@ -7,12 +7,10 @@ import {
 } from '../../../diagnosis/domain/repositories/diagnosis.repository.port.js';
 
 /**
- * `ListMyDiagnosesUseCase` (HU-03 — backlog 11.3).
+ * `ListMyDiagnosesUseCase` (HU-03).
  *
  * Lives in `initiative/`, not `diagnosis/`: the initiative's lifecycle
- * is what spans multiple diagnostics over time (`convenciones-objetivo.md`
- * §1.1 — "el historial de diagnósticos... ahora es capacidad de
- * `initiative/`, no de `diagnosis/`"), so the read that lists them
+ * is what spans multiple diagnostics over time, so the read that lists them
  * belongs with that lifecycle, not with the single-diagnostic module.
  * `DiagnosisRepositoryPort.findAllByUserId` was already declared for
  * this; nothing called it until now.

@@ -21,7 +21,7 @@ import { uuidSchema } from '../common/uuid.schema.js';
  *
  * Ya no lleva `configurationVersion`/`calibrationSnapshot`/
  * `parametersSnapshot`: el esquema de versionado de configuración se
- * retiró (backlog 5.6) — hay una sola configuración vigente, sin
+ * retiró — hay una sola configuración vigente, sin
  * historial de versiones que numerar.
  */
 export const dimensionContributionSchema = z.object({

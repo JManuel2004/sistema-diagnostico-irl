@@ -19,8 +19,7 @@ export interface SubmitQuestionnaireCommand {
  * An incomplete submission (not exactly 48 answers) is a normal, expected
  * outcome of this use case — a user can submit early, or a client bug can
  * drop an answer — not an exceptional condition, so it comes back as
- * `Result.err` instead of a thrown exception (`convenciones-objetivo.md`
- * §2, "Adopción de Result<T, E>").
+ * `Result.err` instead of a thrown exception.
  */
 @Injectable()
 export class SubmitQuestionnaireUseCase {

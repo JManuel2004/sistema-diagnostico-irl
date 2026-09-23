@@ -23,8 +23,7 @@ export interface GetMaturityProfileQuery {
 /**
  * "No profile yet" is a normal, expected outcome — the diagnostic simply
  * hasn't reached that point of its lifecycle yet — not an exceptional
- * condition, so it comes back as `Result.err` (`convenciones-objetivo.md`
- * §2, "Adopción de Result<T, E>"). `routing/`'s and `roadmap/`'s
+ * condition, so it comes back as `Result.err`. `routing/`'s and `roadmap/`'s
  * generation use cases, both of which call this one internally, propagate
  * that same `Result.err` as their own instead of catching an exception.
  */

@@ -16,7 +16,7 @@ import { useStartDiagnostic } from '@/shared/hooks/useStartDiagnostic';
  * tenga sin terminar o crea uno, y abre el asistente. Que esa acción ocurra al
  * entrar es lo que se quiere aquí (es lo que el usuario acaba de pedir con su
  * clic), a diferencia de aceptar el análisis profundo, que nunca se dispara
- * sola (backlog 4.6). El `ref` evita el doble disparo de StrictMode en
+ * sola. El `ref` evita el doble disparo de StrictMode en
  * desarrollo, que de otro modo pediría el diagnóstico dos veces a la vez.
  */
 export default function StartDiagnosticPage(): JSX.Element {

@@ -13,7 +13,7 @@ import { uuidSchema } from '../common/uuid.schema.js';
  * `alternatives` son las posiciones 2..N. Nunca incluye la principal.
  *
  * Ya no lleva `configurationVersion`: el esquema de versionado de
- * configuración se retiró (backlog 5.6) — hay una sola configuración
+ * configuración se retiró — hay una sola configuración
  * vigente, sin historial de versiones que numerar.
  */
 export const recommendedServiceSchema = z.object({

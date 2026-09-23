@@ -2,7 +2,7 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * Guard for the migration policy (`convenciones-objetivo.md` §6): while no
+ * Guard for the single-migration policy: while no
  * environment holds real data, the schema lives in ONE migration and every
  * change is made by editing it, not by adding a file.
  *

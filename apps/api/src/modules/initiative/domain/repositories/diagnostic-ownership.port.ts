@@ -10,7 +10,7 @@ export const DIAGNOSTIC_OWNERSHIP = Symbol('DIAGNOSTIC_OWNERSHIP');
  *
  * `initiative/` does not own diagnostics, so it asks through this port
  * instead of reading `diagnosis/`'s entity — only ids cross the module
- * boundary (root `CLAUDE.md`, "Modules communicate by ID only").
+ * boundary.
  */
 export interface DiagnosticOwnershipPort {
   /**

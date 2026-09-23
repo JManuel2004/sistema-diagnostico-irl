@@ -18,7 +18,7 @@ describe('Answer', () => {
       expect(Answer.create('s', LikertValue.create(3), `  ${WHY}  `).justification).toBe(WHY);
     });
 
-    // Backlog / Fase 8c: the justification is mandatory.
+    // The justification is mandatory.
     it.each(['', '   ', '\n\t'])('rejects a blank justification (%j)', (blank) => {
       expect(() => Answer.create('s', LikertValue.create(3), blank)).toThrow(
         InvariantViolationError,

@@ -12,7 +12,7 @@ import { Uuid } from '../../../shared/kernel/domain/value-objects/uuid.vo.js';
 /**
  * Answers `DiagnosticOwnershipPort` from `diagnosis/`'s exported
  * repository port — a Supporting context reading a Core context's
- * exported port, which `convenciones-objetivo.md` §1.1 case (b) allows.
+ * exported port for a read-only query, which the composition rule allows.
  * Only the owner id is read; the entity does not leave this class.
  */
 @Injectable()

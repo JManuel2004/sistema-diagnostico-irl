@@ -235,7 +235,7 @@ describe('InitiativeAutofill button', () => {
   });
 });
 
-describe('the switch is a build-time variable (Oleada 8)', () => {
+describe('the switch is a build-time variable', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.resetModules();

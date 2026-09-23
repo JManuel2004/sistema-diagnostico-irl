@@ -28,7 +28,7 @@ const NO_CHARACTERIZATION: Characterization = {
  *
  * This replaces `TypeOrmInitiativeCharacterizationRepository`'s direct
  * reads of `IniciativaOrm`/`EtapaIniciativaOrm`/`SectorOrm` — those
- * entities are gone (renamed and moved here as part of this oleada);
+ * entities are gone (renamed and moved here);
  * `routing/` now calls this use case instead of reaching into
  * `initiative/`'s tables itself.
  */

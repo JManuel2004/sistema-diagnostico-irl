@@ -114,7 +114,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
     ).toEqual({ TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 });
   });
 
-  // Backlog 4.5: `name` used to serialize the dimension code. Both names come
+  // `name` used to serialize the dimension code. Both names come
   // from the catalog in the database, in the real HTTP response.
   it('el perfil nombra cada dimensión con el catálogo, no con su código', async () => {
     const res = await agent
@@ -253,7 +253,7 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
       ]);
     });
 
-    // Backlog 10.1: the response says why each dimension is in the plan and
+    // The response says why each dimension is in the plan and
     // what sets its target, and it is the roadmap saved at acceptance.
     it('explica por qué cada dimensión está en el plan y qué fija su meta', async () => {
       const res = await agent

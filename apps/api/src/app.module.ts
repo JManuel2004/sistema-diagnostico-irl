@@ -81,7 +81,7 @@ import { ApiModule } from './api.module.js';
         return buildOrmModuleOptions(cfg);
       },
     }),
-    // In-process domain events (`convenciones-objetivo.md` §1.1/§2.2) —
+    // In-process domain events —
     // no queue infrastructure, `EventEmitter2` dispatch is enough for
     // the current volume and topology.
     EventEmitterModule.forRoot(),

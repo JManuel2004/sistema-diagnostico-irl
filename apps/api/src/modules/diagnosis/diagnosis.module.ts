@@ -49,25 +49,21 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
 
 /**
  * `DiagnosisModule` — Core bounded context for the questionnaire run and
- * the resulting maturity profile (`convenciones-objetivo.md` §1.1).
+ * the resulting maturity profile.
  *
  * Fuses the three modules that used to divide this single flow
  * (`diagnostic`, `questionnaire`, `maturity-profile`) — they already
  * depended on each other through the only real orchestrator in the
  * system, so splitting them into separate Nest modules never bought
  * isolation, only cross-module wiring for a flow that is one bounded
- * context. `consent` is not absorbed here: it moves to `initiative/`
- * (Oleada 3), not into `diagnosis/`.
+ * context. `consent` is not absorbed here: it lives in `initiative/`.
  *
  * `IrlTaxonomyModule` is imported so `GetQuestionnaireStructureQuery`
  * can read dimensions through `TAXONOMY_REPOSITORY`; `DimensionOrm` and
  * `DimensionPairOrm` are also registered directly here because
  * `TypeOrmMaturityProfileRepository`/`TypeOrmImbalanceRepository` still
- * read them without going through the port — the same pre-existing
- * "acceso cruzado a DimensionOrm" deuda documented in backlog 1.3/3.2,
- * carried over unchanged from the modules this one absorbs. Correcting
- * it is Oleadas 4/5's job for `routing/`/`roadmap/`; the two repositories
- * that live in this module were not in scope for that fix either.
+ * read them without going through the port — a pre-existing cross-module
+ * access carried over unchanged from the modules this one absorbs.
  */
 @Module({
   imports: [

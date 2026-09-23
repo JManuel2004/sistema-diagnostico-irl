@@ -14,7 +14,7 @@ import globals from 'globals';
  *   1. Hereda el config raíz (typescript-eslint type-checked + Prettier).
  *   2. Recommended React + JSX a11y + react-hooks + react-refresh.
  *   3. `eslint-plugin-boundaries` aplica la dirección de import en
- *      4 capas documentada en CLAUDE.web.md: app → pages → feature ←
+ *      4 capas: app → pages → feature ←
  *      shared. Cross-feature imports están prohibidos.
  *
  * Los tests heredan las mismas reglas de fronteras — no se puede
@@ -63,8 +63,7 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
-      // Aislamiento por feature — refleja la tabla de
-      // CLAUDE.web.md §"Allowed import paths".
+      // Aislamiento por feature.
       'boundaries/element-types': [
         'error',
         {

@@ -1,7 +1,7 @@
 # diagnosis
 
 ## Alcance
-Ejecuta el cuestionario IRL (48 afirmaciones, escala Likert 1..5) y calcula el perfil de madurez (nivel 1..9 por dimensión, cuello de botella, brechas, desequilibrios). Es dueño de la máquina de estados del diagnóstico. **No cubre** el consentimiento ni el perfil de la iniciativa (`initiative/`), ni la recomendación de portafolio y el roadmap (`routing/`, `roadmap/`) — ver la tabla 1.1 de `convenciones-objetivo.md`.
+Ejecuta el cuestionario IRL (48 afirmaciones, escala Likert 1..5) y calcula el perfil de madurez (nivel 1..9 por dimensión, cuello de botella, brechas, desequilibrios). Es dueño de la máquina de estados del diagnóstico. **No cubre** el consentimiento ni el perfil de la iniciativa (`initiative/`), ni la recomendación de portafolio y el roadmap (`routing/`, `roadmap/`) — ver `apps/api/docs/MODULES.md`.
 
 ## Reglas que deben respetarse
 - Seis dimensiones (`TRL`, `CRL`, `BRL`, `IPRL`, `TmRL`, `FRL`), ocho afirmaciones por dimensión, 48 en total; la tabla de conversión SA-06 es fija. Un envío con un número de respuestas distinto de 48 es un `InvariantViolationError`.
@@ -17,9 +17,9 @@ Ejecuta el cuestionario IRL (48 afirmaciones, escala Likert 1..5) y calcula el p
 
 ## Nivel de completitud
 - Implementado: cuestionario (E-03) con la justificación de cada respuesta, perfil de madurez (E-04) con el estado crítico, aceptación del análisis profundo (RF-11), reacción al consentimiento (RF-03) y a la iniciativa (RF-04), inicio de un diagnóstico propio (HU-04, `StartDiagnosisUseCase`) y lectura de un diagnóstico propio (`GetDiagnosisUseCase`).
-- **Consentimiento e iniciativa son pasos obligatorios** (backlog 14.17, resuelto): `StartDiagnosisUseCase` deja el diagnóstico en `STARTED`; `ConsentRecordedEvent` lo lleva a `WITH_CONSENT`, `InitiativeRegisteredEvent` a `WITH_INITIATIVE` y procesar el cuestionario lo lleva por `QUESTIONNAIRE_IN_PROGRESS` hasta `PROFILE_GENERATED`.
-- **Límite conocido:** la comprobación de «ya tiene uno sin terminar» y la inserción no son atómicas; dos peticiones simultáneas (dos pestañas) pueden crear un diagnóstico cada una (backlog, sección 16).
-- Pendiente: la verificación de propiedad del diagnóstico solo está en `initiative/` (hallazgo 14.2).
+- **Consentimiento e iniciativa son pasos obligatorios**: `StartDiagnosisUseCase` deja el diagnóstico en `STARTED`; `ConsentRecordedEvent` lo lleva a `WITH_CONSENT`, `InitiativeRegisteredEvent` a `WITH_INITIATIVE` y procesar el cuestionario lo lleva por `QUESTIONNAIRE_IN_PROGRESS` hasta `PROFILE_GENERATED`.
+- **Límite conocido:** la comprobación de «ya tiene uno sin terminar» y la inserción no son atómicas; dos peticiones simultáneas (dos pestañas) pueden crear un diagnóstico cada una.
+- Pendiente: la verificación de propiedad del diagnóstico solo está en `initiative/` y en `GET diagnostics/:id`.
 
 ## Responsabilidad (lenguaje ubicuo)
 "Hacer el diagnóstico": responder las 48 afirmaciones, obtener el nivel de madurez de la iniciativa en cada dimensión y saber dónde está el cuello de botella y qué desequilibrios hay entre dimensiones.
@@ -35,7 +35,7 @@ Ejecuta el cuestionario IRL (48 afirmaciones, escala Likert 1..5) y calcula el p
 
 ## De qué depende
 - `shared/irl-taxonomy` a través de `TAXONOMY_REPOSITORY` (solo `GetQuestionnaireStructureQuery`).
-- **Violación conocida:** `TypeOrmMaturityProfileRepository` y `TypeOrmImbalanceRepository` leen `DimensionOrm`/`DimensionPairOrm` directamente en vez de pasar por el puerto (backlog 1.3/3.2 — resuelto en `routing/` y `roadmap/`, abierto aquí).
+- **Violación conocida:** `TypeOrmMaturityProfileRepository` y `TypeOrmImbalanceRepository` leen `DimensionOrm`/`DimensionPairOrm` directamente en vez de pasar por el puerto (ya corregido en `routing/` y `roadmap/`, abierto aquí).
 
 ## Datos que posee
 Escribe: `irl_diagnostic.diagnostic`, `answer`, `dimension_result`, `imbalance_analysis`. Lee (no escribe): `irl_catalog.statement`, `dimension`, `dimension_pair`, `conversion_range`.
@@ -44,4 +44,4 @@ Escribe: `irl_diagnostic.diagnostic`, `answer`, `dimension_result`, `imbalance_a
 - **Unitarias:** dominio (calculadora, evaluador de desequilibrios, agregados, VOs), casos de uso, controladores, listener de consentimiento.
 - **Integración:** `answer-sheet-repository` (la justificación se guarda y la base la exige).
 - **E2E:** `get-questionnaire-structure`, `deep-analysis-events` (flujo AgroConecta por eventos), `start-diagnosis`, y `initiative/registration-flow` (justificación obligatoria, estado crítico, `deepAnalysisAccepted`).
-- **Falta:** integración de `typeorm-answer-sheet`, `typeorm-maturity-profile`, `typeorm-imbalance` y `typeorm-diagnosis` contra base real (backlog 12.1) — una prueba así habría detectado el mapeo obsoleto `id_diagnostico` corregido en esta fase.
+- **Falta:** integración de `typeorm-answer-sheet`, `typeorm-maturity-profile`, `typeorm-imbalance` y `typeorm-diagnosis` contra base real.

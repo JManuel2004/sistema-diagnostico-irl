@@ -12,7 +12,7 @@ export interface DimensionLevelSource {
  *
  * This is the single place that says **where the level comes from**.
  * `routing/` and `roadmap/` both need it, and both used to re-derive it
- * with their own copy of the same explanation (backlog 3.2).
+ * with their own copy of the same explanation.
  *
  * The level is read from `dimensionResults[].irlLevel`. The bottleneck and
  * the gaps are likewise taken from the computed profile

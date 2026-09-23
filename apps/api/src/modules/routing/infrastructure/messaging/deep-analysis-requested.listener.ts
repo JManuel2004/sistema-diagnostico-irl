@@ -5,8 +5,7 @@ import { GenerateRecommendationUseCase } from '../../application/use-cases/gener
 
 /**
  * Translates `DeepAnalysisRequestedEvent` into `routing/`'s own
- * calculation — `convenciones-objetivo.md` §1.1's "regla de
- * composición" case (a): `routing/` reacts to `diagnosis/`'s event
+ * calculation: `routing/` reacts to `diagnosis/`'s event
  * instead of `diagnosis/` calling it directly, and does not know
  * `roadmap/` is reacting to the same event too.
  *

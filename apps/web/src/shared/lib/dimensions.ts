@@ -18,7 +18,7 @@ import { PALETTE } from './palette';
  *  - Nombres (completo y corto) y descripción canónica → vienen del backend,
  *    del catálogo: `GET /catalog/questionnaire` y los campos `name` /
  *    `shortName` de las respuestas que nombran dimensiones (perfil,
- *    roadmap). Duplicarlos aquí crearía dos verdades (backlog 4.5).
+ *    roadmap). Duplicarlos aquí crearía dos verdades.
  *  - Copy de marketing (`shortDescription` del landing) → es contenido
  *    editorial de la página, no metadata del marco; vive en el page.
  *

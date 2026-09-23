@@ -147,7 +147,7 @@ describe('RegisterInitiativeUseCase', () => {
     expect(emitAsync).not.toHaveBeenCalled();
   });
 
-  // Fase 8c: registering the initiative moves the diagnostic on, through the
+  // Registering the initiative moves the diagnostic on, through the
   // event `diagnosis/` listens to.
   it('publishes InitiativeRegisteredEvent once the initiative is saved', async () => {
     await useCase.execute(command);

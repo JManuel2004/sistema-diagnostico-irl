@@ -48,8 +48,7 @@ const BOOLEANOS = new Set<string>(BOOLEAN_OPERATORS);
  * Tipado como `Record<Field, …>` a propósito: añadir un campo a
  * `QUERYABLE_FIELDS` en `@innlab/contracts` no compila hasta que se declare
  * aquí su tipo. Antes eran dos `Set` paralelos y un campo nuevo que no caía
- * en ninguno se aceptaba en silencio, sin la validación de tipo esperada
- * (backlog 5.2).
+ * en ninguno se aceptaba en silencio, sin la validación de tipo esperada.
  */
 export type FieldKind = 'collection' | 'numeric' | 'scalar';
 

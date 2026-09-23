@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 
 /**
- * The AgroConecta autofill must not reach a production bundle (Oleada 8).
+ * The AgroConecta autofill must not reach a production bundle.
  *
  * The guard is a build-time variable, so the only real proof is to build the
  * app the way production does — `vite build`, mode `production`, which does

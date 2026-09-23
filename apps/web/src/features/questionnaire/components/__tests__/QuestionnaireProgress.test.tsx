@@ -39,7 +39,7 @@ describe('QuestionnaireProgress', () => {
     expect(screen.getByText('25% completado')).toBeInTheDocument();
   });
 
-  // Fase 8c: an answer without its justification is not complete.
+  // An answer without its justification is not complete.
   it('no cuenta una respuesta sin justificación', () => {
     render(<QuestionnaireProgress dimensions={dimensions} />);
     act(() => {
@@ -51,7 +51,7 @@ describe('QuestionnaireProgress', () => {
     ).toBeInTheDocument();
   });
 
-  // Backlog 10.2: the draft lives in `sessionStorage` and reaches the server
+  // The draft lives in `sessionStorage` and reaches the server
   // only when the diagnostic is processed, so the chip says exactly that
   // instead of promising an automatic save.
   it('dice dónde vive el borrador, sin prometer guardado entre sesiones', () => {

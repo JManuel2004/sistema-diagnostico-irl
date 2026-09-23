@@ -19,7 +19,7 @@ export interface GetScalingRoadmapQuery {
 /**
  * The saved roadmap as the API serves it: each dimension named from the
  * catalog (`name`, `shortName`), so the frontend keeps no name map of its
- * own (backlog 4.5).
+ * own.
  *
  * A read of what `DeepAnalysisRequestedListener` saved; it does not
  * recalculate. "Not generated yet" is the normal state before the user

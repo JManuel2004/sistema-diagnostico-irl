@@ -11,8 +11,7 @@ import { Result } from '../../../../shared/kernel/domain/result.js';
  * `GetConsentUseCase`. Per `consentRecordSchema` in `@innlab/contracts`,
  * "no consent yet" is a 404, not an empty/null body — the frontend uses
  * that to decide whether to show the terms screen. It is a normal,
- * expected outcome, not an exceptional condition
- * (`convenciones-objetivo.md` §2, "Adopción de Result<T, E>").
+ * expected outcome, not an exceptional condition.
  */
 @Injectable()
 export class GetConsentUseCase {

@@ -76,9 +76,9 @@ For the full map: [`apps/api/docs/MODULES.md`](../../apps/api/docs/MODULES.md) a
 
 These are the most common mistakes the team catches in review:
 
-- **No framework imports in `domain/`.** No `@nestjs/common`, no `typeorm`, no `axios`. Domain code is plain TypeScript. (See [`apps/api/CLAUDE.md`](../../apps/api/CLAUDE.md).)
+- **No framework imports in `domain/`.** No `@nestjs/common`, no `typeorm`, no `axios`. Domain code is plain TypeScript. (See [`CODE-STYLE.md`](../conventions/CODE-STYLE.md).)
 - **One use case per class, one `execute(command)` method.** Don't create helper methods on the use case class.
-- **Features can't import from other features** (frontend). Use `shared/` for cross-feature primitives. (See [`apps/web/CLAUDE.md`](../../apps/web/CLAUDE.md).)
+- **Features can't import from other features** (frontend). Use `shared/` for cross-feature primitives. (See [`apps/web/docs/MODULES.md`](../../apps/web/docs/MODULES.md).)
 - **English for every identifier.** `Diagnosis`, `Initiative`, `Statement` — domain included. Spanish only for text the end user reads (see `docs/conventions/CODE-STYLE.md`).
 - **`presentation/` imports only from `application/`**, and modules talk through ports and domain events, never each other's entities.
 - **No `synchronize: true` in TypeORM.** Schema changes go through migrations.

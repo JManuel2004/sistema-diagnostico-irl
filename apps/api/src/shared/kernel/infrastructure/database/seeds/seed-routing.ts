@@ -14,7 +14,7 @@ import {
  *
  * Idempotente en el mismo sentido que el resto del seeder: se puede correr
  * n veces y el resultado es el mismo. La configuración de enrutamiento ya
- * no tiene versionado (backlog 5.6): si `scoring_parameters` —la tabla
+ * no tiene versionado: si `scoring_parameters` —la tabla
  * singleton— ya tiene su fila, la configuración se considera sembrada y no
  * se toca de nuevo.
  *

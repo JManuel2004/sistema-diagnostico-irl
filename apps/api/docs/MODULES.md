@@ -1,6 +1,6 @@
 # API Modules
 
-Deliberately short. Per `convenciones-objetivo.md` §4, anything that can be derived from the code is **not** documented by hand: the endpoint list is Swagger (`/api/docs`), the folder layout is the repository, and what each module owns and exposes is in the `README.md` at the root of that module (template in §4.4). This file is only the map that ties them together.
+Deliberately short. Anything that can be derived from the code is **not** documented by hand: the endpoint list is Swagger (`/api/v1/docs`), the folder layout is the repository, and what each module owns and exposes is in the `README.md` at the root of that module. This file is only the map that ties them together.
 
 ## Modules
 
@@ -26,4 +26,4 @@ Deliberately short. Per `convenciones-objetivo.md` §4, anything that can be der
 
 ## Rules that do not change
 
-Catalogs (`irl_catalog` schema) are read-only at runtime: application code reads, never writes; changes go through seeds gated by a migration. Layer rules and language policy: `convenciones-objetivo.md` §2–§3, enforced by `eslint.config.mjs`.
+Catalogs (`irl_catalog` schema) are read-only at runtime: application code reads, never writes; changes go through seeds gated by a migration. Layer rules and language policy: [`docs/conventions/CODE-STYLE.md`](../../../docs/conventions/CODE-STYLE.md), enforced by `eslint.config.mjs`.

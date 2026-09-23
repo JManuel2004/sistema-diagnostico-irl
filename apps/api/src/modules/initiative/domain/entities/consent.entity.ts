@@ -4,8 +4,7 @@ import { InvariantViolationError } from '../../../../shared/kernel/domain/errors
 /**
  * `Consent` — the Law 1581 (2012) privacy-consent acceptance for a
  * single diagnostic (RF-03 / HU-05). A sub-concept of `initiative/`, not
- * of `diagnosis/` — see `convenciones-objetivo.md` §1.3: the resolved
- * business decision is that consent travels with the rest of the
+ * of `diagnosis/`: the resolved business decision is that consent travels with the rest of the
  * initiative profile, since Law 1581 ties consent to the data that is
  * about to be processed, and most of that data is the initiative's.
  *
@@ -16,7 +15,7 @@ import { InvariantViolationError } from '../../../../shared/kernel/domain/errors
  * `@innlab/contracts`), so `accepted` is always `true` once a record
  * exists — the field is kept (rather than dropped in favor of "record
  * exists = accepted") only because the column already carries that
- * shape at the database and changing it is not this oleada's job.
+ * shape at the database.
  */
 export interface ConsentPersistence {
   readonly id: string;

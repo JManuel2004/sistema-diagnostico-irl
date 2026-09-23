@@ -333,7 +333,7 @@ describe('LayerTracePanel', () => {
     expect(screen.queryByText(/teamSize/)).not.toBeInTheDocument();
   });
 
-  // Backlog 10.3: the date lives in `ResultMeta`, once, under the page title;
+  // The date lives in `ResultMeta`, once, under the page title;
   // the panel no longer repeats it.
   it('no repite la fecha del resultado', async () => {
     await openPanel();

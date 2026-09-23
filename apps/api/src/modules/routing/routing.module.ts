@@ -32,11 +32,11 @@ import { InitiativeModule } from '../initiative/initiative.module.js';
 /**
  * `RoutingModule` — contexto acotado del enrutamiento al portafolio
  * INNLAB (RF-15). Incluye el catálogo de los seis servicios
- * (`service-catalog`, replegado aquí — ver convenciones-objetivo.md §1.1),
+ * (`service-catalog`, replegado aquí porque `routing/` es su único consumidor),
  * no es un módulo aparte.
  *
  * Sin versionado: el esquema de versionado de configuración se retiró
- * (backlog 5.6) porque nada en el sistema puede publicar una segunda
+ * porque nada en el sistema puede publicar una segunda
  * versión. El motor lee una única configuración vigente sin historial —
  * `ActiveConfigurationRepositoryPort.load()`.
  *

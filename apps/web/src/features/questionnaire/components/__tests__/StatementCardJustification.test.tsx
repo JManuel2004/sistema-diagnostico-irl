@@ -19,7 +19,7 @@ function store() {
   return useQuestionnaireDraftStore.getState();
 }
 
-describe('StatementCard — justification (Fase 8c, Oleada 1)', () => {
+describe('StatementCard — justification', () => {
   beforeEach(() => {
     store().clear();
     sessionStorage.clear();

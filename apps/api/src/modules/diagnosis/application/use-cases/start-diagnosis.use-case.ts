@@ -28,7 +28,6 @@ export interface StartDiagnosisCommand {
  *
  * Known limit: the check and the insert are not one atomic step, so two
  * requests that arrive at the same instant (two tabs) can each create one.
- * Backlog 16.
  */
 @Injectable()
 export class StartDiagnosisUseCase {

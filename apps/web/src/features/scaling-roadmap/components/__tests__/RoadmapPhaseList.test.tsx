@@ -60,7 +60,7 @@ describe('RoadmapPhaseList', () => {
     expect(within(financiacion).queryByText(/podrá avanzar|podrán avanzar/)).toBeNull();
   });
 
-  // Backlog 10.1: each card says why the dimension is in the plan and what
+  // Each card says why the dimension is in the plan and what
   // sets its target, from the fields the backend sends.
   it('dice por qué una dimensión está en el plan: por debajo de su mínimo', () => {
     render(<RoadmapPhaseList roadmap={AGROCONECTA} />);

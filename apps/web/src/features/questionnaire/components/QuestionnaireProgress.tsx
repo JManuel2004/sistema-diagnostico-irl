@@ -16,7 +16,7 @@ import {
  * el avance no quede oculto dentro de cada dimensión. El chip dice lo que
  * realmente ocurre con el borrador (HU-09): se conserva en esta pestaña
  * (`sessionStorage`) y no llega al servidor hasta «Procesar diagnóstico»;
- * no promete guardado entre sesiones ni entre pestañas (backlog 10.2).
+ * no promete guardado entre sesiones ni entre pestañas.
  *
  * En móvil el aviso del borrador se oculta: su `title` sigue en el DOM y la
  * barra y el porcentaje bastan en una fila de 358px.

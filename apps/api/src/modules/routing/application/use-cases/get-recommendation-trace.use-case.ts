@@ -19,7 +19,7 @@ export interface GetRecommendationTraceQuery {
  * el módulo de identidad.
  *
  * "Todavía no generada" es una salida normal y esperada, no una condición
- * excepcional (`convenciones-objetivo.md` §2, "Adopción de Result<T, E>").
+ * excepcional.
  */
 @Injectable()
 export class GetRecommendationTraceUseCase {

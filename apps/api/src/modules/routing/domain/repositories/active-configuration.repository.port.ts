@@ -11,7 +11,7 @@ import type { CompiledExceptionRule } from '../services/exception-engine.service
  * configuración.
  *
  * Sin versionado: el esquema de versionado de configuración se retiró
- * (backlog 5.6) — nada en el sistema puede publicar una segunda versión,
+ * — nada en el sistema puede publicar una segunda versión,
  * así que el puerto expone una única configuración vigente, sin historial
  * que numerar ni versión concreta que cargar.
  */

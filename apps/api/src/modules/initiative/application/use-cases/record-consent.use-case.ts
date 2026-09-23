@@ -44,8 +44,7 @@ export interface RecordConsentCommand {
  * client sends must match `CURRENT_TERMS_VERSION`; a stale client
  * (showing an outdated text) is rejected with `ConflictError` rather
  * than silently accepted, per the contract's own documented rule. That
- * mismatch is a normal, expected outcome — not an exceptional condition
- * (`convenciones-objetivo.md` §2, "Adopción de Result<T, E>").
+ * mismatch is a normal, expected outcome — not an exceptional condition.
  *
  * The diagnostic must exist and belong to the caller before anything is
  * written; that check comes first, so a user never learns whether a

@@ -4,7 +4,7 @@ Rules that ESLint and Prettier can't fully enforce. Reviewers cite this document
 
 ## Language policy
 
-**English for everything in code** — no exception by layer or identifier kind (`convenciones-objetivo.md` §3). Spanish is reserved for what the end user reads.
+**English for everything in code** — no exception by layer or identifier kind. Spanish is reserved for what the end user reads.
 
 | Language    | Used for                                                                                                                                                                       |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -230,7 +230,7 @@ application/         # depends on domain: use-cases, dtos
 infrastructure/      # depends on domain + application: database/{orm-entities,repositories}, messaging, integrations
 presentation/        # depends on application only: controllers
 <name>.module.ts
-README.md            # scope, rules, exposed API, tests (convenciones-objetivo.md §4.4)
+README.md            # scope, rules, completeness, exposed API, dependencies, owned data, tests
 ```
 
 `presentation/` never imports from `domain/` or `infrastructure/`; `eslint-plugin-boundaries` fails the lint if it does. Ports live in `domain/repositories/` (not `domain/ports/`). Events that cross modules live in `shared/kernel/events/`. The global technical layers (migrations, seeds, HTTP filters) live in `shared/kernel/infrastructure/`, not in a top-level `infrastructure/` folder.

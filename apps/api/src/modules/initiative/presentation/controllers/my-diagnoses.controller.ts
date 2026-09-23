@@ -6,7 +6,7 @@ import type { AuthenticatedUser } from '../../../../shared/identity/application/
 import { ListMyDiagnosesUseCase } from '../../application/use-cases/list-my-diagnoses.use-case.js';
 
 /**
- * `GET /api/v1/diagnostics` (HU-03 — backlog 11.3).
+ * `GET /api/v1/diagnostics` (HU-03).
  *
  * Kept as its own controller in `initiative/` rather than added to
  * `DiagnosisController` (which owns the rest of `/diagnostics`) to

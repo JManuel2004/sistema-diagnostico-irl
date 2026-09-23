@@ -30,7 +30,7 @@ export interface ComputeMaturityProfileCommand {
 }
 
 /**
- * Not converted to `Result<T, E>` (`convenciones-objetivo.md` §2): both
+ * Not converted to `Result<T, E>`: both
  * its failure paths — a caller passing the wrong answer count, or an
  * answer referencing a statement the catalog does not have — are system
  * defects reachable only if an upstream invariant already broke (`Answer

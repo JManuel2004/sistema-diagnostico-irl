@@ -47,7 +47,7 @@ export default {
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.module.ts', '!src/main.ts'],
   coverageThreshold: {
     // `maturity-profile/domain/` (95%) and `questionnaire/domain/` (90%)
-    // fused into `diagnosis/domain/` (Oleada 2 of the structural refactor)
+    // fused into `diagnosis/domain/`
     // along with `diagnostic/`'s and `statement`'s domain code, neither of
     // which had an explicit threshold before — `diagnosis-state.vo.ts` in
     // particular has no dedicated spec (`DiagnosticState` never had one)

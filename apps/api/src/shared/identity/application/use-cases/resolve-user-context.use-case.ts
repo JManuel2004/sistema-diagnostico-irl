@@ -21,8 +21,7 @@ export interface ResolveUserContextQuery {
  * in `eslint.config.mjs`). `IdentityModule` wires it with a factory
  * provider instead.
  *
- * Not converted to `Result<T, E>` during that adoption
- * (`convenciones-objetivo.md` §2): this use case has no business-outcome
+ * Not converted to `Result<T, E>`: this use case has no business-outcome
  * check of its own — its only failure path is whatever `UserContextPort`
  * throws when INNLAB Core is unreachable or does not know the user,
  * which is an infrastructure failure, not an anticipable outcome of this

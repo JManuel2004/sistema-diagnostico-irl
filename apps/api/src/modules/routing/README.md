@@ -4,14 +4,14 @@
 Calcula la recomendación de portafolio de INNLAB para un diagnóstico: fichas ordinales → exclusiones (elegibilidad) → puntaje (afinidad) → ajustes (excepciones) → explicación con traza por capas. Incluye el catálogo de los seis servicios. **No cubre** el perfil de madurez (`diagnosis/`) ni el roadmap (`roadmap/`).
 
 ## Reglas que deben respetarse
-- **No hay versionado de configuración**: existe una sola configuración de puntaje (`scoring_parameters` es un singleton por índice único) y el motor no lee versiones históricas — retirado deliberadamente (backlog 5.6).
+- **No hay versionado de configuración**: existe una sola configuración de puntaje (`scoring_parameters` es un singleton por índice único) y el motor no lee versiones históricas — retirado deliberadamente: ningún actor del sistema publica una segunda versión.
 - `layer_trace` se conserva: es la auditoría de cada cálculo, no versionado de configuración.
 - Una recomendación por diagnóstico (`UNIQUE (id_diagnostic)`); recalcular la reemplaza, no acumula.
 - No lee `DimensionOrm`: consume `shared/irl-taxonomy` solo por su puerto.
 - No es llamado por `diagnosis/`: reacciona a `DeepAnalysisRequestedEvent`. Un `Result.err` en el listener se registra y no propaga, para no impedir que `roadmap/` reaccione.
 
 ## Nivel de completitud
-Implementado: motor de tres capas, traza, persistencia idempotente, caso de aceptación AgroConecta. Sin pantalla de administración de la configuración (fuera de alcance, backlog 5.6). El antiguo `POST diagnostics/:id/recommendation` se retiró (backlog 14.3): la recomendación solo se genera por `DeepAnalysisRequestedEvent`.
+Implementado: motor de tres capas, traza, persistencia idempotente, caso de aceptación AgroConecta. Sin pantalla de administración de la configuración (fuera de alcance). El antiguo `POST diagnostics/:id/recommendation` se retiró: la recomendación solo se genera por `DeepAnalysisRequestedEvent`.
 
 ## Responsabilidad (lenguaje ubicuo)
 "Qué servicio de INNLAB le conviene a esta iniciativa y por qué": la recomendación, sus alternativas y la explicación de cómo se llegó a ella.

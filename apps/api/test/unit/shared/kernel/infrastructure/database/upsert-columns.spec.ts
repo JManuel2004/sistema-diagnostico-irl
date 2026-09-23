@@ -23,7 +23,7 @@ async function repositoryOf<T extends ObjectLiteral>(
 }
 
 describe('upsertColumns', () => {
-  // Backlog 5.4: a hand-written list left a column out and it was never
+  // A hand-written list left a column out and it was never
   // updated. Deriving the list from the entity includes every one.
   it('includes every non-key column of dimension_result', async () => {
     const repo = await repositoryOf(DimensionResultOrm);

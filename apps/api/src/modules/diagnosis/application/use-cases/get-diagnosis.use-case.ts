@@ -17,7 +17,7 @@ export interface GetDiagnosisQuery {
  * One diagnostic of the caller, with whether the deep analysis was accepted.
  *
  * A diagnostic that belongs to someone else is answered as not found, the
- * same as one that does not exist, so its id does not leak (backlog 14.2).
+ * same as one that does not exist, so its id does not leak.
  */
 @Injectable()
 export class GetDiagnosisUseCase {

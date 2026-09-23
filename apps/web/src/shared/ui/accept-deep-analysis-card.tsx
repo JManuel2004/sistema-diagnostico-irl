@@ -24,7 +24,7 @@ import { Card, CardContent } from './card';
  *
  * La recomendación y el roadmap se calculan y guardan al aceptarlo, así que
  * aceptar es una acción del usuario y nunca un efecto de abrir la pantalla
- * (backlog 4.6 / 10.7). «Por ahora no» no envía nada: el perfil ya está guardado
+ *. «Por ahora no» no envía nada: el perfil ya está guardado
  * y el usuario puede volver desde su panel cuando quiera.
  */
 interface AcceptDeepAnalysisCardProps {

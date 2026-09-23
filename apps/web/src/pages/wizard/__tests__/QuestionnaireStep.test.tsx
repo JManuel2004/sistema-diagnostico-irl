@@ -122,7 +122,7 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
       for (const code of ['CRL', 'BRL', 'IPRL', 'TmRL', 'FRL']) expect(alert).toHaveTextContent(code);
     });
 
-    // Backlog 10.5: the warning used to disappear as soon as ANY answer changed.
+    // The warning used to disappear as soon as ANY answer changed.
     it('keeps the alert while something is still missing, and clears it when nothing is', async () => {
       const user = userEvent.setup();
       // Everything answered except the 8 statements of TRL and the 8 of CRL.
@@ -174,7 +174,7 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
     });
   });
 
-  // Fase 8c, Oleada 1: the justification of each answer is mandatory.
+  // The justification of each answer is mandatory.
   describe('Escenario: justificación obligatoria', () => {
     it.each([
       ['empty', '', '3', 'TRL — Nombre (7/8)'],
@@ -236,7 +236,7 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
     expect(screen.getByText('CONSENTIMIENTO_STUB')).toBeInTheDocument();
   });
 
-  // Fase 8c, Oleada 8: the autofill exists only in development builds.
+  // The autofill exists only in development builds.
   it('no autofill button outside development: the switch is a build-time variable', () => {
     renderStep();
 

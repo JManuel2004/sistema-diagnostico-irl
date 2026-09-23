@@ -20,7 +20,7 @@ export const IRL_MAX_LEVEL = 9;
 /**
  * Whether `input` is a valid IRL level. The one place that states the
  * scale; anything else that needs to check a level (`DependencyGraph`,
- * for instance) asks here instead of restating `[1, 9]` (backlog 5.3).
+ * for instance) asks here instead of restating `[1, 9]`.
  */
 export function isValidIrlLevel(input: number): boolean {
   return (

@@ -19,8 +19,7 @@ const ALREADY_ACCEPTED_STATES = new Set(['DEEP_ANALYSIS_IN_PROGRESS', 'DEEP_ANAL
 /**
  * `RequestDeepAnalysisUseCase` (RF-11 / HU-xx).
  *
- * The trigger for `DeepAnalysisRequestedEvent`
- * (`convenciones-objetivo.md` §1.1): the moment the user, already with a
+ * The trigger for `DeepAnalysisRequestedEvent`: the moment the user, already with a
  * computed maturity profile, asks to see the portfolio recommendation
  * and the scaling roadmap. Deliberately a separate action from
  * finishing the questionnaire — `FinalizeInitialDiagnosisUseCase`
@@ -37,8 +36,7 @@ const ALREADY_ACCEPTED_STATES = new Set(['DEEP_ANALYSIS_IN_PROGRESS', 'DEEP_ANAL
  * leave the diagnostic stuck in progress with nothing to show.
  *
  * The state transition is saved *before* the event is published — the
- * event fires only once the transition it represents has committed
- * (`convenciones-objetivo.md` §1.1).
+ * event fires only once the transition it represents has committed.
  */
 @Injectable()
 export class RequestDeepAnalysisUseCase {

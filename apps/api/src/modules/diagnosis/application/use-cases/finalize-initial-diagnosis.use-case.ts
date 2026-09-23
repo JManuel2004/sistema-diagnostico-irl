@@ -41,8 +41,7 @@ export interface FinalizeInitialDiagnosticCommand {
  * The diagnostic not existing, being in the wrong state to finalize, or
  * the questionnaire submission being incomplete are all normal, expected
  * outcomes of this orchestration — not exceptional conditions — so they
- * come back as `Result.err` (`convenciones-objetivo.md` §2, "Adopción de
- * Result<T, E>"). `MaturityProfileCalculationError` is deliberately NOT
+ * come back as `Result.err`. `MaturityProfileCalculationError` is deliberately NOT
  * part of that: a missing answer sheet at this point, or `ComputeMaturity
  * ProfileUseCase` itself failing, are system defects (this method already
  * validated the questionnaire was submitted), not business outcomes, and

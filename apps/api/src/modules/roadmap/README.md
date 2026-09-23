@@ -4,7 +4,7 @@
 Calcula el roadmap de escalamiento: qué dimensiones subir, en qué orden y hasta qué nivel, a partir del perfil de madurez y del grafo de dependencias entre dimensiones. **No cubre** el perfil (`diagnosis/`) ni la recomendación de portafolio (`routing/`).
 
 ## Reglas que deben respetarse
-- El grafo de dependencias no está versionado: no existe un indicador de arista activa (`dimension_dependency.is_active` se retiró, backlog 5.6).
+- El grafo de dependencias no está versionado: no existe un indicador de arista activa (`dimension_dependency.is_active` se retiró: nadie podía operarlo).
 - El roadmap es un **resultado guardado con su fecha**, como el perfil y la recomendación: se calcula y se guarda cuando el usuario acepta el análisis profundo (`DeepAnalysisRequestedEvent`), y `GET` solo lo lee; antes de aceptar responde `409 ROADMAP_NOT_GENERATED`. Un diagnóstico tiene un solo roadmap: calcular de nuevo lo reemplaza.
 - El cálculo sigue siendo una función pura del perfil y del grafo; solo el resultado se guarda.
 - El orden es refutable: cada dimensión expone qué desbloquea, por qué está en el plan (`inclusionReason`: por debajo de su mínimo o habilitadora de otra) y qué fija su meta (`targetDrivenBy`: la dimensión que la exige, o `null` si la meta es su mínimo esperado).
@@ -12,7 +12,7 @@ Calcula el roadmap de escalamiento: qué dimensiones subir, en qué orden y hast
 - Reacciona a `DeepAnalysisRequestedEvent` de forma independiente de `routing/`; un `Result.err` se registra y no propaga.
 
 ## Nivel de completitud
-Implementado: cierre transitivo, capas topológicas, nivel objetivo por dimensión con su explicación, caso AgroConecta y persistencia del resultado (`scaling_roadmap`, `jsonb` con las fases en códigos de dimensión; los nombres se leen del catálogo). `GenerateScalingRoadmapUseCase` calcula y guarda; el listener lo ejecuta y publica `ScalingRoadmapCalculatedEvent` solo tras un cálculo exitoso, nunca en un `GET` (backlog 14.4).
+Implementado: cierre transitivo, capas topológicas, nivel objetivo por dimensión con su explicación, caso AgroConecta y persistencia del resultado (`scaling_roadmap`, `jsonb` con las fases en códigos de dimensión; los nombres se leen del catálogo). `GenerateScalingRoadmapUseCase` calcula y guarda; el listener lo ejecuta y publica `ScalingRoadmapCalculatedEvent` solo tras un cálculo exitoso, nunca en un `GET`.
 
 ## Responsabilidad (lenguaje ubicuo)
 "Por dónde escalar": el camino ordenado de mejoras que le conviene a la iniciativa según su perfil.

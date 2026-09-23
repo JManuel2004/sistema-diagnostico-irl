@@ -14,8 +14,7 @@ import { Result } from '../../../../shared/kernel/domain/result.js';
 
 /**
  * "No initiative registered yet" is a normal, expected outcome, not an
- * exceptional condition (`convenciones-objetivo.md` §2, "Adopción de
- * Result<T, E>").
+ * exceptional condition.
  */
 @Injectable()
 export class GetInitiativeUseCase {

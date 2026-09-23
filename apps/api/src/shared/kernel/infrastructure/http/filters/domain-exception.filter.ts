@@ -24,7 +24,7 @@ import type { ProblemDetails } from '../problem-details.js';
  * Errors that do not fit that hierarchy map by their stable `code` — see
  * `STATUS_BY_CODE` at the bottom of this file.
  *
- * Since the `Result<T, E>` adoption (`convenciones-objetivo.md` §2), most
+ * Since the `Result<T, E>` adoption, most
  * `DomainError`s that reach here no longer come from a use case throwing
  * directly — they come from `shared/kernel/application/unwrap-result.ts`
  * rethrowing a use case's `Result.err`, one layer higher in

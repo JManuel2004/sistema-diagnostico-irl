@@ -36,7 +36,7 @@ pnpm --filter @innlab/contracts build
 
 ## Folder structure
 
-Folders mirror the backend's bounded contexts (`convenciones-objetivo.md` §1.1), named in English like everything else (§3). The barrel `src/index.ts` is the only public surface — no consumer imports a folder path.
+Folders mirror the backend's bounded contexts (`apps/api/docs/MODULES.md`), named in English like everything else. The barrel `src/index.ts` is the only public surface — no consumer imports a folder path.
 
 ```
 packages/contracts/

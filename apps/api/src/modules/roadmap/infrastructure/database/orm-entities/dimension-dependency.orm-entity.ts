@@ -6,7 +6,7 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
  *
  * Used to also carry `isActive`, letting an edge be switched off without
  * being deleted — a mechanism built for a configuration cycle that has
- * no actor to operate it. Retired (backlog 5.6): every edge has stayed
+ * no actor to operate it. Retired: every edge has stayed
  * active since the seed, and nothing in the system can toggle one.
  *
  * Read-only at runtime. Edges ship through seeds, like every other

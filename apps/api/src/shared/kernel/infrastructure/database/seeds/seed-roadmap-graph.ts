@@ -12,7 +12,7 @@ import { DIMENSION_DEPENDENCIES } from './data/dimension-dependencies.js';
  * lists the one mutable column explicitly — omitting it would make the
  * seed look idempotent while never updating that value after the first
  * INSERT, which is the shape of bug that a hand-written upsert column
- * list invites (backlog 5.4).
+ * list invites.
  *
  * The expected minimum level per dimension is seeded in the `dimension`
  * step, not here: it is a column of that table.

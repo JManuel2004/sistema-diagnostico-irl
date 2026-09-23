@@ -36,17 +36,16 @@ import { MyDiagnosesController } from './presentation/controllers/my-diagnoses.c
 /**
  * `InitiativeModule` — Supporting bounded context for the initiative
  * profile (RF-04/HU-06) and privacy consent (RF-03/HU-05), promoted from
- * three ORM-only entities with no domain layer (backlog 1.5) to its own
- * module, per `convenciones-objetivo.md` §1.1/§1.3.
+ * three ORM-only entities with no domain layer to its own module.
  *
  * `consent` lives here, not in `diagnosis/` — the resolved business
- * decision (§1.3) is that consent travels with the rest of the
+ * decision is that consent travels with the rest of the
  * initiative profile rather than staying as a gate inside the
  * questionnaire flow.
  *
  * Imports `DiagnosisModule` for `DIAGNOSIS_REPOSITORY`, which a
  * Supporting context may read as a Core context's exported port
- * (`convenciones-objetivo.md` §1.1 case (b)). `ListMyDiagnosesUseCase`
+ * for a read-only query. `ListMyDiagnosesUseCase`
  * reads it directly; `RegisterInitiativeUseCase` and
  * `RecordConsentUseCase` reach it through `DiagnosticOwnershipPort`
  * (`DiagnosisOwnershipAdapter`), which verifies the diagnostic exists

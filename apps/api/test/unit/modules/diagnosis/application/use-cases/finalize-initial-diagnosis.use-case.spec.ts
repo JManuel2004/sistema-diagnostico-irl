@@ -131,7 +131,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
     expect(result.value.dimensionResults).toHaveLength(6);
   });
 
-  // Fase 8c: the initiative step is followed directly by the questionnaire, so
+  // The initiative step is followed directly by the questionnaire, so
   // a diagnostic in WITH_INITIATIVE is finalized through QUESTIONNAIRE_IN_PROGRESS.
   it('finalizes a diagnostic that only registered its initiative (WITH_INITIATIVE)', async () => {
     diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('WITH_INITIATIVE'));

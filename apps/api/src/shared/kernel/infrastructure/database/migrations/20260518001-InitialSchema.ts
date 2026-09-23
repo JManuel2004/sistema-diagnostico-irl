@@ -4,7 +4,7 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  * Initial schema — the single migration of the project.
  *
  * Consolidates the 25 incremental migrations that built the schema during
- * development (`convenciones-objetivo.md` §6). The project has no deployed
+ * development. The project has no deployed
  * environment with real data, so the incremental history was a by-product of
  * how the system was built, not an operational record.
  *
@@ -33,7 +33,7 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  * Notes on constraints that are not obvious from the DDL:
  *   - `ux_scoring_parameters_singleton` (`UNIQUE ((true))`) keeps
  *     `scoring_parameters` to a single row: the routing configuration is not
- *     versioned (backlog 5.6).
+ *     versioned.
  *   - `diagnostic.state` allows exactly the states of the diagnostic state
  *     machine; adding one means widening `ck_diagnostic_state` here and the
  *     column width if needed (the longest today is 25 characters).

@@ -9,14 +9,11 @@ import { TAXONOMY_REPOSITORY } from './domain/repositories/taxonomy.repository.p
 /**
  * `IrlTaxonomyModule` — Shared Kernel bounded context for the six IRL
  * dimensions, the SA-06 conversion table, and the six fixed imbalance
- * pairs (`convenciones-objetivo.md` §1.1).
+ * pairs.
  *
  * `DimensionOrm` is also registered directly by `diagnosis/` today
- * instead of going through `TAXONOMY_REPOSITORY`. `routing/` and
- * `roadmap/` were fixed to use the port in Oleadas 4 and 5. The
- * remaining case is the pre-existing "acceso cruzado a DimensionOrm"
- * deuda (backlog 1.3/3.2), unchanged by this module's introduction — it
- * gives that module a port to switch to, it does not switch it itself.
+ * instead of going through `TAXONOMY_REPOSITORY`; `routing/` and
+ * `roadmap/` already use the port.
  */
 @Module({
   imports: [

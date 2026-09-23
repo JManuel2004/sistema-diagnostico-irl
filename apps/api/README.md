@@ -48,7 +48,7 @@ The API listens on `APP_PORT` (default 3000). Endpoints are prefixed `/api/v1/`.
 
 ## Folder structure
 
-The structure and the reasoning behind it are defined in [`convenciones-objetivo.md`](../../convenciones-objetivo.md) (§1 module map, §2 module layout). This is the shape, not an inventory of classes — for what each module owns and exposes, read the `README.md` at its root.
+The module map is in [`docs/MODULES.md`](./docs/MODULES.md) and the layer layout inside a module in [`docs/conventions/CODE-STYLE.md`](../../docs/conventions/CODE-STYLE.md). This is the shape, not an inventory of classes — for what each module owns and exposes, read the `README.md` at its root.
 
 ```
 apps/api/
@@ -127,7 +127,7 @@ The split is enforced at the database level via role grants — defense in depth
 
 **Never** enable `synchronize: true`. Schema changes go through migrations.
 
-**There is a single migration**, `20260518001-InitialSchema.ts`, and the project keeps it that way while no environment holds real data (`convenciones-objetivo.md` §6). To change the schema, **edit that file** (`up()`, and `down()` if needed) and rebuild the database — do not add a new migration:
+**There is a single migration**, `20260518001-InitialSchema.ts`, and the project keeps it that way while no environment holds real data (the database is always rebuilt from scratch with `db:migration:run` + `db:seed`; once an environment with real data exists, schema changes become new incremental migrations instead). To change the schema, **edit that file** (`up()`, and `down()` if needed) and rebuild the database — do not add a new migration:
 
 ```bash
 docker compose down -v && docker compose up -d postgres   # empty database
@@ -167,7 +167,7 @@ Four rules:
    hand by the Core team — not OAuth `client_credentials`, and never the user's
    own JWT. See RNF-05.
 
-**Resource authorization** remains a separate concern, checked inside use cases through a port that answers `NotFoundError` / `ForbiddenError` (see `initiative/`'s `DiagnosticOwnershipPort`). RNF-04 — no user sees another user's diagnostics. Today only consent and initiative registration enforce it; the other per-diagnostic endpoints do not yet (`backlog-deuda-tecnica.md` 14.2).
+**Resource authorization** remains a separate concern, checked inside use cases through a port that answers `NotFoundError` / `ForbiddenError` (see `initiative/`'s `DiagnosticOwnershipPort`). RNF-04 — no user sees another user's diagnostics. Today only consent and initiative registration, and `GET diagnostics/:id`, enforce it; the other per-diagnostic endpoints do not yet.
 
 When debugging an auth failure, read
 [`test/e2e/shared/identity/cognito-jwt-guard.e2e-spec.ts`](./test/e2e/shared/identity/cognito-jwt-guard.e2e-spec.ts)
@@ -177,7 +177,7 @@ RS256 tokens against a mocked JWKS.
 
 ## API design
 
-REST, versioned at `/api/v1/`, resource-oriented around aggregate roots. English nouns in URLs (`/diagnostics`, `/initiative`, `/consent`, `/catalog`), per `convenciones-objetivo.md` §3, camelCase in JSON bodies, **RFC 7807 Problem Details** for errors with a project-specific `code` field.
+REST, versioned at `/api/v1/`, resource-oriented around aggregate roots. English nouns in URLs (`/diagnostics`, `/initiative`, `/consent`, `/catalog`), like every identifier (see `docs/conventions/CODE-STYLE.md`), camelCase in JSON bodies, **RFC 7807 Problem Details** for errors with a project-specific `code` field.
 
 Full conventions: [`docs/conventions/api-design.md`](../../docs/conventions/api-design.md).
 Error code catalog: [`docs/error-codes.md`](./docs/error-codes.md).

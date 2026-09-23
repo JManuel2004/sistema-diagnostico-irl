@@ -5,8 +5,8 @@ import { numericTransformer } from '../../../../../shared/kernel/infrastructure/
  * The global weights of the affinity score.
  *
  * Singleton table (`ux_scoring_parameters_singleton`) — the configuration
- * versioning scheme this table used to be scoped under was retired
- * (backlog 5.6); there is one live set of weights, not a published
+ * versioning scheme this table used to be scoped under was retired;
+ * there is one live set of weights, not a published
  * snapshot among several.
  *
  * `minimumThreshold` is the cutoff below which a candidate is not offered at

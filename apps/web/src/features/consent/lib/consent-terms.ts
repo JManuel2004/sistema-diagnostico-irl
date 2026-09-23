@@ -7,7 +7,7 @@
  * registrado exactamente qué texto aceptó el usuario. Cambiar el texto exige
  * subir la versión en los dos lados.
  *
- * **Texto provisional, pendiente de revisión legal** (backlog 16): no
+ * **Texto provisional, pendiente de revisión legal**: no
  * incluye datos institucionales que no constan en el repositorio, como el
  * NIT o el canal de atención de habeas data.
  */

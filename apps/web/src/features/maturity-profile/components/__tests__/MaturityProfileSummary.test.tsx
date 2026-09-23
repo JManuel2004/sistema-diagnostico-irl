@@ -298,7 +298,7 @@ describe('Gap card (server-provided gaps)', () => {
 
 // ── Imbalance pairs card ──────────────────────────────────────────────────────
 
-// ── Fase 8c: pairs and critical state are not part of the profile ─────────────
+// ── Pairs and critical state are not part of the profile ─────────────
 
 describe('what the summary no longer shows (deep analysis only)', () => {
   it('has no imbalance pairs card, whatever the profile', () => {
@@ -309,7 +309,7 @@ describe('what the summary no longer shows (deep analysis only)', () => {
   });
 });
 
-// ── Fase 8c, Oleada 4: technical terms are explained ──────────────────────────
+// ── Technical terms are explained ──────────────────────────
 
 describe('glossary tooltips', () => {
   it.each([
@@ -349,7 +349,7 @@ describe('glossary tooltips', () => {
   });
 });
 
-// ── Fase 8c, Oleada 5: cards link to the radar ────────────────────────────────
+// ── Cards link to the radar ────────────────────────────────
 
 describe('cards highlight their dimensions in the radar', () => {
   it('reports the bottleneck dimensions on hover and clears them on leave', async () => {

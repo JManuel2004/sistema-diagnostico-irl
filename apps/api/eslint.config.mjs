@@ -22,8 +22,8 @@ import boundaries from 'eslint-plugin-boundaries';
  * the controller layer) for modules not yet moved to their definitive
  * location, captured as separate `domain`/`usecase`/`application`/
  * `infrastructure` element types alongside the `ctx-*` ones below. The
- * last module on that naming (`scaling-roadmap`) migrated to `roadmap/`
- * in Oleada 5, so that second naming and its element types are gone —
+ * last module on that naming (`scaling-roadmap`) migrated to `roadmap/`,
+ * so that second naming and its element types are gone —
  * `ctx-*` is now the only naming, as this note always said it would
  * become.
  */
@@ -119,7 +119,7 @@ export default [
               // themselves bounded contexts of a different DDD category
               // (Shared Kernel / Anticorruption Layer): their domain
               // layers may be imported directly by any module's domain —
-              // see `convenciones-objetivo.md` §1.1, case (b) — instead of
+              // a read-only query of reference data — instead of
               // only through a port, which is how Core/Supporting
               // contexts communicate with each other. `modules/diagnosis/`,
               // `modules/initiative/`, `modules/routing/` and
@@ -177,8 +177,7 @@ export default [
   },
   {
     // Pure-domain constraint: the domain layer imports nothing from a
-    // framework or an IO package. Strictest tier, non-negotiable
-    // (root CLAUDE.md, "Architectural rules").
+    // framework or an IO package. Strictest tier, non-negotiable.
     files: [
       'src/shared/kernel/domain/**/*.ts',
       `src/{${DEFINITIVE_LAYER_CONTEXTS}}/domain/**/*.ts`,

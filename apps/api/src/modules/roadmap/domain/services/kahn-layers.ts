@@ -10,7 +10,7 @@ import { DependencyGraphCycleError } from '../exceptions/roadmap.errors.js';
  *   - `TopologicalLayeringService` runs it over the subgraph induced by the
  *     closure to produce the roadmap phases.
  *
- * Until backlog 3.2 each had its own copy of the loop.
+ * Each used to have its own copy of the loop.
  *
  * Only edges whose two ends are in `nodes` count; the rest are ignored, not
  * dragged along — a dependency on a dimension outside the set must not block

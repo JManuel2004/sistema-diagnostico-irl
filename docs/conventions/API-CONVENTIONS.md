@@ -6,7 +6,7 @@ REST conventions for the `@innlab/api` backend. These rules apply to every endpo
 
 1. **REST, not RPC.** URLs are resources, not actions.
 2. **Versioned at the path.** Every endpoint is prefixed `/api/v1/`. When a breaking change is unavoidable, add `/api/v2/` — never break `/api/v1/`.
-3. **English for URL segments**, like every other identifier in the code (`convenciones-objetivo.md` §3). Only user-facing strings stay in Spanish.
+3. **English for URL segments**, like every other identifier in the code (see `CODE-STYLE.md`). Only user-facing strings stay in Spanish.
 4. **camelCase for JSON keys.** Frontend convention.
 5. **RFC 7807 Problem Details for all errors.** With a project-specific `code` field for machine consumption.
 6. **Authenticated by default.** Every endpoint requires a valid JWT unless explicitly opted out (`@Public()` decorator).

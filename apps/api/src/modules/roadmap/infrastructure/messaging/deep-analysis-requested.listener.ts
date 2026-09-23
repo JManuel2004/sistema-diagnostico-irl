@@ -6,8 +6,7 @@ import { GenerateScalingRoadmapUseCase } from '../../application/use-cases/gener
 
 /**
  * Translates `DeepAnalysisRequestedEvent` into `roadmap/`'s own
- * calculation — `convenciones-objetivo.md` §1.1's "regla de
- * composición" case (a): `roadmap/` reacts to `diagnosis/`'s event
+ * calculation: `roadmap/` reacts to `diagnosis/`'s event
  * instead of `diagnosis/` calling it directly, and does not know
  * `routing/` is reacting to the same event too.
  *

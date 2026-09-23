@@ -26,7 +26,7 @@ export function QuestionnaireStep({ diagnosticId }: Props): JSX.Element {
 
   /**
    * El aviso aparece desde que el usuario intenta avanzar con respuestas
-   * faltantes y **permanece mientras siga faltando alguna** (backlog 10.5): la
+   * faltantes y **permanece mientras siga faltando alguna**: la
    * lista se recalcula con cada respuesta y el aviso desaparece solo cuando ya
    * no queda ninguna.
    */

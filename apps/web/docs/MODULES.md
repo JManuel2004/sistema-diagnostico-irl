@@ -1,6 +1,6 @@
 # Web Features
 
-Deliberately short. Per `convenciones-objetivo.md` §4, what can be derived from the code is not documented by hand: the folder tree is `apps/web/src/features/`, and the routes are in the router. This file states the rule and maps each feature to the backend module it talks to.
+Deliberately short. What can be derived from the code is not documented by hand: the folder tree is `apps/web/src/features/`, and the routes are in the router. This file states the rule and maps each feature to the backend module it talks to.
 
 This is the frontend counterpart of [`apps/api/docs/MODULES.md`](../../api/docs/MODULES.md). Where the backend organizes by NestJS module = bounded context, the frontend organizes by **feature folder = bounded UI capability**.
 

@@ -10,8 +10,7 @@ import type { ObjectLiteral, Repository } from 'typeorm';
  *
  * Why not list them by hand, as `.orUpdate([...])` asks: a hand-written
  * list has nothing to keep it complete. A column left out of one is
- * silently never updated (it happened with `dimension_result`, backlog
- * 5.4). Deriving
+ * silently never updated (it happened with `dimension_result`). Deriving
  * the list makes a new column part of the upsert the moment it is added to
  * the entity.
  *

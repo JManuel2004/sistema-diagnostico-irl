@@ -2,7 +2,7 @@
 
 ## Alcance
 
-El perfil de la iniciativa (nombre, sector, tipo de producto, etapa del catálogo y etapa declarada, equipo, mercado objetivo, financiamiento actual) y el consentimiento de tratamiento de datos (Ley 1581, RF-03), más el historial de diagnósticos del usuario. **No cubre** el estado del diagnóstico ni el cuestionario (`diagnosis/`). El consentimiento vive aquí, no en `diagnosis/` (`convenciones-objetivo.md` §1.3).
+El perfil de la iniciativa (nombre, sector, tipo de producto, etapa del catálogo y etapa declarada, equipo, mercado objetivo, financiamiento actual) y el consentimiento de tratamiento de datos (Ley 1581, RF-03), más el historial de diagnósticos del usuario. **No cubre** el estado del diagnóstico ni el cuestionario (`diagnosis/`). El consentimiento vive aquí, no en `diagnosis/` (la Ley 1581 liga el consentimiento a los datos que se tratan, y buena parte son los de la iniciativa).
 
 ## Reglas que deben respetarse
 
@@ -16,9 +16,9 @@ El perfil de la iniciativa (nombre, sector, tipo de producto, etapa del catálog
 
 ## Nivel de completitud
 
-- Implementado: registro y lectura del consentimiento (HU-05, paso 2 del asistente), registro y lectura de la iniciativa (HU-06, con su formulario y su panel en el frontend), catálogos de sectores y etapas para el formulario, lista de "mis diagnósticos" (HU-03, backlog 11.3), caracterización para `routing/`.
-- El registro de la iniciativa avanza el diagnóstico a `WITH_INITIATIVE` por evento (backlog 14.1).
-- Pendiente: `GetConsent`/`GetInitiative` no verifican propiedad (backlog 14.2). El catálogo de sectores solo tiene el del caso AgroConecta: falta la taxonomía de INNLAB.
+- Implementado: registro y lectura del consentimiento (HU-05, paso 2 del asistente), registro y lectura de la iniciativa (HU-06, con su formulario y su panel en el frontend), catálogos de sectores y etapas para el formulario, lista de "mis diagnósticos" (HU-03), caracterización para `routing/`.
+- El registro de la iniciativa avanza el diagnóstico a `WITH_INITIATIVE` por evento (`InitiativeRegisteredEvent`).
+- Pendiente: `GetConsent`/`GetInitiative` no verifican propiedad. El catálogo de sectores solo tiene el del caso AgroConecta: falta la taxonomía de INNLAB.
 
 ## Responsabilidad (lenguaje ubicuo)
 

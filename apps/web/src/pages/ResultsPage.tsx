@@ -41,7 +41,7 @@ import { wizardPath } from './wizard/wizard-steps';
 
 /**
  * `/diagnosticos/:id/resultados` — los resultados de un diagnóstico en una sola
- * vista (Fase 8c).
+ * vista.
  *
  * Antes eran tres pantallas (perfil, recomendación, roadmap) a las que se
  * llegaba por botón. Ahora hay una página y lo que muestra depende de una sola
@@ -55,7 +55,7 @@ import { wizardPath } from './wizard/wizard-steps';
  *    recomendación de portafolio.
  *
  * Aceptar el análisis profundo (RF-11) es una acción del usuario: el botón
- * vive aquí y no envía nada por sí solo al entrar (backlog 4.6). La página
+ * vive aquí y no envía nada por sí solo al entrar. La página
  * compone tres features; una feature no puede importar de otra, la página sí.
  *
  * Cada resultado es un resultado guardado con su fecha (`ResultMeta`).

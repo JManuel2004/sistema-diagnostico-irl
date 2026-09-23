@@ -40,7 +40,7 @@ describe('toMaturityProfileResponse', () => {
     expect(dto.gaps.dimensions).toEqual(['CRL', 'BRL', 'IPRL', 'FRL']);
   });
 
-  // RF-13 / backlog 4: the critical state comes from the backend. A gap in TRL,
+  // RF-13: The critical state comes from the backend. A gap in TRL,
   // IPRL or FRL is a gap, not a critical state.
   it('exposes the critical dimensions: only CRL, BRL and TmRL, and only when in gap', () => {
     const profile = MaturityProfile.create({
@@ -129,7 +129,7 @@ describe('toMaturityProfileResponse', () => {
     expect(dto.globalAverage).toBe(3.5);
   });
 
-  // Backlog 4.5: `name` used to be the dimension code, so the frontend kept
+  // `name` used to be the dimension code, so the frontend kept
   // its own name maps. The names come from the catalog.
   it('names each dimension from the catalog, never by its code', () => {
     const profile = MaturityProfile.create({

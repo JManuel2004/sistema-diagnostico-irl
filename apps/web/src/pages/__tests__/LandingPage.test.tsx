@@ -93,7 +93,7 @@ describe('LandingPage — portada pública', () => {
     });
   });
 
-  // Backlog 10.2: the landing promised more than the draft does.
+  // The landing promised more than the draft does.
   it('no promete conservar el progreso entre sesiones', () => {
     renderPage();
 

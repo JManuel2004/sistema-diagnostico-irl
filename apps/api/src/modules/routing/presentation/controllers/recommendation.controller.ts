@@ -14,8 +14,7 @@ import { unwrapResult } from '../../../../shared/kernel/application/unwrap-resul
  * Solo lectura. La recomendación no se genera desde aquí: la calcula
  * `routing/` al reaccionar a `DeepAnalysisRequestedEvent`, que publica
  * `POST /diagnostics/:id/deep-analysis` (RF-11). El antiguo
- * `POST /diagnostics/:id/recommendation` se retiró en la Fase 5 (backlog
- * 14.3): ofrecía un camino de escritura paralelo que no pasaba por el
+ * `POST /diagnostics/:id/recommendation` se retiró: ofrecía un camino de escritura paralelo que no pasaba por el
  * evento ni comprobaba el estado del diagnóstico.
  *
  * La traza va en su propia ruta porque su audiencia es el equipo de

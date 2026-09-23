@@ -14,8 +14,7 @@ import type { UserContextPort } from '../../domain/repositories/user-context.rep
  * SEMI business rule. Flagged explicitly because `shared/identity/` now
  * lives beside `shared/kernel/` and `shared/irl-taxonomy/`, and the
  * folder name alone no longer signals "anticorruption layer" as clearly
- * as it did when `identity` was the only module of its kind in the tree
- * (`convenciones-objetivo.md` §1.1).
+ * as it did when `identity` was the only module of its kind in the tree.
  *
  * Adapter for the `/internal/*` surface of `innlab-core-api`.
  *

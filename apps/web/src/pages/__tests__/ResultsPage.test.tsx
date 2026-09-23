@@ -339,7 +339,7 @@ describe('ResultsPage — con análisis profundo', () => {
     ).not.toBeInTheDocument();
   });
 
-  // Backlog 10.3: every saved result carries its own date, in the same style.
+  // Every saved result carries its own date, in the same style.
   it('cada resultado guardado lleva su propia fecha: perfil, roadmap y recomendación', async () => {
     backend({ accepted: true });
 
@@ -387,7 +387,7 @@ describe('ResultsPage — con análisis profundo', () => {
   });
 });
 
-describe('ResultsPage — explicabilidad para quien no conoce el marco (Oleada 4)', () => {
+describe('ResultsPage — explicabilidad para quien no conoce el marco', () => {
   it('abre con un bloque de contexto: qué es el IRL, una dimensión y un nivel', async () => {
     backend({ accepted: false });
 

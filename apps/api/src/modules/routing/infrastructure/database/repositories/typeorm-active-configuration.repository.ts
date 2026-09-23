@@ -27,7 +27,7 @@ import {
  * Adaptador de lectura de la configuración de enrutamiento.
  *
  * Sin versionado: el esquema de versionado de configuración se retiró
- * (backlog 5.6) — hay una sola configuración vigente en `scoring_parameters`
+ * — hay una sola configuración vigente en `scoring_parameters`
  * (tabla singleton), `calibration_label_value` y los tres `published_*`,
  * ninguno ya scoped a una versión.
  *

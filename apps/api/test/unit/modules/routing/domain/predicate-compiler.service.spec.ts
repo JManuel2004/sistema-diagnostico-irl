@@ -333,7 +333,7 @@ it('rechaza un nodo que no es un objeto', () => {
   });
 });
 
-// Backlog 5.2: a queryable field must not be accepted without a declared
+// A queryable field must not be accepted without a declared
 // kind. `FIELD_KIND` is typed `Record<Field, …>` so the compiler already
 // enforces it; this pins the same guarantee at runtime.
 describe('FIELD_KIND', () => {

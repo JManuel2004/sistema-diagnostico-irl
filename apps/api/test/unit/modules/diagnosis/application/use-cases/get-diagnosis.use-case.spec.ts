@@ -36,7 +36,7 @@ describe('GetDiagnosisUseCase', () => {
     expect(result.value.state).toBe('PROFILE_GENERATED');
   });
 
-  // Backlog 10 / Fase 8c: the results page decides what to show from this flag,
+  // The results page decides what to show from this flag,
   // computed by the backend and not inferred from the state by the client.
   it.each([
     ['WITH_INITIATIVE', false],

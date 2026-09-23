@@ -2,7 +2,7 @@ import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
 import type { DimensionWithStatements } from '@innlab/contracts';
 
 /**
- * Development-only autofill (Fase 8c, Oleada 8).
+ * Development-only autofill.
  *
  * The switch is a **build-time** variable, `VITE_DEV_AUTOFILL`, set to `true`
  * only in `.env.development` (loaded by `vite` in dev mode, never by

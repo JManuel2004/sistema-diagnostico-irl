@@ -16,7 +16,7 @@ import type { GlossaryKey } from '@/shared/lib/glossary';
 /**
  * Las etiquetas cortas vienen de la respuesta (`shortName` de cada resultado
  * de dimensión), no de un mapa del frontend: el frontend no mantiene nombres
- * de dimensión (backlog 4.5).
+ * de dimensión.
  */
 
 export const TONE_STYLES: Record<

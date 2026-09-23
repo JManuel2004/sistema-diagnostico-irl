@@ -33,8 +33,7 @@ import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module
  *
  * Reads dimensions through `IrlTaxonomyModule`'s port, not `DimensionOrm`
  * directly — `shared/irl-taxonomy/` is its own bounded context, not a
- * table any module can reach into (fixed in Oleada 5, was the pending
- * cross-module `DimensionOrm` access documented on that module).
+ * table any module can reach into.
  */
 @Module({
   imports: [

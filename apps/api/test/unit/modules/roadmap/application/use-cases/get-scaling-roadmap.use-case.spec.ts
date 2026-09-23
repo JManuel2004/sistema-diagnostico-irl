@@ -70,7 +70,7 @@ describe('GetScalingRoadmapUseCase', () => {
     );
   });
 
-  // Backlog 4.5: the roadmap names its dimensions from the catalog, so the
+  // The roadmap names its dimensions from the catalog, so the
   // frontend keeps no name map.
   it('names every dimension of the saved roadmap from the catalog', async () => {
     findByDiagnosticId.mockResolvedValueOnce(aRoadmap());
@@ -103,7 +103,7 @@ describe('GetScalingRoadmapUseCase', () => {
     });
   });
 
-  // Backlog 10.1: the response says why a dimension is in the plan and what
+  // The response says why a dimension is in the plan and what
   // sets its target, with the driving dimension named from the catalog.
   it('explains the inclusion and the target of each dimension', async () => {
     findByDiagnosticId.mockResolvedValueOnce(aRoadmap());
