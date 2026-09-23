@@ -3,8 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module.js';
 import { TAXONOMY_REPOSITORY } from '../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
 import type { TaxonomyRepositoryPort } from '../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
-import { DimensionOrm } from '../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
-import { DimensionPairOrm } from '../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension-pair.orm-entity.js';
 
 import { DiagnosisOrm } from './infrastructure/database/orm-entities/diagnosis.orm-entity.js';
 import { AnswerOrm } from './infrastructure/database/orm-entities/answer.orm-entity.js';
@@ -58,12 +56,9 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
  * isolation, only cross-module wiring for a flow that is one bounded
  * context. `consent` is not absorbed here: it lives in `initiative/`.
  *
- * `IrlTaxonomyModule` is imported so `GetQuestionnaireStructureQuery`
- * can read dimensions through `TAXONOMY_REPOSITORY`; `DimensionOrm` and
- * `DimensionPairOrm` are also registered directly here because
- * `TypeOrmMaturityProfileRepository`/`TypeOrmImbalanceRepository` still
- * read them without going through the port — a pre-existing cross-module
- * access carried over unchanged from the modules this one absorbs.
+ * `IrlTaxonomyModule` is imported for `TAXONOMY_REPOSITORY`: every read of
+ * the dimensions, the pairs and the conversion table goes through that
+ * port; no ORM entity of `shared/irl-taxonomy/` is registered here.
  */
 @Module({
   imports: [
@@ -73,8 +68,6 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
       StatementOrm,
       DimensionResultOrm,
       ImbalanceAnalysisOrm,
-      DimensionOrm,
-      DimensionPairOrm,
     ]),
     IrlTaxonomyModule,
   ],

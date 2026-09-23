@@ -1,53 +1,56 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { StatementCatalogPort } from '../../../domain/repositories/statement-catalog.port.js';
 import { Statement } from '../../../domain/entities/statement.js';
 import { StatementOrm } from '../orm-entities/statement.orm-entity.js';
+import {
+  TAXONOMY_REPOSITORY,
+  type TaxonomyRepositoryPort,
+} from '../../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
 
 /**
- * TypeORM-backed adapter for `StatementCatalogPort`.
- *
- * Immutable at runtime, plain reads only — same convention as the rest
- * of the catalog adapters (see `TypeOrmTaxonomyRepository`).
+ * Reads the 48 statements. The dimension each one belongs to (its code and
+ * its display order) comes from `shared/irl-taxonomy/` through its port.
  */
 @Injectable()
 export class TypeOrmStatementCatalogRepository implements StatementCatalogPort {
   constructor(
     @InjectRepository(StatementOrm)
     private readonly statements: Repository<StatementOrm>,
+    @Inject(TAXONOMY_REPOSITORY)
+    private readonly taxonomy: TaxonomyRepositoryPort,
   ) {}
 
   async findAllStatements(): Promise<Statement[]> {
-    const rows = await this.statements.find({
-      relations: { dimension: true },
-      order: { dimension: { sequence: 'ASC' }, sequence: 'ASC' },
-    });
-    return rows.map((r) =>
-      Statement.fromPersistence({
-        id: r.idStatement,
-        dimensionId: r.idDimension,
-        dimensionCode: r.dimension.code,
-        sequence: r.sequence,
-        text: r.textEs,
-      }),
+    const dimensions = await this.taxonomy.findAllDimensions();
+    const rows = await this.statements.find({ order: { sequence: 'ASC' } });
+    return dimensions.flatMap((dimension) =>
+      rows
+        .filter((row) => row.idDimension === dimension.id)
+        .map((row) => toStatement(row, dimension.code.value)),
     );
   }
 
   async findStatementsByDimensionCode(code: string): Promise<Statement[]> {
+    const dimension = (await this.taxonomy.findAllDimensions()).find(
+      (d) => d.code.value === code,
+    );
+    if (!dimension) return [];
     const rows = await this.statements.find({
-      where: { dimension: { code } },
-      relations: { dimension: true },
+      where: { idDimension: dimension.id },
       order: { sequence: 'ASC' },
     });
-    return rows.map((r) =>
-      Statement.fromPersistence({
-        id: r.idStatement,
-        dimensionId: r.idDimension,
-        dimensionCode: r.dimension.code,
-        sequence: r.sequence,
-        text: r.textEs,
-      }),
-    );
+    return rows.map((row) => toStatement(row, code));
   }
+}
+
+function toStatement(row: StatementOrm, dimensionCode: string): Statement {
+  return Statement.fromPersistence({
+    id: row.idStatement,
+    dimensionId: row.idDimension,
+    dimensionCode,
+    sequence: row.sequence,
+    text: row.textEs,
+  });
 }

@@ -1,11 +1,4 @@
-import {
-  Column,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  type Relation,
-} from 'typeorm';
-import { StatementOrm } from '../../../../../modules/diagnosis/infrastructure/database/orm-entities/statement.orm-entity.js';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ schema: 'irl_catalog', name: 'dimension' })
 export class DimensionOrm {
@@ -45,7 +38,4 @@ export class DimensionOrm {
    */
   @Column({ name: 'minimum_expected_level', type: 'smallint', default: 4 })
   minimumExpectedLevel!: number;
-
-  @OneToMany(() => StatementOrm, (s) => s.dimension)
-  statements!: Relation<StatementOrm[]>;
 }

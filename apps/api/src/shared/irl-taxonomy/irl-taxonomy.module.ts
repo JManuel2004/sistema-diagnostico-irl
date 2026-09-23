@@ -11,9 +11,7 @@ import { TAXONOMY_REPOSITORY } from './domain/repositories/taxonomy.repository.p
  * dimensions, the SA-06 conversion table, and the six fixed imbalance
  * pairs.
  *
- * `DimensionOrm` is also registered directly by `diagnosis/` today
- * instead of going through `TAXONOMY_REPOSITORY`; `routing/` and
- * `roadmap/` already use the port.
+ * Every other module reads it through `TAXONOMY_REPOSITORY`.
  */
 @Module({
   imports: [

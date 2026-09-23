@@ -1,12 +1,11 @@
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  type Relation,
-} from 'typeorm';
-import { DimensionOrm } from '../../../../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+
+/**
+ * A questionnaire statement. `id_dimension` is kept as a plain column, with
+ * no ORM relation to `shared/irl-taxonomy/`'s `DimensionOrm`: the dimension's
+ * code and order are read through `TAXONOMY_REPOSITORY`, so no ORM entity
+ * crosses the module boundary.
+ */
 
 @Entity({ schema: 'irl_catalog', name: 'statement' })
 export class StatementOrm {
@@ -21,10 +20,4 @@ export class StatementOrm {
 
   @Column({ name: 'text_es', type: 'varchar', length: 500 })
   textEs!: string;
-
-  @ManyToOne(() => DimensionOrm, (d) => d.statements, {
-    onDelete: 'RESTRICT',
-  })
-  @JoinColumn({ name: 'id_dimension' })
-  dimension!: Relation<DimensionOrm>;
 }

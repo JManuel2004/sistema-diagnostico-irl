@@ -1,11 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { MaturityProfileRepositoryPort } from '../../../domain/repositories/maturity-profile.repository.port.js';
 import { MaturityProfile } from '../../../domain/entities/maturity-profile.aggregate.js';
 import { MaturityProfileCalculationError } from '../../../domain/exceptions/maturity-profile-calculation.error.js';
 import { DimensionResultOrm } from '../orm-entities/dimension-result.orm-entity.js';
-import { DimensionOrm } from '../../../../../shared/irl-taxonomy/infrastructure/database/orm-entities/dimension.orm-entity.js';
+import {
+  TAXONOMY_REPOSITORY,
+  type TaxonomyRepositoryPort,
+} from '../../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
 import { upsertColumns } from '../../../../../shared/kernel/infrastructure/database/upsert-columns.js';
 
 /** Unique constraint `uq_dimension_result_diag_dim` the upsert conflicts on. */
@@ -16,23 +19,21 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
   constructor(
     @InjectRepository(DimensionResultOrm)
     private readonly orm: Repository<DimensionResultOrm>,
-    @InjectRepository(DimensionOrm)
-    private readonly dimensions: Repository<DimensionOrm>,
+    @Inject(TAXONOMY_REPOSITORY)
+    private readonly taxonomy: TaxonomyRepositoryPort,
   ) {}
 
   async save(profile: MaturityProfile): Promise<void> {
     const snapshot = profile.toPersistence();
-    const catalog = await this.dimensions.find();
-    const idByCode = new Map(
-      catalog.map((d) => [d.code, d.idDimension] as const),
-    );
+    const catalog = await this.taxonomy.findAllDimensions();
+    const idByCode = new Map<string, number>(catalog.map((d) => [d.code.value, d.id]));
     // RF-13: critical state needs both a gap and a dimension the framework
     // marks as susceptible (`is_critical_dimension`).
     const criticalCodes = new Set<string>(
       profile
         .criticalState(
           new Set(
-            catalog.filter((d) => d.isCriticalDimension).map((d) => d.code),
+            catalog.filter((d) => d.isCriticalDimension).map((d) => d.code.value),
           ),
         )
         .dimensions.map((d) => d.dimensionCode.value),
@@ -96,7 +97,7 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
   }
 
   private async loadDimensionCodeById(): Promise<ReadonlyMap<number, string>> {
-    const rows = await this.dimensions.find();
-    return new Map(rows.map((d) => [d.idDimension, d.code] as const));
+    const dimensions = await this.taxonomy.findAllDimensions();
+    return new Map(dimensions.map((d) => [d.id, d.code.value] as const));
   }
 }
