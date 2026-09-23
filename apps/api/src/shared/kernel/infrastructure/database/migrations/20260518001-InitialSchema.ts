@@ -39,9 +39,8 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  *     column width if needed (the longest today is 25 characters).
  *   - `published_exception_rule.action` is checked against the actions of
  *     `EXCEPTION_ACTIONS` in `@innlab/contracts`.
- *   - `notificacion`, `descarga_reporte` and `evento_auditoria` are reserved
- *     for the future `reporting/` module and still carry their original
- *     Spanish column names; they are translated when that module is designed.
+ *   - `notification`, `report_download` and `audit_event` are reserved for
+ *     the future `reporting/` module; no code reads or writes them yet.
  *
  * `scaling_roadmap` holds the roadmap calculated when the user accepts the
  * deep analysis: one row per diagnostic, `phases` as a `jsonb` snapshot of
@@ -274,14 +273,14 @@ export class InitialSchema1747526400001 implements MigrationInterface {
       )
     `);
     await queryRunner.query(`
-      CREATE TABLE irl_diagnostic.descarga_reporte (
-          id_descarga bigint GENERATED ALWAYS AS IDENTITY,
-          id_diagnostico uuid NOT NULL,
+      CREATE TABLE irl_diagnostic.report_download (
+          id_download bigint GENERATED ALWAYS AS IDENTITY,
+          id_diagnostic uuid NOT NULL,
           cognito_user_id character varying(64) NOT NULL,
-          timestamp_descarga timestamp with time zone NOT NULL,
-          formato character varying(8) NOT NULL,
-          tamano_bytes integer,
-          incluye_atribucion boolean NOT NULL
+          downloaded_at timestamp with time zone NOT NULL,
+          format character varying(8) NOT NULL,
+          size_bytes integer,
+          includes_attribution boolean NOT NULL
       )
     `);
     await queryRunner.query(`
@@ -309,12 +308,12 @@ export class InitialSchema1747526400001 implements MigrationInterface {
       )
     `);
     await queryRunner.query(`
-      CREATE TABLE irl_diagnostic.evento_auditoria (
-          id_evento bigint GENERATED ALWAYS AS IDENTITY,
-          id_diagnostico uuid NOT NULL,
-          tipo_evento character varying(40) NOT NULL,
+      CREATE TABLE irl_diagnostic.audit_event (
+          id_event bigint GENERATED ALWAYS AS IDENTITY,
+          id_diagnostic uuid NOT NULL,
+          event_type character varying(40) NOT NULL,
           cognito_user_id character varying(64),
-          timestamp_evento timestamp with time zone NOT NULL,
+          occurred_at timestamp with time zone NOT NULL,
           metadata character varying(4000)
       )
     `);
@@ -349,15 +348,15 @@ export class InitialSchema1747526400001 implements MigrationInterface {
       )
     `);
     await queryRunner.query(`
-      CREATE TABLE irl_diagnostic.notificacion (
-          id_notificacion bigint GENERATED ALWAYS AS IDENTITY,
-          id_diagnostico uuid NOT NULL,
-          tipo character varying(16) NOT NULL,
-          destinatario character varying(200) NOT NULL,
-          timestamp_envio timestamp with time zone NOT NULL,
-          estado_envio character varying(16) NOT NULL,
-          mensaje_error character varying(500),
-          numero_intentos integer DEFAULT 0 NOT NULL
+      CREATE TABLE irl_diagnostic.notification (
+          id_notification bigint GENERATED ALWAYS AS IDENTITY,
+          id_diagnostic uuid NOT NULL,
+          type character varying(16) NOT NULL,
+          recipient character varying(200) NOT NULL,
+          sent_at timestamp with time zone NOT NULL,
+          delivery_status character varying(16) NOT NULL,
+          error_message character varying(500),
+          attempt_count integer DEFAULT 0 NOT NULL
       )
     `);
     await queryRunner.query(`
@@ -439,19 +438,19 @@ export class InitialSchema1747526400001 implements MigrationInterface {
       ALTER TABLE irl_diagnostic.consent ADD PRIMARY KEY (id)
     `);
     await queryRunner.query(`
-      ALTER TABLE irl_diagnostic.descarga_reporte ADD PRIMARY KEY (id_descarga)
+      ALTER TABLE irl_diagnostic.report_download ADD PRIMARY KEY (id_download)
     `);
     await queryRunner.query(`
       ALTER TABLE irl_diagnostic.diagnostic ADD PRIMARY KEY (id)
     `);
     await queryRunner.query(`
-      ALTER TABLE irl_diagnostic.evento_auditoria ADD PRIMARY KEY (id_evento)
+      ALTER TABLE irl_diagnostic.audit_event ADD PRIMARY KEY (id_event)
     `);
     await queryRunner.query(`
       ALTER TABLE irl_diagnostic.initiative ADD PRIMARY KEY (id)
     `);
     await queryRunner.query(`
-      ALTER TABLE irl_diagnostic.notificacion ADD PRIMARY KEY (id_notificacion)
+      ALTER TABLE irl_diagnostic.notification ADD PRIMARY KEY (id_notification)
     `);
     await queryRunner.query(`
       ALTER TABLE irl_diagnostic.portfolio_recommendation ADD PRIMARY KEY (id)
@@ -540,7 +539,7 @@ export class InitialSchema1747526400001 implements MigrationInterface {
       ALTER TABLE irl_diagnostic.layer_trace ADD CONSTRAINT uq_layer_trace_recommendation UNIQUE (id_recommendation)
     `);
     await queryRunner.query(`
-      ALTER TABLE irl_diagnostic.notificacion ADD CONSTRAINT uq_notificacion_diag_tipo UNIQUE (id_diagnostico, tipo)
+      ALTER TABLE irl_diagnostic.notification ADD CONSTRAINT uq_notification_diagnostic_type UNIQUE (id_diagnostic, type)
     `);
     await queryRunner.query(`
       ALTER TABLE irl_diagnostic.portfolio_recommendation ADD CONSTRAINT uq_portfolio_recommendation_diagnostic UNIQUE (id_diagnostic)
@@ -616,7 +615,7 @@ export class InitialSchema1747526400001 implements MigrationInterface {
       ALTER TABLE irl_diagnostic.consent ADD CONSTRAINT fk_consent_diagnostic FOREIGN KEY (id_diagnostic) REFERENCES irl_diagnostic.diagnostic(id) ON DELETE CASCADE
     `);
     await queryRunner.query(`
-      ALTER TABLE irl_diagnostic.descarga_reporte ADD CONSTRAINT fk_descarga_diagnostico FOREIGN KEY (id_diagnostico) REFERENCES irl_diagnostic.diagnostic(id) ON DELETE CASCADE
+      ALTER TABLE irl_diagnostic.report_download ADD CONSTRAINT fk_report_download_diagnostic FOREIGN KEY (id_diagnostic) REFERENCES irl_diagnostic.diagnostic(id) ON DELETE CASCADE
     `);
     await queryRunner.query(`
       ALTER TABLE irl_diagnostic.dimension_result ADD CONSTRAINT fk_dimension_result_diagnostic FOREIGN KEY (id_diagnostic) REFERENCES irl_diagnostic.diagnostic(id) ON DELETE CASCADE
@@ -625,7 +624,7 @@ export class InitialSchema1747526400001 implements MigrationInterface {
       ALTER TABLE irl_diagnostic.dimension_result ADD CONSTRAINT fk_dimension_result_dimension FOREIGN KEY (id_dimension) REFERENCES irl_catalog.dimension(id_dimension)
     `);
     await queryRunner.query(`
-      ALTER TABLE irl_diagnostic.evento_auditoria ADD CONSTRAINT fk_evento_diagnostico FOREIGN KEY (id_diagnostico) REFERENCES irl_diagnostic.diagnostic(id) ON DELETE CASCADE
+      ALTER TABLE irl_diagnostic.audit_event ADD CONSTRAINT fk_audit_event_diagnostic FOREIGN KEY (id_diagnostic) REFERENCES irl_diagnostic.diagnostic(id) ON DELETE CASCADE
     `);
     await queryRunner.query(`
       ALTER TABLE irl_diagnostic.imbalance_analysis ADD CONSTRAINT fk_imbalance_analysis_diagnostic FOREIGN KEY (id_diagnostic) REFERENCES irl_diagnostic.diagnostic(id) ON DELETE CASCADE
@@ -646,7 +645,7 @@ export class InitialSchema1747526400001 implements MigrationInterface {
       ALTER TABLE irl_diagnostic.layer_trace ADD CONSTRAINT fk_layer_trace_recommendation FOREIGN KEY (id_recommendation) REFERENCES irl_diagnostic.portfolio_recommendation(id) ON DELETE CASCADE
     `);
     await queryRunner.query(`
-      ALTER TABLE irl_diagnostic.notificacion ADD CONSTRAINT fk_notificacion_diagnostico FOREIGN KEY (id_diagnostico) REFERENCES irl_diagnostic.diagnostic(id) ON DELETE CASCADE
+      ALTER TABLE irl_diagnostic.notification ADD CONSTRAINT fk_notification_diagnostic FOREIGN KEY (id_diagnostic) REFERENCES irl_diagnostic.diagnostic(id) ON DELETE CASCADE
     `);
     await queryRunner.query(`
       ALTER TABLE irl_diagnostic.portfolio_recommendation ADD CONSTRAINT fk_portfolio_recommendation_diagnostic FOREIGN KEY (id_diagnostic) REFERENCES irl_diagnostic.diagnostic(id) ON DELETE CASCADE
