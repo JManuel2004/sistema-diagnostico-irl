@@ -15,30 +15,27 @@ import {
 } from '../store/questionnaire-draft.store';
 
 /**
- * Tabs de dimensiones IRL.
+ * Tabs of the IRL dimensions.
  *
  * Layout (`DESIGN.md`):
- *  - Desktop: grid de 6 columnas (un trigger por dimensión).
- *  - Mobile: la lista cae a scroll horizontal — Tailwind `overflow-x-auto`
- *    sobre el wrapper conserva la altura y permite `scroll-snap` al
- *    deslizar.
+ *  - Desktop: a 6-column grid (one trigger per dimension).
+ *  - Mobile: the list falls back to horizontal scroll — Tailwind
+ *    `overflow-x-auto` on the wrapper keeps the height and allows
+ *    `scroll-snap` while swiping.
  *
- * Códigos de dimensión (TRL, CRL, BRL, IPRL, TmRL, FRL) siempre en
- * `overline` (uppercase, 8% letter-spacing), nunca traducidos ni
- * abreviados según `DESIGN.md`.
+ * Dimension codes (TRL, CRL, BRL, IPRL, TmRL, FRL) always in `overline`
+ * (uppercase, 8% letter-spacing), never translated or abbreviated, per
+ * `DESIGN.md`.
  *
- * La pestaña activa vive en el store (`activeTab`) en lugar de
- * `useState` o `defaultValue`, de modo que el F5 la conserva
- * (SPEC-STORY3 §5.6).
+ * The active tab lives in the store (`activeTab`) instead of `useState` or
+ * `defaultValue`, so an F5 keeps it.
  *
- * Mejoras heredadas del prototipo cliente:
- *  - Tick de completitud cuando los 8 ítems de la dimensión están
- *    respondidos.
- *  - Auto-scroll al cambiar de pestaña: el usuario entra siempre al
- *    inicio del panel, no a la altura previa del scroll.
- *  - Navegación inferior previa/siguiente (`<DimensionNav>`) para
- *    completar el cuestionario en orden lineal sin obligar al
- *    usuario a volver a la barra de pestañas.
+ * Also:
+ *  - A completion tick when the dimension's 8 statements are complete.
+ *  - Auto-scroll on tab change: the user always lands at the top of the
+ *    panel, not at the previous scroll height.
+ *  - Previous/next navigation at the bottom (`<DimensionNav>`) to complete
+ *    the questionnaire linearly without going back to the tab bar.
  */
 interface Props {
   dimensions: QuestionnaireStructure['dimensions'];
@@ -69,18 +66,18 @@ export function DimensionTabs({ dimensions }: Props) {
   const justifications = useQuestionnaireDraftStore(selectJustifications);
 
   const panelTopRef = useRef<HTMLDivElement | null>(null);
-  // Pestaña que ya estaba a la vista: el efecto solo desplaza cuando cambia
-  // respecto de ella, no al montar (ahí la página debe cargar desde arriba).
+  // Tab that was already in view: the effect only scrolls when the tab
+  // changes from it, not on mount (there the page must load from the top).
   const shownTab = useRef(activeTab);
 
-  // Auto-scroll: cuando el usuario cambia de dimensión, llevarlo a la
-  // cabecera del panel para que no entre a mitad de scroll. Se usa
-  // typeof-guard porque jsdom (entorno de tests) no implementa
-  // `scrollIntoView`; en un navegador real está siempre disponible.
+  // Auto-scroll: when the user changes dimension, take them to the
+  // panel's header so they do not land mid-scroll. The typeof guard is
+  // there because jsdom (the test environment) does not implement
+  // `scrollIntoView`; a real browser always has it.
   //
-  // La comparación con `shownTab` (y no una bandera de «primer render»)
-  // es lo que evita el desplazamiento al montar también bajo StrictMode, que
-  // ejecuta el efecto dos veces en desarrollo.
+  // Comparing with `shownTab` (and not a "first render" flag) is what
+  // prevents the scroll on mount also under StrictMode, which runs the
+  // effect twice in development.
   useEffect(() => {
     if (shownTab.current === activeTab) return;
     shownTab.current = activeTab;

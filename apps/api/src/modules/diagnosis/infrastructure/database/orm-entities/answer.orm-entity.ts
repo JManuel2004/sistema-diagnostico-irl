@@ -1,7 +1,7 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ schema: 'irl_diagnostic', name: 'answer' })
-@Index('uq_answer_diagnostic_statement', ['idDiagnostico', 'idStatement'], {
+@Index('uq_answer_diagnostic_statement', ['diagnosticId', 'idStatement'], {
   unique: true,
 })
 export class AnswerOrm {
@@ -10,7 +10,7 @@ export class AnswerOrm {
 
   @Index('ix_answer_diagnostic')
   @Column({ name: 'id_diagnostic', type: 'uuid' })
-  idDiagnostico!: string;
+  diagnosticId!: string;
 
   @Column({ name: 'id_statement', type: 'bigint' })
   idStatement!: string;

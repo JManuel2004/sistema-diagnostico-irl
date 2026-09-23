@@ -26,16 +26,15 @@ export default {
       testTimeout: 120_000,
     },
     {
-      // Cada spec e2e arranca su propia aplicación Nest completa. Se
-      // ejecutan en procesos separados (sin `--runInBand`) porque cargar
-      // dos grafos de módulos completos en un mismo proceso ESM corrompe
-      // el registro de módulos de Jest y la segunda suite ni siquiera
-      // llega a cargarse.
+      // Each e2e spec boots its own full Nest application. They run in
+      // separate processes (no `--runInBand`) because loading two full module
+      // graphs in the same ESM process corrupts Jest's module registry and the
+      // second suite does not even load.
       //
-      // Consecuencia para quien añada una suite: comparten la base de
-      // datos y corren en paralelo, así que cada una debe crear sus
-      // propios datos con identificadores únicos y limpiarlos al terminar.
-      // Ninguna puede asumir que es la única escribiendo.
+      // Consequence for whoever adds a suite: they share the database and run
+      // in parallel, so each one must create its own data with unique
+      // identifiers and clean it up when done. None can assume it is the only
+      // one writing.
       displayName: 'e2e',
       testMatch: ['<rootDir>/test/e2e/**/*.e2e-spec.ts'],
       preset: 'ts-jest/presets/default-esm',

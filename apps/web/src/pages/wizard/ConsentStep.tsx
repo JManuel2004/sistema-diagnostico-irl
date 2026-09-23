@@ -17,7 +17,7 @@ interface Props {
   readonly diagnosticId: string;
   readonly consent: ConsentRecord | null;
   readonly initiative: Initiative | null;
-  /** El formulario del paso 1, todavía en el navegador. */
+  /** The form of step 1, still in the browser. */
   readonly draft: RegisterInitiativeCommand | null;
 }
 
@@ -32,12 +32,13 @@ const MESSAGES: Record<Exclude<Failure, null>, string> = {
 };
 
 /**
- * Paso 2 — consentimiento para el tratamiento de datos (RF-03 / HU-05).
+ * Step 2 — consent to the processing of data (RF-03 / HU-05).
  *
- * Aceptar hace dos cosas, en este orden: registra el consentimiento y, solo
- * entonces, registra la iniciativa del paso 1 (el sistema no guarda datos de la
- * iniciativa antes de la aceptación). Si lo segundo falla, la aceptación ya
- * quedó registrada y el reintento solo repite lo que falta.
+ * Accepting does two things, in this order: it records the consent and,
+ * only then, registers the initiative of step 1 (the system stores no data
+ * of the initiative before the acceptance). If the second fails, the
+ * acceptance is already recorded and the retry only repeats what is
+ * missing.
  */
 export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props): JSX.Element {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props)
 
     if (needsInitiative) {
       if (!draft) {
-        // El borrador se perdió: el paso 1 vuelve a pedirlo.
+        // The draft was lost: step 1 asks for it again.
         void navigate(wizardPath(diagnosticId, 'iniciativa'), { replace: true });
         return;
       }

@@ -12,7 +12,7 @@ const DIMENSION_CODES = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;
 
 function buildFixture(): QuestionnaireStructure {
   return {
-    versionMarco: 'KTH-IRL-1.0',
+    frameworkVersion: 'KTH-IRL-1.0',
     dimensions: DIMENSION_CODES.map((code, dimIdx) => ({
       code,
       name: `${code} — Nombre`,
@@ -111,12 +111,12 @@ describe('QuestionnaireView', () => {
 
     beforeEach(() => {
       scrollIntoView.mockClear();
-      // jsdom no implementa `scrollIntoView`: se define para observar las llamadas.
+      // jsdom does not implement `scrollIntoView`: it is defined to observe the calls.
       Element.prototype.scrollIntoView = scrollIntoView;
     });
 
     afterEach(() => {
-      // @ts-expect-error restaura el estado de jsdom, que no define el método.
+      // @ts-expect-error restores jsdom's state, which does not define the method.
       delete Element.prototype.scrollIntoView;
     });
 

@@ -1,10 +1,9 @@
-// Barrel del paquete @innlab/contracts — única superficie pública.
+// Barrel of the @innlab/contracts package — its only public surface.
 //
-// Convención: solo se re-exporta lo que tanto backend como frontend
-// necesiten consumir. Si algo se usa nada más dentro del propio
-// paquete (helpers internos, etc.), NO va aquí. Mantener este archivo
-// como la fuente canónica del contrato facilita tree-shaking y deja
-// claro qué API se compromete a no romper sin aviso.
+// Convention: only what both backend and frontend need to consume is
+// re-exported. Anything used only inside the package (internal helpers,
+// etc.) does NOT go here. Keeping this file as the canonical source of the
+// contract makes clear which API is promised not to break without notice.
 
 // ── common ────────────────────────────────────────────────────────────
 export * from './common/uuid.schema.js';

@@ -69,14 +69,14 @@ describe('GetQuestionnaireStructureQuery', () => {
     query = new GetQuestionnaireStructureQuery(taxonomy, statementCatalog);
   });
 
-  it('returns KTH-IRL-1.0 as versionMarco', async () => {
+  it('returns KTH-IRL-1.0 as frameworkVersion', async () => {
     const { dimensions, statements } = buildFullCatalog();
     taxonomy.findAllDimensions.mockResolvedValue(dimensions);
     statementCatalog.findAllStatements.mockResolvedValue(statements);
 
     const result = await query.execute();
 
-    expect(result.versionMarco).toBe('KTH-IRL-1.0');
+    expect(result.frameworkVersion).toBe('KTH-IRL-1.0');
   });
 
   it('returns exactly 6 dimensions', async () => {

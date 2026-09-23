@@ -47,7 +47,7 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
         );
       }
       return {
-        idDiagnostico: snapshot.diagnosticId,
+        diagnosticId: snapshot.diagnosticId,
         idDimension,
         likertAverage: r.averageLikert,
         irlLevel: r.irlLevel,
@@ -69,7 +69,7 @@ export class TypeOrmMaturityProfileRepository implements MaturityProfileReposito
     diagnosticId: string,
   ): Promise<MaturityProfile | null> {
     const rows = await this.orm.find({
-      where: { idDiagnostico: diagnosticId },
+      where: { diagnosticId: diagnosticId },
     });
     if (rows.length === 0) return null;
 

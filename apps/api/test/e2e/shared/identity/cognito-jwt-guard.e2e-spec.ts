@@ -80,7 +80,7 @@ const VALID_CLAIMS = {
 @Controller()
 class ProbeController {
   @Get('protegido')
-  protegido(@CurrentUser() user: AuthenticatedUser) {
+  guarded(@CurrentUser() user: AuthenticatedUser) {
     return user;
   }
 
@@ -93,13 +93,13 @@ class ProbeController {
 
 describe('Guard global de Cognito (e2e)', () => {
   let app: INestApplication;
-  // `getHttpServer()` devuelve `any`; se estrecha una vez aqui en vez de
-  // arrastrar ese `any` hasta cada llamada de supertest.
+  // `getHttpServer()` returns `any`; it is narrowed once here instead of
+  // dragging that `any` into every supertest call.
   let server: Server;
 
   beforeAll(async () => {
-    // `generateKeyPairSync` ya entrega KeyObjects, asi que el publico se
-    // exporta a JWK directamente — es lo que sirve el endpoint de Cognito.
+    // `generateKeyPairSync` already returns KeyObjects, so the public key is
+    // exported to JWK directly — which is what Cognito's endpoint serves.
     const jwk = publicKey.export({ format: 'jwk' });
     nock(JWKS_HOST)
       .persist()
@@ -194,7 +194,7 @@ describe('Guard global de Cognito (e2e)', () => {
   it('rechaza un token cuyo kid no esta en el JWKS', async () => {
     await request(server)
       .get('/protegido')
-      .set('Authorization', `Bearer ${mintToken(VALID_CLAIMS, { kid: 'otro-kid' })}`)
+      .set('Authorization', `Bearer ${mintToken(VALID_CLAIMS, { kid: 'other-kid' })}`)
       .expect(401);
   });
 

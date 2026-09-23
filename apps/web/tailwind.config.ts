@@ -86,8 +86,8 @@ const config: Config = {
 
         dimension: PALETTE.dimension,
       },
-      // Esquinas rectas en todo, como innlab.org. `rounded-full` sigue
-      // disponible para círculos (escala Likert, pasos, puntos).
+      // Straight corners everywhere, like innlab.org. `rounded-full` is still
+      // available for circles (Likert scale, steps, dots).
       borderRadius: {
         none: '0',
         DEFAULT: '0',

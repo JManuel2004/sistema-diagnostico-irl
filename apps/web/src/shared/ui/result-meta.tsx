@@ -2,14 +2,14 @@ import type { JSX } from 'react';
 import { Clock } from 'lucide-react';
 
 /**
- * `ResultMeta` — cuándo se guardó un resultado.
+ * `ResultMeta` — when a result was saved.
  *
- * Perfil, recomendación y roadmap son resultados guardados con fecha, no
- * cálculos que cambian al abrir la pantalla; este componente lo dice de la
- * misma forma y en el mismo lugar (bajo el título) en las tres.
+ * Profile, recommendation and roadmap are saved results with a date, not
+ * calculations that change when the screen opens; this component says so
+ * the same way and in the same place (under the title) in all three.
  */
 interface ResultMetaProps {
-  /** Fecha ISO del momento en que el backend guardó el resultado. */
+  /** ISO date of the moment the backend saved the result. */
   readonly savedAt: string;
 }
 

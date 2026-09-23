@@ -1,25 +1,26 @@
 import { z } from 'zod';
 
 /**
- * Sesión del ecosistema INNLAB, tal como la entrega INNLAB Core en el
- * intercambio SSO (`GET /auth/sso/exchange`) y tal como el frontend la guarda
- * y la relee de `localStorage`.
+ * INNLAB ecosystem session, as INNLAB Core delivers it in the SSO exchange
+ * (`GET /auth/sso/exchange`) and as the frontend stores it and reads it
+ * back from `localStorage`.
  *
- * Se valida en las dos superficies porque ninguna es de confianza: la
- * respuesta viene de un servicio externo y el almacenamiento del navegador
- * se puede editar fuera de la aplicación. Un valor que no cumple el schema
- * se trata como «sin sesión», no como una sesión a medias.
+ * It is validated on both surfaces because neither is trusted: the
+ * response comes from an external service and the browser storage can be
+ * edited outside the application. A value that does not satisfy the schema
+ * is treated as "no session", not as half a session.
  *
- * `accessToken` es el único que autentica (Core exige `token_use ===
- * 'access'`). `token` es el id_token: se guarda porque Core lo entrega junto,
- * pero no se usa como credencial, y una sesión sin él sigue siendo utilizable,
- * así que si falta se toma como cadena vacía en vez de rechazar la sesión.
+ * `accessToken` is the only one that authenticates (Core requires
+ * `token_use === 'access'`). `token` is the id_token: it is kept because
+ * Core delivers it alongside, but it is not used as a credential, and a
+ * session without it is still usable, so if it is missing it is taken as an
+ * empty string instead of rejecting the session.
  */
 export const coreSessionSchema = z
   .object({
-    token: z.string().default('').describe('id_token. Identifica al usuario; no autentica.'),
-    accessToken: z.string().min(1).describe('access_token. El único válido como Bearer.'),
+    token: z.string().default('').describe('id_token. Identifies the user; does not authenticate.'),
+    accessToken: z.string().min(1).describe('access_token. The only one valid as Bearer.'),
   })
-  .describe('Sesión de INNLAB Core (id_token + access_token)');
+  .describe('INNLAB Core session (id_token + access_token)');
 
 export type CoreSession = z.infer<typeof coreSessionSchema>;

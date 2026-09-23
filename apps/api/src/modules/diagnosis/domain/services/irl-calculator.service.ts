@@ -121,7 +121,7 @@ export class IrlCalculatorService {
           `Dimension ${dim.value} has ${ans.length} answers, expected ${ANSWERS_PER_DIMENSION}`,
           {
             dimension: dim.value,
-            actual: ans.length,
+            current: ans.length,
             expected: ANSWERS_PER_DIMENSION,
           },
         );

@@ -33,12 +33,12 @@ export class RoadmapCalculationError extends DomainError {
 export class DependencyGraphCycleError extends RoadmapCalculationError {
   override readonly code = 'ROADMAP_GRAPH_HAS_CYCLE';
 
-  constructor(public readonly dimensionesImplicadas: readonly string[]) {
+  constructor(public readonly involvedDimensions: readonly string[]) {
     super(
-      `El graph de dependencies contiene un ciclo entre las dimensions ` +
-        `${[...dimensionesImplicadas].sort().join(', ')}; no admite un orden de fases. ` +
-        `Revise las edges declaradas entre ellas.`,
-      { dimensionesImplicadas: [...dimensionesImplicadas].sort() },
+      `El grafo de dependencias contiene un ciclo entre las dimensiones ` +
+        `${[...involvedDimensions].sort().join(', ')}; no admite un orden de fases. ` +
+        `Revise las aristas declaradas entre ellas.`,
+      { involvedDimensions: [...involvedDimensions].sort() },
     );
   }
 }

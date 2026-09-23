@@ -11,20 +11,19 @@ interface Props {
 }
 
 /**
- * Una fase del roadmap.
+ * A phase of the roadmap.
  *
- * Las dimensiones se muestran como una **grilla en paralelo**, no como
- * lista numerada, porque dentro de una fase no hay ninguna precedencia
- * entre ellas: el orden del array es canónico y sirve para que la
- * respuesta sea determinista, nada más. Numerarlas comunicaría una
- * prioridad que el sistema no calculó.
+ * The dimensions are shown as a **parallel grid**, not as a numbered list,
+ * because within a phase there is no precedence among them: the array's
+ * order is canonical and only keeps the response deterministic. Numbering
+ * them would convey a priority the system did not calculate.
  *
- * Cada dimensión lleva su color, su barra de nivel (con el tramo que falta
- * hasta la meta en tono suave) y frases cortas que dicen por qué está en el
- * plan y por qué esa meta.
+ * Each dimension carries its color, its level bar (with the stretch missing
+ * up to the target in a soft tone) and short sentences that say why it is
+ * in the plan and why that target.
  */
 export function RoadmapPhaseCard({ phase, isLast }: Props): JSX.Element {
-  const enParalelo = phase.dimensions.length > 1;
+  const inParallel = phase.dimensions.length > 1;
 
   return (
     <li className="relative">
@@ -42,7 +41,7 @@ export function RoadmapPhaseCard({ phase, isLast }: Props): JSX.Element {
         <div className="flex-1 pb-10">
           <h3 className="text-foreground text-xl font-bold tracking-tight">Fase {phase.order}</h3>
           <p className="text-muted-foreground mt-0.5 text-base">
-            {enParalelo
+            {inParallel
               ? `Estas ${String(phase.dimensions.length)} dimensiones se trabajan al mismo tiempo: ninguna depende de la otra.`
               : 'Una sola dimensión en esta fase.'}
           </p>

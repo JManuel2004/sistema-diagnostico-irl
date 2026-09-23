@@ -5,15 +5,14 @@ import type { CompiledEligibilityRule } from '../services/eligibility-filter.ser
 import type { CompiledExceptionRule } from '../services/exception-engine.service.js';
 
 /**
- * Puerto de lectura de la configuración de enrutamiento.
+ * Read port of the routing configuration.
  *
- * Solo lectura, por diseño: el motor de consulta no puede escribir
- * configuración.
+ * Read-only by design: the query engine cannot write configuration.
  *
- * Sin versionado: el esquema de versionado de configuración se retiró
- * — nada en el sistema puede publicar una segunda versión,
- * así que el puerto expone una única configuración vigente, sin historial
- * que numerar ni versión concreta que cargar.
+ * Not versioned: the configuration versioning scheme was retired — nothing
+ * in the system can publish a second version, so the port exposes a single
+ * live configuration, with no history to number and no specific version to
+ * load.
  */
 export const ACTIVE_CONFIGURATION_REPOSITORY = Symbol(
   'ACTIVE_CONFIGURATION_REPOSITORY',
@@ -28,6 +27,6 @@ export interface ResolvedConfiguration {
 }
 
 export interface ActiveConfigurationRepositoryPort {
-  /** La configuración vigente, o `null` si aún no se sembró ninguna. */
+  /** The live configuration, or `null` if none has been seeded yet. */
   load(): Promise<ResolvedConfiguration | null>;
 }

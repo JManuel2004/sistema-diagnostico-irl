@@ -7,7 +7,7 @@ export class DimensionResultOrm {
   id!: string;
 
   @Column({ name: 'id_diagnostic', type: 'uuid' })
-  idDiagnostico!: string;
+  diagnosticId!: string;
 
   @Column({ name: 'id_dimension', type: 'integer' })
   idDimension!: number;

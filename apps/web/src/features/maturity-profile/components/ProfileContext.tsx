@@ -5,12 +5,12 @@ import { Card, CardContent } from '@/shared/ui/card';
 import { DimensionChip } from '@/shared/ui/dimension-chip';
 
 /**
- * Contexto para quien nunca ha oído hablar de IRL: qué es un nivel, qué es
- * una dimensión y cómo se lee el radar. Va siempre visible en la página de
- * resultados, antes del radar.
+ * Context for someone who has never heard of IRL: what a level is, what a
+ * dimension is and how the radar is read. Always visible on the results
+ * page, before the radar.
  *
- * Los nombres de las seis dimensiones salen de la respuesta, no de una lista
- * del frontend.
+ * The names of the six dimensions come from the response, not from a
+ * frontend list.
  */
 interface Props {
   readonly dimensionResults: readonly DimensionResult[];

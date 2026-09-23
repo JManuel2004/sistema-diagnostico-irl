@@ -2,19 +2,19 @@ import type { JSX, ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 
 /**
- * `SectionHeader` — título de una sección dentro de una página (`h2`), con su
- * descripción y, debajo, el metadato del resultado (`ResultMeta`). Es a las
- * secciones lo que `PageHeader` es a la página.
+ * `SectionHeader` — title of a section inside a page (`h2`), with its
+ * description and, below, the result metadata (`ResultMeta`). It is to
+ * sections what `PageHeader` is to the page.
  *
- * Con `icon`, el título lleva a su izquierda un círculo Azul Icesi con el icono
- * en blanco, como las tarjetas de innlab.org.
+ * With `icon`, the title carries on its left an Azul Icesi circle with the
+ * icon in white, like innlab.org's cards.
  */
 interface SectionHeaderProps {
-  /** Identificador del `h2`, para que la sección lo use en `aria-labelledby`. */
+  /** Identifier of the `h2`, so the section uses it in `aria-labelledby`. */
   readonly id?: string;
   readonly title: string;
   readonly overline?: string;
-  /** Tono del sobretítulo: `critical` para las alertas. */
+  /** Tone of the overline: `critical` for the alerts. */
   readonly tone?: 'default' | 'critical';
   readonly description?: string;
   readonly icon?: LucideIcon;
@@ -42,7 +42,7 @@ export function SectionHeader({
       )}
       <div className="min-w-0 flex-1">
         {overline && (
-          // Sin `cn`: tailwind-merge tomaría `text-eyebrow` por un color y la quitaría.
+          // No `cn`: tailwind-merge would take `text-eyebrow` for a color and drop it.
           <p className={`text-eyebrow mb-2${tone === 'critical' ? '!text-critical' : ''}`}>
             {overline}
           </p>

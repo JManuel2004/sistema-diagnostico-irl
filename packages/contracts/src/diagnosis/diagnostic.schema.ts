@@ -3,21 +3,21 @@ import { uuidSchema } from '../common/uuid.schema.js';
 import { answerItemSchema } from './answer.schema.js';
 
 /**
- * Estados del proceso de diagnóstico — máquina de estados que rige las
- * transiciones del agregado `Diagnostico`.
+ * States of the diagnostic process — the state machine that governs the
+ * transitions of the `Diagnosis` aggregate.
  *
- * Fuente autoritativa: el CHECK constraint `ck_diagnostico_estado` de
- * la tabla `irl_diagnostic.diagnostico` (migración inicial). La lista
- * de aquí debe coincidir exactamente con la de la BD — si se agrega
- * un nuevo estado, se hace primero la migración y luego este schema.
+ * Authoritative source: the `ck_diagnostic_state` CHECK constraint of the
+ * `irl_diagnostic.diagnostic` table (single migration). This list must
+ * match the database's exactly — to add a state, change the migration
+ * first and then this schema.
  *
- * Transiciones (lineales, no se saltan pasos):
+ * Transitions (linear, no step is skipped):
  *   STARTED
- *     → WITH_CONSENT         (HU-05 / RF-03)
- *     → WITH_INITIATIVE             (HU-06 / RF-04)
- *     → QUESTIONNAIRE_IN_PROGRESS      (HU-07)
- *     → QUESTIONNAIRE_COMPLETE      (HU-10 / RF-06)
- *     → PROFILE_GENERATED            (HU-11 / RF-07)
+ *     → WITH_CONSENT               (HU-05 / RF-03)
+ *     → WITH_INITIATIVE            (HU-06 / RF-04)
+ *     → QUESTIONNAIRE_IN_PROGRESS  (HU-07)
+ *     → QUESTIONNAIRE_COMPLETE     (HU-10 / RF-06)
+ *     → PROFILE_GENERATED          (HU-11 / RF-07)
  *     → DEEP_ANALYSIS_DECLINED | DEEP_ANALYSIS_IN_PROGRESS
  *          → DEEP_ANALYSIS_COMPLETE
  */
@@ -35,60 +35,61 @@ export const DIAGNOSTIC_STATES = [
 
 export const diagnosticStateSchema = z
   .enum(DIAGNOSTIC_STATES)
-  .describe('Estado actual de un diagnóstico');
+  .describe('Current state of a diagnostic');
 
 export type DiagnosticState = z.infer<typeof diagnosticStateSchema>;
 
 /**
- * Diagnóstico tal como lo expone la API.
+ * A diagnostic as the API exposes it.
  *
- * Endpoint principal: `GET /api/v1/diagnosticos/:id`.
+ * Main endpoint: `GET /api/v1/diagnostics/:id`.
  *
- * `userId` es opaco (lo emite Cognito); el frontend lo usa solo para
- * comparar con el usuario actual y decidir si mostrar el diagnóstico.
+ * `userId` is opaque (Cognito issues it); the frontend only uses it to
+ * compare with the current user.
  */
 export const diagnosticSchema = z
   .object({
     id: uuidSchema,
-    userId: z.string().min(1).describe('Identificador del usuario propietario'),
+    userId: z.string().min(1).describe('Identifier of the owning user'),
     state: diagnosticStateSchema,
     completed: z
       .boolean()
       .describe(
-        'Si el cuestionario ya se procesó y existe el perfil de madurez — derivado del estado en el backend; mientras sea falso el diagnóstico se puede reanudar',
+        'Whether the questionnaire was processed and the maturity profile exists — derived from the state by the backend; while false, the diagnostic can be resumed',
       ),
     deepAnalysisAccepted: z
       .boolean()
       .describe(
-        'Si el usuario ya aceptó el análisis profundo — derivado del estado en el backend',
+        'Whether the user already accepted the deep analysis — derived from the state by the backend',
       ),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
   })
-  .describe('Diagnóstico (DTO de lectura)');
+  .describe('Diagnostic (read DTO)');
 
 export type Diagnostic = z.infer<typeof diagnosticSchema>;
 
 /**
- * Resumen liviano para listar diagnósticos del usuario (HU-03).
- * Misma forma que `diagnosticSchema` pero documentada como lista —
- * mantenerla aparte facilita evolucionar el resumen sin tocar el
- * detalle.
+ * Lightweight summary to list the user's diagnostics (HU-03).
+ * Same shape as `diagnosticSchema` but documented as a list item — keeping
+ * it apart makes it easier to evolve the summary without touching the
+ * detail.
  */
 export const diagnosticSummarySchema = diagnosticSchema.describe(
-  'Resumen de un diagnóstico para la lista de "mis diagnósticos"',
+  'Summary of a diagnostic for the "my diagnostics" list',
 );
 
 export type DiagnosticSummary = z.infer<typeof diagnosticSummarySchema>;
 
 /**
- * Respuesta del endpoint que inicia un nuevo diagnóstico (HU-04).
+ * Response of the endpoint that starts a diagnostic (HU-04).
  *
- * `POST /api/v1/diagnosticos` no requiere body (la identidad sale del
- * JWT). Devuelve el diagnóstico recién creado en estado `STARTED`.
+ * `POST /api/v1/diagnostics` takes no body (the identity comes from the
+ * JWT). It returns the user's unfinished diagnostic if there is one, or a
+ * new one in `STARTED`.
  */
 export const startDiagnosticResponseSchema = diagnosticSchema.describe(
-  'Respuesta al iniciar un nuevo diagnóstico (HU-04)',
+  'Response to starting a diagnostic (HU-04)',
 );
 
 export type StartDiagnosticResponse = z.infer<typeof startDiagnosticResponseSchema>;
@@ -98,32 +99,32 @@ export const finalizeInitialDiagnosticRequestSchema = z
     answers: z
       .array(answerItemSchema)
       .length(48)
-      .describe('Exactamente 48 respuestas, una por afirmación'),
+      .describe('Exactly 48 answers, one per statement'),
   })
-  .describe('Comando para finalizar el diagnóstico inicial (envío + cálculo)');
+  .describe('Command that finalizes the initial diagnostic (submission + calculation)');
 
 export type FinalizeInitialDiagnosticRequest = z.infer<
   typeof finalizeInitialDiagnosticRequestSchema
 >;
 
 /**
- * Respuesta al aceptar el análisis profundo (RF-11).
+ * Response to accepting the deep analysis (RF-11).
  *
- * `POST /api/v1/diagnosticos/:id/deep-analysis` — dispara
- * `DeepAnalysisRequestedEvent` en el backend, que `routing/` y
- * `roadmap/` escuchan cada uno por su cuenta para calcular su parte.
- * Idempotente en el estado, no en el efecto: si el diagnóstico ya está
- * en `DEEP_ANALYSIS_IN_PROGRESS` o `DEEP_ANALYSIS_COMPLETE`, no cambia de
- * estado pero sí vuelve a publicar el evento, para que un cálculo que
- * falló la primera vez (p. ej. sin configuración de enrutamiento activa)
- * pueda reintentarse.
+ * `POST /api/v1/diagnostics/:id/deep-analysis` — fires
+ * `DeepAnalysisRequestedEvent` in the backend, which `routing/` and
+ * `roadmap/` each listen to in order to calculate their part. Idempotent
+ * in the state, not in the effect: if the diagnostic is already in
+ * `DEEP_ANALYSIS_IN_PROGRESS` or `DEEP_ANALYSIS_COMPLETE`, its state does
+ * not change but the event is published again, so a calculation that
+ * failed the first time (e.g. with no routing configuration seeded) can be
+ * retried.
  */
 export const acceptDeepAnalysisResponseSchema = z
   .object({
     diagnosticId: uuidSchema,
     state: diagnosticStateSchema,
   })
-  .describe('Respuesta al aceptar el análisis profundo (RF-11)');
+  .describe('Response to accepting the deep analysis (RF-11)');
 
 export type AcceptDeepAnalysisResponse = z.infer<
   typeof acceptDeepAnalysisResponseSchema

@@ -11,8 +11,8 @@ export const http = axios.create({
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   config.headers.set('X-Correlation-Id', nanoid());
 
-  // `accessToken`, nunca `token`: el id_token no autentica (el guard del
-  // backend exige `token_use === 'access'`). Ver shared/auth/session.ts.
+  // `accessToken`, never `token`: the id_token does not authenticate (the
+  // backend's guard requires `token_use === 'access'`). See shared/auth/session.ts.
   const accessToken = getAccessToken();
   if (accessToken !== null) {
     config.headers.set('Authorization', `Bearer ${accessToken}`);
@@ -22,18 +22,15 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 });
 
 /**
- * Error de API que conserva el documento RFC 7807 del backend.
+ * API error that keeps the backend's RFC 7807 document.
  *
- * El interceptor anterior rechazaba con `new Error(error.message)` en
- * cuanto el cuerpo era un objeto —el caso normal—, así que el `code`
- * estable que el backend garantiza no llegaba nunca al componente. Sin él
- * la UI no puede distinguir "todavía no se ha generado" de "no hay
- * configuración vigente" de "el diagnóstico no tiene perfil", que son
- * tres situaciones con mensajes y acciones distintas.
+ * Keeping the whole document is what lets the UI see the stable `code`
+ * the backend guarantees, and so tell "not generated yet" from "no live
+ * configuration" from "the diagnostic has no profile", three situations
+ * with different messages and actions.
  *
- * Como efecto secundario, exponer `status` reactiva la política de
- * reintentos de `query-client.ts`, que comprueba `error.status` y hasta
- * ahora no lo encontraba nunca: los 4xx se reintentaban igual que los 5xx.
+ * It also exposes `status`, which the retry policy of `query-client.ts`
+ * checks: 4xx are not retried, 5xx are.
  */
 export class ApiError extends Error {
   constructor(
@@ -49,7 +46,7 @@ export class ApiError extends Error {
   }
 }
 
-/** True si el error trae un `code` concreto del backend. */
+/** True if the error carries a specific `code` from the backend. */
 export function isApiErrorWithCode(error: unknown, code: string): boolean {
   return error instanceof ApiError && error.code === code;
 }
@@ -60,9 +57,9 @@ http.interceptors.response.use(
     const status = error.response?.status;
     const data = error.response?.data;
 
-    // Sin refresh token: un 401 significa sesión muerta, y la única
-    // recuperación posible es rehacer el SSO desde cero. Va antes de
-    // interpretar el cuerpo porque la acción no depende de su forma.
+    // No refresh token: a 401 means a dead session, and the only possible
+    // recovery is redoing the SSO from scratch. It comes before reading
+    // the body because the action does not depend on its shape.
     if (status === 401) {
       clearSession();
       redirectToSso(window.location.pathname + window.location.search);
@@ -79,9 +76,9 @@ http.interceptors.response.use(
       );
     }
 
-    // Respuestas que no siguen el contrato: un proxy, un timeout, un fallo
-    // de red. Se conserva el status cuando lo hay para que la política de
-    // reintentos siga funcionando.
+    // Responses that do not follow the contract: a proxy, a timeout, a
+    // network failure. The status is kept when there is one so the retry
+    // policy keeps working.
     if (typeof data === 'string' && data.length > 0) {
       return Promise.reject(new ApiError(data, undefined, status));
     }

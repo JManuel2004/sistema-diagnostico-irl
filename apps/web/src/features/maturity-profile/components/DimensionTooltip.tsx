@@ -4,10 +4,10 @@ import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { LevelBar } from '@/shared/ui/level-bar';
 
 /**
- * Lo que explica el tooltip de una punta del radar: qué es la dimensión, qué
- * mide y en qué nivel está la iniciativa. El nombre viene de la respuesta del
- * perfil y la descripción del catálogo del cuestionario; el frontend no
- * mantiene ninguno de los dos.
+ * What the tooltip of a radar point explains: what the dimension is, what
+ * it measures and at which level the initiative is. The name comes from the
+ * profile response and the description from the questionnaire catalog; the
+ * frontend keeps neither.
  */
 interface Props {
   readonly code: DimensionCode;

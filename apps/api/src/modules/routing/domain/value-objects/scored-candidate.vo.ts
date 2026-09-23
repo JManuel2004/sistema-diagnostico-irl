@@ -1,12 +1,12 @@
 import type { DimensionCode } from '@innlab/contracts';
 
 /**
- * Un servicio elegible con su score y el desglose de cómo se formó.
+ * An eligible service with its score and the breakdown of how it was formed.
  *
- * El desglose no es opcional ni un extra de depuración: es lo que la
- * traza persiste y lo que permite explicar una recomendación en el
- * vocabulario ordinal del negocio. Por eso cada aporte lleva la label
- * que lo originó y no solo el número resultante.
+ * The breakdown is neither optional nor a debugging extra: it is what the
+ * trace persists and what allows explaining a recommendation in the
+ * business's ordinal vocabulary. That is why each contribution carries the
+ * label that produced it and not only the resulting number.
  */
 export interface DimensionContribution {
   readonly dimension: DimensionCode;

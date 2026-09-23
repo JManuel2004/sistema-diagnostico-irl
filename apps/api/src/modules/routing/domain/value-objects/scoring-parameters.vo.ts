@@ -1,10 +1,10 @@
 /**
- * Los pesos globales del cálculo de afinidad, congelados al publicar.
+ * The global weights of the affinity calculation.
  *
- * Se pasan como un objeto de solo lectura en lugar de leerse de una
- * configuración global para que el scorer siga siendo una función pura:
- * el mismo perfil con los mismos parámetros produce siempre el mismo
- * score, que es la condición para que la traza sea reproducible.
+ * They are passed as a read-only object instead of being read from a
+ * global configuration so the scorer stays a pure function: the same
+ * profile with the same parameters always produces the same score, which is
+ * the condition for the trace to be reproducible.
  */
 export interface ScoringParameters {
   readonly bottleneckWeight: number;

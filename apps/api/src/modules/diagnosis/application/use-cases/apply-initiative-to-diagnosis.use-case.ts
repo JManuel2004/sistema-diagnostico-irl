@@ -23,14 +23,14 @@ export class ApplyInitiativeToDiagnosisUseCase {
   ) {}
 
   async execute(cmd: ApplyInitiativeToDiagnosisCommand): Promise<Result<void, NotFoundError>> {
-    const diagnostico = await this.diagnostics.findById(cmd.diagnosticId);
-    if (!diagnostico) {
+    const diagnosis = await this.diagnostics.findById(cmd.diagnosticId);
+    if (!diagnosis) {
       return Result.err(new NotFoundError('Diagnosis', cmd.diagnosticId));
     }
 
-    if (diagnostico.state.value === 'WITH_CONSENT') {
-      diagnostico.transitionTo('WITH_INITIATIVE');
-      await this.diagnostics.save(diagnostico);
+    if (diagnosis.state.value === 'WITH_CONSENT') {
+      diagnosis.transitionTo('WITH_INITIATIVE');
+      await this.diagnostics.save(diagnosis);
     }
 
     return Result.ok(undefined);

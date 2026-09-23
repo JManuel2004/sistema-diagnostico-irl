@@ -32,7 +32,7 @@ describe('sesión del ecosistema', () => {
   it('expone el accessToken y no el id_token como credencial', () => {
     saveSession(SESSION);
 
-    // El id_token no autentica: Core exige token_use === 'access'.
+    // The id_token does not authenticate: Core requires token_use === 'access'.
     expect(getAccessToken()).toBe('access-token-xyz');
     expect(getAccessToken()).not.toBe('id-token-abc');
   });
@@ -44,8 +44,8 @@ describe('sesión del ecosistema', () => {
     expect(hasStoredSession()).toBe(false);
   });
 
-  // El almacenamiento se puede editar fuera de la aplicación: lo que no
-  // cumple el contrato es «sin sesión», nunca una sesión a medias.
+  // The storage can be edited outside the application: whatever does not
+  // satisfy the contract is «no session», never half a session.
   it.each([
     ['accessToken que no es texto', { token: 'id', accessToken: 42 }],
     ['accessToken vacío', { token: 'id', accessToken: '' }],
@@ -53,8 +53,8 @@ describe('sesión del ecosistema', () => {
     ['un valor que no es un objeto', 'una-cadena'],
     ['null', null],
     ['un arreglo', ['access']],
-  ])('descarta una sesión guardada con %s', (_caso, valor) => {
-    window.localStorage.setItem('innlab.session.v1', JSON.stringify(valor));
+  ])('descarta una sesión guardada con %s', (_case, value) => {
+    window.localStorage.setItem('innlab.session.v1', JSON.stringify(value));
 
     expect(readSession()).toBeNull();
     expect(hasStoredSession()).toBe(false);
@@ -102,9 +102,9 @@ describe('sesión del ecosistema', () => {
 
     redirectToSso('/diagnosticos/42/cuestionario');
 
-    // Ruta exacta a proposito: `/sso` (sin `/auth`) no existe en el router
-    // del Hub y falla con una pantalla en blanco, sin error de red. Un
-    // `toContain('/sso?redirect=')` pasaria con la ruta mala.
+    // Exact route on purpose: `/sso` (without `/auth`) does not exist in the
+    // Hub's router and fails with a blank screen, with no network error. A
+    // `toContain('/sso?redirect=')` would pass with the wrong route.
     const target = String(assign.mock.calls[0]?.[0]);
     expect(target).toBe(
       'https://hub.test/auth/sso?redirect=' +

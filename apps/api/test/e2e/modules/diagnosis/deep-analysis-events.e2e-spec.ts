@@ -25,35 +25,35 @@ import {
 import { agroconectaAnswers } from '../../support/agroconecta-case.js';
 
 /**
- * E2E — caso de aceptación de AgroConecta a través del flujo por eventos.
+ * E2E — AgroConecta acceptance case through the event flow.
  *
- * Aceptar el análisis profundo (`POST /diagnostics/:id/deep-analysis`)
- * publica `DeepAnalysisRequestedEvent`; `routing/` y `roadmap/` lo escuchan
- * cada uno por su cuenta y, al terminar, publican su evento "calculado".
- * Esta suite arranca el `AppModule` real y comprueba de punta a punta:
+ * Accepting the deep analysis (`POST /diagnostics/:id/deep-analysis`)
+ * publishes `DeepAnalysisRequestedEvent`; `routing/` and `roadmap/` each
+ * listen on their own and, when done, publish their "calculated" event.
+ * This suite boots the real `AppModule` and checks end to end:
  *
- *   - que el evento llega a ambos listeners reales,
- *   - que cada módulo publica su propio evento "calculado",
- *   - que el resultado sigue siendo el de AgroConecta (Consultoría, con
- *     Mentoría y Proyectos Integradores como alternativas),
- *   - y que la recomendación existe sin haber llamado nunca al endpoint
- *     directo de `routing/`.
+ *   - that the event reaches both real listeners,
+ *   - that each module publishes its own "calculated" event,
+ *   - that the result is still AgroConecta's (Consultoría, with Mentoría
+ *     and Proyectos Integradores as alternatives),
+ *   - and that the recommendation exists without ever calling a direct
+ *     endpoint of `routing/`.
  *
- * Perfil de partida (SA-06): TRL 6, CRL 4, BRL 3, IPRL 1, TmRL 5, FRL 2.
- * Requiere la base migrada y sembrada.
+ * Starting profile (SA-06): TRL 6, CRL 4, BRL 3, IPRL 1, TmRL 5, FRL 2.
+ * Needs the migrated and seeded database.
  */
 describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
   let app: NestFastifyApplication;
   let dataSource: DataSource;
   let agent: ReturnType<typeof request.agent>;
   const diagnosticId = randomUUID();
-  const sinPerfil = randomUUID();
+  const withoutProfile = randomUUID();
 
-  const solicitado = jest.fn();
-  const recomendacionCalculada = jest.fn();
-  const roadmapCalculado = jest.fn();
+  const requested = jest.fn();
+  const recommendationCalculated = jest.fn();
+  const roadmapCalculated = jest.fn();
 
-  async function estadoDe(id: string): Promise<string> {
+  async function stateOf(id: string): Promise<string> {
     const [row] = await dataSource.query<{ state: string }[]>(
       `SELECT state FROM irl_diagnostic.diagnostic WHERE id = $1`,
       [id],
@@ -76,15 +76,15 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
       .agent(app.getHttpServer())
       .set('Authorization', authenticateAgainst(app));
 
-    // Espías sobre el emisor real de la app: observan lo que los módulos
-    // publican sin sustituir a ningún listener.
+    // Spies on the app's real emitter: they observe what the modules
+    // publish without replacing any listener.
     const events = app.get(EventEmitter2);
-    events.on(DeepAnalysisRequestedEvent.eventName, solicitado);
+    events.on(DeepAnalysisRequestedEvent.eventName, requested);
     events.on(
       PortfolioRecommendationCalculatedEvent.eventName,
-      recomendacionCalculada,
+      recommendationCalculated,
     );
-    events.on(ScalingRoadmapCalculatedEvent.eventName, roadmapCalculado);
+    events.on(ScalingRoadmapCalculatedEvent.eventName, roadmapCalculated);
 
     dataSource = app.get(DataSource);
 
@@ -93,7 +93,7 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
          (id, cognito_user_id, state, irl_framework_version)
        VALUES ($1, $2, 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0'),
               ($3, $2, 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
-      [diagnosticId, E2E_USER.sub, sinPerfil],
+      [diagnosticId, E2E_USER.sub, withoutProfile],
     );
     await dataSource.query(
       `INSERT INTO irl_catalog.sector (name, is_active)
@@ -134,7 +134,7 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
     if (dataSource?.isInitialized) {
       await dataSource.query(
         `DELETE FROM irl_diagnostic.diagnostic WHERE id = ANY($1)`,
-        [[diagnosticId, sinPerfil]],
+        [[diagnosticId, withoutProfile]],
       );
     }
     nock.cleanAll();
@@ -142,9 +142,9 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
   });
 
   it('finalizar guarda el estado crítico solo en las dimensiones que RF-13 admite', async () => {
-    // Perfil AgroConecta: en brecha (IRL ≤ 3) están BRL (3), IPRL (1) y FRL (2),
-    // pero IPRL y FRL no reciben la alerta: solo BRL queda en estado crítico.
-    const filas = await dataSource.query<{ code: string }[]>(
+    // AgroConecta profile: BRL (3), IPRL (1) and FRL (2) are in gap (IRL ≤ 3),
+    // but IPRL and FRL do not get the alert: only BRL is in critical state.
+    const rows = await dataSource.query<{ code: string }[]>(
       `SELECT d.code
          FROM irl_diagnostic.dimension_result r
          JOIN irl_catalog.dimension d ON d.id_dimension = r.id_dimension
@@ -152,14 +152,14 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
       [diagnosticId],
     );
 
-    expect(filas.map((f) => f.code)).toEqual(['BRL']);
+    expect(rows.map((f) => f.code)).toEqual(['BRL']);
   });
 
   it('antes de aceptar, no existe recomendación ni se ha publicado nada', async () => {
-    expect(await estadoDe(diagnosticId)).toBe('PROFILE_GENERATED');
-    expect(solicitado).not.toHaveBeenCalled();
-    expect(recomendacionCalculada).not.toHaveBeenCalled();
-    expect(roadmapCalculado).not.toHaveBeenCalled();
+    expect(await stateOf(diagnosticId)).toBe('PROFILE_GENERATED');
+    expect(requested).not.toHaveBeenCalled();
+    expect(recommendationCalculated).not.toHaveBeenCalled();
+    expect(roadmapCalculated).not.toHaveBeenCalled();
 
     const res = await agent
       .get(`/api/v1/diagnostics/${diagnosticId}/recommendation`)
@@ -178,19 +178,21 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
       diagnosticId,
       state: 'DEEP_ANALYSIS_IN_PROGRESS',
     });
-    expect(await estadoDe(diagnosticId)).toBe('DEEP_ANALYSIS_IN_PROGRESS');
+    expect(await stateOf(diagnosticId)).toBe('DEEP_ANALYSIS_IN_PROGRESS');
 
-    const carga = { payload: { diagnosticId } };
-    expect(solicitado).toHaveBeenCalledTimes(1);
-    expect(solicitado).toHaveBeenCalledWith(expect.objectContaining(carga));
-    // Los dos listeners reales corrieron: cada uno publicó su evento.
-    expect(recomendacionCalculada).toHaveBeenCalledTimes(1);
-    expect(recomendacionCalculada).toHaveBeenCalledWith(
-      expect.objectContaining(carga),
+    const eventPayload = { payload: { diagnosticId } };
+    expect(requested).toHaveBeenCalledTimes(1);
+    expect(requested).toHaveBeenCalledWith(
+      expect.objectContaining(eventPayload),
     );
-    expect(roadmapCalculado).toHaveBeenCalledTimes(1);
-    expect(roadmapCalculado).toHaveBeenCalledWith(
-      expect.objectContaining(carga),
+    // Both real listeners ran: each one published its event.
+    expect(recommendationCalculated).toHaveBeenCalledTimes(1);
+    expect(recommendationCalculated).toHaveBeenCalledWith(
+      expect.objectContaining(eventPayload),
+    );
+    expect(roadmapCalculated).toHaveBeenCalledTimes(1);
+    expect(roadmapCalculated).toHaveBeenCalledWith(
+      expect.objectContaining(eventPayload),
     );
   });
 
@@ -210,7 +212,7 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
   });
 
   it('el roadmap se calcula para el mismo perfil, y leerlo no publica ningún evento', async () => {
-    const antes = roadmapCalculado.mock.calls.length;
+    const before = roadmapCalculated.mock.calls.length;
 
     const res = await agent
       .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
@@ -218,27 +220,27 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
     await agent.get(`/api/v1/diagnostics/${diagnosticId}/roadmap`).expect(200);
 
     expect(() => roadmapResponseSchema.parse(res.body)).not.toThrow();
-    // Regresión 14.4: un GET no es un cálculo real.
-    expect(roadmapCalculado.mock.calls.length).toBe(antes);
+    // Regression: a GET is not a real calculation.
+    expect(roadmapCalculated.mock.calls.length).toBe(before);
   });
 
   it('aceptar de nuevo no cambia el estado, vuelve a publicar y no acumula recomendaciones', async () => {
-    const antes = {
-      solicitado: solicitado.mock.calls.length,
-      recomendacion: recomendacionCalculada.mock.calls.length,
-      roadmap: roadmapCalculado.mock.calls.length,
+    const before = {
+      requested: requested.mock.calls.length,
+      recommendation: recommendationCalculated.mock.calls.length,
+      roadmap: roadmapCalculated.mock.calls.length,
     };
 
     await agent
       .post(`/api/v1/diagnostics/${diagnosticId}/deep-analysis`)
       .expect(201);
 
-    expect(await estadoDe(diagnosticId)).toBe('DEEP_ANALYSIS_IN_PROGRESS');
-    expect(solicitado.mock.calls.length).toBe(antes.solicitado + 1);
-    expect(recomendacionCalculada.mock.calls.length).toBe(
-      antes.recomendacion + 1,
+    expect(await stateOf(diagnosticId)).toBe('DEEP_ANALYSIS_IN_PROGRESS');
+    expect(requested.mock.calls.length).toBe(before.requested + 1);
+    expect(recommendationCalculated.mock.calls.length).toBe(
+      before.recommendation + 1,
     );
-    expect(roadmapCalculado.mock.calls.length).toBe(antes.roadmap + 1);
+    expect(roadmapCalculated.mock.calls.length).toBe(before.roadmap + 1);
 
     const [{ count }] = await dataSource.query<{ count: string }[]>(
       `SELECT COUNT(*)::text AS count
@@ -250,13 +252,13 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
   });
 
   it('un diagnóstico sin perfil calculado responde 409 y no publica nada', async () => {
-    const antes = solicitado.mock.calls.length;
+    const before = requested.mock.calls.length;
 
     await agent
-      .post(`/api/v1/diagnostics/${sinPerfil}/deep-analysis`)
+      .post(`/api/v1/diagnostics/${withoutProfile}/deep-analysis`)
       .expect(409);
 
-    expect(solicitado.mock.calls.length).toBe(antes);
-    expect(await estadoDe(sinPerfil)).toBe('QUESTIONNAIRE_IN_PROGRESS');
+    expect(requested.mock.calls.length).toBe(before);
+    expect(await stateOf(withoutProfile)).toBe('QUESTIONNAIRE_IN_PROGRESS');
   });
 });

@@ -4,13 +4,14 @@ import { cva } from 'class-variance-authority';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * `Alert` — mensaje de estado (error, aviso, información, confirmación).
+ * `Alert` — status message (error, warning, information, confirmation).
  *
- * Es distinto de `Card`: la tarjeta contiene contenido; la alerta comunica
- * un estado y por eso lleva icono y rol ARIA. `DESIGN.md` exige que el color
- * nunca sea la única señal: cada tono trae su icono y un texto.
+ * It is different from `Card`: the card holds content; the alert
+ * communicates a state and therefore carries an icon and an ARIA role.
+ * `DESIGN.md` requires that color is never the only signal: each tone
+ * brings its icon and a text.
  *
- * `critical` usa `role="alert"` (se anuncia de inmediato); el resto usa
+ * `critical` uses `role="alert"` (announced immediately); the rest use
  * `role="status"`.
  */
 type Tone = 'critical' | 'moderate' | 'acceptable' | 'info';
@@ -38,7 +39,7 @@ interface AlertProps {
   readonly tone?: Tone;
   readonly title: string;
   readonly children?: ReactNode;
-  /** Acción propia del mensaje, p. ej. «Reintentar». */
+  /** The message's own action, e.g. «Reintentar». */
   readonly action?: ReactNode;
   readonly className?: string;
 }

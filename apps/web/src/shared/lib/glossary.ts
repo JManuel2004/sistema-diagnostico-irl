@@ -1,9 +1,10 @@
 /**
- * Términos técnicos del marco IRL con su explicación en lenguaje simple, una
- * frase cada uno. Son texto para quien nunca ha oído hablar de IRL, no la
- * definición técnica del backend: qué significa la palabra para la iniciativa.
+ * Technical terms of the IRL framework with their explanation in plain
+ * language, one sentence each. They are text for someone who has never
+ * heard of IRL, not the backend's technical definition: what the word means
+ * for the initiative.
  *
- * Los nombres de las dimensiones no están aquí: vienen de las respuestas.
+ * Dimension names are not here: they come from the responses.
  */
 export const GLOSSARY = {
   bottleneck: {

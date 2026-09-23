@@ -1,14 +1,13 @@
 import type { DimensionCode } from '@innlab/contracts';
 
 /**
- * La ficha de un servicio: qué banda de madurez atiende, en qué etapas
- * encaja, y con qué intensidad ordinal aborda cada dimensión IRL.
+ * A service's profile: which maturity band it serves, which stages it fits,
+ * and with what ordinal intensity it tackles each IRL dimension.
  *
- * `intensities` guarda etiquetas, no números. La traducción a valores
- * ocurre en tiempo de consulta (`OrdinalTranslatorService`) y no al
- * publicar: precalcularla congelaría la ficha contra una calibración
- * concreta y rompería la posibilidad de reinterpretar una versión
- * antigua con su propia escala.
+ * `intensities` stores labels, not numbers. The translation into values
+ * happens at query time (`OrdinalTranslatorService`), not when the profile
+ * is stored: computing it in advance would freeze the profile against one
+ * specific calibration.
  */
 export interface OrdinalProfile {
   readonly idService: number;
@@ -19,7 +18,7 @@ export interface OrdinalProfile {
   readonly intensities: ReadonlyMap<DimensionCode, string>;
 }
 
-/** La misma ficha con las etiquetas ya resueltas a valores numéricos. */
+/** The same profile with the labels already resolved to numeric values. */
 export interface NumericProfile {
   readonly idService: number;
   readonly serviceName: string;
@@ -27,6 +26,6 @@ export interface NumericProfile {
   readonly maxLevel: number;
   readonly relevantStages: readonly string[];
   readonly intensities: ReadonlyMap<DimensionCode, number>;
-  /** Etiqueta original por dimensión, para poder explicar sin números. */
+  /** Original label per dimension, so the explanation needs no numbers. */
   readonly labels: ReadonlyMap<DimensionCode, string>;
 }

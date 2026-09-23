@@ -19,5 +19,5 @@ export interface DiagnosisRepositoryPort {
   findById(id: string): Promise<Diagnosis | null>;
   findLatestByUserId(userId: string): Promise<Diagnosis | null>;
   findAllByUserId(userId: string): Promise<Diagnosis[]>;
-  save(diagnostico: Diagnosis): Promise<void>;
+  save(diagnosis: Diagnosis): Promise<void>;
 }

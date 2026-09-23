@@ -7,13 +7,13 @@ import { DIMENSION_DEPENDENCIES } from '../../../src/shared/kernel/infrastructur
 import { seedRoadmapGraph } from '../../../src/shared/kernel/infrastructure/database/seeds/seed-roadmap-graph.js';
 
 /**
- * Integración del seed del graph de dependencies contra Postgres real.
+ * Integration of the dependency graph seed against a real Postgres.
  *
- * Verifica lo que un test unitario no puede: que las FKs se resuelvan
- * por `code` (no por id, que es IDENTITY y no estable), que el
- * `ON CONFLICT` sea idempotente de verdad, y que la lista de columnas
- * del `DO UPDATE` incluya efectivamente las mutables — omitir una haría
- * que el seed pareciera idempotente pero nunca actualizara ese valor.
+ * Checks what a unit test cannot: that the FKs resolve by `code` (not by
+ * id, which is IDENTITY and not stable), that the `ON CONFLICT` is really
+ * idempotent, and that the column list of the `DO UPDATE` does include the
+ * mutable ones — leaving one out would make the seed look idempotent while
+ * never updating that value.
  */
 describe('Seed del graph de dependencies (integration)', () => {
   let container: StartedPostgreSqlContainer;
@@ -36,7 +36,7 @@ describe('Seed del graph de dependencies (integration)', () => {
     await dataSource.initialize();
     await dataSource.runMigrations();
 
-    // Las seis dimensions, con su nivel mínimo esperado.
+    // The six dimensions, with their expected minimum level.
     for (const d of DIMENSIONS) {
       await dataSource.query(
         `INSERT INTO irl_catalog.dimension
@@ -85,12 +85,12 @@ describe('Seed del graph de dependencies (integration)', () => {
   });
 
   it('las seis dimensions quedan con nivel mínimo esperado 4', async () => {
-    const rows = await dataSource.query<{ codigo: string; nivel: number }[]>(
-      `SELECT code AS codigo, minimum_expected_level AS nivel
+    const rows = await dataSource.query<{ code: string; level: number }[]>(
+      `SELECT code, minimum_expected_level AS level
          FROM irl_catalog.dimension ORDER BY sequence`,
     );
     expect(rows).toHaveLength(6);
-    expect(rows.every((f) => f.nivel === 4)).toBe(true);
+    expect(rows.every((f) => f.level === 4)).toBe(true);
   });
 
   it('una segunda ejecución no duplica rows', async () => {
@@ -103,9 +103,9 @@ describe('Seed del graph de dependencies (integration)', () => {
   });
 
   it('el DO UPDATE actualiza de verdad el nivel requerido', async () => {
-    // Si `minimum_required_level` faltara de la lista de columnas
-    // actualizables, el seed parecería idempotente pero nunca corregiría
-    // el valor tras el primer INSERT.
+    // If `minimum_required_level` were missing from the list of updatable
+    // columns, the seed would look idempotent but would never correct the
+    // value after the first INSERT.
     await dataSource.query(
       `UPDATE irl_catalog.dimension_dependency SET minimum_required_level = 9`,
     );
@@ -142,8 +142,8 @@ describe('Seed del graph de dependencies (integration)', () => {
   });
 
   it('la base admite la edge inversa: la aciclicidad no la impone el esquema', async () => {
-    // UNIQUE(source, target) no ve que FRL->BRL cierre un lazo con
-    // BRL->FRL. Por eso la aciclicidad se comprueba tres veces en código.
+    // UNIQUE(source, target) does not see that FRL->BRL closes a loop with
+    // BRL->FRL. That is why acyclicity is checked three times in code.
     await dataSource.query(
       `INSERT INTO irl_catalog.dimension_dependency
          (id_dimension_source, id_dimension_target, minimum_required_level)

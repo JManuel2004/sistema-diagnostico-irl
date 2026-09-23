@@ -1,7 +1,7 @@
 import { consentRecordSchema, type ConsentRecord } from '@innlab/contracts';
 import { ApiError, http } from '@/shared/api/http';
 
-/** El consentimiento del diagnóstico, o `null` si todavía no se aceptó (404). */
+/** The diagnostic's consent, or `null` if it has not been accepted yet (404). */
 export async function getConsent(diagnosticId: string): Promise<ConsentRecord | null> {
   try {
     const { data } = await http.get<unknown>(`/diagnostics/${diagnosticId}/consent`);
@@ -12,7 +12,7 @@ export async function getConsent(diagnosticId: string): Promise<ConsentRecord | 
   }
 }
 
-/** RF-03 — registra la aceptación de la versión del texto que el usuario vio. */
+/** RF-03 — records the acceptance of the version of the text the user saw. */
 export async function recordConsent(
   diagnosticId: string,
   version: string,

@@ -1,17 +1,16 @@
 import type { JSX, ReactNode } from 'react';
 
 /**
- * `PageHeader` — bloque de título de cada pantalla: sobretítulo, título
- * (`text-h1`, la escala de `DESIGN.md`), descripción y, si aplica, el
- * metadato del resultado. Existe para que ninguna página escriba su propio
- * tamaño de título ni su propio espaciado.
+ * `PageHeader` — title block of every screen: overline, title (`text-h1`,
+ * the `DESIGN.md` scale), description and, if any, the result metadata. It
+ * exists so no page writes its own title size or spacing.
  */
 interface PageHeaderProps {
-  /** Sobretítulo. En el asistente se omite: el indicador de pasos ya dice dónde se está. */
+  /** Overline. Omitted in the wizard: the step indicator already says where the user is. */
   readonly overline?: string;
   readonly title: string;
   readonly description?: string;
-  /** Debajo de la descripción: p. ej. `ResultMeta`. */
+  /** Below the description: e.g. `ResultMeta`. */
   readonly children?: ReactNode;
 }
 

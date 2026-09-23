@@ -2,10 +2,10 @@ import type { QuestionnaireStructure } from '@innlab/contracts';
 
 export const DIMENSION_CODES = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;
 
-/** El cuestionario de 6 dimensiones con 8 afirmaciones cada una (ids 1..48). */
+/** The questionnaire of 6 dimensions with 8 statements each (ids 1..48). */
 export function questionnaireFixture(): QuestionnaireStructure {
   return {
-    versionMarco: 'KTH-IRL-1.0',
+    frameworkVersion: 'KTH-IRL-1.0',
     dimensions: DIMENSION_CODES.map((code, dimIdx) => ({
       code,
       name: `${code} — Nombre`,

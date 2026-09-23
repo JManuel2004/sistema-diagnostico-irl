@@ -6,18 +6,19 @@ import { LoadingState } from '@/shared/ui/loading-state';
 import { useStartDiagnostic } from '@/shared/hooks/useStartDiagnostic';
 
 /**
- * `/diagnosticos/nuevo` — el punto de entrada de «Iniciar diagnóstico».
+ * `/diagnosticos/nuevo` — the entry point of «Iniciar diagnóstico».
  *
- * Es una ruta protegida: sin sesión, `ProtectedRoute` manda al Hub de INNLAB y,
- * al volver autenticado, el usuario cae aquí y **continúa solo**, sin volver a
- * pulsar el botón de la portada. Con sesión pasa de largo.
+ * It is a protected route: without a session, `ProtectedRoute` sends the
+ * user to the INNLAB Hub and, back authenticated, they land here and
+ * **continue on their own**, without pressing the landing's button again.
+ * With a session it passes straight through.
  *
- * Al abrirse pide el diagnóstico al backend, que reanuda el que el usuario
- * tenga sin terminar o crea uno, y abre el asistente. Que esa acción ocurra al
- * entrar es lo que se quiere aquí (es lo que el usuario acaba de pedir con su
- * clic), a diferencia de aceptar el análisis profundo, que nunca se dispara
- * sola. El `ref` evita el doble disparo de StrictMode en
- * desarrollo, que de otro modo pediría el diagnóstico dos veces a la vez.
+ * On opening it asks the backend for the diagnostic, which resumes the
+ * user's unfinished one or creates one, and opens the wizard. That this
+ * action happens on entry is what is wanted here (it is what the user just
+ * asked for with their click), unlike accepting the deep analysis, which
+ * never fires on its own. The `ref` prevents StrictMode's double firing in
+ * development, which would otherwise ask for the diagnostic twice at once.
  */
 export default function StartDiagnosticPage(): JSX.Element {
   const start = useStartDiagnostic();

@@ -3,9 +3,9 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { exchangeSsoCode, isSessionAlive, logoutFromCore } from '../core-auth.api';
 
-// Fijado en `.env.test`, que tiene prioridad sobre `.env.local`. Sin ese
-// archivo los tests heredarian la URL real de Core de la maquina de quien
-// los corra y saldrian a internet.
+// Set in `.env.test`, which takes precedence over `.env.local`. Without that
+// file the tests would inherit the real Core URL of whoever runs them and
+// would go out to the internet.
 const CORE = 'https://core-api.test';
 
 const server = setupServer();
@@ -48,8 +48,8 @@ describe('exchangeSsoCode', () => {
     ['un accessToken vacío', { token: 'id', accessToken: '' }],
     ['un cuerpo que no es un objeto', 'ok'],
     ['un cuerpo nulo', null],
-  ])('rechaza una respuesta con %s en vez de fiarse del tipo', async (_caso, cuerpo) => {
-    server.use(http.get(`${CORE}/auth/sso/exchange`, () => HttpResponse.json(cuerpo)));
+  ])('rechaza una respuesta con %s en vez de fiarse del tipo', async (_case, body) => {
+    server.use(http.get(`${CORE}/auth/sso/exchange`, () => HttpResponse.json(body)));
 
     await expect(exchangeSsoCode('code-123')).rejects.toThrow(/sin accessToken|inválido/);
   });
@@ -72,8 +72,8 @@ describe('exchangeSsoCode', () => {
       http.get(`${CORE}/auth/sso/exchange`, () => new HttpResponse(null, { status: 404 })),
     );
 
-    // Este texto acaba en pantalla: no puede ser el "Request failed with
-    // status code 404" que devuelve axios por defecto.
+    // This text ends up on screen: it cannot be the "Request failed with
+    // status code 404" axios returns by default.
     await expect(exchangeSsoCode('code-vencido')).rejects.toThrow(/ya se usó o caducó/);
   });
 
@@ -117,8 +117,8 @@ describe('isSessionAlive', () => {
       http.get(`${CORE}/auth/introspect`, () => new HttpResponse(null, { status: 503 })),
     );
 
-    // Un Core caído no es una sesión inválida: cerrar sesión aquí sacaría
-    // a usuarios perfectamente autenticados durante una caída de Core.
+    // A Core outage is not an invalid session: logging out here would kick
+    // out perfectly authenticated users during a Core outage.
     await expect(isSessionAlive('access-token')).resolves.toBe(true);
   });
 });

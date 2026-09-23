@@ -14,9 +14,8 @@ import { DimensionChip } from '@/shared/ui/dimension-chip';
 import type { GlossaryKey } from '@/shared/lib/glossary';
 
 /**
- * Las etiquetas cortas vienen de la respuesta (`shortName` de cada resultado
- * de dimensión), no de un mapa del frontend: el frontend no mantiene nombres
- * de dimensión.
+ * The short labels come from the response (`shortName` of each dimension
+ * result), not from a frontend map: the frontend keeps no dimension names.
  */
 
 export const TONE_STYLES: Record<
@@ -53,17 +52,17 @@ export const TONE_STYLES: Record<
   },
 };
 
-/** Lo que una tarjeta hace al pasar el cursor o al enfocarla: resaltar en el radar. */
+/** What a card does on hover or focus: highlight in the radar. */
 export type HighlightHandler = (codes: readonly DimensionCode[]) => void;
 
 interface SummaryCardProps {
   icon: typeof CheckCircle2;
   tone: ImbalanceClassification | 'neutral';
   eyebrow: string;
-  /** Término del glosario que explica el `eyebrow` en un tooltip. */
+  /** Glossary term that explains the `eyebrow` in a tooltip. */
   glossary?: GlossaryKey;
   title: string;
-  /** Dimensiones que esta tarjeta señala: se resaltan en el radar. */
+  /** Dimensions this card points at: they are highlighted in the radar. */
   codes: readonly DimensionCode[];
   onHighlight?: HighlightHandler;
   children?: ReactNode;
@@ -125,7 +124,7 @@ interface MaturityProfileSummaryProps {
   strength?: Bottleneck;
   asymmetry?: Asymmetry;
   gaps?: Gaps;
-  /** Resalta en el radar las dimensiones de la tarjeta bajo el cursor. */
+  /** Highlights in the radar the dimensions of the card under the cursor. */
   onHighlight?: HighlightHandler;
 }
 
@@ -136,9 +135,9 @@ const ASYMMETRY_TEXT: Record<ImbalanceClassification, string> = {
 };
 
 /**
- * Las señales del perfil: fortaleza, cuello de botella, asimetría y brechas.
- * Los pares desequilibrados y el estado crítico no están aquí: pertenecen al
- * análisis profundo (`ImbalanceInsights`).
+ * The signals of the profile: strength, bottleneck, asymmetry and gaps.
+ * The imbalanced pairs and the critical state are not here: they belong to
+ * the deep analysis (`ImbalanceInsights`).
  */
 export function MaturityProfileSummary({
   dimensionResults,

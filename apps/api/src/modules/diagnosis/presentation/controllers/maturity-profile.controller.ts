@@ -11,7 +11,7 @@ export class MaturityProfileController {
 
   @Get()
   @ApiOkResponse({
-    description: 'Perfil de madurez persistido',
+    description: 'Persisted maturity profile',
   })
   async get(@Param('id') diagnosticId: string): Promise<MaturityProfileResponse> {
     return unwrapResult(await this.getProfile.execute({ diagnosticId }));

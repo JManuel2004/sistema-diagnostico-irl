@@ -6,7 +6,7 @@ import type { NumericProfile } from '../../../../../src/modules/routing/domain/v
 import type { ScoringParameters } from '../../../../../src/modules/routing/domain/value-objects/scoring-parameters.vo.js';
 
 const DIMS: DimensionCode[] = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'];
-const VALORES_ESCALA = [0.0, 0.2, 0.5, 1.0];
+const SCALE_VALUES = [0.0, 0.2, 0.5, 1.0];
 
 const PARAMS: ScoringParameters = {
   bottleneckWeight: 3.0,
@@ -25,11 +25,11 @@ function profile(
   intensities: Partial<Record<DimensionCode, number>>,
   overrides: Partial<NumericProfile> = {},
 ): NumericProfile {
-  const mapa = new Map<DimensionCode, number>(
+  const intensityMap = new Map<DimensionCode, number>(
     DIMS.map((d) => [d, intensities[d] ?? 0]),
   );
   const labels = new Map<DimensionCode, string>(
-    DIMS.map((d) => [d, etiquetaPara(intensities[d] ?? 0)]),
+    DIMS.map((d) => [d, labelFor(intensities[d] ?? 0)]),
   );
   return {
     idService: 1,
@@ -37,13 +37,13 @@ function profile(
     minLevel: 1,
     maxLevel: 9,
     relevantStages: ['validacion'],
-    intensities: mapa,
+    intensities: intensityMap,
     labels,
     ...overrides,
   };
 }
 
-function etiquetaPara(v: number): string {
+function labelFor(v: number): string {
   if (v === 1.0) return 'primary';
   if (v === 0.5) return 'secondary';
   if (v === 0.2) return 'marginal';
@@ -83,9 +83,9 @@ describe('AffinityScorerService', () => {
     });
 
     it('promedia las intensities cuando varias dimensions empatan en el mínimo', () => {
-      // Promediar trata el empate simétricamente. Tomar el mínimo sería
-      // más conservador y el máximo más generoso; ambas romperían esa
-      // simetría sin una razón de negocio que lo justifique.
+      // Averaging treats the tie symmetrically. Taking the minimum would be
+      // more conservative and the maximum more generous; both would break
+      // that symmetry with no business reason to justify it.
       const [c] = scorer.score(
         [profile({ IPRL: 1.0, FRL: 0.0 })],
         facts({ bottlenecks: ['IPRL', 'FRL'] }),
@@ -155,9 +155,9 @@ describe('AffinityScorerService', () => {
     });
 
     it('no aporta si el service no atiende ninguna dimensión del pair', () => {
-      // Con cobertura binaria este servicio habría puntuado igual que uno
-      // que sí aborda el desequilibrio, premiando tener ficha ancha en vez
-      // de ser pertinente.
+      // With binary coverage this service would have scored the same as one
+      // that does tackle the imbalance, rewarding a wide profile instead of
+      // relevance.
       const [c] = scorer.score(
         [profile({ TmRL: 1.0 })],
         facts({
@@ -206,37 +206,37 @@ describe('AffinityScorerService', () => {
     });
 
     it('no penaliza en los extremos de la banda, que son inclusivos', () => {
-      const [enMin] = scorer.score(
+      const [atMinimum] = scorer.score(
         [profile({}, { minLevel: 3.5 as unknown as number, maxLevel: 9 })],
         facts({ averageLevel: 3.5 }),
         PARAMS,
       );
-      expect(enMin.contributions.rangePenalty.applied).toBe(false);
+      expect(atMinimum.contributions.rangePenalty.applied).toBe(false);
     });
   });
 
   describe('propiedades (fast-check)', () => {
-    const arbIntensidades = fc.record(
+    const arbIntensities = fc.record(
       Object.fromEntries(
-        DIMS.map((d) => [d, fc.constantFrom(...VALORES_ESCALA)]),
+        DIMS.map((d) => [d, fc.constantFrom(...SCALE_VALUES)]),
       ) as Record<DimensionCode, fc.Arbitrary<number>>,
     );
 
     it('el total es exactamente la suma de contributions menos la penalización', () => {
       fc.assert(
-        fc.property(arbIntensidades, (intensities) => {
+        fc.property(arbIntensities, (intensities) => {
           const [c] = scorer.score(
             [profile(intensities)],
             facts(),
             PARAMS,
           );
-          const esperado =
+          const expected =
             c.contributions.bottleneck.value +
             c.contributions.gaps.value +
             c.contributions.imbalances.value +
             c.contributions.stageAffinity.value -
             c.contributions.rangePenalty.value;
-          expect(c.total).toBeCloseTo(esperado, 3);
+          expect(c.total).toBeCloseTo(expected, 3);
         }),
         { numRuns: 200 },
       );
@@ -245,20 +245,20 @@ describe('AffinityScorerService', () => {
     it('el score no decrece al aumentar la intensity en el cuello de botella', () => {
       fc.assert(
         fc.property(
-          arbIntensidades,
-          fc.constantFrom(...VALORES_ESCALA),
-          fc.constantFrom(...VALORES_ESCALA),
-          (base, bajo, alto) => {
-            fc.pre(bajo <= alto);
-            const conBajo = { ...base, IPRL: bajo };
-            const conAlto = { ...base, IPRL: alto };
+          arbIntensities,
+          fc.constantFrom(...SCALE_VALUES),
+          fc.constantFrom(...SCALE_VALUES),
+          (base, low, high) => {
+            fc.pre(low <= high);
+            const withLow = { ...base, IPRL: low };
+            const withHigh = { ...base, IPRL: high };
             const [a] = scorer.score(
-              [profile(conBajo)],
+              [profile(withLow)],
               facts(),
               PARAMS,
             );
             const [b] = scorer.score(
-              [profile(conAlto)],
+              [profile(withHigh)],
               facts(),
               PARAMS,
             );
@@ -283,7 +283,7 @@ describe('AffinityScorerService', () => {
 
     it('el score es determinista', () => {
       fc.assert(
-        fc.property(arbIntensidades, (intensities) => {
+        fc.property(arbIntensities, (intensities) => {
           const f = profile(
             intensities,
           );

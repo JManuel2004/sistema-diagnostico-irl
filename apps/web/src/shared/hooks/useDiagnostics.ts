@@ -4,9 +4,9 @@ import { queryKeys } from '@/shared/api/query-keys';
 import { getDiagnostic, listMyDiagnostics } from '@/shared/api/diagnostic.api';
 
 /**
- * Un diagnóstico del usuario. Trae `state` y `deepAnalysisAccepted`, que el
- * backend deriva: la pantalla de resultados decide qué mostrar con ese
- * indicador y no infiere nada del estado.
+ * One diagnostic of the user. It carries `state` and `deepAnalysisAccepted`,
+ * which the backend derives: the results screen decides what to show from
+ * that flag and infers nothing from the state.
  */
 export function useDiagnostic(diagnosticId: string | undefined) {
   return useQuery({
@@ -19,7 +19,7 @@ export function useDiagnostic(diagnosticId: string | undefined) {
   });
 }
 
-/** Los diagnósticos del usuario, del más reciente al más antiguo. */
+/** The user's diagnostics, most recent first. */
 export function useMyDiagnostics(enabled = true) {
   return useQuery({
     queryKey: queryKeys.diagnostic.list,
@@ -30,14 +30,14 @@ export function useMyDiagnostics(enabled = true) {
 }
 
 /**
- * El diagnóstico activo: el de la URL si estamos dentro de uno; si no, el más
- * reciente **con resultados** (`completed`). Un diagnóstico que sigue en el
- * asistente no tiene resultados ni panel que mostrar. `undefined` mientras
- * carga o si el usuario no tiene ninguno terminado.
+ * The active diagnostic: the one in the URL when inside one; otherwise the
+ * most recent **with results** (`completed`). A diagnostic still in the
+ * wizard has no results or panel to show. `undefined` while loading or if
+ * the user has none finished.
  */
 export function useActiveDiagnosticId(): string | undefined {
   const { id } = useParams<{ id: string }>();
-  // Dentro de un diagnóstico no hace falta pedir la lista.
+  // Inside a diagnostic there is no need to ask for the list.
   const mine = useMyDiagnostics(id === undefined);
   return id ?? mine.data?.find((d) => d.completed)?.id;
 }

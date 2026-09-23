@@ -19,21 +19,21 @@ import { wizardPath } from './wizard-steps';
 
 interface Props {
   readonly diagnosticId: string;
-  /** La iniciativa ya registrada, para corregirla, o `null`. */
+  /** The already registered initiative, to correct it, or `null`. */
   readonly registered: Initiative | null;
-  /** El borrador del navegador si la iniciativa aún no se registra. */
+  /** The browser draft if the initiative is not registered yet. */
   readonly draft: RegisterInitiativeCommand | null;
-  /** El consentimiento ya está aceptado: la iniciativa puede guardarse ya. */
+  /** The consent is already accepted: the initiative can be saved right away. */
   readonly consentRecorded: boolean;
 }
 
 /**
- * Paso 1 — la información de la iniciativa (HU-06 / RF-04).
+ * Step 1 — the information of the initiative (HU-06 / RF-04).
  *
- * Mientras el consentimiento no esté aceptado el formulario no se envía: se
- * guarda como borrador en el navegador y se registra al aceptar (paso 2). Si el
- * consentimiento ya está aceptado —el usuario volvió a corregir— se registra
- * en el acto.
+ * While the consent is not accepted the form is not sent: it is kept as a
+ * browser draft and registered on acceptance (step 2). If the consent is
+ * already accepted — the user came back to correct it — it is registered
+ * right away.
  */
 export function InitiativeStep({
   diagnosticId,

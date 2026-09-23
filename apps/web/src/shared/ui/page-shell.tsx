@@ -4,27 +4,27 @@ import { BrandDescriptor } from './brand-descriptor';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * `PageShell` — chrome común para todas las páginas del producto.
+ * `PageShell` — common chrome for every page of the product.
  *
- * Compone:
- *  - Header con el descriptor institucional INNLAB (lock-up Icesi),
- *    la navegación principal a continuación (`showNavigation`, solo en
- *    resultados y panel) y un slot opcional para acciones (perfil, sesión).
- *    Con navegación el descriptor lleva al panel; sin ella, a la portada.
- *    Bajo `md` la navegación baja a una fila de pestañas propia: en una
- *    sola fila no caben descriptor, enlaces y acciones a 360–390px.
- *  - Contenedor principal con anchos definidos por `DESIGN.md`:
- *      reading  → max-w-3xl (~768px), preguntas y texto extenso.
- *      standard → max-w-5xl, vistas mixtas (radar + cards).
- *      wide     → max-w-7xl, dashboards y listados.
- *  - Footer azul con el lockup Icesi | INNLAB en blanco, la facultad y la
- *    atribución KTH (RNF-09), como el de innlab.org, cuando la página la
- *    necesita (`showAttribution` opt-in).
- *  - Margen lateral de 16px en móvil y 32px desde `sm`.
+ * It composes:
+ *  - A header with the INNLAB institutional descriptor (Icesi lock-up),
+ *    the main navigation right after it (`showNavigation`, only on results
+ *    and panel) and an optional slot for actions (profile, session). With
+ *    navigation the descriptor leads to the panel; without it, to the
+ *    landing. Under `md` the navigation drops to a tab row of its own:
+ *    descriptor, links and actions do not fit in one row at 360–390px.
+ *  - A main container with the widths defined by `DESIGN.md`:
+ *      reading  → max-w-3xl (~768px), questions and long text.
+ *      standard → max-w-5xl, mixed views (radar + cards).
+ *      wide     → max-w-7xl, dashboards and lists.
+ *  - A blue footer with the Icesi | INNLAB lockup in white, the faculty and
+ *    the KTH attribution (RNF-09), like innlab.org's, when the page needs it
+ *    (`showAttribution` opt-in).
+ *  - A 16px side margin on mobile and 32px from `sm`.
  *
- * El shell prefiere borde a sombra para indicar profundidad (RNF-08
- * "compatibilidad con proyectores de baja DPI") y deja el fondo del
- * contenido en blanco puro, conforme al manual de marca.
+ * The shell prefers a border over a shadow to convey depth (RNF-08
+ * "compatibility with low-DPI projectors") and keeps the content
+ * background pure white, as the brand manual requires.
  */
 type Width = 'reading' | 'standard' | 'wide';
 
@@ -38,7 +38,7 @@ interface PageShellProps {
   readonly children: ReactNode;
   readonly width?: Width;
   readonly showAttribution?: boolean;
-  /** Muestra la navegación (panel, resultados); solo en las pantallas posteriores al asistente. */
+  /** Shows the navigation (panel, results); only on the screens after the wizard. */
   readonly showNavigation?: boolean;
   readonly headerActions?: ReactNode;
   readonly contentClassName?: string;

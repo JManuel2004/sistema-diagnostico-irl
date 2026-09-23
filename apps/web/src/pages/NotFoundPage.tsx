@@ -4,11 +4,11 @@ import { buttonVariants } from '@/shared/ui/button';
 import { PageShell } from '@/shared/ui/page-shell';
 
 /**
- * Página de error 404.
+ * 404 error page.
  *
- * Mantiene la chrome institucional (descriptor INNLAB en el header)
- * para que el usuario sepa que sigue dentro del sistema y no en una
- * página rota del proveedor de hosting.
+ * It keeps the institutional chrome (INNLAB descriptor in the header) so the
+ * user knows they are still inside the system and not on a broken page of
+ * the hosting provider.
  */
 export default function NotFoundPage(): JSX.Element {
   return (

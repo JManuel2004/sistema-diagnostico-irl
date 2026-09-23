@@ -119,13 +119,13 @@ export async function seedCatalog(manager: EntityManager): Promise<{
     ],
   );
 
-  // Catálogo de enrutamiento. Va dentro de la misma transacción: una
-  // configuración con fichas pero sin reglas de excepción haría que
-  // el motor arrancase y diera resultados silenciosamente incompletos.
+  // Routing catalog. It runs inside the same transaction: a
+  // configuration with profiles but without exception rules would let
+  // the engine start and give silently incomplete results.
   routing = await seedRouting(manager);
 
-  // Grafo de dependencias del roadmap. Va después de `dimension`
-  // porque resuelve sus FKs por subconsulta sobre `code`.
+  // Dependency graph of the roadmap. It runs after `dimension`
+  // because it resolves its FKs by subquery on `code`.
   roadmap = await seedRoadmapGraph(manager);
 
   return { routing, roadmap };

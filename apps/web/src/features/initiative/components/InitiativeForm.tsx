@@ -12,15 +12,15 @@ import { Field, Input, Select, Textarea } from '@/shared/ui/field';
 import { InitiativeAutofill, type InitiativeAutofillValues } from '@/dev/dev-autofill';
 
 /**
- * Formulario del perfil de la iniciativa (HU-06 / RF-04).
+ * Form of the initiative profile (HU-06 / RF-04).
  *
- * Todos los campos son obligatorios. La validación es la del contrato
- * (`registerInitiativeSchema`), la misma que aplica el backend: el mensaje
- * que se muestra es el del contrato, no uno propio del formulario.
+ * Every field is mandatory. The validation is the contract's
+ * (`registerInitiativeSchema`), the same one the backend applies: the
+ * message shown is the contract's, not one of the form's own.
  *
- * Los campos se guardan como texto y `teamSize` se convierte a número al
- * validar. Se agrupan en tres bloques (la iniciativa, el equipo, mercado y
- * financiamiento); sector y etapa siguen siendo `<select>` nativos.
+ * The fields are kept as text and `teamSize` is turned into a number on
+ * validation. They are grouped in three blocks (the initiative, the team,
+ * market and funding); sector and stage are still native `<select>`s.
  */
 type Values = InitiativeAutofillValues;
 type Errors = Partial<Record<keyof Values, string>>;
@@ -40,7 +40,7 @@ const EMPTY: Values = {
 interface Props {
   readonly sectors: readonly Sector[];
   readonly stages: readonly InitiativeStage[];
-  /** Valores de una iniciativa ya registrada, para editarla. */
+  /** Values of an already registered initiative, to edit it. */
   readonly initial?: Values;
   readonly onSubmit: (command: RegisterInitiativeCommand) => void;
   readonly isSubmitting: boolean;
@@ -83,7 +83,7 @@ export function InitiativeForm({
             ? 'El tamaño del equipo es obligatorio'
             : issue.message;
       }
-      // Las selecciones vacías no traen el mensaje del contrato («String must contain…»).
+      // Empty selections do not carry the contract's message («String must contain…»).
       if (values.sectorId === '') next.sectorId = 'Elige un sector';
       if (values.stageId === '') next.stageId = 'Elige una etapa';
       setErrors(next);
@@ -304,9 +304,9 @@ export function InitiativeForm({
 }
 
 /**
- * Un bloque del formulario con su título. En escritorio el título y su
- * descripción van en una columna a la izquierda de los campos; en móvil,
- * encima. Agrupa los nueve campos para que no se lean como una sola lista.
+ * A block of the form with its title. On desktop the title and its
+ * description sit in a column to the left of the fields; on mobile, above.
+ * It groups the nine fields so they do not read as a single list.
  */
 function FormSection({
   id,

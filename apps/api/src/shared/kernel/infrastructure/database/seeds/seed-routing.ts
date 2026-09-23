@@ -1,7 +1,7 @@
 import type { EntityManager } from 'typeorm';
 import {
   CALIBRATION_SCALE,
-  ETAPAS,
+  STAGES,
   ORDINAL_PROFILES,
   SCORING_PARAMETERS,
   ELIGIBILITY_RULES,
@@ -10,23 +10,22 @@ import {
 } from './data/routing.js';
 
 /**
- * Siembra el catálogo de enrutamiento.
+ * Seeds the routing catalog.
  *
- * Idempotente en el mismo sentido que el resto del seeder: se puede correr
- * n veces y el resultado es el mismo. La configuración de enrutamiento ya
- * no tiene versionado: si `scoring_parameters` —la tabla
- * singleton— ya tiene su fila, la configuración se considera sembrada y no
- * se toca de nuevo.
+ * Idempotent in the same sense as the rest of the seeder: it can run n
+ * times with the same result. The routing configuration is not versioned:
+ * if `scoring_parameters` — the singleton table — already has its row, the
+ * configuration is considered seeded and is not touched again.
  *
- * Corre dentro de la transacción del runner, así que la configuración
- * queda completa o no queda nada. Una configuración con fichas pero sin
- * reglas de excepción sería peor que ninguna: el motor arrancaría y daría
- * resultados silenciosamente incompletos.
+ * It runs inside the runner's transaction, so the configuration ends up
+ * complete or not at all. A configuration with profiles but without
+ * exception rules would be worse than none: the engine would start and give
+ * silently incomplete results.
  */
 export async function seedRouting(
   manager: EntityManager,
 ): Promise<{ configurationSeeded: boolean }> {
-  // ── Catálogos base (idempotentes por clave natural) ──────────────────
+  // ── Base catalogs (idempotent by natural key) ──────────────────────
   for (const s of SERVICES) {
     await manager.query(
       `INSERT INTO irl_catalog.portfolio_service (name, description, is_active)
@@ -36,22 +35,21 @@ export async function seedRouting(
     );
   }
 
-  for (const e of ETAPAS) {
+  for (const e of STAGES) {
     await manager.query(
       `INSERT INTO irl_catalog.initiative_stage (code, name, sequence, is_active)
        VALUES ($1, $2, $3, true)
        ON CONFLICT (code) DO UPDATE
          SET name = EXCLUDED.name, sequence = EXCLUDED.sequence`,
-      [e.codigo, e.nombre, e.orden],
+      [e.code, e.name, e.order],
     );
   }
 
-  // ── ¿Ya está sembrada la configuración? ──────────────────────────────
+  // ── Is the configuration already seeded? ───────────────────────────
   //
-  // `scoring_parameters` es singleton (`ux_scoring_parameters_singleton`):
-  // una segunda inserción violaría el índice. Si ya tiene fila, el resto
-  // del enrutamiento (fichas, reglas) también quedó sembrado la vez
-  // anterior.
+  // `scoring_parameters` is a singleton (`ux_scoring_parameters_singleton`):
+  // a second insert would violate the index. If it already has its row, the
+  // rest of the routing (profiles, rules) was seeded the previous time too.
   const [existing] = await manager.query<{ count: string }[]>(
     `SELECT count(*)::text AS count FROM irl_catalog.scoring_parameters`,
   );
@@ -59,7 +57,7 @@ export async function seedRouting(
     return { configurationSeeded: false };
   }
 
-  // ── Escala de calibración ────────────────────────────────────────────
+  // ── Calibration scale ────────────────────────────────────────────
   for (const p of CALIBRATION_SCALE) {
     await manager.query(
       `INSERT INTO irl_catalog.calibration_label_value
@@ -69,7 +67,7 @@ export async function seedRouting(
     );
   }
 
-  // ── Parámetros de scoring ─────────────────────────────────────────────
+  // ── Scoring parameters ─────────────────────────────────────────────
   const P = SCORING_PARAMETERS;
   await manager.query(
     `INSERT INTO irl_catalog.scoring_parameters
@@ -89,7 +87,7 @@ export async function seedRouting(
     ],
   );
 
-  // ── Fichas ordinales + intensities ──────────────────────────────────
+  // ── Ordinal profiles + intensities ─────────────────────────────────
   for (const profile of ORDINAL_PROFILES) {
     const stages = profile.relevantStages.join(',');
     const [{ id: idProfile }] = await manager.query<{ id: string }[]>(
@@ -119,7 +117,7 @@ export async function seedRouting(
     }
   }
 
-  // ── Reglas de elegibilidad ───────────────────────────────────────────
+  // ── Eligibility rules ───────────────────────────────────────────
   for (const rule of ELIGIBILITY_RULES) {
     await manager.query(
       `INSERT INTO irl_catalog.published_eligibility_rule
@@ -135,7 +133,7 @@ export async function seedRouting(
     );
   }
 
-  // ── Reglas de excepción ──────────────────────────────────────────────
+  // ── Exception rules ──────────────────────────────────────────────
   for (const rule of EXCEPTION_RULES) {
     await manager.query(
       `INSERT INTO irl_catalog.published_exception_rule

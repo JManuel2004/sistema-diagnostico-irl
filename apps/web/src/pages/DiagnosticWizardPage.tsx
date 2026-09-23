@@ -33,25 +33,26 @@ import {
 } from './wizard/wizard-steps';
 
 /**
- * `/diagnosticos/:id/asistente/:paso` — el asistente de un diagnóstico.
+ * `/diagnosticos/:id/asistente/:step` — the wizard of a diagnostic.
  *
- * Cuatro pasos —iniciativa, consentimiento, cuestionario y resumen— en una sola
- * pantalla **sin navegación principal**: el usuario recorre el asistente y solo
- * al terminar llega a los resultados, que es donde aparece la navegación.
+ * Four steps — initiative, consent, questionnaire and summary — in a single
+ * screen **without main navigation**: the user goes through the wizard and
+ * only at the end reaches the results, which is where navigation appears.
  *
- * Qué paso toca lo decide lo que el servidor ya tiene (la iniciativa, el
- * consentimiento) y no una bandera local: al reanudar un diagnóstico se llega
- * al primer paso que falta, y no se puede saltar a uno posterior. Si el
- * diagnóstico ya tiene resultados, no hay nada que reanudar y se abren éstos.
+ * Which step applies is decided by what the server already has (the
+ * initiative, the consent) and not by a local flag: resuming a diagnostic
+ * lands on the first missing step, and a later one cannot be skipped to. If
+ * the diagnostic already has results, there is nothing to resume and they
+ * open instead.
  */
 export default function DiagnosticWizardPage(): JSX.Element {
-  const { id: diagnosticId, paso } = useParams<{ id: string; paso: string }>();
+  const { id: diagnosticId, step } = useParams<{ id: string; step: string }>();
 
   const diagnostic = useDiagnostic(diagnosticId);
   const consent = useConsent(diagnosticId);
   const initiative = useInitiative(diagnosticId);
 
-  // Los borradores del navegador son de un diagnóstico; el de otro no cuenta.
+  // Browser drafts belong to one diagnostic; another one's does not count.
   const initializeInitiativeDraft = useInitiativeDraftStore(selectDraftInitialize);
   const initiativeDraftOwner = useInitiativeDraftStore(selectDraftDiagnosticId);
   const initiativeDraft = useInitiativeDraftStore(selectDraftCommand);
@@ -63,11 +64,11 @@ export default function DiagnosticWizardPage(): JSX.Element {
     initializeQuestionnaireDraft(diagnosticId ?? null);
   }, [diagnosticId, initializeInitiativeDraft, initializeQuestionnaireDraft]);
 
-  // Cada paso empieza arriba: al pulsar «Continuar» al pie de uno largo, el
-  // siguiente no debe abrirse a media altura.
+  // Each step starts at the top: pressing «Continuar» at the bottom of a
+  // long one must not open the next halfway down.
   useEffect(() => {
     if (typeof window.scrollTo === 'function') window.scrollTo({ top: 0 });
-  }, [paso]);
+  }, [step]);
 
   if (!diagnosticId) return <Navigate to="/" replace />;
 
@@ -90,19 +91,19 @@ export default function DiagnosticWizardPage(): JSX.Element {
       consentDone: consentRecord !== null && registered !== null,
     });
 
-    if (!isWizardStep(paso) || !isReachable(paso, target)) {
+    if (!isWizardStep(step) || !isReachable(step, target)) {
       return <Navigate to={wizardPath(diagnosticId, target)} replace />;
     }
 
     return (
       <PageShell
-        width={paso === 'consentimiento' ? 'reading' : 'standard'}
+        width={step === 'consentimiento' ? 'reading' : 'standard'}
         showAttribution
         headerActions={<LogoutButton />}
       >
         <WizardStepper
           className="mb-8"
-          currentKey={paso}
+          currentKey={step}
           steps={WIZARD_STEP_KEYS.map((key) => ({
             key,
             label: WIZARD_STEP_LABELS[key],
@@ -110,7 +111,7 @@ export default function DiagnosticWizardPage(): JSX.Element {
           }))}
         />
 
-        {paso === 'iniciativa' && (
+        {step === 'iniciativa' && (
           <InitiativeStep
             diagnosticId={diagnosticId}
             registered={registered}
@@ -118,7 +119,7 @@ export default function DiagnosticWizardPage(): JSX.Element {
             consentRecorded={consentRecord !== null}
           />
         )}
-        {paso === 'consentimiento' && (
+        {step === 'consentimiento' && (
           <ConsentStep
             diagnosticId={diagnosticId}
             consent={consentRecord}
@@ -126,8 +127,8 @@ export default function DiagnosticWizardPage(): JSX.Element {
             draft={draft}
           />
         )}
-        {paso === 'cuestionario' && <QuestionnaireStep diagnosticId={diagnosticId} />}
-        {paso === 'resumen' && <SummaryStep diagnosticId={diagnosticId} />}
+        {step === 'cuestionario' && <QuestionnaireStep diagnosticId={diagnosticId} />}
+        {step === 'resumen' && <SummaryStep diagnosticId={diagnosticId} />}
       </PageShell>
     );
   }

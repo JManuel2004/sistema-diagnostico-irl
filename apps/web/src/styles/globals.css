@@ -3,22 +3,21 @@
 @tailwind utilities;
 
 /*
- * Tokens del sistema de diseño — Icesi institutional brand
- * (Manual de identidad de marca Icesi, Febrero 2026), alineados con
- * innlab.org: tinta #333333, texto secundario #666666, bordes #D9D9D9,
- * esquinas rectas y superficies neutras. El color se reserva para los datos,
- * el botón principal y el footer.
+ * Design system tokens — Icesi institutional brand (Icesi brand identity
+ * manual, February 2026), aligned with innlab.org: ink #333333, secondary
+ * text #666666, borders #D9D9D9, straight corners and neutral surfaces.
+ * Color is reserved for the data, the main button and the footer.
  *
- * Cada variable es un HSL en formato sin comas (`H S% L%`) — Tailwind las
- * envuelve con `hsl(var(--token))` desde `tailwind.config.ts`.
+ * Each variable is an HSL in comma-less format (`H S% L%`) — Tailwind wraps
+ * them with `hsl(var(--token))` from `tailwind.config.ts`.
  *
  *   --primary    240 77% 62%  =  #5454E9  Azul Icesi
- *   --accent      14 80% 57%  =  #E9683B  Naranja Icesi (paridad con INNLAB)
- *   --border       0  0% 85%  =  #D9D9D9  borde, el de innlab.org
+ *   --accent      14 80% 57%  =  #E9683B  Naranja Icesi (parity with INNLAB)
+ *   --border       0  0% 85%  =  #D9D9D9  border, innlab.org's
  *   --border-strong  225  2% 54%  =  #88898C  Gris 1
  *
- * Modo oscuro intencionalmente omitido en fase 1: el manual mandata
- * fondo blanco (positive logo lockup) y el sistema es flat-ish.
+ * Dark mode intentionally left out: the manual mandates a white background
+ * (positive logo lockup) and the system is flat-ish.
  */
 @layer base {
   :root {
@@ -43,9 +42,9 @@
     --primary-foreground: 0 0% 100%;
 
     /*
-     * Accent — Naranja Icesi #E9683B. Como en innlab.org, es color de bloque
-     * de acento, no de botón: el botón principal es Azul Icesi. Con texto
-     * blanco encima solo cumple WCAG AA como texto grande (≥18,66px bold).
+     * Accent — Naranja Icesi #E9683B. As on innlab.org, it is an accent block
+     * color, not a button color: the main button is Azul Icesi. With white text
+     * on top it only meets WCAG AA as large text (≥18.66px bold).
      */
     --accent: 14 80% 57%;
     --accent-hover: 15 69% 52%;
@@ -148,7 +147,7 @@
     text-transform: uppercase;
   }
 
-  /* Sobretítulo de pantalla o de sección: uno por bloque, siempre igual. */
+  /* Overline of a screen or section: one per block, always the same. */
   .text-eyebrow {
     font-size: 0.8125rem;
     line-height: 1.3;

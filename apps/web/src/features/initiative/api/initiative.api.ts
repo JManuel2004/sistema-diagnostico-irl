@@ -19,7 +19,7 @@ export async function getStages(): Promise<InitiativeStage[]> {
   return initiativeStageSchema.array().parse(data);
 }
 
-/** La iniciativa del diagnóstico, o `null` si todavía no se registró (404). */
+/** The diagnostic's initiative, or `null` if it has not been registered yet (404). */
 export async function getInitiative(diagnosticId: string): Promise<Initiative | null> {
   try {
     const { data } = await http.get<unknown>(`/diagnostics/${diagnosticId}/initiative`);

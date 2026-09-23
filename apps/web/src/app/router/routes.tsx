@@ -12,9 +12,9 @@ import { wizardPath, type WizardStepKey } from '@pages/wizard/wizard-steps';
 import { ProtectedRoute } from './ProtectedRoute';
 
 /**
- * Las tres pantallas de resultados que existían (`/perfil`, `/recomendacion`,
- * `/roadmap`) son ahora una sola, `/resultados`. Las rutas viejas redirigen
- * para que un enlace guardado no caiga en un 404.
+ * The three result screens that existed (`/perfil`, `/recomendacion`,
+ * `/roadmap`) are now a single one, `/resultados`. The old routes redirect
+ * so a saved link does not land on a 404.
  */
 function RedirectToResults(): JSX.Element {
   const { id } = useParams<{ id: string }>();
@@ -22,8 +22,8 @@ function RedirectToResults(): JSX.Element {
 }
 
 /**
- * El cuestionario y el consentimiento ya no son pantallas propias sino pasos
- * del asistente (`/asistente/:paso`); sus rutas viejas llevan al paso.
+ * The questionnaire and the consent are no longer screens of their own but
+ * wizard steps (`/asistente/:step`); their old routes lead to the step.
  */
 function RedirectToWizardStep({ step }: { readonly step: WizardStepKey }): JSX.Element {
   const { id } = useParams<{ id: string }>();
@@ -31,26 +31,27 @@ function RedirectToWizardStep({ step }: { readonly step: WizardStepKey }): JSX.E
 }
 
 /**
- * Tabla de rutas.
+ * Route table.
  *
- * El flujo del usuario es: portada (`/`, pública, sin navegación) →
- * `/diagnosticos/nuevo` (resuelve la sesión y el diagnóstico) → asistente
- * (`/diagnosticos/:id/asistente/:paso`: iniciativa, consentimiento,
- * cuestionario y resumen, sin navegación) → resultados
- * (`/diagnosticos/:id/resultados`), la primera pantalla con navegación, desde
- * donde se llega al panel (`/panel`).
+ * The user flow is: landing (`/`, public, no navigation) →
+ * `/diagnosticos/nuevo` (resolves the session and the diagnostic) → wizard
+ * (`/diagnosticos/:id/asistente/:step`: initiative, consent, questionnaire
+ * and summary, no navigation) → results (`/diagnosticos/:id/resultados`),
+ * the first screen with navigation, from where the panel (`/panel`) is
+ * reached.
  *
- * Toda ruta autenticada está envuelta en `<ProtectedRoute>`, que desde
- * HU-01 redirige al Hub de INNLAB cuando no hay sesión y devuelve al usuario
- * a la ruta pedida al volver. Las excepciones son la portada, que es pública, y
- * `/auth/callback`, que por definición se visita sin sesión.
+ * Every authenticated route is wrapped in `<ProtectedRoute>`, which
+ * redirects to the INNLAB Hub when there is no session and brings the user
+ * back to the requested route on return. The exceptions are the landing,
+ * which is public, and `/auth/callback`, which by definition is visited
+ * without a session.
  */
 export function AppRoutes(): JSX.Element {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
 
-      {/* La portada estaba en /diagnosticos, protegida; ahora es «/». */}
+      {/* The landing used to live at /diagnosticos, protected; it is now «/». */}
       <Route path="/diagnosticos" element={<Navigate to="/" replace />} />
 
       <Route
@@ -63,7 +64,7 @@ export function AppRoutes(): JSX.Element {
       />
 
       <Route
-        path="/diagnosticos/:id/asistente/:paso?"
+        path="/diagnosticos/:id/asistente/:step?"
         element={
           <ProtectedRoute>
             <DiagnosticWizardPage />
@@ -97,7 +98,7 @@ export function AppRoutes(): JSX.Element {
         }
       />
 
-      {/* Corregir la iniciativa una vez terminado el asistente. */}
+      {/* Correcting the initiative once the wizard is finished. */}
       <Route
         path="/diagnosticos/:id/iniciativa"
         element={
@@ -107,15 +108,15 @@ export function AppRoutes(): JSX.Element {
         }
       />
 
-      {/* Rutas anteriores: perfil, recomendación y roadmap ahora son /resultados. */}
+      {/* Former routes: profile, recommendation and roadmap are now /resultados. */}
       <Route path="/diagnosticos/:id/perfil" element={<RedirectToResults />} />
       <Route path="/diagnosticos/:id/recomendacion" element={<RedirectToResults />} />
       <Route path="/diagnosticos/:id/roadmap" element={<RedirectToResults />} />
 
       {/*
-        Publica a proposito: el usuario llega aqui todavia sin sesion,
-        de vuelta desde el Hub de INNLAB con `?code=`. Envolverla en
-        <ProtectedRoute> la mandaria de nuevo al Hub, en bucle.
+        Public on purpose: the user arrives here still without a session,
+        back from the INNLAB Hub with `?code=`. Wrapping it in
+        <ProtectedRoute> would send it to the Hub again, in a loop.
       */}
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
 

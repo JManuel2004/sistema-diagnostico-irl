@@ -22,13 +22,14 @@ interface Props {
 }
 
 /**
- * Resumen de todo lo que se va a procesar: la iniciativa (con la opción de
- * corregirla) y las respuestas, con la justificación de cada una.
+ * Summary of everything that is about to be processed: the initiative
+ * (with the option to correct it) and the answers, with the justification
+ * of each.
  *
- * «Procesar diagnóstico» es lo que envía el cuestionario al servidor (con la
- * justificación de cada respuesta) y calcula el perfil; al terminar se abren
- * los resultados. Si el borrador no está completo se vuelve al cuestionario:
- * este paso no se puede alcanzar con respuestas faltantes.
+ * «Procesar diagnóstico» is what sends the questionnaire to the server
+ * (with each answer's justification) and computes the profile; when done
+ * the results open. If the draft is not complete the user goes back to the
+ * questionnaire: this step cannot be reached with missing answers.
  */
 export function SummaryStep({ diagnosticId }: Props): JSX.Element {
   const navigate = useNavigate();
@@ -50,8 +51,8 @@ export function SummaryStep({ diagnosticId }: Props): JSX.Element {
       ),
     onSuccess: async (profile) => {
       queryClient.setQueryData(queryKeys.diagnostic.profile(diagnosticId), profile);
-      // Se espera al refetch: la pantalla de resultados decide con `completed`, y
-      // con el dato viejo devolvería al usuario aquí.
+      // Waits for the refetch: the results screen decides from `completed`,
+      // and with the old datum it would send the user back here.
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.diagnostic.detail(diagnosticId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.diagnostic.list }),

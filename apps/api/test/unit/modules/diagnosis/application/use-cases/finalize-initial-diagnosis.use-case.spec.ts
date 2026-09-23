@@ -27,7 +27,7 @@ const ANSWERS = Array.from({ length: 48 }, (_, i) => ({
   justification: 'Justificación de prueba',
 }));
 
-function diagnosticoIn(state: string): Diagnosis {
+function diagnosisIn(state: string): Diagnosis {
   return Diagnosis.fromPersistence({
     id: DIAGNOSTIC_ID,
     userId: 'usuario-demo',
@@ -105,7 +105,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   });
 
   it('submits answers, computes the profile, and transitions to PROFILE_GENERATED', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS'));
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('QUESTIONNAIRE_IN_PROGRESS'));
 
     const result = await useCase.execute({
       diagnosticId: DIAGNOSTIC_ID,
@@ -134,7 +134,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   // The initiative step is followed directly by the questionnaire, so
   // a diagnostic in WITH_INITIATIVE is finalized through QUESTIONNAIRE_IN_PROGRESS.
   it('finalizes a diagnostic that only registered its initiative (WITH_INITIATIVE)', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('WITH_INITIATIVE'));
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('WITH_INITIATIVE'));
 
     const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
 
@@ -145,7 +145,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   it.each(['STARTED', 'WITH_CONSENT'])(
     'does not finalize a diagnostic that has no initiative yet (%s)',
     async (state) => {
-      diagnostics.findById.mockResolvedValueOnce(diagnosticoIn(state));
+      diagnostics.findById.mockResolvedValueOnce(diagnosisIn(state));
 
       const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
 
@@ -156,7 +156,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   );
 
   it('advances from QUESTIONNAIRE_COMPLETE to PROFILE_GENERATED', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('QUESTIONNAIRE_COMPLETE'));
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('QUESTIONNAIRE_COMPLETE'));
 
     await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
 
@@ -165,7 +165,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   });
 
   it('loads a phase-2 diagnostic and finalizes without regressing state', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('DEEP_ANALYSIS_IN_PROGRESS'));
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('DEEP_ANALYSIS_IN_PROGRESS'));
 
     const result = await useCase.execute({
       diagnosticId: DIAGNOSTIC_ID,
@@ -182,7 +182,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   });
 
   it('is idempotent when the diagnostic is already PROFILE_GENERATED', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('PROFILE_GENERATED'));
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('PROFILE_GENERATED'));
 
     await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
 
@@ -208,7 +208,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   });
 
   it('returns an err result when finalizing from an earlier state', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('STARTED'));
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('STARTED'));
 
     const result = await useCase.execute({
       diagnosticId: DIAGNOSTIC_ID,
@@ -222,7 +222,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   });
 
   it('propagates the questionnaire submission error without computing a profile', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS'));
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('QUESTIONNAIRE_IN_PROGRESS'));
     const submissionError = new InvariantViolationError('incomplete submission');
     submitQuestionnaire.execute.mockResolvedValueOnce(Result.err(submissionError));
 
@@ -239,7 +239,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   });
 
   it('does not transition state if computation fails', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS'));
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('QUESTIONNAIRE_IN_PROGRESS'));
     computeProfile.execute.mockRejectedValueOnce(new Error('calc failed'));
 
     await expect(
@@ -249,7 +249,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   });
 
   it('does not skip the linear state machine', () => {
-    const d = diagnosticoIn('QUESTIONNAIRE_IN_PROGRESS');
+    const d = diagnosisIn('QUESTIONNAIRE_IN_PROGRESS');
     expect(() => d.transitionTo('PROFILE_GENERATED')).toThrow(InvariantViolationError);
   });
 });

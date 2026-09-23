@@ -3,12 +3,12 @@ import { uuidSchema } from '../common/uuid.schema.js';
 import { dimensionCodeSchema, dimensionRefSchema } from '../irl-taxonomy/dimension.schema.js';
 
 /**
- * Por qué una dimensión está en el roadmap. Fuente única: el dominio deriva
- * su tipo de esta lista.
+ * Why a dimension is in the roadmap. Single source: the domain derives its
+ * type from this list.
  *
- *  - `BELOW_EXPECTED_MINIMUM`: está por debajo de su mínimo esperado.
- *  - `REQUIRED_ENABLER`: cumple su mínimo, pero una dimensión que sí
- *    necesita trabajo depende de que ella llegue a un nivel más alto.
+ *  - `BELOW_EXPECTED_MINIMUM`: it is below its expected minimum.
+ *  - `REQUIRED_ENABLER`: it meets its minimum, but a dimension that does
+ *    need work depends on it reaching a higher level.
  */
 export const ROADMAP_INCLUSION_REASONS = [
   'BELOW_EXPECTED_MINIMUM',
@@ -20,93 +20,93 @@ export const roadmapInclusionReasonSchema = z.enum(ROADMAP_INCLUSION_REASONS);
 export type RoadmapInclusionReason = z.infer<typeof roadmapInclusionReasonSchema>;
 
 /**
- * Roadmap de escalamiento (RF-14).
+ * Scaling roadmap (RF-14).
  *
- * Una dimensión dentro de una fase: dónde está, a dónde tiene que
- * llegar, y a quién desbloquea al llegar.
+ * A dimension within a phase: where it is, where it has to get, and what it
+ * unlocks on getting there.
  *
- * `inclusionReason` y `targetDrivenBy` responden a «¿por qué esta dimensión
- * y por qué esta meta?». Sin ellos, «nivel 3 → nivel 6» es un número sin
- * explicación; con ellos, el usuario puede ver que la meta la fija otra
- * dimensión que depende de esta.
+ * `inclusionReason` and `targetDrivenBy` answer "why this dimension and why
+ * this target?". Without them, "level 3 → level 6" is a number with no
+ * explanation; with them, the user can see that the target is set by
+ * another dimension that depends on this one.
  *
- * `enables` es la justificación legible del orden. Es lo único que
- * permite a un consultor **refutar** la secuencia propuesta: el sistema
- * puede comprobar que el grafo sea acíclico, pero no que sus aristas
- * sean ciertas, así que exponer el porqué convierte una afirmación
- * metodológica en algo discutible en vez de en una caja negra.
+ * `enables` is the readable justification of the order. It is the only
+ * thing that lets a consultant **dispute** the proposed sequence: the
+ * system can check that the graph is acyclic, but not that its edges are
+ * true, so exposing the why turns a methodological claim into something
+ * open to discussion instead of a black box.
  */
 export const roadmapDimensionTargetSchema = z
   .object({
     dimensionCode: dimensionCodeSchema,
-    name: z.string().min(1).describe('Nombre completo de la dimensión en español'),
+    name: z.string().min(1).describe('Full name of the dimension, in Spanish'),
     shortName: z
       .string()
       .min(1)
-      .describe('Etiqueta corta de la dimensión, para la línea del roadmap'),
+      .describe('Short label of the dimension, for the roadmap line'),
     currentLevel: z.number().int().min(1).max(9),
     targetLevel: z.number().int().min(1).max(9),
     enables: z
       .array(dimensionRefSchema)
-      .describe('Dimensiones del roadmap que esta desbloquea al alcanzar su meta'),
+      .describe('Roadmap dimensions this one unlocks on reaching its target'),
     inclusionReason: roadmapInclusionReasonSchema.describe(
-      'Por qué la dimensión está en el roadmap',
+      'Why the dimension is in the roadmap',
     ),
     expectedMinimum: z
       .number()
       .int()
       .min(1)
       .max(9)
-      .describe('Nivel que la dimensión debería alcanzar por sí misma'),
+      .describe('Level the dimension should reach on its own'),
     targetDrivenBy: dimensionRefSchema
       .nullable()
       .describe(
-        'Dimensión del roadmap cuya exigencia fija la meta, si esa exigencia ' +
-          'supera el mínimo esperado; null si la meta es el mínimo esperado',
+        'Roadmap dimension whose requirement sets the target, if that requirement ' +
+          'exceeds the expected minimum; null if the target is the expected minimum',
       ),
   })
-  .describe('Una dimensión a intervenir dentro de una fase');
+  .describe('A dimension to intervene within a phase');
 
 export type RoadmapDimensionTarget = z.infer<typeof roadmapDimensionTargetSchema>;
 
 /**
- * Una fase del roadmap.
+ * A phase of the roadmap.
  *
- * Las dimensiones de una misma fase **no dependen entre sí y se trabajan
- * en paralelo**. El orden dentro del array es el canónico del marco y
- * existe para que la respuesta sea determinista; no es una prioridad, y
- * renderizarlo como lista numerada comunicaría una jerarquía que el
- * sistema no calculó.
+ * The dimensions of the same phase **do not depend on each other and are
+ * worked on in parallel**. The order within the array is the framework's
+ * canonical one and exists so the response is deterministic; it is not a
+ * priority, and rendering it as a numbered list would convey a hierarchy
+ * the system did not calculate.
  */
 export const roadmapPhaseSchema = z
   .object({
     order: z.number().int().positive(),
     dimensions: z.array(roadmapDimensionTargetSchema).min(1),
   })
-  .describe('Una fase del roadmap: dimensiones que se trabajan en paralelo');
+  .describe('A roadmap phase: dimensions worked on in parallel');
 
 export type RoadmapPhase = z.infer<typeof roadmapPhaseSchema>;
 
 /**
- * Respuesta de `GET /api/v1/diagnosticos/:id/roadmap`.
+ * Response of `GET /api/v1/diagnostics/:id/roadmap`.
  *
- * Notas sobre lo que **no** lleva, y por qué:
+ * Notes on what it does **not** carry, and why:
  *
- *  - **Sin servicio de INNLAB por fase.** El enrutador produce
- *    exactamente una recomendación por diagnóstico —lo impone
- *    `uq_recomendacion_diagnostico` y lo exige RF-15— así que no hay un
- *    servicio distinto por fase que consultar. Incluir el campo vacío
- *    prometería algo que el sistema no calcula.
+ *  - **No INNLAB service per phase.** The router produces exactly one
+ *    recommendation per diagnostic — `uq_portfolio_recommendation_diagnostic`
+ *    enforces it and RF-15 requires it — so there is no different service
+ *    per phase to look up. Including the field empty would promise
+ *    something the system does not calculate.
  *
- *  - **Sin duración ni calendario.** Traducir capas a semanas exige un
- *    parámetro de duración por fase que no está definido ni validado con
- *    INNLAB. Las fases se entregan como orden, no como cronograma.
+ *  - **No duration or calendar.** Turning layers into weeks needs a
+ *    duration parameter per phase that is neither defined nor validated
+ *    with INNLAB. Phases are delivered as an order, not as a schedule.
  *
- *  - **Sin textos de orientación.** `roadmap_text` está vacía y sus
- *    entradas son un insumo pendiente de INNLAB.
+ *  - **No guidance texts.** Those texts are an input still pending from
+ *    INNLAB.
  *
- * `phases` puede venir vacío: significa que la iniciativa cumple el
- * mínimo esperado en las seis dimensiones. No es un error.
+ * `phases` may be empty: it means the initiative meets the expected
+ * minimum in all six dimensions. It is not an error.
  */
 export const roadmapResponseSchema = z
   .object({
@@ -114,15 +114,15 @@ export const roadmapResponseSchema = z
     generatedAt: z
       .string()
       .datetime()
-      .describe('Momento en que se calculó y guardó el roadmap'),
+      .describe('When the roadmap was calculated and saved'),
     phases: z.array(roadmapPhaseSchema),
     dimensionsWithoutIntervention: z
       .array(dimensionRefSchema)
       .describe(
-        'Dimensiones que no requieren intervención. Explícitas para que su ' +
-          'ausencia del plan no se lea como un olvido.',
+        'Dimensions that need no intervention. Explicit so their ' +
+          'absence from the plan does not read as an oversight.',
       ),
   })
-  .describe('Roadmap de escalamiento por fases (RF-14)');
+  .describe('Scaling roadmap by phases (RF-14)');
 
 export type RoadmapResponse = z.infer<typeof roadmapResponseSchema>;

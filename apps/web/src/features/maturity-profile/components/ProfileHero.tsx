@@ -7,16 +7,18 @@ import { GlossaryTerm } from '@/shared/ui/glossary-term';
 import { LevelBar } from '@/shared/ui/level-bar';
 
 /**
- * Cabecera de los resultados: el perfil es de **una iniciativa**, así que la
- * página abre con ella —su nombre, una descripción breve y el sector— y, al
- * lado, el nivel IRL global (RF-09: promedio simple de los seis niveles, que
- * calcula el backend) con lo más fuerte y lo más débil del perfil.
+ * Header of the results: the profile belongs to **an initiative**, so the
+ * page opens with it — its name, a short description and the sector — and,
+ * next to it, the global IRL level (RF-09: simple average of the six
+ * levels, computed by the backend) with the strongest and the weakest part
+ * of the profile.
  *
- * El nombre y la descripción llegan como texto: este componente no sabe de
- * dónde salen (la iniciativa es de otra feature y la página los compone).
+ * The name and the description arrive as text: this component does not
+ * know where they come from (the initiative belongs to another feature and
+ * the page composes them).
  */
 interface Props {
-  /** Nombre de la iniciativa; sin él la cabecera habla de «tu iniciativa». */
+  /** Name of the initiative; without it the header talks about «tu iniciativa». */
   readonly initiativeName?: string;
   readonly description?: string;
   readonly sectorName?: string;
@@ -25,11 +27,11 @@ interface Props {
   readonly dimensionResults: readonly DimensionResult[];
   readonly strength: Bottleneck;
   readonly bottleneck: Bottleneck;
-  /** Debajo de la descripción: p. ej. «Resultado guardado el …». */
+  /** Below the description: e.g. «Resultado guardado el …». */
   readonly children?: ReactNode;
 }
 
-/** «3,5»: un decimal con coma; un entero exacto va sin decimales. */
+/** «3,5»: one decimal with a comma; an exact integer goes without decimals. */
 export function formatGlobalAverage(value: number): string {
   return Number.isInteger(value)
     ? String(value)

@@ -3,14 +3,14 @@ import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * `Tabs` — pestañas subrayadas, como la navegación de innlab.org.
+ * `Tabs` — underlined tabs, like innlab.org's navigation.
  *
- * - Lista sin fondo, con una línea inferior.
- * - Trigger activo: texto en tinta, sin fondo ni sombra; cada uso marca la
- *   pestaña activa con su borde inferior (azul o el color de la dimensión).
- *   Inactivos: texto secundario.
- * - Radix maneja navegación por teclado (flechas, Home/End) y los
- *   roles ARIA (`tablist`, `tab`, `tabpanel`); no se reimplementan.
+ * - List without background, with a bottom line.
+ * - Active trigger: ink text, no background or shadow; each use marks the
+ *   active tab with its bottom border (blue or the dimension's color).
+ *   Inactive ones: secondary text.
+ * - Radix handles keyboard navigation (arrows, Home/End) and the ARIA roles
+ *   (`tablist`, `tab`, `tabpanel`); they are not reimplemented.
  */
 export const Tabs = TabsPrimitive.Root;
 

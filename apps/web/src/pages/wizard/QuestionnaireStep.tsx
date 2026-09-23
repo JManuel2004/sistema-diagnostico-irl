@@ -12,23 +12,24 @@ interface Props {
 }
 
 /**
- * Paso 3 — el cuestionario de 48 afirmaciones (HU-07 / HU-09 / RF-06).
+ * Step 3 — the 48-statement questionnaire (HU-07 / HU-09 / RF-06).
  *
- * Bloquea el avance al resumen si falta algo (RF-06): cada afirmación necesita
- * **su respuesta y su justificación**. Al intentar avanzar incompleto se lista
- * qué dimensiones faltan (complementa los indicadores X/8 de las pestañas) y el
- * aviso se mantiene hasta que no falte ninguna. Nada se envía al servidor aquí:
- * el borrador vive en el navegador hasta «Procesar diagnóstico» (paso 4).
+ * It blocks moving on to the summary if anything is missing (RF-06): each
+ * statement needs **its answer and its justification**. Trying to move on
+ * incomplete lists which dimensions are missing (on top of the tabs' X/8
+ * indicators) and the warning stays until nothing is missing. Nothing is
+ * sent to the server here: the draft lives in the browser until «Procesar
+ * diagnóstico» (step 4).
  */
 export function QuestionnaireStep({ diagnosticId }: Props): JSX.Element {
   const navigate = useNavigate();
   const { catalog, incompleteDimensions, completedIn, isComplete } = useQuestionnaireCompletion();
 
   /**
-   * El aviso aparece desde que el usuario intenta avanzar con respuestas
-   * faltantes y **permanece mientras siga faltando alguna**: la
-   * lista se recalcula con cada respuesta y el aviso desaparece solo cuando ya
-   * no queda ninguna.
+   * The warning appears once the user tries to move on with missing
+   * answers and **stays while any is still missing**: the list is
+   * recomputed with each answer and the warning disappears only when none
+   * is left.
    */
   const [advanceAttempted, setAdvanceAttempted] = useState(false);
 

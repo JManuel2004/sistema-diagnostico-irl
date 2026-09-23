@@ -41,21 +41,23 @@ async function run(): Promise<void> {
     const [{ count: rcCount }] = await dataSource.query<{ count: string }[]>(
       `SELECT COUNT(*)::text AS count FROM irl_catalog.conversion_range`,
     );
-    const [{ count: parCount }] = await dataSource.query<{ count: string }[]>(
+    const [{ count: pairCount }] = await dataSource.query<{ count: string }[]>(
       `SELECT COUNT(*)::text AS count FROM irl_catalog.dimension_pair`,
     );
 
     const [{ count: svcCount }] = await dataSource.query<{ count: string }[]>(
       `SELECT COUNT(*)::text AS count FROM irl_catalog.portfolio_service`,
     );
-    const [{ count: fichaCount }] = await dataSource.query<{ count: string }[]>(
+    const [{ count: profileCount }] = await dataSource.query<
+      { count: string }[]
+    >(
       `SELECT COUNT(*)::text AS count FROM irl_catalog.published_ordinal_profile`,
     );
 
     // eslint-disable-next-line no-console
     console.log(
       `Seed complete — ${dimCount} dimensions, ${afCount} statements, ${rcCount} conversion ranges, ` +
-        `${parCount} dimension pairs, ${svcCount} portfolio services, ${fichaCount} ordinal profiles, ` +
+        `${pairCount} dimension pairs, ${svcCount} portfolio services, ${profileCount} ordinal profiles, ` +
         `${roadmap.edges} roadmap dependency edges in irl_catalog. Routing configuration: ` +
         `${routing.configurationSeeded ? 'seeded' : 'already present, left untouched'}.`,
     );

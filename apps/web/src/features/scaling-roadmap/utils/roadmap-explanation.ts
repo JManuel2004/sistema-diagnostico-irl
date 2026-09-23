@@ -1,12 +1,12 @@
 import type { RoadmapDimensionTarget } from '@innlab/contracts';
 
 /**
- * Frases que ponen en palabras lo que el backend ya decidió.
+ * Sentences that put into words what the backend already decided.
  *
- * Nada aquí calcula ni decide: `inclusionReason`, `expectedMinimum` y
- * `targetDrivenBy` llegan en la respuesta. Este módulo solo los redacta, en
- * lenguaje que no exige conocer el marco, para que la tarjeta de fase y el
- * panel de explicación digan lo mismo.
+ * Nothing here calculates or decides: `inclusionReason`, `expectedMinimum`
+ * and `targetDrivenBy` come in the response. This module only phrases them,
+ * in language that does not require knowing the framework, so the phase
+ * card and the explanation panel say the same thing.
  */
 
 export function listNames(names: readonly string[]): string {
@@ -14,7 +14,7 @@ export function listNames(names: readonly string[]): string {
   return `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}`;
 }
 
-/** Por qué la dimensión está en el plan. */
+/** Why the dimension is in the plan. */
 export function inclusionSentence(d: RoadmapDimensionTarget): string {
   if (d.inclusionReason === 'BELOW_EXPECTED_MINIMUM') {
     return `Está por debajo de lo que se espera: debería llegar al menos al nivel ${String(d.expectedMinimum)}.`;
@@ -24,7 +24,7 @@ export function inclusionSentence(d: RoadmapDimensionTarget): string {
   return `Ya cumple lo que se espera, pero ${listNames(dependents)} ${verb} que suba para poder avanzar.`;
 }
 
-/** Qué fija el nivel al que debe llegar. */
+/** What sets the level it must reach. */
 export function targetSentence(d: RoadmapDimensionTarget): string {
   if (d.targetDrivenBy === null) {
     return `La meta es el nivel que se espera de ella: ${String(d.targetLevel)}.`;

@@ -25,8 +25,8 @@ import { questionnaireStructureSchema } from '@innlab/contracts';
  */
 describe('GET /api/v1/catalog/questionnaire (e2e)', () => {
   let app: NestFastifyApplication;
-  // Agente con la cabecera Authorization por defecto: el guard global
-  // rechaza cualquier peticion sin token.
+  // Agent with the Authorization header by default: the global guard
+  // rejects any request without a token.
   let agent: ReturnType<typeof request.agent>;
 
   beforeAll(async () => {
@@ -154,13 +154,13 @@ describe('GET /api/v1/catalog/questionnaire (e2e)', () => {
       }
     });
 
-    it('returns a versionMarco field for cache invalidation', async () => {
+    it('returns a frameworkVersion field for cache invalidation', async () => {
       const response = await agent.get('/api/v1/catalog/questionnaire');
       const parsed = questionnaireStructureSchema.parse(response.body);
 
-      expect(parsed).toHaveProperty('versionMarco');
-      expect(typeof parsed.versionMarco).toBe('string');
-      expect(parsed.versionMarco.length).toBeGreaterThan(0);
+      expect(parsed).toHaveProperty('frameworkVersion');
+      expect(typeof parsed.frameworkVersion).toBe('string');
+      expect(parsed.frameworkVersion.length).toBeGreaterThan(0);
     });
   });
 });

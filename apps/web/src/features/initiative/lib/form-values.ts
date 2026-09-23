@@ -1,6 +1,6 @@
 import type { Initiative, RegisterInitiativeCommand } from '@innlab/contracts';
 
-/** Los valores del formulario de la iniciativa: todos son texto, como en los campos. */
+/** The values of the initiative form: all of them are text, as in the fields. */
 export interface InitiativeFormValues {
   readonly name: string;
   readonly sectorId: string;
@@ -13,7 +13,7 @@ export interface InitiativeFormValues {
   readonly currentFunding: string;
 }
 
-/** Una iniciativa ya registrada, para editarla en el formulario. */
+/** An already registered initiative, to edit it in the form. */
 export function initiativeToFormValues(initiative: Initiative): InitiativeFormValues {
   return {
     name: initiative.name,
@@ -28,7 +28,7 @@ export function initiativeToFormValues(initiative: Initiative): InitiativeFormVa
   };
 }
 
-/** El borrador guardado en el navegador, para volver a llenar el formulario. */
+/** The draft stored in the browser, to fill the form again. */
 export function commandToFormValues(command: RegisterInitiativeCommand): InitiativeFormValues {
   return {
     name: command.name,

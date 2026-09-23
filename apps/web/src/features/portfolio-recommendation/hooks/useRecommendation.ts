@@ -4,8 +4,8 @@ import { acceptDeepAnalysis } from '@/shared/api/diagnostic.api';
 import { getRecommendation, getRecommendationTrace } from '../api/recommendation.api';
 
 /**
- * La recomendación es un snapshot inmutable una vez generada, igual que el
- * perfil de madurez, así que comparte su `staleTime` de 5 minutos.
+ * The recommendation is an immutable snapshot once generated, like the
+ * maturity profile, so it shares its 5-minute `staleTime`.
  */
 export function useRecommendation(diagnosticId: string | undefined) {
   return useQuery({
@@ -19,9 +19,9 @@ export function useRecommendation(diagnosticId: string | undefined) {
 }
 
 /**
- * La traza se pide aparte y solo cuando alguien la despliega: su audiencia
- * es el equipo de INNLAB, no el líder de iniciativa, y es bastante más
- * pesada que la recomendación.
+ * The trace is requested separately and only when someone expands it: its
+ * audience is the INNLAB team, not the initiative leader, and it is much
+ * heavier than the recommendation.
  */
 export function useRecommendationTrace(
   diagnosticId: string | undefined,
@@ -38,14 +38,15 @@ export function useRecommendationTrace(
 }
 
 /**
- * Ya no dispara el cálculo de la recomendación directamente: acepta el
- * análisis profundo en `diagnosis/`, que publica `DeepAnalysisRequestedEvent`
- * y deja que `routing/` (y `roadmap/`) calculen por su cuenta. Al terminar,
- * el resultado ya está persistido, así que solo hay que volver a leerlo.
+ * It does not trigger the recommendation calculation directly: it accepts
+ * the deep analysis in `diagnosis/`, which publishes
+ * `DeepAnalysisRequestedEvent` and lets `routing/` (and `roadmap/`)
+ * calculate on their own. When it finishes, the result is already
+ * persisted, so it only has to be read again.
  *
- * `onSuccess` devuelve la promesa de la invalidación para que la mutación
- * siga en `pending` hasta que la relectura termina: así la página no ve un
- * hueco entre "aceptado" y "recomendación disponible".
+ * `onSuccess` returns the invalidation's promise so the mutation stays
+ * `pending` until the re-read finishes: the page never sees a gap between
+ * "accepted" and "recommendation available".
  */
 export function useAcceptDeepAnalysis(diagnosticId: string | undefined) {
   const queryClient = useQueryClient();
@@ -57,16 +58,16 @@ export function useAcceptDeepAnalysis(diagnosticId: string | undefined) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.diagnostic.recommendation(diagnosticId),
         }),
-        // La traza y el roadmap se recalculan con el análisis; invalidarlos
-        // evita mostrar el resultado de una evaluación anterior.
+        // The trace and the roadmap are recalculated with the analysis;
+        // invalidating them avoids showing the result of a previous evaluation.
         queryClient.invalidateQueries({
           queryKey: queryKeys.diagnostic.recommendationTrace(diagnosticId),
         }),
         queryClient.invalidateQueries({
           queryKey: queryKeys.diagnostic.roadmap(diagnosticId),
         }),
-        // La página de resultados decide qué mostrar con `deepAnalysisAccepted`,
-        // que cambia al aceptar.
+        // The results page decides what to show from `deepAnalysisAccepted`,
+        // which changes on acceptance.
         queryClient.invalidateQueries({
           queryKey: queryKeys.diagnostic.detail(diagnosticId),
         }),

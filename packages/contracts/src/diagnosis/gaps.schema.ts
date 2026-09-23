@@ -2,33 +2,33 @@ import { z } from 'zod';
 import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
 
 /**
- * Umbral IRL de brecha (RF-14 / estado crítico por dimensión).
+ * IRL gap threshold (RF-14 / critical state per dimension).
  *
- * Una dimensión está en brecha cuando su nivel IRL es menor o igual
- * a este valor. La constante vive en el contrato para que API y SPA
- * no inventen el número; la evaluación la hace el backend.
+ * A dimension is in gap when its IRL level is lower than or equal to this
+ * value. The constant lives in the contract so the API and the SPA do not
+ * make up the number; the backend does the evaluation.
  */
 export const CRITICAL_IRL_THRESHOLD = 3;
 
 /**
- * Dimensiones en brecha del perfil — aquellas con `irlLevel` ≤ umbral.
+ * Dimensions in gap of the profile — those with `irlLevel` ≤ threshold.
  *
- * A diferencia del cuello de botella, el array **puede ir vacío**: un
- * perfil con todos los niveles por encima del umbral no tiene brecha.
- * El frontend no debe recalcular este conjunto a partir de `irlLevel`.
+ * Unlike the bottleneck, the array **may be empty**: a profile with every
+ * level above the threshold has no gap. The frontend must not recompute
+ * this set from `irlLevel`.
  */
 export const gapsSchema = z
   .object({
     dimensions: z
       .array(dimensionCodeSchema)
-      .describe('Dimensiones cuyo nivel IRL está en o por debajo del umbral de brecha'),
+      .describe('Dimensions whose IRL level is at or below the gap threshold'),
     threshold: z
       .number()
       .int()
       .min(1)
       .max(9)
-      .describe('Umbral IRL de brecha aplicado al calcular este snapshot'),
+      .describe('IRL gap threshold applied when computing this snapshot'),
   })
-  .describe('Brechas dimensionales del perfil de madurez (IRL ≤ umbral)');
+  .describe('Dimension gaps of the maturity profile (IRL ≤ threshold)');
 
 export type Gaps = z.infer<typeof gapsSchema>;

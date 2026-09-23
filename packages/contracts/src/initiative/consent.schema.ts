@@ -2,48 +2,47 @@ import { z } from 'zod';
 import { uuidSchema } from '../common/uuid.schema.js';
 
 /**
- * Versión vigente del texto de consentimiento (Ley 1581 de 2012).
+ * Current version of the consent text (Law 1581 of 2012).
  *
- * Cambia cuando legal aprueba un nuevo texto. El frontend lo lee del
- * endpoint público para mostrar el contenido exacto y para incluirlo
- * en la confirmación que se persiste — así la trazabilidad muestra
- * exactamente qué texto aceptó el usuario.
+ * It changes when legal approves a new text. The frontend sends the version
+ * it showed together with the acceptance that is persisted — so the trace
+ * shows exactly which text the user accepted.
  */
 export const consentVersionSchema = z
   .string()
   .regex(/^v\d+(\.\d+)*$/)
-  .describe('Versión del texto de consentimiento (e.g. "v1", "v2.1")');
+  .describe('Version of the consent text (e.g. "v1", "v2.1")');
 
 export type ConsentVersion = z.infer<typeof consentVersionSchema>;
 
 /**
- * Comando para registrar el consentimiento del usuario (HU-05 / RF-03).
+ * Command that records the user's consent (HU-05 / RF-03).
  *
  * `POST /api/v1/diagnostics/:id/consent`.
  *
- * Reglas:
- *   - El usuario que no acepta simplemente no envía la petición — no
- *     hay un `accepted: false` que enviar ni que rechazar.
- *   - `version` es la versión del texto mostrado al usuario, no la
- *     "actual del servidor"; el backend verifica que coincida con la
- *     vigente y rechaza con 409 si no.
+ * Rules:
+ *   - A user who does not accept simply does not send the request — there
+ *     is no `accepted: false` to send or to reject.
+ *   - `version` is the version of the text shown to the user, not "the
+ *     server's current one"; the backend checks it matches the current one
+ *     and rejects with 409 if not.
  */
 export const registerConsentSchema = z
   .object({
     version: consentVersionSchema,
   })
-  .describe('Registro del consentimiento (HU-05)');
+  .describe('Consent record (HU-05)');
 
 export type RegisterConsentCommand = z.infer<typeof registerConsentSchema>;
 
 /**
- * Estado del consentimiento asociado a un diagnóstico.
+ * State of the consent of a diagnostic.
  *
  * Endpoint: `GET /api/v1/diagnostics/:id/consent`.
  *
- * Cuando todavía no hay consentimiento registrado, el endpoint devuelve
- * 404 — el frontend lo interpreta como "necesitamos mostrar la pantalla
- * de términos". Si existe, se devuelve este shape con `acceptedAt`.
+ * While no consent is recorded, the endpoint answers 404 — the frontend
+ * reads it as "the terms step is still pending". If it exists, this shape
+ * is returned with `acceptedAt`.
  */
 export const consentRecordSchema = z
   .object({
@@ -51,6 +50,6 @@ export const consentRecordSchema = z
     version: consentVersionSchema,
     acceptedAt: z.string().datetime(),
   })
-  .describe('Consentimiento registrado para un diagnóstico');
+  .describe('Consent recorded for a diagnostic');
 
 export type ConsentRecord = z.infer<typeof consentRecordSchema>;

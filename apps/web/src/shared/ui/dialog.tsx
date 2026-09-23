@@ -10,10 +10,10 @@ import { X } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * Familia `Dialog` siguiendo el patrón shadcn/ui sobre
+ * `Dialog` family following the shadcn/ui pattern over
  * `@radix-ui/react-dialog`.
  *
- * Composición típica:
+ * Typical composition:
  *   <Dialog>
  *     <DialogTrigger asChild><Button>Abrir</Button></DialogTrigger>
  *     <DialogContent>

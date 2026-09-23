@@ -1,19 +1,18 @@
 /**
- * Paleta de marca — fuente única de los colores con valor propio.
+ * Brand palette — single source of the colors with a value of their own.
  *
- * `tailwind.config.ts` importa este módulo para generar las utilidades
- * (`bg-azul-icesi`, `text-critical`, `bg-dimension-trl`…), y el código que no
- * puede usar clases (atributos SVG de recharts) lee las mismas constantes.
- * Así el color de una dimensión en el radar y en el roadmap sale del mismo
- * valor.
+ * `tailwind.config.ts` imports this module to generate the utilities
+ * (`bg-azul-icesi`, `text-critical`, `bg-dimension-trl`…), and code that
+ * cannot use classes (recharts SVG attributes) reads the same constants.
+ * That way the color of a dimension in the radar and in the roadmap comes
+ * from the same value.
  *
- * Los tokens de superficie, texto y borde (`--background`, `--border`,
- * `--muted-foreground`…) viven en `globals.css` como HSL; en SVG se leen con
- * `hsl(var(--token))`.
+ * The surface, text and border tokens (`--background`, `--border`,
+ * `--muted-foreground`…) live in `globals.css` as HSL; in SVG they are read
+ * with `hsl(var(--token))`.
  *
- * Los tonos de dimensión son los de `tailwind.config.ts`: el par
- * `{code}` (relleno, puntos, barras) y `{code}-ink` (texto, ≥4.5:1 sobre
- * blanco).
+ * The dimension tones are the ones of `tailwind.config.ts`: the pair
+ * `{code}` (fill, dots, bars) and `{code}-ink` (text, ≥4.5:1 on white).
  */
 export const PALETTE = {
   'azul-icesi': '#5454E9',
@@ -24,9 +23,9 @@ export const PALETTE = {
   'gris-1': '#88898C',
   'gris-2': '#CECFD4',
 
-  // Semánticos, ligados a las clasificaciones de desequilibrio (RF-10). Su
-  // fondo es blanco: el estado se lee en el texto, el icono y el borde, no en
-  // un relleno de color (regla de color de innlab.org).
+  // Semantic tones, tied to the imbalance classifications (RF-10). Their
+  // background is white: the state reads in the text, the icon and the
+  // border, not in a colored fill (innlab.org's color rule).
   critical: { DEFAULT: '#C0392B', bg: '#FFFFFF', foreground: '#FFFFFF' },
   moderate: { DEFAULT: '#B45309', bg: '#FFFFFF', foreground: '#FFFFFF' },
   acceptable: { DEFAULT: '#1B7A48', bg: '#FFFFFF', foreground: '#FFFFFF' },

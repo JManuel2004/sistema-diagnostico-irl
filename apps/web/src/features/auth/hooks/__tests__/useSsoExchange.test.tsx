@@ -38,7 +38,7 @@ describe('useSsoExchange', () => {
     await waitFor(() => {
       expect(result.current.status).toBe('done');
     });
-    // El código es de un solo uso: un segundo canje fallaría contra Core.
+    // The code is single use: a second exchange would fail against Core.
     expect(exchangeSsoCode).toHaveBeenCalledTimes(1);
   });
 
@@ -75,12 +75,12 @@ describe('useSsoExchange', () => {
   });
 
   /**
-   * Regresion: bajo StrictMode React monta, desmonta y remonta el efecto.
-   * El guard de un solo uso impide que el remontaje lance una segunda
-   * peticion — correcto — pero la limpieza del primer montaje no puede
-   * descartar el resultado de la unica peticion en vuelo, o la pantalla
-   * se queda en "Conectando..." para siempre. Afecta igual al exito y al
-   * error, asi que rompe tambien el camino feliz del login.
+   * Regression: under StrictMode React mounts, unmounts and remounts the
+   * effect. The single-use guard keeps the remount from firing a second
+   * request — correct — but the cleanup of the first mount cannot discard
+   * the result of the only request in flight, or the screen stays on
+   * "Conectando..." forever. It affects success and error alike, so it also
+   * breaks the happy path of the login.
    */
   describe('bajo StrictMode (doble montaje del efecto)', () => {
     it('sigue resolviendo el estado de error', async () => {

@@ -23,8 +23,8 @@ async function bootstrap(): Promise<void> {
 
   app.useLogger(app.get(Logger));
 
-  // CSP desactivado: esta es una API pura; el único HTML servido es la
-  // documentación Swagger, cuyo UI requiere scripts inline que CSP bloquearía.
+  // CSP disabled: this is a pure API; the only HTML served is the Swagger
+  // documentation, whose UI needs inline scripts that CSP would block.
   await app.register(helmet, { contentSecurityPolicy: false });
 
   // Single source of truth: the typed `AppConfig` published by
@@ -46,9 +46,9 @@ async function bootstrap(): Promise<void> {
   const swaggerDocument = SwaggerModule.createDocument(
     app,
     new DocumentBuilder()
-      .setTitle('Diagnóstico IRL — API')
+      .setTitle('IRL Diagnostic — API')
       .setDescription(
-        'Sistema de diagnóstico de madurez IRL · INNLAB · Universidad Icesi',
+        'IRL maturity diagnostic system · INNLAB · Universidad Icesi',
       )
       .setVersion('1.0')
       .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })

@@ -14,13 +14,13 @@ import type { HighlightHandler } from './MaturityProfileSummary';
 import { PairCard } from './PairCard';
 
 /**
- * Lo que el perfil solo muestra con el análisis profundo aceptado: los pares
- * de dimensiones desequilibrados y las dimensiones en estado crítico.
+ * What the profile shows only with the deep analysis accepted: the
+ * imbalanced pairs of dimensions and the dimensions in critical state.
  *
- * Ambos vienen calculados en la respuesta (`imbalances`, `criticalState`); aquí
- * solo se presentan, y con peso proporcional a la gravedad: primero lo crítico,
- * con color y texto que digan que es urgente. Pasar el cursor por un par o una
- * alerta resalta sus dimensiones en el radar.
+ * Both come computed in the response (`imbalances`, `criticalState`); here
+ * they are only presented, with weight proportional to their severity:
+ * critical first, with color and text that say it is urgent. Hovering a
+ * pair or an alert highlights its dimensions in the radar.
  */
 export interface PlanTarget {
   readonly targetLevel: number;
@@ -30,11 +30,11 @@ export interface PlanTarget {
 interface Props {
   readonly profile: MaturityProfileResponse;
   readonly onHighlight?: HighlightHandler;
-  /** Qué mide cada dimensión, del catálogo del cuestionario. */
+  /** What each dimension measures, from the questionnaire catalog. */
   readonly descriptions?: Readonly<Partial<Record<DimensionCode, string>>>;
-  /** Meta y fase de cada dimensión en el roadmap, si ya se calculó. */
+  /** Target and phase of each dimension in the roadmap, if already calculated. */
   readonly plan?: Readonly<Partial<Record<DimensionCode, PlanTarget>>>;
-  /** Nombre de la iniciativa, para dirigirse a ella. */
+  /** Name of the initiative, to address it. */
   readonly subject?: string;
 }
 

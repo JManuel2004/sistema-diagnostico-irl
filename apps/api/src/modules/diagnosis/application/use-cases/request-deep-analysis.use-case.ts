@@ -49,12 +49,12 @@ export class RequestDeepAnalysisUseCase {
   async execute(
     cmd: RequestDeepAnalysisCommand,
   ): Promise<Result<AcceptDeepAnalysisResponse, NotFoundError | ConflictError>> {
-    const diagnostico = await this.diagnostics.findById(cmd.diagnosticId);
-    if (!diagnostico) {
+    const diagnosis = await this.diagnostics.findById(cmd.diagnosticId);
+    if (!diagnosis) {
       return Result.err(new NotFoundError('Diagnosis', cmd.diagnosticId));
     }
 
-    const current = diagnostico.state.value;
+    const current = diagnosis.state.value;
     if (!ALREADY_ACCEPTED_STATES.has(current)) {
       if (current !== 'PROFILE_GENERATED') {
         return Result.err(
@@ -65,18 +65,18 @@ export class RequestDeepAnalysisUseCase {
         );
       }
 
-      diagnostico.transitionTo('DEEP_ANALYSIS_IN_PROGRESS');
-      await this.diagnostics.save(diagnostico);
+      diagnosis.transitionTo('DEEP_ANALYSIS_IN_PROGRESS');
+      await this.diagnostics.save(diagnosis);
     }
 
     await this.events.emitAsync(
       DeepAnalysisRequestedEvent.eventName,
-      new DeepAnalysisRequestedEvent({ diagnosticId: diagnostico.id.value }),
+      new DeepAnalysisRequestedEvent({ diagnosticId: diagnosis.id.value }),
     );
 
     return Result.ok({
-      diagnosticId: diagnostico.id.value,
-      state: diagnostico.state.value,
+      diagnosticId: diagnosis.id.value,
+      state: diagnosis.state.value,
     });
   }
 }

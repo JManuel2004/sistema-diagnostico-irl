@@ -107,7 +107,7 @@ function renderWizard(path = `/diagnosticos/${ID}/asistente`): ReturnType<typeof
     <QueryClientProvider client={createTestQueryClient()}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/diagnosticos/:id/asistente/:paso?" element={<DiagnosticWizardPage />} />
+          <Route path="/diagnosticos/:id/asistente/:step?" element={<DiagnosticWizardPage />} />
           <Route path="/diagnosticos/:id/resultados" element={<div>RESULTADOS_STUB</div>} />
         </Routes>
         <Where />
@@ -552,7 +552,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
     });
 
     afterEach(() => {
-      // @ts-expect-error restaura el estado de jsdom, que no define el método.
+      // @ts-expect-error restores jsdom's state, which does not define the method.
       delete Element.prototype.scrollIntoView;
     });
 

@@ -7,22 +7,21 @@ import {
 } from '../store/questionnaire-draft.store';
 
 /**
- * `QuestionnaireProgress` — banda superior con el progreso global del
- * cuestionario y el indicador de guardado automático.
+ * `QuestionnaireProgress` — top band with the questionnaire's overall
+ * progress and the draft indicator.
  *
- * Adoptado del prototipo cliente: la información agregada
- * (`X / 48 afirmaciones completas`, `% completado`, barra; una afirmación está
- * completa con su respuesta Likert y su justificación) vive arriba para que
- * el avance no quede oculto dentro de cada dimensión. El chip dice lo que
- * realmente ocurre con el borrador (HU-09): se conserva en esta pestaña
- * (`sessionStorage`) y no llega al servidor hasta «Procesar diagnóstico»;
- * no promete guardado entre sesiones ni entre pestañas.
+ * The aggregate (`X / 48 afirmaciones completas`, `% completado`, bar; a
+ * statement is complete with its Likert answer and its justification)
+ * lives at the top so progress is not hidden inside each dimension. The
+ * chip says what really happens to the draft (HU-09): it is kept in this
+ * tab (`sessionStorage`) and does not reach the server until «Procesar
+ * diagnóstico»; it promises no saving across sessions or tabs.
  *
- * En móvil el aviso del borrador se oculta: su `title` sigue en el DOM y la
- * barra y el porcentaje bastan en una fila de 358px.
+ * On mobile the draft notice is hidden: its `title` stays in the DOM, and
+ * the bar and the percentage are enough in a 358px row.
  *
- * El componente es presentacional: deriva todo del store y no muta
- * estado.
+ * The component is presentational: it derives everything from the store
+ * and mutates no state.
  */
 interface Props {
   dimensions: QuestionnaireStructure['dimensions'];

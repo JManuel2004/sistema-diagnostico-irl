@@ -1,20 +1,20 @@
 import { DomainError } from '../../../../shared/kernel/domain/errors/domain-error.js';
 
 /**
- * Códigos estables del módulo de enrutamiento. El frontend y las pruebas
- * hacen match sobre `code`, nunca sobre el mensaje.
+ * Stable codes of the routing module. The frontend and the tests match on
+ * `code`, never on the message.
  *
- * El mapeo a HTTP vive en `DomainExceptionFilter`; cualquier subclase que
- * no se registre allí cae al 400 por defecto.
+ * The HTTP mapping lives in `DomainExceptionFilter`; any subclass not
+ * registered there falls back to the default 400.
  */
 
-/** No hay ninguna versión de configuración publicada como VIGENTE. */
+/** No routing configuration has been seeded. */
 export class NoActiveConfigurationError extends DomainError {
   override readonly code = 'ROUTING_NO_ACTIVE_CONFIGURATION';
 
   constructor(details?: Record<string, unknown>) {
     super(
-      'No hay una versión de configuración de enrutamiento active. ' +
+      'No hay una versión de configuración de enrutamiento vigente. ' +
         'Publique una versión antes de generar recommendations.',
     );
     this.details = details;
@@ -23,7 +23,7 @@ export class NoActiveConfigurationError extends DomainError {
   readonly details?: Record<string, unknown>;
 }
 
-/** El diagnóstico existe pero aún no tiene perfil de madurez calculado. */
+/** The diagnostic exists but has no computed maturity profile yet. */
 export class ProfileNotComputedError extends DomainError {
   override readonly code = 'ROUTING_PROFILE_NOT_COMPUTED';
 
@@ -35,7 +35,7 @@ export class ProfileNotComputedError extends DomainError {
   }
 }
 
-/** Se pidió la recomendación de un diagnóstico que aún no la tiene. */
+/** The recommendation of a diagnostic that does not have one yet was requested. */
 export class RecommendationNotGeneratedError extends DomainError {
   override readonly code = 'ROUTING_RECOMMENDATION_NOT_GENERATED';
 
@@ -47,8 +47,8 @@ export class RecommendationNotGeneratedError extends DomainError {
 }
 
 /**
- * Un predicate no compila: campo desconocido, operador no admitido en el
- * modo, o forma malformada. Se lanza al configurar, no al evaluar.
+ * A predicate does not compile: unknown field, operator not allowed in the
+ * mode, or malformed shape. Thrown when configuring, not when evaluating.
  */
 export class PredicateCompilationError extends DomainError {
   override readonly code = 'ROUTING_PREDICATE_COMPILATION_FAILED';
@@ -61,7 +61,7 @@ export class PredicateCompilationError extends DomainError {
   }
 }
 
-/** La escala ordinal no respeta el orden estricto de sus peldaños. */
+/** The ordinal scale does not respect the strict order of its steps. */
 export class CalibrationNotMonotonicError extends DomainError {
   override readonly code = 'ROUTING_CALIBRATION_NOT_MONOTONIC';
 
@@ -73,7 +73,7 @@ export class CalibrationNotMonotonicError extends DomainError {
   }
 }
 
-/** La configuración es incoherente en tiempo de evaluación. */
+/** The configuration is inconsistent at evaluation time. */
 export class RoutingConfigurationError extends DomainError {
   override readonly code = 'ROUTING_CONFIGURATION_INVALID';
 

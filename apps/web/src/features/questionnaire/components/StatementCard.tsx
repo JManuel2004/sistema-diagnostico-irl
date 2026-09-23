@@ -7,21 +7,21 @@ import { LikertScale } from './LikertScale';
 import { useAnswerForStatement } from '../hooks/useAnswerForStatement';
 
 /**
- * `StatementCard` — el componente central del cuestionario IRL.
+ * `StatementCard` — the central component of the IRL questionnaire.
  *
- * Especificación visual:
- *  - Padding 16px en móvil y 32px desde `sm`, esquinas de 20px.
- *  - Cabecera: `Afirmación X de 8` en azul (requisito de tests +
- *    accesibilidad) y, a la derecha, si ya está completa o pendiente.
- *  - Cuerpo: la afirmación a 18px en móvil y 20px desde `sm` — calibrado
- *    para leer 48 afirmaciones cómodamente, ~60 caracteres por línea.
- *  - El selector Likert (5 opciones) y, debajo, la justificación: cada
- *    respuesta se guarda con el porqué del nivel elegido (obligatoria).
+ * Visual specification:
+ *  - Padding 16px on mobile and 32px from `sm`, straight corners.
+ *  - Header: `Afirmación X de 8` in blue (required by tests and
+ *    accessibility) and, on the right, whether it is complete or pending.
+ *  - Body: the statement at 18px on mobile and 20px from `sm` — tuned to
+ *    read 48 statements comfortably, ~60 characters per line.
+ *  - The Likert selector (5 options) and, below, the justification: each
+ *    answer is saved with the reason for the chosen level (mandatory).
  *
- * El acento de color del código de dimensión (TRL, CRL, ...) viene
- * del padre (`DimensionPanel`) y nunca se mezcla con el input de
- * respuesta: responder TRL debe ser mecánicamente idéntico a responder
- * FRL (regla del manual).
+ * The accent color of the dimension code (TRL, CRL, ...) comes from the
+ * parent (`DimensionPanel`) and never mixes with the answer input:
+ * answering TRL must be mechanically identical to answering FRL (manual's
+ * rule).
  */
 
 interface Props {
@@ -30,7 +30,7 @@ interface Props {
 
 export function StatementCard({ statement }: Props) {
   const { value, setAnswer, justification, setJustification } = useAnswerForStatement(statement.id);
-  // La misma regla que `isStatementComplete`: respuesta y justificación no vacía.
+  // The same rule as `isStatementComplete`: an answer and a non-empty justification.
   const complete = value !== null && justification.trim().length > 0;
   return (
     <Card className="rounded-2xl p-4 sm:p-8">

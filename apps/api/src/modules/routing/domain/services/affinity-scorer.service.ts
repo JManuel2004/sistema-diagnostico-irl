@@ -4,23 +4,23 @@ import type { ScoringParameters } from '../value-objects/scoring-parameters.vo.j
 import type { ScoredCandidate } from '../value-objects/scored-candidate.vo.js';
 
 /**
- * Capa 2 — el cálculo de afinidad.
+ * Layer 2 — the affinity calculation.
  *
- * Puro y determinista: los mismos hechos, fichas y parámetros producen
- * siempre el mismo score. Es lo que permite que la traza sea
- * reproducible meses después y que el simulador prometa algo real.
+ * Pure and deterministic: the same facts, profiles and parameters always
+ * produce the same score. That is what keeps the trace reproducible months
+ * later.
  *
- *   score = aporte_cuello_botella
- *           + aporte_brechas
- *           + aporte_desequilibrios
- *           + aporte_afinidad_etapa
- *           − penalizacion_rango
+ *   score = bottleneck_contribution
+ *           + gaps_contribution
+ *           + imbalances_contribution
+ *           + stage_affinity_contribution
+ *           − range_penalty
  *
- * Cada término se registra por separado **junto con la label ordinal
- * que lo originó**. Guardar la label al lado del número es lo que
- * permite explicar sin exponer la calibración: la justificación puede
- * decir "porque este servicio es *principal* en Modelo de Negocio" en vez
- * de "porque aportó 1.50".
+ * Each term is recorded separately **together with the ordinal label that
+ * produced it**. Keeping the label next to the number is what allows
+ * explaining without exposing the calibration: the justification can say
+ * "because this service is *primary* in Business Model" instead of
+ * "because it contributed 1.50".
  */
 export class AffinityScorerService {
   score(
@@ -28,18 +28,20 @@ export class AffinityScorerService {
     facts: DiagnosticFacts,
     parameters: ScoringParameters,
   ): ScoredCandidate[] {
-    return eligible.map((profile) => this.puntuar(profile, facts, parameters));
+    return eligible.map((profile) =>
+      this.scoreProfile(profile, facts, parameters),
+    );
   }
 
-  private puntuar(
+  private scoreProfile(
     profile: NumericProfile,
     facts: DiagnosticFacts,
     p: ScoringParameters,
   ): ScoredCandidate {
-    const bottleneck = this.aporteCuelloBotella(profile, facts, p);
-    const gaps = this.aporteBrechas(profile, facts, p);
-    const imbalances = this.aporteDesequilibrios(profile, facts, p);
-    const stageAffinity = this.aporteAfinidadEtapa(profile, facts, p);
+    const bottleneck = this.bottleneckContribution(profile, facts, p);
+    const gaps = this.gapsContribution(profile, facts, p);
+    const imbalances = this.imbalancesContribution(profile, facts, p);
+    const stageAffinity = this.stageAffinityContribution(profile, facts, p);
     const rangePenalty = this.rangePenalty(profile, facts, p);
 
     const total =
@@ -59,154 +61,156 @@ export class AffinityScorerService {
         stageAffinity,
         rangePenalty,
       },
-      total: redondear(total),
+      total: round3(total),
     };
   }
 
   /**
-   * El problema más agudo pesa más que una brecha ordinaria.
+   * The sharpest problem weighs more than an ordinary gap.
    *
-   * Con empate (varias dimensiones comparten el mínimo IRL) se promedian
-   * las intensities del servicio en todas ellas. Promediar trata el
-   * empate simétricamente: valora igual la capacidad del servicio en cada
-   * dimensión empatada. Tomar el mínimo sería más conservador y el máximo
-   * más generoso; ambas rompen esa simetría.
+   * On a tie (several dimensions share the lowest IRL) the service's
+   * intensities over all of them are averaged. Averaging treats the tie
+   * symmetrically: it values the service's capacity equally in every tied
+   * dimension. Taking the minimum would be more conservative and the maximum
+   * more generous; both break that symmetry.
    */
-  private aporteCuelloBotella(
+  private bottleneckContribution(
     profile: NumericProfile,
     facts: DiagnosticFacts,
     p: ScoringParameters,
   ) {
-    const cuellos = facts.bottlenecks;
-    const details = cuellos.map((dim) => ({
+    const bottleneckDimensions = facts.bottlenecks;
+    const details = bottleneckDimensions.map((dim) => ({
       dimension: dim,
-      sourceLabel: etiquetaDe(profile, dim),
-      value: intensidadDe(profile, dim),
+      sourceLabel: labelOf(profile, dim),
+      value: intensityOf(profile, dim),
     }));
-    const promedio =
-      cuellos.length === 0
+    const average =
+      bottleneckDimensions.length === 0
         ? 0
-        : details.reduce((acc, d) => acc + d.value, 0) / cuellos.length;
+        : details.reduce((acc, d) => acc + d.value, 0) /
+          bottleneckDimensions.length;
 
-    return { value: redondear(p.bottleneckWeight * promedio), details };
+    return { value: round3(p.bottleneckWeight * average), details };
   }
 
   /**
-   * Se **suman** las intensities sobre las dimensiones en brecha, no se
-   * promedian: un servicio que cubre tres brechas debe puntuar más que
-   * uno que cubre una, siempre que lo haga de forma significativa. Si el
-   * efecto resulta excesivo, la corrección es bajar `gapWeight`, no
-   * cambiar la forma del término.
+   * The intensities over the dimensions in gap are **added**, not averaged:
+   * a service that covers three gaps must score higher than one that covers
+   * one, as long as it does so meaningfully. If the effect turns out
+   * excessive, the fix is lowering `gapWeight`, not changing the shape of the
+   * term.
    */
-  private aporteBrechas(
+  private gapsContribution(
     profile: NumericProfile,
     facts: DiagnosticFacts,
     p: ScoringParameters,
   ) {
     const details = facts.gaps.map((dim) => ({
       dimension: dim,
-      sourceLabel: etiquetaDe(profile, dim),
-      value: intensidadDe(profile, dim),
+      sourceLabel: labelOf(profile, dim),
+      value: intensityOf(profile, dim),
     }));
-    const suma = details.reduce((acc, d) => acc + d.value, 0);
-    return { value: redondear(p.gapWeight * suma), details };
+    const sum = details.reduce((acc, d) => acc + d.value, 0);
+    return { value: round3(p.gapWeight * sum), details };
   }
 
   /**
-   * Aporte por desequilibrios, **ponderado por intensidad** (decisión D-3).
+   * Imbalance contribution, **weighted by intensity** (decision D-3).
    *
-   *   aporte = Σ  peso(clasificación) × max(intensidad[izq], intensidad[der])
+   *   contribution = Σ weight(classification) × max(intensity[left], intensity[right])
    *
-   * sobre los seis pares fijos del marco. Los pares `ACCEPTABLE` no aportan.
+   * over the six fixed pairs of the framework. `ACCEPTABLE` pairs contribute
+   * nothing.
    *
-   * Se pondera en vez de contar por cobertura binaria porque el aporte
-   * debe reflejar si el servicio *puede hacer algo* sobre ese
-   * desequilibrio. Con cobertura binaria, un servicio con ficha ancha
-   * pero intensidad marginal en las dimensiones afectadas puntúa igual
-   * que uno que las aborda de lleno, con lo que el término premia tener
-   * ficha ancha en vez de ser pertinente.
+   * It is weighted instead of counting binary coverage because the
+   * contribution must reflect whether the service *can do something* about
+   * that imbalance. With binary coverage, a service with a wide profile but a
+   * marginal intensity in the affected dimensions scores the same as one that
+   * tackles them head on, so the term would reward having a wide profile
+   * instead of being relevant.
    *
-   * Se toma el máximo de las dos dimensiones del par y no la suma porque
-   * el desequilibrio es una propiedad del par, no de cada extremo: contar
-   * ambos lo computaría dos veces.
+   * The maximum of the pair's two dimensions is taken, not the sum, because
+   * the imbalance is a property of the pair, not of each end: counting both
+   * would count it twice.
    */
-  private aporteDesequilibrios(
+  private imbalancesContribution(
     profile: NumericProfile,
     facts: DiagnosticFacts,
     p: ScoringParameters,
   ) {
     const details = facts.imbalances
       .map((d) => {
-        const peso =
+        const weight =
           d.classification === 'CRITICAL'
             ? p.criticalImbalanceWeight
             : d.classification === 'MODERATE'
               ? p.moderateImbalanceWeight
               : 0;
-        const iIzq = intensidadDe(profile, d.left);
-        const iDer = intensidadDe(profile, d.right);
-        const dominante = iIzq >= iDer ? d.left : d.right;
+        const leftIntensity = intensityOf(profile, d.left);
+        const rightIntensity = intensityOf(profile, d.right);
+        const dominant = leftIntensity >= rightIntensity ? d.left : d.right;
         return {
           pair: `${d.left}-${d.right}`,
           classification: d.classification,
-          sourceLabel: etiquetaDe(profile, dominante),
-          value: redondear(peso * Math.max(iIzq, iDer)),
+          sourceLabel: labelOf(profile, dominant),
+          value: round3(weight * Math.max(leftIntensity, rightIntensity)),
         };
       })
       .filter((d) => d.value > 0);
 
-    const suma = details.reduce((acc, d) => acc + d.value, 0);
-    return { value: redondear(suma), details };
+    const sum = details.reduce((acc, d) => acc + d.value, 0);
+    return { value: round3(sum), details };
   }
 
   /**
-   * Afinidad de etapa. Una etapa sin registrar (`null`) no coincide con
-   * ninguna: la ausencia de caracterización no debe regalar puntos.
+   * Stage affinity. An unregistered stage (`null`) matches none: missing
+   * characterization must not give points away.
    */
-  private aporteAfinidadEtapa(
+  private stageAffinityContribution(
     profile: NumericProfile,
     facts: DiagnosticFacts,
     p: ScoringParameters,
   ) {
     const stage = facts.characterization.stage;
     const matches = stage !== null && profile.relevantStages.includes(stage);
-    return { value: matches ? redondear(p.stageAffinityWeight) : 0, matches };
+    return { value: matches ? round3(p.stageAffinityWeight) : 0, matches };
   }
 
   /**
-   * Penalización por operar fuera de la banda de madurez del servicio.
-   * Comparación booleana contra el nivel promedio: dentro o fuera, sin
-   * gradiente en el borde.
+   * Penalty for operating outside the service's maturity band. A boolean
+   * comparison against the average level: inside or outside, with no
+   * gradient at the edge.
    */
   private rangePenalty(
     profile: NumericProfile,
     facts: DiagnosticFacts,
     p: ScoringParameters,
   ) {
-    const fuera =
+    const outside =
       facts.averageLevel < profile.minLevel ||
       facts.averageLevel > profile.maxLevel;
     return {
-      value: fuera ? redondear(p.outOfRangePenalty) : 0,
-      applied: fuera,
+      value: outside ? round3(p.outOfRangePenalty) : 0,
+      applied: outside,
     };
   }
 }
 
-function intensidadDe(profile: NumericProfile, dim: DimensionCode): number {
+function intensityOf(profile: NumericProfile, dim: DimensionCode): number {
   return profile.intensities.get(dim) ?? 0;
 }
 
-function etiquetaDe(profile: NumericProfile, dim: DimensionCode): string {
+function labelOf(profile: NumericProfile, dim: DimensionCode): string {
   return profile.labels.get(dim) ?? 'not_applicable';
 }
 
 /**
- * Los puntajes se persisten como `numeric(6,3)`. Redondear a tres
- * decimales en el dominio evita que un residuo de coma flotante haga que
- * el valor calculado y el releído de la base de datos difieran, lo que
- * rompería la comprobación de reproducibilidad.
+ * Scores are persisted as `numeric(6,3)`. Rounding to three decimals in the
+ * domain keeps a floating-point residue from making the computed value and
+ * the one read back from the database differ, which would break the
+ * reproducibility check.
  */
-function redondear(value: number): number {
+function round3(value: number): number {
   return Math.round(value * 1000) / 1000;
 }

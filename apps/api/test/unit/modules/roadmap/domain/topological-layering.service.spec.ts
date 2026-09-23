@@ -5,7 +5,7 @@ import { TopologicalLayeringService } from '../../../../../src/modules/roadmap/d
 import { DependencyGraphCycleError } from '../../../../../src/modules/roadmap/domain/exceptions/roadmap.errors.js';
 
 const DIMS: DimensionCode[] = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'];
-const minimos = DIMS.map((d) => ({ dimension: d, minimumExpectedLevel: 4 }));
+const minimums = DIMS.map((d) => ({ dimension: d, minimumExpectedLevel: 4 }));
 const e = (o: DimensionCode, d: DimensionCode, req = 3) => ({
   source: o,
   target: d,
@@ -15,29 +15,29 @@ const service = new TopologicalLayeringService();
 
 describe('TopologicalLayeringService', () => {
   it('coloca en la capa 0 las dimensions sin dependencies internas', () => {
-    const g = DependencyGraph.create([e('BRL', 'FRL'), e('IPRL', 'FRL')], minimos);
+    const g = DependencyGraph.create([e('BRL', 'FRL'), e('IPRL', 'FRL')], minimums);
     const layers = service.layer(new Set<DimensionCode>(['BRL', 'IPRL', 'FRL']), g);
     expect(layers).toEqual([['BRL', 'IPRL'], ['FRL']]);
   });
 
   it('ignora edges cuyo source queda fuera del conjunto', () => {
-    // CRL habilita a FRL pero no hay que intervenir CRL; esa edge no
-    // debe retrasar a FRL, o una dimensión ya sana bloquearía el plan.
-    const g = DependencyGraph.create([e('CRL', 'FRL')], minimos);
+    // CRL enables FRL but CRL needs no intervention; that edge must not
+    // delay FRL, or an already healthy dimension would block the plan.
+    const g = DependencyGraph.create([e('CRL', 'FRL')], minimums);
     const layers = service.layer(new Set<DimensionCode>(['FRL']), g);
     expect(layers).toEqual([['FRL']]);
   });
 
   it('ignora edges cuyo target queda fuera del conjunto', () => {
-    const g = DependencyGraph.create([e('BRL', 'CRL')], minimos);
+    const g = DependencyGraph.create([e('BRL', 'CRL')], minimums);
     const layers = service.layer(new Set<DimensionCode>(['BRL']), g);
     expect(layers).toEqual([['BRL']]);
   });
 
   it('ordena dentro de la capa por el orden canónico del marco', () => {
-    // Determinismo, no prioridad: sin esto el orden dependería del
-    // recorrido del Set y los tests serían inestables.
-    const g = DependencyGraph.create([], minimos);
+    // Determinism, not priority: without this the order would depend on
+    // the Set's iteration and the tests would be unstable.
+    const g = DependencyGraph.create([], minimums);
     const layers = service.layer(
       new Set<DimensionCode>(['FRL', 'TRL', 'IPRL', 'CRL']),
       g,
@@ -48,7 +48,7 @@ describe('TopologicalLayeringService', () => {
   it('produce una cadena de layers unitarias cuando todo es secuencial', () => {
     const g = DependencyGraph.create(
       [e('TmRL', 'TRL'), e('TRL', 'CRL'), e('CRL', 'BRL')],
-      minimos,
+      minimums,
     );
     const layers = service.layer(
       new Set<DimensionCode>(['TmRL', 'TRL', 'CRL', 'BRL']),
@@ -58,15 +58,15 @@ describe('TopologicalLayeringService', () => {
   });
 
   it('un conjunto vacío produce cero layers', () => {
-    const g = DependencyGraph.create([e('BRL', 'FRL')], minimos);
+    const g = DependencyGraph.create([e('BRL', 'FRL')], minimums);
     expect(service.layer(new Set<DimensionCode>(), g)).toEqual([]);
   });
 
   it('lanza con los nodos implicados si el subgrafo tuviera un ciclo', () => {
-    // Red de seguridad. `DependencyGraph.create()` ya rechaza ciclos, así
-    // que hay que construir el graph sin ellos y forzar la condición
-    // sobre el servicio directamente.
-    const grafoFalso = {
+    // Safety net. `DependencyGraph.create()` already rejects cycles, so
+    // the graph has to be built without them and the condition forced
+    // on the service directly.
+    const fakeGraph = {
       allEdges: () => [e('BRL', 'FRL'), e('FRL', 'BRL')],
       nodes: () => DIMS,
       expectedMinimum: () => 4,
@@ -74,14 +74,14 @@ describe('TopologicalLayeringService', () => {
       outgoingEdges: () => [],
     } as unknown as DependencyGraph;
 
-    let capturado: DependencyGraphCycleError | undefined;
+    let caught: DependencyGraphCycleError | undefined;
     try {
-      service.layer(new Set<DimensionCode>(['BRL', 'FRL']), grafoFalso);
+      service.layer(new Set<DimensionCode>(['BRL', 'FRL']), fakeGraph);
     } catch (err) {
-      capturado = err as DependencyGraphCycleError;
+      caught = err as DependencyGraphCycleError;
     }
 
-    expect(capturado).toBeInstanceOf(DependencyGraphCycleError);
-    expect([...capturado!.dimensionesImplicadas].sort()).toEqual(['BRL', 'FRL']);
+    expect(caught).toBeInstanceOf(DependencyGraphCycleError);
+    expect([...caught!.involvedDimensions].sort()).toEqual(['BRL', 'FRL']);
   });
 });

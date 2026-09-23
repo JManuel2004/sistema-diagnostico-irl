@@ -90,11 +90,11 @@ export class MaturityProfile {
   }
 
   /**
-   * RF-08 — Identifica el cuello de botella del perfil.
+   * RF-08 — Identifies the bottleneck of the profile.
    *
-   * El cuello de botella es la dimensión con el nivel IRL más bajo.
-   * Si varias dimensiones comparten ese mínimo, todas se reportan
-   * (empate explícito — el frontend nunca debe asumir tamaño 1).
+   * The bottleneck is the dimension with the lowest IRL level. If several
+   * dimensions share that minimum, all of them are reported (explicit tie —
+   * the frontend must never assume size 1).
    */
   bottleneck(): { readonly dimensions: readonly DimensionResult[]; readonly level: number } {
     const minLevel = Math.min(...this._dimensionResults.map((r) => r.irlLevel.value));
@@ -103,10 +103,10 @@ export class MaturityProfile {
   }
 
   /**
-   * RF-09 — Promedio IRL global: promedio simple de los seis niveles
-   * dimensionales, redondeado a un decimal. No sustituye al cuello de botella
-   * (RF-08): el progreso de la iniciativa sigue siendo el conjunto de sus seis
-   * dimensiones; este es un indicador complementario.
+   * RF-09 — Global IRL average: the simple average of the six dimension
+   * levels, rounded to one decimal. It does not replace the bottleneck
+   * (RF-08): the initiative's progress is still the set of its six
+   * dimensions; this is a complementary indicator.
    */
   globalAverage(): number {
     const levels = this._dimensionResults.map((r) => r.irlLevel.value);
@@ -114,7 +114,7 @@ export class MaturityProfile {
     return Math.round(mean * 10) / 10;
   }
 
-  /** Dimensión(es) con el nivel IRL más alto — la fortaleza del perfil. */
+  /** Dimension(s) with the highest IRL level — the strength of the profile. */
   strength(): { readonly dimensions: readonly DimensionResult[]; readonly level: number } {
     const maxLevel = Math.max(...this._dimensionResults.map((r) => r.irlLevel.value));
     const dimensions = this._dimensionResults.filter((r) => r.irlLevel.value === maxLevel);
@@ -122,8 +122,8 @@ export class MaturityProfile {
   }
 
   /**
-   * Amplitud del perfil: diferencia entre el IRL máximo y el mínimo,
-   * clasificada con los mismos umbrales de desequilibrio KTH.
+   * Spread of the profile: the difference between the highest and the lowest
+   * IRL, classified with the same KTH imbalance thresholds.
    */
   asymmetry(): {
     readonly difference: number;
@@ -137,10 +137,11 @@ export class MaturityProfile {
   }
 
   /**
-   * Dimensiones en brecha: nivel IRL menor o igual al umbral del marco.
+   * Dimensions in gap: IRL level lower than or equal to the framework
+   * threshold.
    *
-   * El umbral es `CRITICAL_IRL_THRESHOLD` del contrato. Puede devolver
-   * cero dimensiones — no es un error, es un perfil sin brecha.
+   * The threshold is the contract's `CRITICAL_IRL_THRESHOLD`. It may return
+   * no dimension — not an error, a profile without gaps.
    */
   gaps(): {
     readonly dimensions: readonly DimensionResult[];
@@ -153,16 +154,16 @@ export class MaturityProfile {
   }
 
   /**
-   * RF-13 — Dimensiones en estado crítico.
+   * RF-13 — Dimensions in critical state.
    *
-   * Solo las dimensiones que el marco declara susceptibles (CRL, BRL y
-   * TmRL, `dimension.is_critical_dimension`) pueden estar en estado crítico,
-   * y lo están cuando además su nivel IRL está en brecha (`gaps()`). TRL,
-   * IPRL y FRL no reciben esta alerta cualquiera que sea su nivel, así que
-   * una dimensión en brecha no es por sí sola una dimensión crítica.
+   * Only the dimensions the framework declares susceptible (CRL, BRL and
+   * TmRL, `dimension.is_critical_dimension`) can be in critical state, and
+   * they are when their IRL level is also in gap (`gaps()`). TRL, IPRL and
+   * FRL never get this alert whatever their level, so a dimension in gap is
+   * not by itself a critical dimension.
    *
-   * @param criticalDimensions códigos de las dimensiones susceptibles,
-   *   tomados del catálogo (`is_critical_dimension`).
+   * @param criticalDimensions codes of the susceptible dimensions, taken
+   *   from the catalog (`is_critical_dimension`).
    */
   criticalState(criticalDimensions: ReadonlySet<string>): {
     readonly dimensions: readonly DimensionResult[];

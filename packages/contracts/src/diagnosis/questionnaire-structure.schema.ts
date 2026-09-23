@@ -36,7 +36,7 @@ export type DimensionWithStatements = z.infer<typeof dimensionWithStatementsSche
  */
 export const questionnaireStructureSchema = z
   .object({
-    versionMarco: z.string().describe('IRL framework version — cache-invalidation key'),
+    frameworkVersion: z.string().describe('IRL framework version — cache-invalidation key'),
     dimensions: z
       .array(dimensionWithStatementsSchema)
       .length(6)

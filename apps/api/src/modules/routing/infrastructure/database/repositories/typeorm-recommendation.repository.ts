@@ -13,22 +13,20 @@ import { RecommendationAlternativeOrm } from '../orm-entities/recommendation-alt
 import { LayerTraceOrm } from '../orm-entities/layer-trace.orm-entity.js';
 
 /**
- * Adaptador del agregado `Recommendation`.
+ * Adapter of the `Recommendation` aggregate.
  *
- * `save` escribe tres tablas —recomendación, alternatives y traza— dentro
- * de **una sola transacción**. No es una precaución opcional: son tres
- * escrituras de un mismo hecho, y una recomendación sin traza es una caja
- * negra mientras que unas alternatives huérfanas son basura.
+ * `save` writes three tables — recommendation, alternatives and trace —
+ * within **a single transaction**. It is not an optional precaution: they
+ * are three writes of one fact, and a recommendation without a trace is a
+ * black box while orphan alternatives are garbage.
  *
- * Se sigue el único precedente correcto del repositorio,
- * `TypeOrmAnswerSheetRepository.save`, que envuelve en
- * `manager.transaction()`. Hay una prueba de integración que corta la
- * escritura a la mitad y verifica que no queda nada.
+ * It follows `TypeOrmAnswerSheetRepository.save`, which wraps the writes in
+ * `manager.transaction()`. An integration test cuts the write halfway and
+ * checks nothing is left.
  *
- * Política de reescritura: borrar e insertar. Regenerar la recomendación
- * de un diagnóstico reemplaza la anterior por completo, incluida su
- * traza, en lugar de acumular versiones — `UNIQUE (id_diagnostico)` no
- * admite otra cosa.
+ * Rewrite policy: delete and insert. Regenerating the recommendation of a
+ * diagnostic replaces the previous one entirely, trace included, instead of
+ * accumulating versions — `UNIQUE (id_diagnostic)` allows nothing else.
  */
 @Injectable()
 export class TypeOrmRecommendationRepository
@@ -41,7 +39,7 @@ export class TypeOrmRecommendationRepository
 
   async save(recommendation: Recommendation): Promise<void> {
     await this.orm.manager.transaction(async (manager) => {
-      // El borrado en cascada se lleva alternatives y traza.
+      // The cascading delete takes the alternatives and the trace with it.
       await manager.delete(PortfolioRecommendationOrm, {
         idDiagnostic: recommendation.diagnosticId.value,
       });
@@ -57,17 +55,17 @@ export class TypeOrmRecommendationRepository
           recommendation.justification ?? recommendation.noRecommendationReason,
         generatedAt: recommendation.generatedAt,
       });
-      const guardada = await manager.save(PortfolioRecommendationOrm, row);
+      const saved = await manager.save(PortfolioRecommendationOrm, row);
 
       if (recommendation.alternatives.length > 0) {
         await manager.insert(
           RecommendationAlternativeOrm,
           recommendation.alternatives.map((alt, i) => ({
-            idRecommendation: guardada.idRecommendation,
+            idRecommendation: saved.idRecommendation,
             idService: alt.idService,
             serviceSnapshot: alt.serviceName,
-            // La principal ocupa la posición 1; las alternatives empiezan
-            // en la 2, que es lo que exige `ck_alternativa_posicion`.
+            // The recommended service takes position 1; the alternatives start
+            // at 2, which is what `ck_recommendation_alternative_position` requires.
             position: i + 2,
             score: alt.total,
           })),
@@ -76,7 +74,7 @@ export class TypeOrmRecommendationRepository
 
       const t = recommendation.trace;
       await manager.insert(LayerTraceOrm, {
-        idRecommendation: guardada.idRecommendation,
+        idRecommendation: saved.idRecommendation,
         layer1Excluded: t.layer1Excluded,
         rankingBeforeExceptions: t.rankingBeforeExceptions,
         appliedExceptions: t.appliedExceptions,
@@ -106,13 +104,13 @@ export class TypeOrmRecommendationRepository
     ]);
 
     if (!trace) {
-      // No debería ocurrir: la traza se escribe en la misma transacción.
-      // Si falta, la fila es de una escritura no atómica y no se puede
-      // explicar — mejor tratarla como inexistente que devolver media.
+      // Should not happen: the trace is written in the same transaction.
+      // If it is missing, the row comes from a non-atomic write and cannot be
+      // explained — better to treat it as missing than to return half of it.
       return null;
     }
 
-    const trazaDominio: EvaluationTrace = {
+    const domainTrace: EvaluationTrace = {
       layer1Excluded: trace.layer1Excluded as EvaluationTrace['layer1Excluded'],
       rankingBeforeExceptions:
         trace.rankingBeforeExceptions as readonly ScoredCandidate[],
@@ -126,11 +124,11 @@ export class TypeOrmRecommendationRepository
       factsHash: trace.factsHash,
     };
 
-    const rankingPost = trazaDominio.rankingAfterExceptions;
+    const finalRanking = domainTrace.rankingAfterExceptions;
     const primary =
       row.idPrimaryService === null
         ? null
-        : (rankingPost.find((c) => c.idService === row.idPrimaryService) ??
+        : (finalRanking.find((c) => c.idService === row.idPrimaryService) ??
           null);
 
     return Recommendation.fromPersistence({
@@ -139,7 +137,7 @@ export class TypeOrmRecommendationRepository
       primary,
       alternatives: alternatives
         .map((a) =>
-          rankingPost.find((c) => c.idService === a.idService),
+          finalRanking.find((c) => c.idService === a.idService),
         )
         .filter((c): c is ScoredCandidate => c !== undefined),
       justification:
@@ -150,7 +148,7 @@ export class TypeOrmRecommendationRepository
         row.resultType === 'NO_RECOMMENDATION'
           ? row.criterionJustification
           : null,
-      trace: trazaDominio,
+      trace: domainTrace,
       generatedAt: row.generatedAt,
     });
   }

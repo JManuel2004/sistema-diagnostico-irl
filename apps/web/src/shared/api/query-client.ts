@@ -1,17 +1,16 @@
 import { QueryClient } from '@tanstack/react-query';
 
 /**
- * Cliente TanStack Query del proyecto.
+ * TanStack Query client of the project.
  *
- * Política tomada de `apps/web/docs/STATE_MANAGEMENT.md`:
- *   - No reintentar 4xx — una petición malformada no se vuelve 200.
- *   - Un reintento en errores transitorios (5xx / red).
- *   - `refetchOnWindowFocus: false` — nuestras queries son catálogos
- *     o snapshots; refetch agresivo en foco es ruido.
+ * Policy taken from `apps/web/docs/STATE_MANAGEMENT.md`:
+ *   - Do not retry 4xx — a malformed request does not turn into a 200.
+ *   - One retry on transient errors (5xx / network).
+ *   - `refetchOnWindowFocus: false` — our queries are catalogs or
+ *     snapshots; aggressive refetching on focus is noise.
  *
- * Los overrides por query (`staleTime`, `gcTime`) viven con el hook
- * de cada feature, no aquí. Ver STATE_MANAGEMENT §"Configuration per
- * query".
+ * Per-query overrides (`staleTime`, `gcTime`) live with each feature's
+ * hook, not here. See STATE_MANAGEMENT §"Configuration per query".
  */
 function isHttpError(error: unknown): error is { status: number } {
   return (

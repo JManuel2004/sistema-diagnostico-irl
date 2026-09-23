@@ -7,17 +7,17 @@ import { MaturityRadarChart } from './MaturityRadarChart';
 import { MaturityProfileSummary } from './MaturityProfileSummary';
 
 /**
- * El perfil de madurez: el radar y, al lado, las señales que se leen de él.
- * Radar y tarjetas comparten el resaltado (`highlight`): pasar el cursor por
- * una punta del radar o por una tarjeta señala la misma dimensión en ambos.
+ * The maturity profile: the radar and, next to it, the signals read from
+ * it. Radar and cards share the highlight (`highlight`): hovering a radar
+ * point or a card points at the same dimension in both.
  *
- * Cada punta del radar lleva el color de su dimensión y explica, en un tooltip,
- * qué mide (`descriptions`, del catálogo). No hay leyenda aparte: el color y el
- * nombre están en la punta.
+ * Each radar point carries its dimension's color and explains, in a
+ * tooltip, what it measures (`descriptions`, from the catalog). There is no
+ * separate legend: the color and the name are on the point.
  *
- * Los pares desequilibrados solo se dibujan en el radar cuando el análisis
- * profundo fue aceptado (`showImbalances`): antes forman parte de lo que
- * todavía no se muestra.
+ * The imbalanced pairs are only drawn on the radar when the deep analysis
+ * was accepted (`showImbalances`): before that they are part of what is
+ * not shown yet.
  */
 interface Props {
   readonly profile: MaturityProfileResponse;

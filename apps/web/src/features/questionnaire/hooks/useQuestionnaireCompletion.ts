@@ -10,19 +10,19 @@ import { useQuestionnaireStructure } from './useQuestionnaireStructure';
 type Dimension = QuestionnaireStructure['dimensions'][number];
 
 export interface QuestionnaireCompletion {
-  /** `undefined` mientras el catálogo carga. */
+  /** `undefined` while the catalog loads. */
   readonly catalog: QuestionnaireStructure | undefined;
   readonly incompleteDimensions: readonly Dimension[];
-  /** Cuántas afirmaciones de una dimensión están completas (respuesta y justificación). */
+  /** How many statements of a dimension are complete (answer and justification). */
   readonly completedIn: (dimension: Dimension) => number;
-  /** El catálogo cargó y las 48 afirmaciones están completas. */
+  /** The catalog loaded and the 48 statements are complete. */
   readonly isComplete: boolean;
 }
 
 /**
- * Qué le falta al borrador del cuestionario. Una afirmación está completa solo
- * con su respuesta y su justificación (RF-06); la regla vive en el store, aquí
- * solo se agrupa por dimensión.
+ * What the questionnaire draft is missing. A statement is complete only
+ * with its answer and its justification (RF-06); the rule lives in the
+ * store, here it is only grouped by dimension.
  */
 export function useQuestionnaireCompletion(): QuestionnaireCompletion {
   const { data: catalog } = useQuestionnaireStructure();

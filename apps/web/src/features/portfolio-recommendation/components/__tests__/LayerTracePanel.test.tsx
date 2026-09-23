@@ -12,7 +12,7 @@ const NAMES = {
   FRL: 'Financiación',
 };
 
-const APORTES = {
+const CONTRIBUTIONS = {
   bottleneck: {
     value: 1.5,
     details: [{ dimension: 'IPRL', sourceLabel: 'secondary', value: 0.5 }],
@@ -64,7 +64,7 @@ function trace(over: Partial<LayerTraceResponse> = {}): LayerTraceResponse {
         idService: 3,
         name: 'Consultoría',
         score: 5.55,
-        contributions: APORTES,
+        contributions: CONTRIBUTIONS,
       },
     ],
     appliedExceptions: [
@@ -113,7 +113,7 @@ describe('LayerTracePanel', () => {
     expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'true');
   });
 
-  // La respuesta va primero: quien no quiera el detalle lee una sola frase.
+  // The answer comes first: whoever does not want the detail reads one sentence.
   it('abre con el veredicto: qué servicio quedó primero y por qué', async () => {
     const panel = await openPanel();
 
@@ -133,11 +133,11 @@ describe('LayerTracePanel', () => {
   it('cuenta el cálculo en tres pasos', async () => {
     await openPanel();
 
-    const titulos = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
-    expect(titulos).toHaveLength(3);
-    expect(titulos[0]).toContain('Paso 1: Lo que no aplica');
-    expect(titulos[1]).toContain('Paso 2: El orden según tu perfil');
-    expect(titulos[2]).toContain('Paso 3: Ajuste del centro');
+    const titles = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+    expect(titles).toHaveLength(3);
+    expect(titles[0]).toContain('Paso 1: Lo que no aplica');
+    expect(titles[1]).toContain('Paso 2: El orden según tu perfil');
+    expect(titles[2]).toContain('Paso 3: Ajuste del centro');
   });
 
   describe('paso 1 — lo que se descartó', () => {
@@ -168,8 +168,8 @@ describe('LayerTracePanel', () => {
       expect(panel.textContent).not.toMatch(/primary|secondary|marginal|not_applicable/);
     });
 
-    // Una cuenta que no se puede abrir no explica nada: la etiqueta dice cuántas
-    // y, en su detalle, cuáles. El texto viaja también para quien no tiene puntero.
+    // A count that cannot be opened explains nothing: the label says how many
+    // and, in its detail, which ones. The text also travels for whoever has no pointer.
     it('dice cuáles son las brechas y los desequilibrios que resume', async () => {
       const panel = await openPanel();
 
@@ -196,7 +196,7 @@ describe('LayerTracePanel', () => {
     it('no expone los puntajes de la calibración', async () => {
       const panel = await openPanel();
 
-      // El número es un detalle interno: mostrarlo desplazaría la conversación al valor.
+      // The number is an internal detail: showing it would move the conversation to the value.
       expect(panel.textContent).not.toContain('5.55');
       expect(panel.textContent).not.toContain('1.5');
     });
@@ -257,21 +257,19 @@ describe('LayerTracePanel', () => {
       ['PROMOTE', 'Se subió Consultoría en el orden'],
       ['DEMOTE', 'Se bajó Consultoría en el orden'],
       ['VETO', 'Se retiró Consultoría de las opciones'],
-    ] as const)('la acción %s se lee «%s»', async (action, titulo) => {
+    ] as const)('la acción %s se lee «%s»', async (action, title) => {
       const t = trace();
       await openPanel({ ...t, appliedExceptions: [{ ...t.appliedExceptions[0], action }] });
 
-      expect(screen.getByText(titulo)).toBeInTheDocument();
+      expect(screen.getByText(title)).toBeInTheDocument();
     });
 
     it('dice que ya estaba en ese lugar cuando el ajuste no lo movió', async () => {
       const t = trace();
-      const mismo = [{ position: 1, idService: 3, name: 'Consultoría', score: 5 }];
+      const same = [{ position: 1, idService: 3, name: 'Consultoría', score: 5 }];
       const panel = await openPanel({
         ...t,
-        appliedExceptions: [
-          { ...t.appliedExceptions[0], rankingBefore: mismo, rankingAfter: mismo },
-        ],
+        appliedExceptions: [{ ...t.appliedExceptions[0], rankingBefore: same, rankingAfter: same }],
       });
 
       expect(panel.textContent).toContain('Ya estaba en el lugar 1.');
@@ -308,8 +306,8 @@ describe('LayerTracePanel', () => {
   });
 
   it('avisa cuando el resultado viene de un ajuste y no del cálculo', async () => {
-    // Es la línea que separa un sistema auditable de uno que parece
-    // objetivo sin serlo.
+    // It is the line that separates an auditable system from one that looks
+    // objective without being so.
     await openPanel(trace({ adjustedByException: true }));
 
     expect(screen.getByRole('status').textContent).toContain(
@@ -326,7 +324,7 @@ describe('LayerTracePanel', () => {
   it('señala cuando faltaron datos de la iniciativa, en español', async () => {
     await openPanel(trace({ incompleteCharacterization: ['stage', 'teamSize'] }));
 
-    // El código del campo es estable; lo que lee el usuario está en español.
+    // The field's code is stable; what the user reads is in Spanish.
     expect(
       screen.getByText(/Falta información de tu iniciativa: la etapa, el tamaño del equipo/),
     ).toBeInTheDocument();

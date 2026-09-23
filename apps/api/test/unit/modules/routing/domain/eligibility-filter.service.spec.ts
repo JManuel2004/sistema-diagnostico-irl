@@ -42,14 +42,14 @@ const ORDINAL_PROFILES = [profile(1, 'Formación'), profile(2, 'Retos'), profile
 function rule(
   idService: number,
   predicate: unknown,
-  mensaje: string,
-  idRegla = 'R',
+  message: string,
+  ruleId = 'R',
 ): CompiledEligibilityRule {
   return {
-    idRegla,
+    ruleId,
     idService,
-    expresion: compiler.compile(predicate, 'BOOLEAN'),
-    exclusionMessage: mensaje,
+    expression: compiler.compile(predicate, 'BOOLEAN'),
+    exclusionMessage: message,
   };
 }
 
@@ -96,8 +96,8 @@ describe('EligibilityFilterService', () => {
   });
 
   it('con varias rules sobre un service, reporta la primera que se cumple', () => {
-    // El reason mostrado debe ser el de la regla que efectivamente lo dejó
-    // fuera, no un mensaje genérico.
+    // The reason shown must be the one of the rule that actually left it
+    // out, not a generic message.
     const rules = [
       rule(3, { field: 'gaps', op: 'contains', value: 'TRL' }, 'primera', 'R1'),
       rule(3, { field: 'gaps', op: 'contains', value: 'IPRL' }, 'segunda', 'R2'),

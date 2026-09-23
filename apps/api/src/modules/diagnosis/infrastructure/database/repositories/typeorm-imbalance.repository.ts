@@ -24,7 +24,7 @@ export class TypeOrmImbalanceRepository implements ImbalanceRepositoryPort {
 
   async findByDiagnosticId(diagnosticId: string): Promise<ImbalanceResult[]> {
     const rows = await this.orm.find({
-      where: { idDiagnostico: diagnosticId },
+      where: { diagnosticId: diagnosticId },
       order: { idPair: 'ASC' },
     });
     if (rows.length === 0) return [];
@@ -52,7 +52,7 @@ export class TypeOrmImbalanceRepository implements ImbalanceRepositoryPort {
 
   async save(diagnosticId: string, results: readonly ImbalanceResult[]): Promise<void> {
     const rows = results.map((r) => ({
-      idDiagnostico: diagnosticId,
+      diagnosticId: diagnosticId,
       idPair: r.pairId,
       levelDifference: r.difference,
       classification: r.classification,

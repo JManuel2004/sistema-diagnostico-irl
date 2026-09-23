@@ -3,37 +3,38 @@ import { coreSessionSchema, type CoreSession } from '@innlab/contracts';
 export type { CoreSession };
 
 /**
- * Sesión del ecosistema INNLAB — almacenamiento y arranque del SSO.
+ * INNLAB ecosystem session — storage and SSO bootstrap.
  *
- * Vive en `shared/` y no en `features/auth/` porque el interceptor de
- * `shared/api/http.ts` necesita el access token, y las reglas de
- * fronteras prohíben que `shared` importe de una feature.
+ * It lives in `shared/` and not in `features/auth/` because the
+ * `shared/api/http.ts` interceptor needs the access token, and the boundary
+ * rules forbid `shared` from importing a feature.
  *
- * El flujo real de INNLAB (confirmado contra la guía de Core) es:
+ * The real INNLAB flow (confirmed against Core's guide) is:
  *
- *   app sin sesión → {CORE_URL}/auth/sso?redirect=<nuestra url de callback>
- *     → el Hub autentica contra Cognito si hace falta
- *     → vuelve a nuestra app con ?code=xxxx  (un solo uso, TTL 30s)
+ *   app without session → {CORE_URL}/auth/sso?redirect=<our callback url>
+ *     → the Hub authenticates against Cognito if needed
+ *     → comes back to our app with ?code=xxxx  (single use, TTL 30s)
  *     → GET {CORE_API_URL}/auth/sso/exchange?code=xxxx
  *     → { token: <id_token>, accessToken: <access_token> }
  *
- * `token` es el id_token y NO autentica: Core exige `token_use === 'access'`
- * y devuelve 401 si se usa el id_token. Guardamos ambos porque el contrato
- * los entrega juntos, pero el Bearer siempre es `accessToken`.
+ * `token` is the id_token and does NOT authenticate: Core requires
+ * `token_use === 'access'` and answers 401 if the id_token is used. Both
+ * are kept because the contract delivers them together, but the Bearer is
+ * always `accessToken`.
  *
- * No hay refresh token. La sesión se mantiene viva por sondeo pasivo
- * (`useSessionLiveness`), no por renovación.
+ * There is no refresh token. The session is kept alive by passive polling
+ * (`useSessionLiveness`), not by renewal.
  */
 const STORAGE_KEY = 'innlab.session.v1';
 
-/** Ruta a la que volver una vez completado el intercambio del código. */
+/** Route to return to once the code exchange completes. */
 const RETURN_TO_KEY = 'innlab.session.return-to';
 
 function coreUrl(): string {
   return String(import.meta.env.VITE_CORE_URL ?? '');
 }
 
-/** URL a la que el Hub debe devolver el `?code=`. */
+/** URL the Hub must return the `?code=` to. */
 export function ssoCallbackUrl(): string {
   return `${window.location.origin}/auth/callback`;
 }
@@ -43,12 +44,12 @@ export function readSession(): CoreSession | null {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw === null) return null;
 
-    // El almacenamiento del navegador se puede editar fuera de la aplicación:
-    // lo leído es `unknown` hasta que pasa el schema del contrato.
+    // The browser storage can be edited outside the application: what is
+    // read is `unknown` until it passes the contract's schema.
     const parsed = coreSessionSchema.safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data : null;
   } catch {
-    // localStorage bloqueado o JSON corrupto: sin sesión utilizable.
+    // localStorage blocked or corrupt JSON: no usable session.
     return null;
   }
 }
@@ -70,17 +71,17 @@ export function getAccessToken(): string | null {
 }
 
 /**
- * Guarda a dónde quería ir el usuario antes de que lo mandáramos al Hub.
+ * Stores where the user wanted to go before being sent to the Hub.
  *
- * No viaja como query param: Core añade `?code=` a la URL de redirect y
- * no queremos depender de cómo compone la query string. `sessionStorage`
- * muere con la pestaña, que es exactamente la vida útil que necesita.
+ * It does not travel as a query param: Core appends `?code=` to the redirect
+ * URL and depending on how it composes the query string is not wanted.
+ * `sessionStorage` dies with the tab, which is exactly the lifetime needed.
  */
 export function rememberReturnTo(path: string): void {
   try {
     window.sessionStorage.setItem(RETURN_TO_KEY, path);
   } catch {
-    // Sin sessionStorage se pierde el deep link, no la sesión.
+    // Without sessionStorage the deep link is lost, not the session.
   }
 }
 
@@ -95,16 +96,16 @@ export function consumeReturnTo(): string | null {
 }
 
 /**
- * Envía al usuario al Hub de INNLAB para autenticarse.
+ * Sends the user to the INNLAB Hub to authenticate.
  *
- * Asignación directa a `window.location` — es una salida del SPA, no una
- * navegación del router: la vuelta la hace el Hub sobre `/auth/callback`.
+ * A direct assignment to `window.location` — it is an exit from the SPA,
+ * not a router navigation: the Hub brings the user back on `/auth/callback`.
  */
 export function redirectToSso(returnTo?: string): void {
-  // La ruta del Hub es `/auth/sso`, NO `/sso`: su router no tiene esa
-  // segunda y el usuario cae en una pantalla en blanco con
-  // "No routes matched location" en consola, sin error de red que lo
-  // delate. El Hub hace `new URL(redirect)`, asi que debe ser absoluta.
+  // The Hub route is `/auth/sso`, NOT `/sso`: its router has no such
+  // second route and the user lands on a blank screen with
+  // "No routes matched location" in the console, with no network error to
+  // give it away. The Hub does `new URL(redirect)`, so it must be absolute.
   if (returnTo !== undefined && returnTo !== '') {
     rememberReturnTo(returnTo);
   }

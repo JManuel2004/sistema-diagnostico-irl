@@ -2,39 +2,35 @@ import { z } from 'zod';
 import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
 
 /**
- * Resultado por dimensión dentro del perfil de madurez (RF-07).
+ * Result per dimension within the maturity profile (RF-07).
  *
- * Pipeline de cálculo (`IrlCalculatorService` en el backend):
- *   1. Promediar los 8 valores Likert de la dimensión.
- *   2. Buscar el `irlLevel` en `conversion_range` (tabla SA-06) que
- *      contenga ese promedio.
- *   3. Empaquetar promedio + nivel en este resultado.
+ * Calculation pipeline (`IrlCalculatorService` in the backend):
+ *   1. Average the 8 Likert values of the dimension.
+ *   2. Look up the `irlLevel` in `conversion_range` (SA-06 table) that
+ *      contains that average.
+ *   3. Pack average + level into this result.
  *
- * `name` (completo) y `shortName` (para espacios reducidos) vienen del
- * catálogo y se incluyen para que el frontend pueda renderizar el
- * resultado sin hacer una segunda llamada ni mantener sus propios nombres
- * (HU-13/14).
+ * `name` (full) and `shortName` (for tight spaces) come from the catalog
+ * and are included so the frontend can render the result without a second
+ * call and without keeping names of its own (HU-13/14).
  */
 export const dimensionResultSchema = z
   .object({
     dimensionCode: dimensionCodeSchema,
-    name: z.string().min(1).describe('Nombre completo de la dimensión en español'),
-    shortName: z
-      .string()
-      .min(1)
-      .describe('Etiqueta corta para espacios reducidos (ejes, tarjetas, líneas)'),
+    name: z.string().min(1).describe('Full name of the dimension, in Spanish'),
+    shortName: z.string().min(1).describe('Short label for tight spaces (axes, cards, lines)'),
     averageLikert: z
       .number()
       .min(1)
       .max(5)
-      .describe('Promedio de las 8 respuestas Likert de la dimensión (1.00–5.00)'),
+      .describe('Average of the 8 Likert answers of the dimension (1.00–5.00)'),
     irlLevel: z
       .number()
       .int()
       .min(1)
       .max(9)
-      .describe('Nivel IRL resultante (1–9) según tabla SA-06'),
+      .describe('Resulting IRL level (1–9) from the SA-06 table'),
   })
-  .describe('Resultado de una dimensión IRL en un perfil de madurez');
+  .describe('Result of an IRL dimension in a maturity profile');
 
 export type DimensionResult = z.infer<typeof dimensionResultSchema>;

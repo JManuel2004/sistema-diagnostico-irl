@@ -15,23 +15,23 @@ import { Button, buttonVariants } from './button';
 import { Card, CardContent } from './card';
 
 /**
- * Invitación a aceptar el análisis profundo (RF-11).
+ * Invitation to accept the deep analysis (RF-11).
  *
- * El análisis profundo se presenta como lo que es para el usuario: un
- * siguiente paso valioso —y que en el futuro podría ser un servicio aparte—,
- * no una casilla de confirmación. Por eso la invitación es una propuesta con
- * dos caminos: pedirlo, con lo que incluye a la vista, o seguir después.
+ * The deep analysis is presented as what it is for the user: a valuable
+ * next step — which in the future could be a separate service — not a
+ * confirmation checkbox. That is why the invitation is a proposal with two
+ * paths: asking for it, with what it includes in view, or continuing later.
  *
- * La recomendación y el roadmap se calculan y guardan al aceptarlo, así que
- * aceptar es una acción del usuario y nunca un efecto de abrir la pantalla
- *. «Por ahora no» no envía nada: el perfil ya está guardado
- * y el usuario puede volver desde su panel cuando quiera.
+ * The recommendation and the roadmap are calculated and saved on
+ * acceptance, so accepting is a user action and never an effect of opening
+ * the screen. «Por ahora no» sends nothing: the profile is already saved
+ * and the user can come back from their panel whenever they want.
  */
 interface AcceptDeepAnalysisCardProps {
   readonly onAccept: () => void;
-  /** La aceptación o el cálculo fallaron: el botón pasa a «Intentar de nuevo». */
+  /** The acceptance or the calculation failed: the button turns into «Intentar de nuevo». */
   readonly failed: boolean;
-  /** Nombre de la iniciativa, para dirigirse a ella. */
+  /** Name of the initiative, to address it. */
   readonly subject?: string;
 }
 
@@ -141,8 +141,8 @@ export function AcceptDeepAnalysisCard({
 }
 
 /**
- * Cuando el análisis ya fue aceptado pero uno de sus resultados no llegó a
- * calcularse: la misma acción, dicha como reintento.
+ * When the analysis was already accepted but one of its results was not
+ * calculated: the same action, phrased as a retry.
  */
 export function RetryDeepAnalysisCard({ onRetry }: { readonly onRetry: () => void }): JSX.Element {
   return (

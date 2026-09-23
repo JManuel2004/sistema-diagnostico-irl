@@ -9,36 +9,37 @@ import { GetRecommendationTraceUseCase } from '../../application/use-cases/get-r
 import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
 
 /**
- * Superficie HTTP del enrutamiento al portafolio (RF-15).
+ * HTTP surface of the portfolio routing (RF-15).
  *
- * Solo lectura. La recomendación no se genera desde aquí: la calcula
- * `routing/` al reaccionar a `DeepAnalysisRequestedEvent`, que publica
- * `POST /diagnostics/:id/deep-analysis` (RF-11). El antiguo
- * `POST /diagnostics/:id/recommendation` se retiró: ofrecía un camino de escritura paralelo que no pasaba por el
- * evento ni comprobaba el estado del diagnóstico.
+ * Read-only. The recommendation is not generated here: `routing/`
+ * calculates it when it reacts to `DeepAnalysisRequestedEvent`, which
+ * `POST /diagnostics/:id/deep-analysis` publishes (RF-11). The former
+ * `POST /diagnostics/:id/recommendation` was retired: it offered a parallel
+ * write path that neither went through the event nor checked the state of
+ * the diagnostic.
  *
- * La traza va en su propia ruta porque su audiencia es el equipo de
- * INNLAB, no el líder de iniciativa.
+ * The trace has its own route because its audience is the INNLAB team, not
+ * the initiative leader.
  */
 @ApiTags('recommendation')
 @Controller('diagnostics/:id/recommendation')
 export class RecommendationController {
   constructor(
-    private readonly obtener: GetRecommendationUseCase,
-    private readonly obtenerTraza: GetRecommendationTraceUseCase,
+    private readonly getRecommendation: GetRecommendationUseCase,
+    private readonly getRecommendationTrace: GetRecommendationTraceUseCase,
   ) {}
 
   @Get()
-  @ApiOkResponse({ description: 'Recomendación de portafolio persistida' })
+  @ApiOkResponse({ description: 'Persisted portfolio recommendation' })
   async get(@Param('id') diagnosticId: string): Promise<RecommendationResponse> {
-    return unwrapResult(await this.obtener.execute({ diagnosticId }));
+    return unwrapResult(await this.getRecommendation.execute({ diagnosticId }));
   }
 
   @Get('trace')
   @ApiOkResponse({
-    description: 'Traza por layers de la evaluación — audiencia INNLAB',
+    description: 'Trace by layers of the evaluation — INNLAB audience',
   })
   async getTrace(@Param('id') diagnosticId: string): Promise<LayerTraceResponse> {
-    return unwrapResult(await this.obtenerTraza.execute({ diagnosticId }));
+    return unwrapResult(await this.getRecommendationTrace.execute({ diagnosticId }));
   }
 }

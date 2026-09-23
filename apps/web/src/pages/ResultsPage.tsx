@@ -40,29 +40,28 @@ import { useDiagnostic } from '@/shared/hooks/useDiagnostics';
 import { wizardPath } from './wizard/wizard-steps';
 
 /**
- * `/diagnosticos/:id/resultados` — los resultados de un diagnóstico en una sola
- * vista.
+ * `/diagnosticos/:id/resultados` — the results of a diagnostic in a single
+ * view.
  *
- * Antes eran tres pantallas (perfil, recomendación, roadmap) a las que se
- * llegaba por botón. Ahora hay una página y lo que muestra depende de una sola
- * cosa que el backend decide, `deepAnalysisAccepted`:
+ * What it shows depends on one thing the backend decides,
+ * `deepAnalysisAccepted`:
  *
- *  - **Sin análisis profundo:** el perfil de madurez (radar y las señales que
- *    se leen de él), con la invitación a aceptar el análisis. Los pares
- *    desequilibrados no se muestran ni se dibujan en el radar.
- *  - **Con análisis profundo:** además, los pares desequilibrados y las
- *    dimensiones en estado crítico, el roadmap de escalamiento y la
- *    recomendación de portafolio.
+ *  - **Without deep analysis:** the maturity profile (radar and the signals
+ *    read from it), with the invitation to accept the analysis. The
+ *    imbalanced pairs are neither shown nor drawn on the radar.
+ *  - **With deep analysis:** also the imbalanced pairs and the dimensions
+ *    in critical state, the scaling roadmap and the portfolio
+ *    recommendation.
  *
- * Aceptar el análisis profundo (RF-11) es una acción del usuario: el botón
- * vive aquí y no envía nada por sí solo al entrar. La página
- * compone tres features; una feature no puede importar de otra, la página sí.
+ * Accepting the deep analysis (RF-11) is a user action: the button lives
+ * here and nothing is sent just by opening the page. The page composes
+ * three features; a feature cannot import another, a page can.
  *
- * Cada resultado es un resultado guardado con su fecha (`ResultMeta`).
+ * Each result is a saved result with its date (`ResultMeta`).
  *
- * Es la primera pantalla con navegación principal: el asistente que la
- * precede no la lleva. Un diagnóstico que sigue en el asistente no tiene
- * resultados; si se llega aquí por un enlace, se le devuelve a él.
+ * It is the first screen with main navigation: the wizard before it does
+ * not carry it. A diagnostic still in the wizard has no results; if one
+ * arrives here through a link, it is sent back to the wizard.
  */
 export default function ResultsPage(): JSX.Element {
   const { id: diagnosticId } = useParams<{ id: string }>();
@@ -92,8 +91,8 @@ export default function ResultsPage(): JSX.Element {
     return <Navigate to="/panel" replace />;
   }
 
-  // Con datos en caché que se están revalidando (recién se procesó el
-  // cuestionario) no se decide todavía: el dato viejo diría «sin terminar».
+  // With cached data being revalidated (the questionnaire was just
+  // processed) nothing is decided yet: the old datum would say «unfinished».
   if (diagnostic.data && !diagnostic.data.completed && !diagnostic.isFetching) {
     return <Navigate to={wizardPath(diagnosticId)} replace />;
   }
@@ -193,8 +192,8 @@ export default function ResultsPage(): JSX.Element {
 }
 
 /**
- * Con el análisis profundo aceptado la página crece a cuatro bloques: una
- * barra fija, bajo la cabecera, lleva a cada uno sin recorrer todo el scroll.
+ * With the deep analysis accepted the page grows to four blocks: a sticky
+ * bar, under the header, reaches each one without scrolling through it all.
  */
 const RESULT_SECTIONS: readonly { href: string; label: string; icon: LucideIcon }[] = [
   { href: '#perfil', label: 'Perfil', icon: Layers },
@@ -237,7 +236,7 @@ interface DeepAnalysisProps {
   readonly profile: NonNullable<ReturnType<typeof useMaturityProfile>['data']>;
   readonly highlight: ReturnType<typeof useRadarHighlight>;
   readonly descriptions: Partial<Record<DimensionCode, string>>;
-  /** Nombre de la iniciativa; sin él las secciones hablan de «tu iniciativa». */
+  /** Name of the initiative; without it the sections talk about «tu iniciativa». */
   readonly subject: string | undefined;
   readonly traceRequested: boolean;
   readonly onTraceOpen: () => void;
@@ -246,13 +245,13 @@ interface DeepAnalysisProps {
 }
 
 /**
- * El análisis profundo: desequilibrios y estado crítico (del perfil), roadmap
- * y recomendación. El roadmap y la recomendación se piden solo aquí, cuando
- * el análisis fue aceptado.
+ * The deep analysis: imbalances and critical state (from the profile),
+ * roadmap and recommendation. The roadmap and the recommendation are only
+ * requested here, once the analysis was accepted.
  *
- * Si el diagnóstico dice que el análisis fue aceptado pero uno de los dos
- * resultados no existe, el cálculo falló en el servidor: se avisa y se
- * ofrece reintentarlo con la misma acción.
+ * If the diagnostic says the analysis was accepted but one of the two
+ * results does not exist, the calculation failed on the server: the user is
+ * told and offered to retry with the same action.
  */
 function DeepAnalysis({
   diagnosticId,

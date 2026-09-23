@@ -1,4 +1,4 @@
-import { construirJustificacion } from '../../../../../../src/modules/routing/application/use-cases/generate-recommendation.use-case.js';
+import { buildJustification } from '../../../../../../src/modules/routing/application/use-cases/generate-recommendation.use-case.js';
 
 const NAMES = new Map([
   ['TRL', 'Tecnología'],
@@ -14,7 +14,7 @@ function winner(details: { dimension: string; sourceLabel: string }[]) {
 // the internal ordinal labels.
 describe('construirJustificacion', () => {
   it('names the lagging dimension by its catalog name, not by its code or its ordinal label', () => {
-    const text = construirJustificacion(
+    const text = buildJustification(
       [winner([{ dimension: 'BRL', sourceLabel: 'primary' }])],
       [],
       NAMES,
@@ -27,7 +27,7 @@ describe('construirJustificacion', () => {
   });
 
   it('lists several tied dimensions with a comma and a final «y»', () => {
-    const text = construirJustificacion(
+    const text = buildJustification(
       [
         winner([
           { dimension: 'TRL', sourceLabel: 'primary' },
@@ -43,7 +43,7 @@ describe('construirJustificacion', () => {
   });
 
   it('skips the dimensions the service does not address', () => {
-    const text = construirJustificacion(
+    const text = buildJustification(
       [
         winner([
           { dimension: 'TRL', sourceLabel: 'not_applicable' },
@@ -59,7 +59,7 @@ describe('construirJustificacion', () => {
   });
 
   it('falls back to the global affinity sentence when no dimension applies', () => {
-    const text = construirJustificacion(
+    const text = buildJustification(
       [winner([{ dimension: 'TRL', sourceLabel: 'not_applicable' }])],
       [],
       NAMES,
@@ -71,7 +71,7 @@ describe('construirJustificacion', () => {
   });
 
   it('cites the declared reason when an exception decided the first place', () => {
-    const text = construirJustificacion(
+    const text = buildJustification(
       [winner([{ dimension: 'BRL', sourceLabel: 'primary' }])],
       [{ targetService: 'Mentoría', declaredReason: 'Abre el diálogo antes que lo masivo.' }],
       NAMES,
@@ -81,6 +81,6 @@ describe('construirJustificacion', () => {
   });
 
   it('returns null when there is no ranking', () => {
-    expect(construirJustificacion([], [], NAMES)).toBeNull();
+    expect(buildJustification([], [], NAMES)).toBeNull();
   });
 });

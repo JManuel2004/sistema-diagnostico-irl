@@ -11,15 +11,15 @@ import { configureApp } from '../../../../src/shared/kernel/infrastructure/http/
 import { authenticateAgainst } from '../../support/authenticated-app.js';
 
 /**
- * E2E — iniciar un diagnóstico (HU-04).
+ * E2E — start a diagnostic (HU-04).
  *
- * `POST /api/v1/diagnostics` entrega al usuario autenticado un diagnóstico en
- * `STARTED` (el consentimiento y la iniciativa son los pasos siguientes) y es
- * idempotente mientras haya uno sin terminar: lo reanuda en lugar de crear
- * otro. Requiere la base migrada.
+ * `POST /api/v1/diagnostics` hands the authenticated user a diagnostic in
+ * `STARTED` (consent and initiative are the next steps) and is idempotent
+ * while one is unfinished: it resumes it instead of creating another. Needs
+ * the migrated database.
  *
- * Las suites e2e corren en paralelo sobre la misma base: esta usa un usuario
- * propio para no reanudar el diagnóstico de otra.
+ * The e2e suites run in parallel over the same database: this one uses its
+ * own user so it never resumes another suite's diagnostic.
  */
 describe('Iniciar diagnóstico (e2e)', () => {
   const userId = randomUUID();
@@ -27,18 +27,18 @@ describe('Iniciar diagnóstico (e2e)', () => {
   let dataSource: DataSource;
   let agent: ReturnType<typeof request.agent>;
 
-  async function limpiar(): Promise<void> {
+  async function cleanUp(): Promise<void> {
     await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE cognito_user_id = $1`, [
       userId,
     ]);
   }
 
-  async function iniciar() {
+  async function start() {
     const res = await agent.post('/api/v1/diagnostics').expect(201);
     return diagnosticSchema.parse(res.body);
   }
 
-  async function contar(): Promise<number> {
+  async function countDiagnostics(): Promise<number> {
     const [{ count }] = await dataSource.query<{ count: string }[]>(
       `SELECT count(*) FROM irl_diagnostic.diagnostic WHERE cognito_user_id = $1`,
       [userId],
@@ -62,17 +62,17 @@ describe('Iniciar diagnóstico (e2e)', () => {
   }, 60_000);
 
   beforeEach(async () => {
-    await limpiar();
+    await cleanUp();
   });
 
   afterAll(async () => {
-    if (dataSource?.isInitialized) await limpiar();
+    if (dataSource?.isInitialized) await cleanUp();
     nock.cleanAll();
     await app?.close();
   });
 
   it('crea un diagnóstico del usuario autenticado, al comienzo del recorrido', async () => {
-    const diagnostic = await iniciar();
+    const diagnostic = await start();
 
     expect(diagnostic.userId).toBe(userId);
     expect(diagnostic.state).toBe('STARTED');
@@ -80,36 +80,36 @@ describe('Iniciar diagnóstico (e2e)', () => {
   });
 
   it('el diagnóstico queda guardado y aparece en el listado del usuario', async () => {
-    const { id } = await iniciar();
+    const { id } = await start();
 
     const list = await agent.get('/api/v1/diagnostics').expect(200);
 
     expect((list.body as { id: string }[]).map((d) => d.id)).toContain(id);
   });
 
-  // Bug: cada clic creaba un diagnóstico nuevo y dejaba huérfano el anterior.
+  // Bug: each click created a new diagnostic and orphaned the previous one.
   describe('mientras haya un diagnóstico sin terminar', () => {
     it('lo reanuda en lugar de crear otro', async () => {
-      const a = await iniciar();
-      const b = await iniciar();
-      const c = await iniciar();
+      const a = await start();
+      const b = await start();
+      const c = await start();
 
       expect(b.id).toBe(a.id);
       expect(c.id).toBe(a.id);
-      expect(await contar()).toBe(1);
+      expect(await countDiagnostics()).toBe(1);
     });
 
     it('lo devuelve en el estado en que quedó, no lo reinicia', async () => {
-      const { id } = await iniciar();
+      const { id } = await start();
       await dataSource.query(
         `UPDATE irl_diagnostic.diagnostic SET state = 'WITH_INITIATIVE' WHERE id = $1`,
         [id],
       );
 
-      const reanudado = await iniciar();
+      const resumed = await start();
 
-      expect(reanudado.id).toBe(id);
-      expect(reanudado.state).toBe('WITH_INITIATIVE');
+      expect(resumed.id).toBe(id);
+      expect(resumed.state).toBe('WITH_INITIATIVE');
     });
   });
 
@@ -117,34 +117,34 @@ describe('Iniciar diagnóstico (e2e)', () => {
     it.each(['PROFILE_GENERATED', 'DEEP_ANALYSIS_COMPLETE'])(
       'crea uno nuevo si el anterior está en %s',
       async (state) => {
-        const anterior = await iniciar();
+        const previous = await start();
         await dataSource.query(`UPDATE irl_diagnostic.diagnostic SET state = $2 WHERE id = $1`, [
-          anterior.id,
+          previous.id,
           state,
         ]);
 
-        const nuevo = await iniciar();
+        const fresh = await start();
 
-        expect(nuevo.id).not.toBe(anterior.id);
-        expect(nuevo.state).toBe('STARTED');
-        expect(await contar()).toBe(2);
+        expect(fresh.id).not.toBe(previous.id);
+        expect(fresh.state).toBe('STARTED');
+        expect(await countDiagnostics()).toBe(2);
       },
     );
   });
 
   it('cada usuario reanuda el suyo', async () => {
-    const otro = randomUUID();
-    const agentOtro = request
+    const other = randomUUID();
+    const otherAgent = request
       .agent(app.getHttpServer())
-      .set('Authorization', authenticateAgainst(app, otro));
-    const mio = await iniciar();
+      .set('Authorization', authenticateAgainst(app, other));
+    const mine = await start();
 
     try {
-      const res = await agentOtro.post('/api/v1/diagnostics').expect(201);
-      expect(diagnosticSchema.parse(res.body).id).not.toBe(mio.id);
+      const res = await otherAgent.post('/api/v1/diagnostics').expect(201);
+      expect(diagnosticSchema.parse(res.body).id).not.toBe(mine.id);
     } finally {
       await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE cognito_user_id = $1`, [
-        otro,
+        other,
       ]);
     }
   });

@@ -35,7 +35,7 @@ export class DimensionWithStatementsDto {
 
 export class QuestionnaireStructureResponseDto {
   @ApiProperty({ example: 'KTH-IRL-1.0' })
-  versionMarco!: string;
+  frameworkVersion!: string;
 
   @ApiProperty({ type: [DimensionWithStatementsDto] })
   dimensions!: DimensionWithStatementsDto[];

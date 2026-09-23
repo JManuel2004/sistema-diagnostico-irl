@@ -3,21 +3,17 @@ import { StatementCard } from './StatementCard';
 import { getDimensionVisual } from '@/shared/lib/dimensions';
 
 /**
- * Panel de una dimensión IRL — sidebar sticky con contexto +
- * lista de las 8 afirmaciones.
+ * Panel of an IRL dimension — sticky sidebar with context + the list of
+ * the 8 statements.
  *
- * Adoptado del prototipo cliente para romper la linealidad de la
- * primera versión (DESIGN.md `reading` width): en pantallas grandes
- * el contexto de la dimensión (código, nombre, descripción, tip
- * "Cómo responder") vive en una columna sticky de ~280px a la
- * izquierda, y las 8 tarjetas de afirmación ocupan el resto. En
- * tablet/móvil todo colapsa a una sola columna conservando el
- * orden lógico.
+ * On large screens the dimension's context (code, name, description, the
+ * "Cómo responder" tip) lives in a ~280px sticky column on the left, and
+ * the 8 statement cards take the rest. On tablet/mobile everything
+ * collapses into a single column keeping the logical order.
  *
- * El color de acento de la dimensión se resuelve a través de
- * `getDimensionVisual` (shared/lib/dimensions). Nunca hardcodear el
- * mapeo aquí — esta tabla vive en un solo lugar para que cualquier
- * componente futuro (radar, badges del perfil) lo reutilice.
+ * The dimension's accent color is resolved through `getDimensionVisual`
+ * (shared/lib/dimensions). Never hardcode the mapping here — the table
+ * lives in a single place so every component reuses it.
  */
 interface Props {
   dimension: DimensionWithStatements;
@@ -31,7 +27,7 @@ export function DimensionPanel({ dimension }: Props) {
       aria-labelledby={`dim-${dimension.code}-heading`}
       className="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start"
     >
-      {/* Sidebar — contexto de la dimensión */}
+      {/* Sidebar — context of the dimension */}
       <aside className="lg:sticky lg:top-24">
         <div className="bg-surface-muted rounded-2xl p-5 sm:p-6">
           <span
@@ -68,7 +64,7 @@ export function DimensionPanel({ dimension }: Props) {
         </div>
       </aside>
 
-      {/* Lista de afirmaciones */}
+      {/* List of statements */}
       <ol className="space-y-4 sm:space-y-5">
         {dimension.statements.map((statement) => (
           <li key={statement.id}>

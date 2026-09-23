@@ -2,11 +2,11 @@ import { z } from 'zod';
 import { imbalanceClassificationSchema } from './imbalance.schema.js';
 
 /**
- * Asimetría del perfil: diferencia entre el nivel IRL más alto y el más
- * bajo, clasificada con los umbrales KTH de desequilibrio.
+ * Asymmetry of the profile: the difference between the highest and the
+ * lowest IRL level, classified with the KTH imbalance thresholds.
  *
- * Lo calcula el backend a partir de los niveles persistidos. El cliente
- * no debe derivar esta diferencia ni su clasificación.
+ * The backend computes it from the persisted levels. The client must not
+ * derive this difference or its classification.
  */
 export const asymmetrySchema = z
   .object({
@@ -15,9 +15,9 @@ export const asymmetrySchema = z
       .int()
       .min(0)
       .max(8)
-      .describe('Diferencia absoluta entre el IRL máximo y el mínimo del perfil'),
+      .describe('Absolute difference between the highest and the lowest IRL of the profile'),
     classification: imbalanceClassificationSchema,
   })
-  .describe('Asimetría del perfil de madurez');
+  .describe('Asymmetry of the maturity profile');
 
 export type Asymmetry = z.infer<typeof asymmetrySchema>;

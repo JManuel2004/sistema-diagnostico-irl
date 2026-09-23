@@ -1,15 +1,15 @@
 /**
- * Texto del consentimiento para el tratamiento de datos personales
- * (RF-03 / HU-05, Ley 1581 de 2012).
+ * Text of the consent to the processing of personal data (RF-03 / HU-05,
+ * Law 1581 of 2012).
  *
- * `CONSENT_TERMS_VERSION` debe coincidir con `CURRENT_TERMS_VERSION` del
- * backend: el backend rechaza con 409 una versión distinta, y así queda
- * registrado exactamente qué texto aceptó el usuario. Cambiar el texto exige
- * subir la versión en los dos lados.
+ * `CONSENT_TERMS_VERSION` must match the backend's `CURRENT_TERMS_VERSION`:
+ * the backend rejects a different version with 409, which records exactly
+ * which text the user accepted. Changing the text requires raising the
+ * version on both sides.
  *
- * **Texto provisional, pendiente de revisión legal**: no
- * incluye datos institucionales que no constan en el repositorio, como el
- * NIT o el canal de atención de habeas data.
+ * **Provisional text, pending legal review**: it does not include
+ * institutional data the repository does not hold, such as the NIT or the
+ * habeas data contact channel.
  */
 export const CONSENT_TERMS_VERSION = 'v1';
 

@@ -31,8 +31,8 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
 );
 
 /**
- * Crece con su contenido: un texto largo (el equipo, el mercado objetivo) se
- * lee completo, sin barra de desplazamiento dentro del campo.
+ * Grows with its content: a long text (the team, the target market) is
+ * read whole, with no scrollbar inside the field.
  */
 export const Textarea = forwardRef<
   HTMLTextAreaElement,
@@ -44,7 +44,7 @@ export const Textarea = forwardRef<
     const node = inner.current;
     if (!node) return;
     node.style.height = 'auto';
-    // `scrollHeight` no cuenta el borde (box-sizing: border-box): se suma.
+    // `scrollHeight` does not count the border (box-sizing: border-box): it is added.
     node.style.height = `${String(node.scrollHeight + node.offsetHeight - node.clientHeight)}px`;
   }, []);
 

@@ -18,33 +18,34 @@ import { authenticateAgainst } from '../../support/authenticated-app.js';
 import { agroconectaAnswers } from '../../support/agroconecta-case.js';
 
 /**
- * E2E — roadmap de escalamiento para el perfil de AgroConecta.
+ * E2E — scaling roadmap for the AgroConecta profile.
  *
- * El roadmap es un resultado guardado: se calcula al aceptar el análisis
- * profundo y `GET /roadmap` solo lo lee. Antes de aceptar responde 409.
+ * The roadmap is a saved result: it is calculated when the deep analysis is
+ * accepted and `GET /roadmap` only reads it. Before acceptance it answers
+ * 409.
  *
- * Requiere la base migrada y sembrada:
+ * Needs the migrated and seeded database:
  *   pnpm --filter @innlab/api db:migration:run && db:seed
  *
- * Sigue el patrón de las demás suites e2e (AppModule real + supertest
- * contra la base configurada). Crea su propio diagnóstico con un UUID
- * aleatorio y lo borra al terminar: las suites e2e corren en procesos
- * separados y comparten base, así que ninguna puede asumir que es la
- * única escribiendo.
+ * Follows the pattern of the other e2e suites (real AppModule + supertest
+ * against the configured database). Creates its own diagnostic with a
+ * random UUID and deletes it when done: the e2e suites run in separate
+ * processes and share the database, so none can assume it is the only one
+ * writing.
  *
- * Las 48 respuestas (`support/agroconecta-case.ts`) producen exactamente el
- * perfil del caso mediante la tabla de conversión SA-06:
+ * The 48 answers (`support/agroconecta-case.ts`) produce exactly the
+ * profile of the case through the SA-06 conversion table:
  *
- *   TRL  suma 26 → 3.250 → IRL 6      IPRL suma  9 → 1.125 → IRL 1
- *   CRL  suma 19 → 2.375 → IRL 4      TmRL suma 22 → 2.750 → IRL 5
- *   BRL  suma 15 → 1.875 → IRL 3      FRL  suma 13 → 1.625 → IRL 2
+ *   TRL  sum 26 → 3.250 → IRL 6      IPRL sum  9 → 1.125 → IRL 1
+ *   CRL  sum 19 → 2.375 → IRL 4      TmRL sum 22 → 2.750 → IRL 5
+ *   BRL  sum 15 → 1.875 → IRL 3      FRL  sum 13 → 1.625 → IRL 2
  */
 describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
   let app: NestFastifyApplication;
   let dataSource: DataSource;
   let diagnosticId: string;
-  // Agente con la cabecera Authorization por defecto: el guard global
-  // rechaza cualquier peticion sin token.
+  // Agent with the Authorization header by default: the global guard
+  // rejects any request without a token.
   let agent: ReturnType<typeof request.agent>;
 
   beforeAll(async () => {
@@ -106,10 +107,10 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
       .get(`/api/v1/diagnostics/${diagnosticId}/profile`)
       .expect(200);
 
-    const perfil = maturityProfileResponseSchema.parse(res.body);
+    const profile = maturityProfileResponseSchema.parse(res.body);
     expect(
       Object.fromEntries(
-        perfil.dimensionResults.map((r) => [r.dimensionCode, r.irlLevel]),
+        profile.dimensionResults.map((r) => [r.dimensionCode, r.irlLevel]),
       ),
     ).toEqual({ TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 });
   });
@@ -121,14 +122,14 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
       .get(`/api/v1/diagnostics/${diagnosticId}/profile`)
       .expect(200);
 
-    const perfil = maturityProfileResponseSchema.parse(res.body);
-    const brl = perfil.dimensionResults.find((r) => r.dimensionCode === 'BRL');
+    const profile = maturityProfileResponseSchema.parse(res.body);
+    const brl = profile.dimensionResults.find((r) => r.dimensionCode === 'BRL');
 
     expect(brl).toMatchObject({
       name: 'Nivel de Madurez del Modelo de Negocio',
       shortName: 'Negocio',
     });
-    for (const r of perfil.dimensionResults) {
+    for (const r of profile.dimensionResults) {
       expect(r.name).not.toBe(r.dimensionCode);
     }
   });
@@ -157,14 +158,14 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
 
       expect(roadmap.phases).toHaveLength(2);
 
-      // Fase 1: Modelo de Negocio y Propiedad Intelectual, en paralelo.
+      // Phase 1: BRL and IPRL, in parallel.
       expect(roadmap.phases[0].order).toBe(1);
       expect(roadmap.phases[0].dimensions.map((d) => d.dimensionCode)).toEqual([
         'BRL',
         'IPRL',
       ]);
 
-      // Fase 2: Financiamiento, que dependía de ambas.
+      // Phase 2: FRL, which depended on both.
       expect(roadmap.phases[1].order).toBe(2);
       expect(roadmap.phases[1].dimensions.map((d) => d.dimensionCode)).toEqual([
         'FRL',
@@ -181,17 +182,17 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
           expect(
             roadmap.dimensionsWithoutIntervention.map((d) => d.code).sort(),
           ).toEqual(['CRL', 'TRL', 'TmRL']);
-          // Sin intervención, pero nombradas con el catálogo.
+          // No intervention, but named from the catalog.
           expect(
             roadmap.dimensionsWithoutIntervention.map((d) => d.shortName).sort(),
           ).toEqual(['Cliente', 'Equipo', 'Tecnología']);
 
-          const intervenidas = roadmap.phases.flatMap((f) =>
+          const intervened = roadmap.phases.flatMap((f) =>
             f.dimensions.map((d) => d.dimensionCode),
           );
-          expect(intervenidas).not.toContain('TRL');
-          expect(intervenidas).not.toContain('CRL');
-          expect(intervenidas).not.toContain('TmRL');
+          expect(intervened).not.toContain('TRL');
+          expect(intervened).not.toContain('CRL');
+          expect(intervened).not.toContain('TmRL');
         });
     });
 
@@ -223,13 +224,13 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
         .expect(200);
       const roadmap = roadmapResponseSchema.parse(res.body);
 
-      const habilita = Object.fromEntries(
+      const enablesByDimension = Object.fromEntries(
         roadmap.phases.flatMap((f) =>
           f.dimensions.map((d) => [d.dimensionCode, d.enables.map((e) => e.code)]),
         ),
       );
 
-      expect(habilita).toEqual({ BRL: ['FRL'], IPRL: ['FRL'], FRL: [] });
+      expect(enablesByDimension).toEqual({ BRL: ['FRL'], IPRL: ['FRL'], FRL: [] });
     });
 
     it('nombra cada dimensión del roadmap con el catálogo', async () => {
@@ -261,27 +262,27 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
         .expect(200);
       const roadmap = roadmapResponseSchema.parse(res.body);
 
-      const porDimension = Object.fromEntries(
+      const byDimension = Object.fromEntries(
         roadmap.phases.flatMap((f) =>
           f.dimensions.map((d) => [
             d.dimensionCode,
             {
-              motivo: d.inclusionReason,
-              minimo: d.expectedMinimum,
-              fijadaPor: d.targetDrivenBy?.code ?? null,
+              reason: d.inclusionReason,
+              minimum: d.expectedMinimum,
+              setBy: d.targetDrivenBy?.code ?? null,
             },
           ]),
         ),
       );
 
-      // Las tres están por debajo de su mínimo (4) y la meta es ese mínimo:
-      // ninguna exigencia de otra dimensión la eleva.
-      const propia = {
-        motivo: 'BELOW_EXPECTED_MINIMUM',
-        minimo: 4,
-        fijadaPor: null,
+      // All three are below their minimum (4) and the target is that minimum:
+      // no requirement from another dimension raises it.
+      const own = {
+        reason: 'BELOW_EXPECTED_MINIMUM',
+        minimum: 4,
+        setBy: null,
       };
-      expect(porDimension).toEqual({ BRL: propia, IPRL: propia, FRL: propia });
+      expect(byDimension).toEqual({ BRL: own, IPRL: own, FRL: own });
     });
 
     it('es un resultado guardado: leerlo dos veces da la misma fecha', async () => {
@@ -299,20 +300,20 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
   });
 
   it('un diagnóstico sin perfil calculado devuelve 409, no 404', async () => {
-    const otro = randomUUID();
+    const other = randomUUID();
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
          (id, cognito_user_id, state, irl_framework_version)
        VALUES ($1, 'usuario-e2e-roadmap', 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
-      [otro],
+      [other],
     );
 
     try {
-      await agent.get(`/api/v1/diagnostics/${otro}/roadmap`).expect(409);
+      await agent.get(`/api/v1/diagnostics/${other}/roadmap`).expect(409);
     } finally {
       await dataSource.query(
         `DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`,
-        [otro],
+        [other],
       );
     }
   });

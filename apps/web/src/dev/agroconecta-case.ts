@@ -38,7 +38,7 @@ export const AGROCONECTA_INITIATIVE = {
 } as const;
 
 export const AGROCONECTA_ANSWERS: readonly AgroconectaAnswer[] = [
-  // TRL — suma 26, promedio 3.25
+  // TRL — sum 26, average 3.25
   {
     dimension: 'TRL',
     sequence: 1,
@@ -96,7 +96,7 @@ export const AGROCONECTA_ANSWERS: readonly AgroconectaAnswer[] = [
       'No existe un proceso formal de actualización y despliegue continuo, la documentación técnica es incompleta y no se han definido métricas de desempeño ni acuerdos de servicio.',
   },
 
-  // CRL — suma 19, promedio 2.38
+  // CRL — sum 19, average 2.38
   {
     dimension: 'CRL',
     sequence: 1,
@@ -154,7 +154,7 @@ export const AGROCONECTA_ANSWERS: readonly AgroconectaAnswer[] = [
       'La base de usuarios sigue limitada al grupo del piloto; no hay un proceso de expansión de mercado en marcha ni indicadores de retención medidos.',
   },
 
-  // BRL — suma 15, promedio 1.88
+  // BRL — sum 15, average 1.88
   {
     dimension: 'BRL',
     sequence: 1,
@@ -212,7 +212,7 @@ export const AGROCONECTA_ANSWERS: readonly AgroconectaAnswer[] = [
       'El modelo de negocio no está en operación; las proyecciones no cuentan con respaldo en datos reales del mercado.',
   },
 
-  // IPRL — suma 9, promedio 1.13
+  // IPRL — sum 9, average 1.13
   {
     dimension: 'IPRL',
     sequence: 1,
@@ -270,7 +270,7 @@ export const AGROCONECTA_ANSWERS: readonly AgroconectaAnswer[] = [
       'No existe ningún acuerdo formal con el desarrollador externo sobre el uso o cesión de derechos del código; esta situación representa un riesgo legal activo, especialmente ante una conversación en curso con un posible inversionista interesado en la plataforma.',
   },
 
-  // TmRL — suma 22, promedio 2.75
+  // TmRL — sum 22, average 2.75
   {
     dimension: 'TmRL',
     sequence: 1,
@@ -328,7 +328,7 @@ export const AGROCONECTA_ANSWERS: readonly AgroconectaAnswer[] = [
       'No existen procesos documentados de cultura organizacional, incentivos o aprendizaje continuo; estos temas no han sido abordados aún por el equipo.',
   },
 
-  // FRL — suma 13, promedio 1.63
+  // FRL — sum 13, average 1.63
   {
     dimension: 'FRL',
     sequence: 1,

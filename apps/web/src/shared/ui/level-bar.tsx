@@ -2,23 +2,23 @@ import type { JSX } from 'react';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * `LevelBar` — la escala 1 a 9 como nueve tramos: los alcanzados van en el
- * color de la dimensión y el resto en gris. Es lo que hace que un nivel se
- * lea de un vistazo, sin depender del número.
+ * `LevelBar` — the 1 to 9 scale as nine segments: the reached ones in the
+ * dimension's color and the rest in grey. It is what makes a level
+ * readable at a glance, without depending on the number.
  *
- * `targetLevel` pinta con un tono suave el tramo que falta hasta la meta (el
- * roadmap), y `thresholdLevel` marca con una línea el último nivel que cuenta
- * como brecha. El número siempre va también como texto accesible.
+ * `targetLevel` paints in a soft tone the stretch missing up to the target
+ * (the roadmap), and `thresholdLevel` marks with a line the last level that
+ * counts as a gap. The number always goes along as accessible text too.
  */
 interface LevelBarProps {
   readonly level: number;
-  /** Clase de fondo del color pleno (`getDimensionVisual().bg`). */
+  /** Background class of the full color (`getDimensionVisual().bg`). */
   readonly fillClass: string;
-  /** Clase de fondo del tono suave para el tramo hasta la meta. */
+  /** Background class of the soft tone for the stretch up to the target. */
   readonly softClass?: string;
   readonly targetLevel?: number;
   readonly thresholdLevel?: number;
-  /** Cuántos tramos tiene la escala: 9 para el IRL, 5 para el Likert. */
+  /** How many segments the scale has: 9 for the IRL, 5 for the Likert. */
   readonly segments?: number;
   readonly className?: string;
 }

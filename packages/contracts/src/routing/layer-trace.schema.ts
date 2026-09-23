@@ -2,27 +2,29 @@ import { z } from 'zod';
 import { uuidSchema } from '../common/uuid.schema.js';
 
 /**
- * La traza por capas — el artefacto que hace auditable una recomendación.
+ * The trace by layers — the artifact that makes a recommendation
+ * auditable.
  *
- * Audiencia: el equipo de INNLAB, no el líder de iniciativa. Muestra qué
- * hizo cada capa y, sobre todo, si el servicio recomendado es el que ganó
- * el cálculo o el que un ajuste puntual colocó ahí.
+ * Audience: the INNLAB team, not the initiative leader. It shows what each
+ * layer did and, above all, whether the recommended service is the one that
+ * won the calculation or the one a manual adjustment put there.
  *
- * `appliedExceptions` guarda el ranking anterior y posterior de **cada**
- * excepción por separado, no solo el resultado agregado. Sin ese detalle,
- * una recomendación cuestionada seis meses después no se puede atribuir al
- * ajuste concreto que la produjo, que es justo para lo que existe la traza.
+ * `appliedExceptions` keeps the ranking before and after **each** exception
+ * separately, not only the aggregate result. Without that detail, a
+ * recommendation questioned six months later cannot be attributed to the
+ * specific adjustment that produced it, which is exactly what the trace
+ * exists for.
  *
- * Los aportes se reportan junto con la etiqueta ordinal que los originó,
- * para que la explicación pueda decir "porque este servicio es *principal*
- * en Modelo de Negocio" y no "porque aportó 1.50". El vocabulario ordinal
- * es el que entiende el equipo de negocio; el número es un detalle de
- * implementación de la calibración.
+ * Contributions are reported together with the ordinal label that
+ * produced them, so the explanation can say "because this service is
+ * *primary* in Business Model" and not "because it contributed 1.50". The
+ * ordinal vocabulary is what the business team understands; the number is
+ * an implementation detail of the calibration.
  *
- * Ya no lleva `configurationVersion`/`calibrationSnapshot`/
- * `parametersSnapshot`: el esquema de versionado de configuración se
- * retiró — hay una sola configuración vigente, sin
- * historial de versiones que numerar.
+ * It no longer carries `configurationVersion`/`calibrationSnapshot`/
+ * `parametersSnapshot`: the configuration versioning scheme was retired —
+ * there is a single live configuration, with no version history to
+ * number.
  */
 export const dimensionContributionSchema = z.object({
   dimension: z.string(),
@@ -107,16 +109,16 @@ export const layerTraceResponseSchema = z
     discardedExceptions: z.array(discardedExceptionSchema),
     rankingAfterExceptions: z.array(rankingEntrySchema),
     /**
-     * Verdadero cuando el servicio recomendado NO es el que ganó el
-     * cálculo. Es la línea que separa un sistema auditable de uno que
-     * parece objetivo sin serlo.
+     * True when the recommended service is NOT the one that won the
+     * calculation. It is the line that separates an auditable system from
+     * one that looks objective without being so.
      */
     adjustedByException: z.boolean(),
     incompleteCharacterization: z.array(z.string()),
     factsHash: z.string(),
     evaluatedAt: z.string().datetime(),
   })
-  .describe('Traza por capas de una evaluación de enrutamiento');
+  .describe('Trace by layers of a routing evaluation');
 
 export type LayerTraceResponse = z.infer<typeof layerTraceResponseSchema>;
 export type RankingEntry = z.infer<typeof rankingEntrySchema>;

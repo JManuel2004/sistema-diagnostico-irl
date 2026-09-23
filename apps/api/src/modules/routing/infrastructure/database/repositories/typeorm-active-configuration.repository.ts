@@ -24,22 +24,22 @@ import {
 } from '../../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
 
 /**
- * Adaptador de lectura de la configuración de enrutamiento.
+ * Read adapter of the routing configuration.
  *
- * Sin versionado: el esquema de versionado de configuración se retiró
- * — hay una sola configuración vigente en `scoring_parameters`
- * (tabla singleton), `calibration_label_value` y los tres `published_*`,
- * ninguno ya scoped a una versión.
+ * Not versioned: the configuration versioning scheme was retired — there is
+ * a single live configuration in `scoring_parameters` (singleton table),
+ * `calibration_label_value` and the three `published_*` tables, none of
+ * them scoped to a version any more.
  *
- * Los predicados se recompilan al leer, no se confía en que el `jsonb`
- * almacenado sea válido. En teoría bastaría con compilarlos al sembrar la
- * configuración; en la práctica, una restauración de base de datos o una
- * edición manual pueden dejar un predicate corrupto, y prefiero que eso
- * falle al cargar la configuración antes que a mitad de una evaluación.
+ * Predicates are recompiled on read; the stored `jsonb` is not trusted to
+ * be valid. In theory compiling them when seeding would be enough; in
+ * practice a database restore or a manual edit can leave a corrupt
+ * predicate, and it is better for that to fail when loading the
+ * configuration than halfway through an evaluation.
  *
- * Lee las dimensiones a través de `TaxonomyRepositoryPort` en vez de su
- * entidad ORM directamente — `shared/irl-taxonomy/` es un contexto propio,
- * no una tabla que cualquier módulo pueda alcanzar por su cuenta.
+ * Reads the dimensions through `TaxonomyRepositoryPort` instead of their
+ * ORM entity — `shared/irl-taxonomy/` is a context of its own, not a table
+ * any module can reach into.
  */
 @Injectable()
 export class TypeOrmActiveConfigurationRepository
@@ -73,8 +73,8 @@ export class TypeOrmActiveConfigurationRepository
     const [
       tiers,
       profileRows,
-      elegRows,
-      excRows,
+      eligibilityRows,
+      exceptionRows,
       serviceRows,
       dimensions,
     ] = await Promise.all([
@@ -114,7 +114,7 @@ export class TypeOrmActiveConfigurationRepository
         serviceName: nameByService.get(f.idService) ?? String(f.idService),
         minLevel: f.minLevel,
         maxLevel: f.maxLevel,
-        // Lista separada por comas; `filter` descarta el caso de cadena vacía.
+        // Comma-separated list; `filter` drops the empty-string case.
         relevantStages: f.relevantStages
           .split(',')
           .map((e) => e.trim())
@@ -123,17 +123,17 @@ export class TypeOrmActiveConfigurationRepository
       };
     });
 
-    const eligibilityRules: CompiledEligibilityRule[] = elegRows.map((r) => ({
-      idRegla: r.id,
+    const eligibilityRules: CompiledEligibilityRule[] = eligibilityRows.map((r) => ({
+      ruleId: r.id,
       idService: r.idService,
-      expresion: this.compiler.compile(r.predicate, 'BOOLEAN'),
+      expression: this.compiler.compile(r.predicate, 'BOOLEAN'),
       exclusionMessage: r.exclusionMessage,
     }));
 
-    const exceptionRules: CompiledExceptionRule[] = excRows.map((r) => ({
+    const exceptionRules: CompiledExceptionRule[] = exceptionRows.map((r) => ({
       code: r.code,
       priorityOrder: r.priorityOrder,
-      expresion: this.compiler.compile(r.predicate, 'WITH_DEGREE'),
+      expression: this.compiler.compile(r.predicate, 'WITH_DEGREE'),
       // Validated at runtime on top of the DB CHECK, instead of trusting a cast.
       action: exceptionActionSchema.parse(r.action),
       idTargetService: r.idTargetService,

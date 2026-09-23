@@ -22,43 +22,43 @@ interface Props {
   readonly isLoading: boolean;
   readonly onOpen: () => void;
   /**
-   * Nombre de cada dimensión por su código, tomado del perfil. La explicación
-   * habla de «Negocio» y de «Tecnología», nunca de sus siglas.
+   * Name of each dimension by its code, taken from the profile. The
+   * explanation talks about «Negocio» and «Tecnología», never their acronyms.
    */
   readonly dimensionNames?: Readonly<Record<string, string>>;
 }
 
 /**
- * «Cómo se llegó a esta recomendación»: el cálculo contado en tres pasos, para
- * quien no conoce ni el sistema ni el marco IRL.
+ * «Cómo se llegó a esta recomendación»: the calculation told in three
+ * steps, for someone who knows neither the system nor the IRL framework.
  *
- *  1. Qué servicios no aplican a la iniciativa.
- *  2. Cómo se ordenaron los demás según su perfil.
- *  3. Si el centro necesitó ajustar algo a mano.
+ *  1. Which services do not apply to the initiative.
+ *  2. How the rest were ordered according to its profile.
+ *  3. Whether the center had to adjust anything by hand.
  *
- * Cuatro decisiones que cargan el peso de este componente:
+ * Four decisions carry the weight of this component:
  *
- *  1. La respuesta va primero: una frase dice qué servicio quedó primero y por
- *     qué. El detalle del cálculo está debajo, para quien quiera comprobarlo.
- *     Antes cada servicio listaba todos sus aportes en frases completas, y la
- *     explicación se leía como un informe de auditoría.
+ *  1. The answer comes first: one sentence says which service came first
+ *     and why. The detail of the calculation is below, for whoever wants to
+ *     check it.
  *
- *  2. Los aportes se cuentan en **palabras** («es un servicio principal para
- *     Negocio») y no como puntajes. El número es un detalle de la calibración;
- *     exponerlo desplazaría la conversación desde «¿es este el servicio
- *     adecuado?» hacia «¿por qué 1.50 y no 1.60?». Los que agrupan varias
- *     dimensiones se resumen en una etiqueta con su cuenta («3 brechas»), pero
- *     **siempre se puede saber cuáles**: la etiqueta las nombra en su tooltip y
- *     las repite en un texto que solo leen los lectores de pantalla.
+ *  2. Contributions are told in **words** («es un servicio principal para
+ *     Negocio») and not as scores. The number is a detail of the
+ *     calibration; exposing it would move the conversation from "is this
+ *     the right service?" to "why 1.50 and not 1.60?". The ones that group
+ *     several dimensions are summed up in a label with their count
+ *     («3 brechas»), but **which ones can always be known**: the label
+ *     names them in its tooltip and repeats them in a text only screen
+ *     readers read.
  *
- *  3. Cuando el servicio recomendado NO es el que ganó el cálculo, se dice
- *     explícitamente y arriba del todo. Un sistema que presenta un ajuste
- *     deliberado con la misma cara que un resultado calculado parece
- *     objetivo sin serlo, y esa es exactamente la confusión que la traza
- *     existe para impedir.
+ *  3. When the recommended service is NOT the one that won the
+ *     calculation, it is said explicitly and at the very top. A system that
+ *     presents a deliberate adjustment with the same face as a calculated
+ *     result looks objective without being so, and that is exactly the
+ *     confusion the trace exists to prevent.
  *
- *  4. Nada de identificadores internos: los ajustes se describen por lo que
- *     hicieron y por la razón que declaró el centro, no por su código.
+ *  4. No internal identifiers: adjustments are described by what they did
+ *     and by the reason the center declared, not by their code.
  */
 export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Props): JSX.Element {
   const nameOf = (code: string): string => dimensionNames?.[code] ?? code;
@@ -76,7 +76,7 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
         <div className="flex flex-col gap-6">
           <p className="bg-surface-muted border-primary text-foreground flex items-start gap-3 border-l-[3px] p-4 text-base leading-relaxed">
             <CircleCheck className="text-azul-icesi mt-0.5 size-5 shrink-0" aria-hidden="true" />
-            <span>{veredicto(trace)}</span>
+            <span>{verdict(trace)}</span>
           </p>
 
           {trace.adjustedByException && (
@@ -89,13 +89,13 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
           {trace.incompleteCharacterization.length > 0 && (
             <p className="border-border text-muted-foreground border p-4 text-base leading-relaxed">
               Falta información de tu iniciativa:{' '}
-              {trace.incompleteCharacterization.map(campoLegible).join(', ')}. El cálculo la trató
+              {trace.incompleteCharacterization.map(readableField).join(', ')}. El cálculo la trató
               como ausente, así que la recomendación es menos precisa de lo que podría ser.
             </p>
           )}
 
           <ol className="flex flex-col">
-            <Paso numero={1} titulo="Lo que no aplica">
+            <Step number={1} title="Lo que no aplica">
               {trace.layer1Excluded.length === 0 ? (
                 <p className="text-muted-foreground text-base">
                   Ningún servicio quedó descartado: todos podían aplicar a tu iniciativa.
@@ -116,13 +116,13 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
                   ))}
                 </ul>
               )}
-            </Paso>
+            </Step>
 
-            <Paso numero={2} titulo="El orden según tu perfil">
+            <Step number={2} title="El orden según tu perfil">
               <Ranking ranking={trace.rankingBeforeExceptions} nameOf={nameOf} />
-            </Paso>
+            </Step>
 
-            <Paso numero={3} titulo="Ajuste del centro">
+            <Step number={3} title="Ajuste del centro">
               {trace.appliedExceptions.length === 0 ? (
                 <p className="text-muted-foreground text-base">
                   No hizo falta ningún ajuste: el orden es el que salió del cálculo.
@@ -137,8 +137,10 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
                           aria-hidden="true"
                         />
                         <span>
-                          <span className="text-foreground font-semibold">{tituloAjuste(e)}</span>{' '}
-                          <span className="text-muted-foreground">{lugarAjuste(e)}</span>
+                          <span className="text-foreground font-semibold">
+                            {adjustmentTitle(e)}
+                          </span>{' '}
+                          <span className="text-muted-foreground">{adjustmentPlace(e)}</span>
                         </span>
                       </p>
                       <details className="text-base">
@@ -162,7 +164,7 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
                     : `Se revisaron otros ${String(trace.discardedExceptions.length)} ajustes posibles, pero no aplican a tu iniciativa.`}
                 </p>
               )}
-            </Paso>
+            </Step>
           </ol>
         </div>
       )}
@@ -170,26 +172,27 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
   );
 }
 
-/** La frase que responde, sin leer el detalle, por qué se recomienda ese servicio. */
-function veredicto(trace: LayerTraceResponse): string {
-  const primero = trace.rankingBeforeExceptions[0]?.name;
-  const final = trace.rankingAfterExceptions[0]?.name ?? primero;
-  const ajuste = trace.appliedExceptions.find((e) => e.targetService === final);
+/** The sentence that answers, without reading the detail, why that service is recommended. */
+function verdict(trace: LayerTraceResponse): string {
+  const first = trace.rankingBeforeExceptions[0]?.name;
+  const final = trace.rankingAfterExceptions[0]?.name ?? first;
+  const adjustment = trace.appliedExceptions.find((e) => e.targetService === final);
 
   if (final === undefined) return 'Todavía no hay un orden de servicios para esta iniciativa.';
   if (trace.adjustedByException) {
     return `${final} es la recomendación porque el centro la eligió por encima del resultado del cálculo.`;
   }
-  if (ajuste) {
+  if (adjustment) {
     return `${final} fue la primera en el cálculo y, además, el centro la fija como primera opción.`;
   }
   return `${final} fue la primera en el cálculo por su afinidad con tu perfil.`;
 }
 
 /**
- * El orden del cálculo. El primero muestra sus motivos; los demás los guardan
- * tras «Ver motivos», y del cuarto en adelante se pliega la lista entera: quien
- * quiera comprobar el cálculo completo puede, sin que nadie más lo lea.
+ * The order of the calculation. The first shows its reasons; the rest keep
+ * them behind «Ver motivos», and from the fourth on the whole list folds:
+ * whoever wants to check the full calculation can, without anyone else
+ * reading it.
  */
 function Ranking({
   ranking,
@@ -198,26 +201,26 @@ function Ranking({
   readonly ranking: readonly RankingEntry[];
   readonly nameOf: (code: string) => string;
 }): JSX.Element {
-  const visibles = ranking.slice(0, 3);
-  const resto = ranking.slice(3);
+  const visible = ranking.slice(0, 3);
+  const rest = ranking.slice(3);
 
   return (
     <div className="flex flex-col gap-2">
       <ol className="border-border flex flex-col border-t">
-        {visibles.map((r, index) => (
-          <Servicio key={r.idService} entry={r} nameOf={nameOf} destacado={index === 0} />
+        {visible.map((r, index) => (
+          <ServiceRow key={r.idService} entry={r} nameOf={nameOf} highlighted={index === 0} />
         ))}
       </ol>
 
-      {resto.length > 0 && (
+      {rest.length > 0 && (
         <details>
           <summary className="border-border text-foreground inline-flex cursor-pointer items-center gap-1.5 border px-3 py-2 text-base font-semibold">
             <ChevronDown className="size-4" aria-hidden="true" />
-            {resto.length === 1 ? '1 servicio más' : `${String(resto.length)} servicios más`}
+            {rest.length === 1 ? '1 servicio más' : `${String(rest.length)} servicios más`}
           </summary>
           <ol className="border-border mt-2 flex flex-col border-t">
-            {resto.map((r) => (
-              <Servicio key={r.idService} entry={r} nameOf={nameOf} destacado={false} />
+            {rest.map((r) => (
+              <ServiceRow key={r.idService} entry={r} nameOf={nameOf} highlighted={false} />
             ))}
           </ol>
         </details>
@@ -226,16 +229,16 @@ function Ranking({
   );
 }
 
-function Servicio({
+function ServiceRow({
   entry,
   nameOf,
-  destacado,
+  highlighted,
 }: {
   readonly entry: RankingEntry;
   readonly nameOf: (code: string) => string;
-  readonly destacado: boolean;
+  readonly highlighted: boolean;
 }): JSX.Element {
-  const motivos = aportes(entry, nameOf);
+  const reasons = contributionReasons(entry, nameOf);
 
   return (
     <li className="border-border flex flex-col gap-2.5 border-b py-3">
@@ -247,19 +250,19 @@ function Servicio({
           <span className="sr-only">Puesto {entry.position}: </span>
           {entry.name}
         </span>
-        {destacado && (
+        {highlighted && (
           <span className="bg-azul-icesi text-primary-foreground px-2 py-1 text-sm font-bold uppercase tracking-[0.06em]">
             Recomendado
           </span>
         )}
       </p>
 
-      {motivos.length === 0 ? (
+      {reasons.length === 0 ? (
         <p className="text-muted-foreground pl-9 text-base">
           No tiene una afinidad destacada con tu perfil.
         </p>
-      ) : destacado ? (
-        <Motivos motivos={motivos} />
+      ) : highlighted ? (
+        <Reasons reasons={reasons} />
       ) : (
         <details className="pl-9">
           <summary className="text-azul-icesi inline-flex cursor-pointer items-center gap-1 text-base font-semibold">
@@ -267,7 +270,7 @@ function Servicio({
             <ChevronDown className="size-4" aria-hidden="true" />
           </summary>
           <div className="mt-2">
-            <Motivos motivos={motivos} sinSangria />
+            <Reasons reasons={reasons} flush />
           </div>
         </details>
       )}
@@ -275,18 +278,18 @@ function Servicio({
   );
 }
 
-function Motivos({
-  motivos,
-  sinSangria = false,
+function Reasons({
+  reasons,
+  flush = false,
 }: {
-  readonly motivos: readonly Motivo[];
-  readonly sinSangria?: boolean;
+  readonly reasons: readonly Reason[];
+  readonly flush?: boolean;
 }): JSX.Element {
   return (
-    <ul className={`flex flex-wrap gap-2 ${sinSangria ? '' : 'pl-9'}`}>
-      {motivos.map((m) => (
-        <li key={m.etiqueta}>
-          <Etiqueta motivo={m} />
+    <ul className={`flex flex-wrap gap-2 ${flush ? '' : 'pl-9'}`}>
+      {reasons.map((m) => (
+        <li key={m.label}>
+          <ReasonLabel reason={m} />
         </li>
       ))}
     </ul>
@@ -294,123 +297,126 @@ function Motivos({
 }
 
 /**
- * Una etiqueta de motivo. Cuando resume varias dimensiones («3 brechas»), decir
- * cuáles no es opcional: el tooltip las nombra al pasar el cursor o al enfocarla
- * con el teclado, y el mismo texto viaja en un `sr-only` para quien use lector
- * de pantalla o no tenga puntero.
+ * A reason label. When it sums up several dimensions («3 brechas»), saying
+ * which ones is not optional: the tooltip names them on hover or keyboard
+ * focus, and the same text travels in an `sr-only` for whoever uses a
+ * screen reader or has no pointer.
  */
-function Etiqueta({ motivo }: { readonly motivo: Motivo }): JSX.Element {
-  const Icon = motivo.icono;
-  const clase = `border-border bg-surface-muted inline-flex items-center gap-2 border px-2.5 py-1.5 text-base font-semibold ${
-    motivo.tono === 'moderate' ? 'text-moderate' : 'text-foreground'
+function ReasonLabel({ reason }: { readonly reason: Reason }): JSX.Element {
+  const Icon = reason.icon;
+  const className = `border-border bg-surface-muted inline-flex items-center gap-2 border px-2.5 py-1.5 text-base font-semibold ${
+    reason.tone === 'moderate' ? 'text-moderate' : 'text-foreground'
   }`;
 
-  if (motivo.detalle === undefined) {
+  if (reason.detail === undefined) {
     return (
-      <span className={clase}>
+      <span className={className}>
         <Icon className="text-azul-icesi size-4 shrink-0" aria-hidden="true" />
-        {motivo.etiqueta}
+        {reason.label}
       </span>
     );
   }
 
   return (
-    <Tooltip content={motivo.detalle}>
-      <button type="button" className={`${clase} cursor-help text-left`}>
+    <Tooltip content={reason.detail}>
+      <button type="button" className={`${className} cursor-help text-left`}>
         <Icon className="text-azul-icesi size-4 shrink-0" aria-hidden="true" />
-        {motivo.etiqueta}
-        <span className="sr-only">. {motivo.detalle}</span>
+        {reason.label}
+        <span className="sr-only">. {reason.detail}</span>
       </button>
     </Tooltip>
   );
 }
 
-interface Motivo {
-  readonly icono: LucideIcon;
-  readonly etiqueta: string;
-  /** Qué hay detrás de la cuenta: las dimensiones o los pares, por su nombre. */
-  readonly detalle?: string;
-  readonly tono?: 'moderate';
+interface Reason {
+  readonly icon: LucideIcon;
+  readonly label: string;
+  /** What is behind the count: the dimensions or the pairs, by name. */
+  readonly detail?: string;
+  readonly tone?: 'moderate';
 }
 
 /** «Negocio, Propiedad Intelectual y Financiación». */
-function enumerar(nombres: readonly string[]): string {
-  if (nombres.length <= 1) return nombres.join('');
-  return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
+function joinNames(names: readonly string[]): string {
+  if (names.length <= 1) return names.join('');
+  return `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}`;
 }
 
 /**
- * Los aportes de un servicio, en etiquetas.
+ * The contributions of a service, as labels.
  *
- * Solo se nombran las dimensiones donde el servicio aporta algo: listar los
- * `not_applicable` y los `marginal` alargaría la explicación sin añadir
- * información.
+ * Only the dimensions where the service contributes something are named:
+ * listing the `not_applicable` and `marginal` ones would lengthen the
+ * explanation without adding information.
  */
-function aportes(ranking: RankingEntry, nameOf: (code: string) => string): readonly Motivo[] {
+function contributionReasons(
+  ranking: RankingEntry,
+  nameOf: (code: string) => string,
+): readonly Reason[] {
   const c = ranking.contributions;
   if (!c) return [];
 
-  const motivos: Motivo[] = [];
-  const relevante = (label: string): boolean => label === 'primary' || label === 'secondary';
-  const como = (label: string): string => (label === 'primary' ? 'principal' : 'de apoyo');
+  const reasons: Reason[] = [];
+  const isRelevant = (label: string): boolean => label === 'primary' || label === 'secondary';
+  const roleOf = (label: string): string => (label === 'primary' ? 'principal' : 'de apoyo');
 
-  const cuello = c.bottleneck.details.filter((d) => relevante(d.sourceLabel));
-  for (const d of cuello) {
-    motivos.push({
-      icono: Target,
-      etiqueta: `Cuello de botella: ${nameOf(d.dimension)}`,
-      detalle: `Es un servicio ${como(d.sourceLabel)} para ${nameOf(d.dimension)}, lo que más frena tu avance.`,
+  const bottleneck = c.bottleneck.details.filter((d) => isRelevant(d.sourceLabel));
+  for (const d of bottleneck) {
+    reasons.push({
+      icon: Target,
+      label: `Cuello de botella: ${nameOf(d.dimension)}`,
+      detail: `Es un servicio ${roleOf(d.sourceLabel)} para ${nameOf(d.dimension)}, lo que más frena tu avance.`,
     });
   }
 
-  const brechas = c.gaps.details.filter((d) => relevante(d.sourceLabel));
-  if (brechas.length > 0) {
-    const nombres = brechas.map((d) => nameOf(d.dimension));
-    motivos.push({
-      icono: TrendingDown,
-      etiqueta: brechas.length === 1 ? '1 brecha' : `${String(brechas.length)} brechas`,
-      detalle: `Ayuda a cerrar las brechas en ${enumerar(nombres)}.`,
+  const gaps = c.gaps.details.filter((d) => isRelevant(d.sourceLabel));
+  if (gaps.length > 0) {
+    const names = gaps.map((d) => nameOf(d.dimension));
+    reasons.push({
+      icon: TrendingDown,
+      label: gaps.length === 1 ? '1 brecha' : `${String(gaps.length)} brechas`,
+      detail: `Ayuda a cerrar las brechas en ${joinNames(names)}.`,
     });
   }
 
   if (c.imbalances.details.length > 0) {
-    const pares = c.imbalances.details.map((d) => {
+    const pairs = c.imbalances.details.map((d) => {
       const [a, b] = d.pair.split('-');
       return `${nameOf(a)} y ${nameOf(b)}`;
     });
-    motivos.push({
-      icono: Scale,
-      etiqueta:
+    reasons.push({
+      icon: Scale,
+      label:
         c.imbalances.details.length === 1
           ? '1 desequilibrio'
           : `${String(c.imbalances.details.length)} desequilibrios`,
-      detalle: `Ayuda con el desequilibrio entre ${enumerar(pares)}.`,
+      detail: `Ayuda con el desequilibrio entre ${joinNames(pairs)}.`,
     });
   }
 
   if (c.stageAffinity.matches) {
-    motivos.push({ icono: Milestone, etiqueta: 'Encaja con tu etapa' });
+    reasons.push({ icon: Milestone, label: 'Encaja con tu etapa' });
   }
 
   if (c.rangePenalty.applied) {
-    motivos.push({
-      icono: TriangleAlert,
-      etiqueta: 'Pesa menos por su nivel',
-      detalle: 'Suele usarse con iniciativas de otro nivel de madurez, por eso pesa menos.',
-      tono: 'moderate',
+    reasons.push({
+      icon: TriangleAlert,
+      label: 'Pesa menos por su nivel',
+      detail: 'Suele usarse con iniciativas de otro nivel de madurez, por eso pesa menos.',
+      tone: 'moderate',
     });
   }
 
-  return motivos;
+  return reasons;
 }
 
-function Paso({
-  numero,
-  titulo,
+function Step({
+  number,
+  title,
   children,
 }: {
-  readonly numero: number;
-  readonly titulo: string;
+  readonly number: number;
+  readonly title: string;
   readonly children: ReactNode;
 }): JSX.Element {
   return (
@@ -419,12 +425,12 @@ function Paso({
         className="bg-azul-icesi text-primary-foreground flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
         aria-hidden="true"
       >
-        {numero}
+        {number}
       </span>
       <div className="flex min-w-0 flex-col gap-2.5">
         <h3 className="text-foreground text-base font-bold">
-          <span className="sr-only">Paso {numero}: </span>
-          {titulo}
+          <span className="sr-only">Paso {number}: </span>
+          {title}
         </h3>
         {children}
       </div>
@@ -433,38 +439,38 @@ function Paso({
 }
 
 /**
- * Nombres legibles de los campos de caracterización que el backend reporta
- * como ausentes. El código es estable; el texto que ve el usuario es de esta
- * pantalla.
+ * Readable names of the characterization fields the backend reports as
+ * missing. The code is stable; the text the user sees belongs to this
+ * screen.
  */
-const CAMPOS_LEGIBLES: Readonly<Record<string, string>> = {
+const READABLE_FIELDS: Readonly<Record<string, string>> = {
   stage: 'la etapa',
   sector: 'el sector',
   teamSize: 'el tamaño del equipo',
   academicLinkage: 'la vinculación académica',
 };
 
-function campoLegible(campo: string): string {
-  return CAMPOS_LEGIBLES[campo] ?? campo;
+function readableField(field: string): string {
+  return READABLE_FIELDS[field] ?? field;
 }
 
-const ACCION_TITULO: Record<AppliedException['action'], (servicio: string) => string> = {
+const ACTION_TITLE: Record<AppliedException['action'], (service: string) => string> = {
   FORCE: (s) => `Se dejó ${s} como primera opción`,
   PROMOTE: (s) => `Se subió ${s} en el orden`,
   DEMOTE: (s) => `Se bajó ${s} en el orden`,
   VETO: (s) => `Se retiró ${s} de las opciones`,
 };
 
-function tituloAjuste(e: AppliedException): string {
-  return ACCION_TITULO[e.action](e.targetService);
+function adjustmentTitle(e: AppliedException): string {
+  return ACTION_TITLE[e.action](e.targetService);
 }
 
-/** Dónde estaba el servicio antes y dónde quedó después del ajuste. */
-function lugarAjuste(e: AppliedException): string {
-  const antes = e.rankingBefore.find((r) => r.name === e.targetService)?.position;
-  const despues = e.rankingAfter.find((r) => r.name === e.targetService)?.position;
-  if (antes === undefined) return '';
-  if (despues === undefined) return `Estaba en el lugar ${String(antes)}.`;
-  if (antes === despues) return `Ya estaba en el lugar ${String(antes)}.`;
-  return `Pasó del lugar ${String(antes)} al lugar ${String(despues)}.`;
+/** Where the service was before the adjustment and where it ended up. */
+function adjustmentPlace(e: AppliedException): string {
+  const before = e.rankingBefore.find((r) => r.name === e.targetService)?.position;
+  const after = e.rankingAfter.find((r) => r.name === e.targetService)?.position;
+  if (before === undefined) return '';
+  if (after === undefined) return `Estaba en el lugar ${String(before)}.`;
+  if (before === after) return `Ya estaba en el lugar ${String(before)}.`;
+  return `Pasó del lugar ${String(before)} al lugar ${String(after)}.`;
 }

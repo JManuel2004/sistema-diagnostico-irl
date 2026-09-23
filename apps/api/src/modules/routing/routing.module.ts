@@ -30,24 +30,23 @@ import { DiagnosisModule } from '../diagnosis/diagnosis.module.js';
 import { InitiativeModule } from '../initiative/initiative.module.js';
 
 /**
- * `RoutingModule` — contexto acotado del enrutamiento al portafolio
- * INNLAB (RF-15). Incluye el catálogo de los seis servicios
- * (`service-catalog`, replegado aquí porque `routing/` es su único consumidor),
- * no es un módulo aparte.
+ * `RoutingModule` — bounded context of the routing to the INNLAB portfolio
+ * (RF-15). It includes the catalog of the six services (`service-catalog`,
+ * folded in here because `routing/` is its only consumer); it is not a
+ * module of its own.
  *
- * Sin versionado: el esquema de versionado de configuración se retiró
- * porque nada en el sistema puede publicar una segunda
- * versión. El motor lee una única configuración vigente sin historial —
+ * Not versioned: the configuration versioning scheme was retired because
+ * nothing in the system can publish a second version. The engine reads a
+ * single live configuration with no history —
  * `ActiveConfigurationRepositoryPort.load()`.
  *
- * Los cuatro servicios de dominio son puros y sin decoradores: Nest los
- * registra como providers de clase porque no reciben nada en el
- * constructor, igual que `IrlCalculatorService`.
+ * The four domain services are pure and undecorated: Nest registers them
+ * as class providers because they take nothing in the constructor, just
+ * like `IrlCalculatorService`.
  *
- * Importa `DiagnosisModule` para leer el perfil por su caso de uso de
- * lectura, `InitiativeModule` para la caracterización, e
- * `IrlTaxonomyModule` para las dimensiones — ninguno de los tres se
- * alcanza por su entidad ORM directamente.
+ * Imports `DiagnosisModule` to read the profile through its read use case,
+ * `InitiativeModule` for the characterization, and `IrlTaxonomyModule` for
+ * the dimensions — none of the three is reached through its ORM entity.
  */
 @Module({
   imports: [

@@ -4,31 +4,30 @@ import { twMerge } from 'tailwind-merge';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * Primitivo `Button` alineado con `DESIGN.md` (Icesi).
+ * `Button` primitive aligned with `DESIGN.md` (Icesi).
  *
- * Variantes (jerarquía visual):
- *  - `default` ("primary"): relleno Azul Icesi, como el «Contáctanos» de
- *    innlab.org (5,5:1 con blanco a cualquier tamaño). La acción que cierra
- *    la tarea principal: una por pantalla.
- *  - `secondary`: superficie blanca con contorno oscuro, en la línea de los
- *    botones negros de innlab.org.
- *  - `outline`: alias semántico de `secondary` para retro-compat
- *    con consumidores existentes.
- *  - `ghost`: transparente hasta el hover. Acciones de baja
- *    emphasis dentro de tarjetas / tablas.
- *  - `link`: hipervínculo accesible (Azul Icesi, subrayado en hover).
- *  - `destructive`: rojo crítico. No usado en fase 1.
+ * Variants (visual hierarchy):
+ *  - `default` ("primary"): Azul Icesi fill, like innlab.org's
+ *    «Contáctanos» (5.5:1 with white at any size). The action that closes
+ *    the main task: one per screen.
+ *  - `secondary`: white surface with a dark outline, in the line of
+ *    innlab.org's black buttons.
+ *  - `outline`: semantic alias of `secondary` for backward compatibility
+ *    with existing consumers.
+ *  - `ghost`: transparent until hover. Low-emphasis actions inside cards /
+ *    tables.
+ *  - `link`: accessible hyperlink (Azul Icesi, underlined on hover).
+ *  - `destructive`: critical red. Not used yet.
  *
- * Tamaños: `default` 44px, `sm` 40px (filtros), `lg` 52px (CTA de
- * pantalla), `icon` 44×44 (acciones en barra). Todos alcanzan el objetivo
- * táctil de 44px salvo `sm`, reservado a escritorio. Esquinas rectas.
+ * Sizes: `default` 44px, `sm` 40px (filters), `lg` 52px (screen CTA),
+ * `icon` 44×44 (bar actions). All reach the 44px touch target except `sm`,
+ * reserved for desktop. Straight corners.
  *
- * Deshabilitado no baja la opacidad: pasa a gris con texto legible.
+ * Disabled does not lower the opacity: it turns grey with readable text.
  *
- * El `type` por defecto es `"button"` para evitar el submit
- * accidental en formularios; el ref se forwardea para que las
- * librerías que necesiten un nodo DOM (Radix triggers, RHF)
- * funcionen sin envolver el botón en un <span>.
+ * The default `type` is `"button"` to avoid accidental submits in forms;
+ * the ref is forwarded so libraries that need a DOM node (Radix triggers,
+ * form libraries) work without wrapping the button in a <span>.
  */
 const buttonBase = cva(
   [
@@ -66,7 +65,7 @@ const buttonBase = cva(
   },
 );
 
-/** Las clases de un botón; sirve también para dar forma de botón a un `<Link>`. */
+/** The classes of a button; also used to give a `<Link>` the shape of a button. */
 export function buttonVariants(props?: VariantProps<typeof buttonBase>): string {
   return twMerge(buttonBase(props));
 }

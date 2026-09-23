@@ -4,7 +4,7 @@ import type { QuestionnaireStructure } from '@innlab/contracts';
 
 // RF-05 — KTH Innovation Readiness Level framework version; anchors the
 // client-side cache key so a framework update can be detected client-side.
-const VERSION_MARCO = 'KTH-IRL-1.0';
+const FRAMEWORK_VERSION = 'KTH-IRL-1.0';
 
 /**
  * `GetQuestionnaireStructureQuery` — read-only query that assembles the
@@ -50,7 +50,7 @@ export class GetQuestionnaireStructureQuery {
     }
 
     return {
-      versionMarco: VERSION_MARCO,
+      frameworkVersion: FRAMEWORK_VERSION,
       dimensions: dimensions.map((dim) => ({
         code: dim.code.value,
         name: dim.name,

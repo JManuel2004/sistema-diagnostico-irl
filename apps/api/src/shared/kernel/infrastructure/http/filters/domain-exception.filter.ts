@@ -68,8 +68,8 @@ export class DomainExceptionFilter implements ExceptionFilter {
   }
 
   private statusFor(error: DomainError): number {
-    const porCodigo = STATUS_BY_CODE[error.code];
-    if (porCodigo !== undefined) return porCodigo;
+    const byCode = STATUS_BY_CODE[error.code];
+    if (byCode !== undefined) return byCode;
 
     if (error instanceof InvariantViolationError)
       return HttpStatus.UNPROCESSABLE_ENTITY;
@@ -83,31 +83,29 @@ export class DomainExceptionFilter implements ExceptionFilter {
 }
 
 /**
- * Mapeo por `code` para los errores que no encajan en la jerarquía base.
+ * Mapping by `code` for the errors that do not fit the base hierarchy.
  *
- * Se prefiere a añadir un `instanceof` por clase porque el filtro tendría
- * que importar una clase concreta de cada módulo de dominio —ya lo hace
- * con `MaturityProfileCalculationError`, y esa dependencia hacia dentro de
- * un módulo es justo lo que no conviene multiplicar. El `code` es el
- * contrato estable que el frontend y las pruebas ya usan; que sea también
- * la clave del estado HTTP mantiene una sola fuente.
- *
- * Catálogo completo en `docs/error-codes.md`.
+ * Preferred over adding one `instanceof` per class because the filter would
+ * have to import a concrete class from each domain module — it already does
+ * with `MaturityProfileCalculationError`, and that inward dependency on a
+ * module is exactly what should not multiply. The `code` is the stable
+ * contract the frontend and the tests already use; making it also the key
+ * of the HTTP status keeps a single source.
  */
 const STATUS_BY_CODE: Readonly<Record<string, number>> = {
-  // Enrutamiento de portafolio: el diagnóstico o la configuración no están
-  // en el estado que la operación requiere. No es culpa de la petición.
+  // Portfolio routing: the diagnostic or the configuration is not in the
+  // state the operation requires. It is not the request's fault.
   ROUTING_NO_ACTIVE_CONFIGURATION: HttpStatus.CONFLICT,
   ROUTING_PROFILE_NOT_COMPUTED: HttpStatus.CONFLICT,
   ROUTING_RECOMMENDATION_NOT_GENERATED: HttpStatus.CONFLICT,
   ROUTING_DRAFT_HAS_BLOCKING_FINDINGS: HttpStatus.CONFLICT,
-  // Configuración malformada: la entrada no satisface el contrato.
+  // Malformed configuration: the input does not satisfy the contract.
   ROUTING_PREDICATE_COMPILATION_FAILED: HttpStatus.UNPROCESSABLE_ENTITY,
   ROUTING_CALIBRATION_NOT_MONOTONIC: HttpStatus.UNPROCESSABLE_ENTITY,
   ROUTING_CONFIGURATION_INVALID: HttpStatus.UNPROCESSABLE_ENTITY,
-  // Roadmap de escalamiento: un grafo con ciclo o unos mínimos
-  // incompletos son defectos de configuración del sistema, no de la
-  // petición. Un 4xx le diría al usuario que se equivocó él.
+  // Scaling roadmap: a graph with a cycle or incomplete minimums are
+  // configuration defects of the system, not of the request. A 4xx would
+  // tell the user the mistake was theirs.
   ROADMAP_NOT_GENERATED: HttpStatus.CONFLICT,
   ROADMAP_CALCULATION_FAILED: HttpStatus.INTERNAL_SERVER_ERROR,
   ROADMAP_GRAPH_HAS_CYCLE: HttpStatus.INTERNAL_SERVER_ERROR,

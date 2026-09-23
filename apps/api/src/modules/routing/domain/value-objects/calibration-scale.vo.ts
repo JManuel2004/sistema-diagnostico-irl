@@ -1,21 +1,20 @@
 import { CalibrationNotMonotonicError } from '../exceptions/routing.errors.js';
 
 /**
- * La escala ordinal: el puente entre el vocabulario que usa el equipo de
- * negocio y los números que multiplica el motor.
+ * The ordinal scale: the bridge between the vocabulary the business team
+ * uses and the numbers the engine multiplies.
  *
- * Existe para que configurar una ficha nunca requiera escribir un número.
- * Quien define el portafolio dice que un servicio es `principal` en
- * Modelo de Negocio; cuánto vale `principal` es una decisión técnica
- * separada, que vive aquí y se versiona aparte.
+ * It exists so that configuring a profile never requires writing a number.
+ * Whoever defines the portfolio says a service is `primary` in Business
+ * Model; how much `primary` is worth is a separate technical decision that
+ * lives here.
  *
- * Invariante de monotonía: las etiquetas ordenadas por `orden` deben
- * tener valores estrictamente decrecientes. Si `secundario` valiera más
- * que `principal`, el vocabulario dejaría de significar lo que dice y
- * toda la configuración construida sobre él quedaría invertida en
- * silencio. Se comprueba al construir porque es una propiedad del
- * conjunto y no de una fila, así que ninguna restricción de base de
- * datos puede expresarla.
+ * Monotonicity invariant: the labels sorted by `order` must have strictly
+ * decreasing values. If `secondary` were worth more than `primary`, the
+ * vocabulary would stop meaning what it says and all the configuration
+ * built on it would be silently inverted. It is checked on construction
+ * because it is a property of the set and not of a row, so no database
+ * constraint can express it.
  */
 export interface ScaleTier {
   readonly label: string;
@@ -24,61 +23,61 @@ export interface ScaleTier {
 }
 
 export class CalibrationScale {
-  private readonly porEtiqueta: ReadonlyMap<string, number>;
+  private readonly byLabel: ReadonlyMap<string, number>;
 
   private constructor(public readonly tiers: readonly ScaleTier[]) {
-    this.porEtiqueta = new Map(tiers.map((p) => [p.label, p.value]));
+    this.byLabel = new Map(tiers.map((p) => [p.label, p.value]));
   }
 
   static create(tiers: readonly ScaleTier[]): CalibrationScale {
     if (tiers.length === 0) {
       throw new CalibrationNotMonotonicError(
-        'La scale de calibración no puede estar vacía',
+        'La escala de calibración no puede estar vacía',
       );
     }
 
-    const ordenados = [...tiers].sort((a, b) => a.order - b.order);
+    const sorted = [...tiers].sort((a, b) => a.order - b.order);
 
-    for (let i = 1; i < ordenados.length; i += 1) {
-      const anterior = ordenados[i - 1];
-      const actual = ordenados[i];
-      if (actual.value >= anterior.value) {
+    for (let i = 1; i < sorted.length; i += 1) {
+      const previous = sorted[i - 1];
+      const current = sorted[i];
+      if (current.value >= previous.value) {
         throw new CalibrationNotMonotonicError(
-          `La scale no es monótona: '${actual.label}' (${actual.value}) no es ` +
-            `estrictamente menor que '${anterior.label}' (${anterior.value})`,
+          `La escala no es monótona: '${current.label}' (${current.value}) no es ` +
+            `estrictamente menor que '${previous.label}' (${previous.value})`,
           {
-            etiquetaAnterior: anterior.label,
-            valorAnterior: anterior.value,
-            etiquetaActual: actual.label,
-            valorActual: actual.value,
+            previousLabel: previous.label,
+            previousValue: previous.value,
+            currentLabel: current.label,
+            currentValue: current.value,
           },
         );
       }
     }
 
-    return new CalibrationScale(ordenados);
+    return new CalibrationScale(sorted);
   }
 
   /**
-   * Valor numérico de una label.
+   * Numeric value of a label.
    *
-   * Una label ausente es un error de configuración, no un cero: si una
-   * ficha referencia un peldaño que la escala vigente no define, el
-   * cálculo silencioso daría 0 y nadie se enteraría de que la ficha quedó
-   * huérfana al republicar la calibración.
+   * A missing label is a configuration error, not a zero: if a profile
+   * references a step the live scale does not define, a silent calculation
+   * would give 0 and nobody would notice the profile had been orphaned by a
+   * change of calibration.
    */
-  valorDe(label: string): number {
-    const value = this.porEtiqueta.get(label);
+  valueFor(label: string): number {
+    const value = this.byLabel.get(label);
     if (value === undefined) {
       throw new CalibrationNotMonotonicError(
-        `La label '${label}' no existe en la scale de calibración active`,
-        { label, disponibles: [...this.porEtiqueta.keys()] },
+        `La etiqueta '${label}' no existe en la escala de calibración vigente`,
+        { label, available: [...this.byLabel.keys()] },
       );
     }
     return value;
   }
 
-  tiene(label: string): boolean {
-    return this.porEtiqueta.has(label);
+  has(label: string): boolean {
+    return this.byLabel.has(label);
   }
 }

@@ -2,28 +2,28 @@ import { z } from 'zod';
 import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
 
 /**
- * Cuello de botella del perfil — la(s) dimensión(es) con el nivel IRL
- * más bajo (RF-08).
+ * Bottleneck of the profile — the dimension(s) with the lowest IRL level
+ * (RF-08).
  *
- * El backlog (HU-12) demanda **manejar empates**: si varias dimensiones
- * comparten el mínimo, todas se reportan. Por eso `dimensions` es un
- * array — el frontend nunca debe asumir tamaño 1.
+ * The backlog (HU-12) requires **handling ties**: if several dimensions
+ * share the minimum, all of them are reported. That is why `dimensions` is
+ * an array — the frontend must never assume size 1.
  *
- * `level` es el nivel compartido por las dimensiones empatadas.
+ * `level` is the level shared by the tied dimensions.
  */
 export const bottleneckSchema = z
   .object({
     dimensions: z
       .array(dimensionCodeSchema)
       .min(1)
-      .describe('Dimensión(es) con el nivel IRL mínimo del perfil'),
+      .describe('Dimension(s) with the lowest IRL level of the profile'),
     level: z
       .number()
       .int()
       .min(1)
       .max(9)
-      .describe('Nivel IRL común a todas las dimensiones del cuello de botella'),
+      .describe('IRL level shared by all the bottleneck dimensions'),
   })
-  .describe('Cuello de botella del perfil de madurez (RF-08)');
+  .describe('Bottleneck of the maturity profile (RF-08)');
 
 export type Bottleneck = z.infer<typeof bottleneckSchema>;

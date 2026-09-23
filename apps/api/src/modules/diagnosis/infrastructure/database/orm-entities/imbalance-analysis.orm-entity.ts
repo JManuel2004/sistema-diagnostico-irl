@@ -6,7 +6,7 @@ export class ImbalanceAnalysisOrm {
   id!: string;
 
   @Column({ name: 'id_diagnostic', type: 'uuid' })
-  idDiagnostico!: string;
+  diagnosticId!: string;
 
   @Column({ name: 'id_pair', type: 'integer' })
   idPair!: number;

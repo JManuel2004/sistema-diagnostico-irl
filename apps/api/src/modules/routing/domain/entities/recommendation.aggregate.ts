@@ -7,16 +7,16 @@ import type {
 import type { ExcludedService } from '../services/eligibility-filter.service.js';
 
 /**
- * `Recommendation` — raíz del agregado del resultado de enrutamiento.
+ * `Recommendation` — root of the routing result aggregate.
  *
- * Una por diagnóstico, garantizado por el `UNIQUE (id_diagnostico)` de la
- * tabla: RF-15 pide exactamente una recomendación, no una lista ordenada.
- * Las alternatives son subordinadas, no recomendaciones paralelas.
+ * One per diagnostic, guaranteed by the table's `UNIQUE (id_diagnostic)`:
+ * RF-15 asks for exactly one recommendation, not a ranked list. The
+ * alternatives are subordinate, not parallel recommendations.
  *
- * `SIN_RECOMENDACION` es un desenlace legítimo, no un fallo. RF-15 exige
- * que el sistema no devuelva una recomendación vacía ni ambigua; no exige
- * que siempre encuentre una. Si todos los candidatos quedaron excluidos o
- * ninguno superó el umbral, eso se dice explícitamente.
+ * `NO_RECOMMENDATION` is a legitimate outcome, not a failure. RF-15 requires
+ * the system never to return an empty or ambiguous recommendation; it does
+ * not require it to always find one. If every candidate was excluded or none
+ * cleared the threshold, that is said explicitly.
  */
 export type ResultType = 'RECOMMENDATION' | 'NO_RECOMMENDATION';
 
@@ -83,8 +83,8 @@ export class Recommendation {
   }
 
   /**
-   * Rehidrata desde persistencia. La traza se conserva completa porque es
-   * lo que hace explicable una recomendación antigua.
+   * Rehydrates from persistence. The trace is kept whole because it is what
+   * makes an old recommendation explainable.
    */
   static fromPersistence(row: {
     diagnosticId: string;
@@ -109,17 +109,17 @@ export class Recommendation {
   }
 
   /**
-   * Verdadero cuando el servicio recomendado NO es el que ganó el
-   * cálculo, sino uno que un ajuste puntual colocó ahí.
+   * True when the recommended service is NOT the one that won the
+   * calculation, but one that a manual adjustment put there.
    *
-   * Es la distinción que separa un sistema auditable de uno que parece
-   * objetivo sin serlo, y por eso se deriva del agregado en vez de
-   * dejarla a criterio de quien pinte la pantalla.
+   * This is the distinction that separates an auditable system from one that
+   * looks objective without being so, which is why the aggregate derives it
+   * instead of leaving it to whoever draws the screen.
    */
   adjustedByException(): boolean {
-    const ganadorCalculo = this.trace.rankingBeforeExceptions[0];
-    const ganadorFinal = this.trace.rankingAfterExceptions[0];
-    if (!ganadorCalculo || !ganadorFinal) return false;
-    return ganadorCalculo.idService !== ganadorFinal.idService;
+    const calculatedWinner = this.trace.rankingBeforeExceptions[0];
+    const finalWinner = this.trace.rankingAfterExceptions[0];
+    if (!calculatedWinner || !finalWinner) return false;
+    return calculatedWinner.idService !== finalWinner.idService;
   }
 }

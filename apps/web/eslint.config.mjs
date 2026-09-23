@@ -7,19 +7,18 @@ import boundaries from 'eslint-plugin-boundaries';
 import globals from 'globals';
 
 /**
- * ESLint flat-config del frontend.
+ * ESLint flat config of the frontend.
  *
- * Tres capas, aplicadas en orden:
+ * Three layers, applied in order:
  *
- *   1. Hereda el config raíz (typescript-eslint type-checked + Prettier).
+ *   1. Inherits the root config (typescript-eslint type-checked + Prettier).
  *   2. Recommended React + JSX a11y + react-hooks + react-refresh.
- *   3. `eslint-plugin-boundaries` aplica la dirección de import en
- *      4 capas: app → pages → feature ←
- *      shared. Cross-feature imports están prohibidos.
+ *   3. `eslint-plugin-boundaries` enforces the import direction across
+ *      4 layers: app → pages → feature ← shared. Cross-feature imports
+ *      are forbidden.
  *
- * Los tests heredan las mismas reglas de fronteras — no se puede
- * "esconder" una violación dentro de un test. Los configs de build
- * se ignoran explícitamente.
+ * Tests inherit the same boundary rules — a violation cannot be "hidden"
+ * inside a test. Build configs are ignored explicitly.
  */
 export default [
   ...rootConfig,
@@ -63,7 +62,7 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
-      // Aislamiento por feature.
+      // Feature isolation.
       'boundaries/element-types': [
         'error',
         {
@@ -83,11 +82,11 @@ export default [
     },
   },
   {
-    // Primitivos shadcn/ui — exportan componentes *y* helpers (CVA
-    // variants, re-exports de namespaces Radix). El patrón es
-    // intencional y replica lo que `shadcn add` genera; Fast Refresh
-    // no puede trazar por la indirección, así que la regla aquí no
-    // tiene acción útil.
+    // shadcn/ui primitives — they export components *and* helpers (CVA
+    // variants, re-exports of Radix namespaces). The pattern is
+    // intentional and mirrors what `shadcn add` generates; Fast Refresh
+    // cannot trace through the indirection, so the rule has no useful
+    // action here.
     files: ['src/shared/ui/**/*.tsx'],
     rules: {
       'react-refresh/only-export-components': 'off',

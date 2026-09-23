@@ -33,39 +33,39 @@ export class DependencyGraph {
   private constructor(
     private readonly edges: readonly DependencyEdgeSnapshot[],
     private readonly minimums: ReadonlyMap<DimensionCode, number>,
-    private readonly entrantes: ReadonlyMap<DimensionCode, readonly DependencyEdgeSnapshot[]>,
-    private readonly salientes: ReadonlyMap<DimensionCode, readonly DependencyEdgeSnapshot[]>,
+    private readonly incoming: ReadonlyMap<DimensionCode, readonly DependencyEdgeSnapshot[]>,
+    private readonly outgoing: ReadonlyMap<DimensionCode, readonly DependencyEdgeSnapshot[]>,
   ) {}
 
   static create(
     edges: readonly DependencyEdgeSnapshot[],
     minimums: readonly DimensionMinimumSnapshot[],
   ): DependencyGraph {
-    const porDimension = new Map<DimensionCode, number>();
+    const byDimension = new Map<DimensionCode, number>();
     for (const m of minimums) {
-      if (porDimension.has(m.dimension)) {
+      if (byDimension.has(m.dimension)) {
         throw new RoadmapCalculationError(
           `Nivel mínimo esperado duplicado para la dimensión '${m.dimension}'`,
           { dimension: m.dimension },
         );
       }
-      DependencyGraph.assertNivelEnRango(
+      DependencyGraph.assertLevelInRange(
         m.minimumExpectedLevel,
         `nivel mínimo esperado de '${m.dimension}'`,
       );
-      porDimension.set(m.dimension, m.minimumExpectedLevel);
+      byDimension.set(m.dimension, m.minimumExpectedLevel);
     }
 
-    const faltantes = DIMENSION_CODES.filter((c) => !porDimension.has(c));
-    if (faltantes.length > 0) {
+    const missing = DIMENSION_CODES.filter((c) => !byDimension.has(c));
+    if (missing.length > 0) {
       throw new RoadmapCalculationError(
-        `Faltan levels mínimos esperados para: ${faltantes.join(', ')}. ` +
-          `El roadmap necesita un mínimo declarado por cada una de las seis dimensions.`,
-        { faltantes },
+        `Faltan levels mínimos esperados para: ${missing.join(', ')}. ` +
+          `El roadmap necesita un mínimo declarado por cada una de las seis dimensiones.`,
+        { missing },
       );
     }
 
-    const vistas = new Set<string>();
+    const seen = new Set<string>();
     for (const e of edges) {
       if (e.source === e.target) {
         throw new RoadmapCalculationError(
@@ -73,48 +73,48 @@ export class DependencyGraph {
           { dimension: e.source },
         );
       }
-      const clave = `${e.source}->${e.target}`;
-      if (vistas.has(clave)) {
-        throw new RoadmapCalculationError(`Arista duplicada: ${clave}`, {
-          edge: clave,
+      const key = `${e.source}->${e.target}`;
+      if (seen.has(key)) {
+        throw new RoadmapCalculationError(`Arista duplicada: ${key}`, {
+          edge: key,
         });
       }
-      vistas.add(clave);
-      DependencyGraph.assertNivelEnRango(
+      seen.add(key);
+      DependencyGraph.assertLevelInRange(
         e.minimumRequiredLevel,
-        `nivel requerido de la edge ${clave}`,
+        `nivel requerido de la arista ${key}`,
       );
     }
 
-    const entrantes = new Map<DimensionCode, DependencyEdgeSnapshot[]>();
-    const salientes = new Map<DimensionCode, DependencyEdgeSnapshot[]>();
+    const incoming = new Map<DimensionCode, DependencyEdgeSnapshot[]>();
+    const outgoing = new Map<DimensionCode, DependencyEdgeSnapshot[]>();
     for (const c of DIMENSION_CODES) {
-      entrantes.set(c, []);
-      salientes.set(c, []);
+      incoming.set(c, []);
+      outgoing.set(c, []);
     }
     for (const e of edges) {
-      entrantes.get(e.target)?.push(e);
-      salientes.get(e.source)?.push(e);
+      incoming.get(e.target)?.push(e);
+      outgoing.get(e.source)?.push(e);
     }
 
-    DependencyGraph.assertAciclico(edges);
+    DependencyGraph.assertAcyclic(edges);
 
     return new DependencyGraph(
       [...edges],
-      porDimension,
-      entrantes,
-      salientes,
+      byDimension,
+      incoming,
+      outgoing,
     );
   }
 
-  /** Aristas que llegan a `d`: quiénes la habilitan. */
+  /** Edges that reach `d`: the dimensions that enable it. */
   incomingEdges(d: DimensionCode): readonly DependencyEdgeSnapshot[] {
-    return this.entrantes.get(d) ?? [];
+    return this.incoming.get(d) ?? [];
   }
 
-  /** Aristas que salen de `d`: a quiénes habilita. */
+  /** Edges that leave `d`: the dimensions it enables. */
   outgoingEdges(d: DimensionCode): readonly DependencyEdgeSnapshot[] {
-    return this.salientes.get(d) ?? [];
+    return this.outgoing.get(d) ?? [];
   }
 
   expectedMinimum(d: DimensionCode): number {
@@ -138,11 +138,11 @@ export class DependencyGraph {
 
   // ───────────────────────────────────────────────────────────────────────
 
-  private static assertNivelEnRango(nivel: number, que: string): void {
-    if (!isValidIrlLevel(nivel)) {
+  private static assertLevelInRange(level: number, what: string): void {
+    if (!isValidIrlLevel(level)) {
       throw new RoadmapCalculationError(
-        `El ${que} debe ser un entero en [${String(IRL_MIN_LEVEL)}, ${String(IRL_MAX_LEVEL)}]; se recibió ${String(nivel)}`,
-        { recibido: nivel },
+        `El ${what} debe ser un entero en [${String(IRL_MIN_LEVEL)}, ${String(IRL_MAX_LEVEL)}]; se recibió ${String(level)}`,
+        { received: level },
       );
     }
   }
@@ -152,7 +152,7 @@ export class DependencyGraph {
    * service. It throws `DependencyGraphCycleError` if any node is left over
    * once the free ones are exhausted; the layers it returns are not needed.
    */
-  private static assertAciclico(
+  private static assertAcyclic(
     edges: readonly DependencyEdgeSnapshot[],
   ): void {
     kahnLayers(new Set<DimensionCode>(DIMENSION_CODES), edges);

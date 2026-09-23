@@ -9,27 +9,29 @@ import { DIMENSION_ORDER, getDimensionVisual } from '@/shared/lib/dimensions';
 import { hasStoredSession } from '@/shared/auth/session';
 
 /**
- * Landing institucional.
+ * Institutional landing.
  *
- * Es pública y no lleva navegación: se ve sin sesión, y su único botón,
- * «Iniciar diagnóstico», lleva a `/diagnosticos/nuevo`. Esa ruta es protegida:
- * con sesión sigue directo al asistente y sin ella pasa por el inicio de sesión
- * de INNLAB y continúa al volver, sin que el usuario pulse otra vez.
+ * It is public and carries no navigation: it is seen without a session, and
+ * its only button, «Iniciar diagnóstico», leads to `/diagnosticos/nuevo`.
+ * That route is protected: with a session it goes straight to the wizard,
+ * and without one it goes through the INNLAB sign-in and continues on
+ * return, without the user pressing again.
  *
- * Composición:
- *  - Hero alineado a la izquierda (regla de alineación del manual), con el
- *    titular en bloques de color y la frase clave resaltada en amarillo, como
- *    innlab.org: el contexto institucional, el h1, el párrafo, el CTA y los datos
- *    del cuestionario (48 afirmaciones, 6 dimensiones, 45–60 minutos). A su
- *    lado, lo que se recibe al terminar, con un radar esquemático sin valores.
- *  - «Cómo funciona»: los tres pasos como lista numerada sobre superficie
- *    suave, no como tarjetas.
- *  - Mosaico de las 6 dimensiones: cabecera en el color de cada una y cuerpo
- *    blanco. Es el único momento de color saturado de la pantalla. Los
- *    colores y el orden canónico se resuelven con `getDimensionVisual` /
- *    `DIMENSION_ORDER` (shared/lib/dimensions). Lo único que vive en esta
- *    página es el copy editorial (nombre + descripción corta); el nombre
- *    oficial completo viene del catálogo en las páginas que lo consumen.
+ * Composition:
+ *  - A left-aligned hero (the manual's alignment rule), with the headline
+ *    in color blocks and the key phrase highlighted in yellow, like
+ *    innlab.org: the institutional context, the h1, the paragraph, the CTA
+ *    and the questionnaire facts (48 statements, 6 dimensions, 45–60
+ *    minutes). Next to it, what is received at the end, with a schematic
+ *    radar without values.
+ *  - «Cómo funciona»: the three steps as a numbered list on a soft
+ *    surface, not as cards.
+ *  - A mosaic of the 6 dimensions: a header in each one's color and a
+ *    white body. It is the only saturated color moment of the screen. Colors
+ *    and canonical order are resolved with `getDimensionVisual` /
+ *    `DIMENSION_ORDER` (shared/lib/dimensions). The only thing living in
+ *    this page is the editorial copy (name + short description); the full
+ *    official name comes from the catalog in the pages that consume it.
  */
 
 interface LandingDimensionCopy {
@@ -39,10 +41,10 @@ interface LandingDimensionCopy {
 }
 
 /**
- * Copy editorial específico de la landing. Es marketing copy, no
- * metadata del marco — por eso vive aquí y no en `shared/lib`. Los
- * nombres oficiales completos (`Madurez Tecnológica`, etc.) se
- * sirven desde la API en las páginas que consumen el catálogo.
+ * Editorial copy specific to the landing. It is marketing copy, not
+ * framework metadata — which is why it lives here and not in `shared/lib`.
+ * The full official names (`Madurez Tecnológica`, etc.) are served by the
+ * API on the pages that consume the catalog.
  */
 const LANDING_COPY: Record<DimensionCode, Omit<LandingDimensionCopy, 'code'>> = {
   TRL: {
@@ -88,7 +90,7 @@ export default function LandingPage(): JSX.Element {
           <p className="bg-dimension-frl text-foreground flex items-center self-start px-3 py-1.5 text-sm font-semibold">
             Centro de Innovación · Universidad Icesi
           </p>
-          {/* Titular en bloques de color, como el «INNOVACIÓN / Para el mañana» de innlab.org. */}
+          {/* Headline in color blocks, like innlab.org's «INNOVACIÓN / Para el mañana». */}
           <h1 id="hero-title" className="flex flex-col items-start gap-1.5 leading-none">
             <span className="bg-azul-icesi text-primary-foreground px-3.5 py-2 text-[2.375rem] font-extrabold uppercase tracking-[-0.02em] sm:px-5 sm:py-2.5 sm:text-5xl lg:text-[4rem]">
               Diagnóstico IRL
@@ -231,9 +233,9 @@ export default function LandingPage(): JSX.Element {
             const copy = LANDING_COPY[code];
             return (
               <li key={code} className="border-border flex flex-col border">
-                {/* El único momento de color de la pantalla, como el mosaico de innlab.org. */}
+                {/* The only color moment of the screen, like innlab.org's mosaic. */}
                 <div className={`${visual.bg} px-5 py-4 sm:px-8 sm:py-5`}>
-                  {/* El color va en el h3: la capa base de globals.css fija el de h1–h4. */}
+                  {/* The color goes on the h3: the base layer of globals.css sets the one of h1–h4. */}
                   <h3 className={`${TILE_TEXT[code]} text-xl font-bold`}>{copy.name}</h3>
                 </div>
                 <div className="flex flex-col gap-2 p-5 sm:p-8 sm:pt-5">
@@ -254,9 +256,9 @@ export default function LandingPage(): JSX.Element {
 }
 
 /**
- * Texto de la cabecera de color de cada dimensión: blanco sobre los tonos
- * oscuros, tinta sobre el verde y el amarillo. En 20px bold es texto grande,
- * así que el blanco sobre el naranja de TmRL (3,7:1) cumple WCAG AA.
+ * Text of each dimension's colored header: white over the dark tones, ink
+ * over the green and the yellow. At 20px bold it is large text, so white
+ * over TmRL's orange (3.7:1) meets WCAG AA.
  */
 const TILE_TEXT: Record<DimensionCode, string> = {
   TRL: 'text-primary-foreground',
@@ -289,8 +291,9 @@ const STEPS: readonly { title: string; body: string; circle: string; line: strin
 ];
 
 /**
- * Radar del perfil sin valores: los seis ejes con su color y su código. Anticipa
- * la forma del resultado sin mostrar datos que el usuario aún no tiene.
+ * Profile radar without values: the six axes with their color and code. It
+ * anticipates the shape of the result without showing data the user does
+ * not have yet.
  */
 const RADAR_AXES: readonly {
   code: DimensionCode;

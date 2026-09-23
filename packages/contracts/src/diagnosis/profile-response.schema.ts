@@ -8,67 +8,60 @@ import { asymmetrySchema } from './asymmetry.schema.js';
 import { imbalancePairResultSchema } from './imbalance.schema.js';
 
 /**
- * Respuesta del perfil de madurez inicial (RF-07 / HU-11–HU-15).
+ * Response of the initial maturity profile (RF-07 / HU-11–HU-15).
  *
- * Endpoint: `GET /api/v1/diagnosticos/:id/perfil`.
+ * Endpoint: `GET /api/v1/diagnostics/:id/profile`.
  *
- * Forma:
- *   - 6 resultados dimensionales (siempre 6, en orden de la dimensión).
- *   - 1 cuello de botella (con manejo de empates) — opcional.
- *   - brechas dimensionales (IRL ≤ umbral; el array puede ir vacío).
- *   - 6 resultados de desequilibrio (siempre los pares fijos del marco) — opcional.
- *   - `computedAt` permite mostrar la fecha del cálculo en el reporte.
+ * Shape:
+ *   - 6 dimension results (always 6, in dimension order).
+ *   - the bottleneck (with tie handling) and the strength.
+ *   - the gaps (IRL ≤ threshold; the array may be empty).
+ *   - the 6 imbalance results (always the fixed pairs of the framework) —
+ *     optional.
+ *   - `globalAverage` (RF-09) and `criticalState` (RF-13), computed by the
+ *     backend.
+ *   - `computedAt`, to show the date of the calculation.
  *
- * Construcción incremental por HU:
- *   - DIAGIRL-34 ("Obtener niveles IRL por dimensión") produce
- *     `dimensionResults` + `computedAt`. `bottleneck` e `imbalances`
- *     llegan `undefined` hasta que las HUs posteriores los compongan.
- *   - DIAGIRL-35 ("Identificar el cuello de botella del perfil") puebla
- *     `bottleneck`.
- *   - DIAGIRL-38 ("Ver alertas visuales de desequilibrio en el perfil
- *     inicial") puebla `imbalances`.
+ * `imbalances` is `.optional()`: the response is valid when the pairs are
+ * missing from the catalog, and the frontend renders them conditionally.
  *
- * Por eso `bottleneck` e `imbalances` son `.optional()` aquí: el response
- * es válido aún cuando esas dos piezas no han sido calculadas todavía.
- * El frontend renderiza condicionalmente cuando llegan.
- *
- * Cache lado-cliente (STATE_MANAGEMENT.md): `staleTime: 5 minutes` —
- * el perfil es un snapshot inmutable después de calculado.
+ * Client-side cache (STATE_MANAGEMENT.md): `staleTime: 5 minutes` — the
+ * profile is an immutable snapshot once computed.
  */
 export const maturityProfileResponseSchema = z
   .object({
     diagnosticId: uuidSchema,
-    computedAt: z.string().datetime().describe('Timestamp ISO-8601 del cálculo del perfil'),
+    computedAt: z.string().datetime().describe('ISO-8601 timestamp of the profile calculation'),
     dimensionResults: z
       .array(dimensionResultSchema)
       .length(6)
-      .describe('Resultado por dimensión — exactamente 6 entradas'),
+      .describe('Result per dimension — exactly 6 entries'),
     globalAverage: z
       .number()
       .min(1)
       .max(9)
       .describe(
-        'Promedio IRL global (RF-09): promedio simple de los seis niveles, a un decimal — calculado en el backend; no recalcular en el cliente',
+        'Global IRL average (RF-09): simple average of the six levels, to one decimal — computed by the backend; do not recompute in the client',
       ),
-    bottleneck: bottleneckSchema.describe('Cuello de botella — RF-08 / DIAGIRL-35'),
+    bottleneck: bottleneckSchema.describe('Bottleneck — RF-08'),
     strength: bottleneckSchema.describe(
-      'Dimensión(es) con el IRL más alto — calculado en el backend a partir de los niveles persistidos',
+      'Dimension(s) with the highest IRL — computed by the backend from the persisted levels',
     ),
     asymmetry: asymmetrySchema.describe(
-      'Diferencia máx−mín de IRL — calculada en el backend; no recalcular en el cliente',
+      'Max−min IRL difference — computed by the backend; do not recompute in the client',
     ),
     gaps: gapsSchema.describe(
-      'Dimensiones en brecha (IRL ≤ umbral) — evaluado en el backend; no recalcular en el cliente',
+      'Dimensions in gap (IRL ≤ threshold) — evaluated by the backend; do not recompute in the client',
     ),
     criticalState: criticalStateSchema.describe(
-      'Dimensiones en estado crítico (RF-13) — evaluado en el backend; no recalcular en el cliente',
+      'Dimensions in critical state (RF-13) — evaluated by the backend; do not recompute in the client',
     ),
     imbalances: z
       .array(imbalancePairResultSchema)
       .length(6)
       .optional()
-      .describe('Análisis de los 6 pares — pobla en DIAGIRL-38; ausente hasta entonces'),
+      .describe('Analysis of the 6 pairs — absent when the pairs are missing from the catalog'),
   })
-  .describe('Perfil de madurez IRL inicial (response)');
+  .describe('Initial IRL maturity profile (response)');
 
 export type MaturityProfileResponse = z.infer<typeof maturityProfileResponseSchema>;

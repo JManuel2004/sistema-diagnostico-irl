@@ -17,9 +17,9 @@ describe('RoadmapPhaseList', () => {
   });
 
   it('presenta las dimensiones de una fase como paralelas, no como jerarquía', () => {
-    // El orden dentro de una fase es canónico para que la respuesta sea
-    // determinista; no es prioridad. Renderizarlo numerado comunicaría
-    // una precedencia que el motor no calculó.
+    // The order within a phase is canonical so the response is
+    // deterministic; it is not a priority. Rendering it numbered would convey
+    // a precedence the engine did not calculate.
     render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
 
     expect(
@@ -35,10 +35,10 @@ describe('RoadmapPhaseList', () => {
   it('muestra de qué nivel a qué nivel va cada dimensión, en palabras y en una barra', () => {
     render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
 
-    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('article')!;
-    expect(negocio).toHaveTextContent('De nivel 3 a nivel 4');
+    const business = screen.getByRole('heading', { name: 'Negocio' }).closest('article')!;
+    expect(business).toHaveTextContent('De nivel 3 a nivel 4');
     expect(
-      within(negocio).getByRole('img', { name: 'Nivel 3 de 9, con meta en el nivel 4' }),
+      within(business).getByRole('img', { name: 'Nivel 3 de 9, con meta en el nivel 4' }),
     ).toBeInTheDocument();
   });
 
@@ -54,10 +54,10 @@ describe('RoadmapPhaseList', () => {
   it('omite la nota de desbloqueo cuando la dimensión no habilita a nadie', () => {
     render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
 
-    const financiacion = screen
+    const financing = screen
       .getByRole('heading', { name: 'Financiación' })
       .closest('article')!;
-    expect(within(financiacion).queryByText(/podrá avanzar|podrán avanzar/)).toBeNull();
+    expect(within(financing).queryByText(/podrá avanzar|podrán avanzar/)).toBeNull();
   });
 
   // Each card says why the dimension is in the plan and what
@@ -65,9 +65,9 @@ describe('RoadmapPhaseList', () => {
   it('dice por qué una dimensión está en el plan: por debajo de su mínimo', () => {
     render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
 
-    const negocio = screen.getByRole('heading', { name: 'Negocio' }).closest('article')!;
-    expect(negocio).toHaveTextContent('debería llegar al menos al nivel 4');
-    expect(negocio).toHaveTextContent('La meta es el nivel que se espera de ella: 4');
+    const business = screen.getByRole('heading', { name: 'Negocio' }).closest('article')!;
+    expect(business).toHaveTextContent('debería llegar al menos al nivel 4');
+    expect(business).toHaveTextContent('La meta es el nivel que se espera de ella: 4');
   });
 
   it('dice cuando una dimensión entra porque otra la necesita, y quién fija su meta', () => {
@@ -91,15 +91,15 @@ describe('RoadmapPhaseList', () => {
     };
     render(<RoadmapPhaseList roadmap={roadmap} />);
 
-    const equipo = screen.getByRole('heading', { name: 'Equipo' }).closest('article')!;
-    expect(equipo).toHaveTextContent(
+    const team = screen.getByRole('heading', { name: 'Equipo' }).closest('article')!;
+    expect(team).toHaveTextContent(
       'Ya cumple lo que se espera, pero Negocio y Financiación necesitan que suba para poder avanzar.',
     );
-    expect(equipo).toHaveTextContent('Negocio necesita que llegue al nivel 6, por eso esa es su meta.');
+    expect(team).toHaveTextContent('Negocio necesita que llegue al nivel 6, por eso esa es su meta.');
   });
 
   it('nombra las dimensiones que quedaron fuera del plan', () => {
-    // Sin esto, la ausencia de una dimensión se leería como un olvido.
+    // Without this, a dimension's absence would read as an oversight.
     render(<RoadmapPhaseList roadmap={AGROCONECTA} />);
 
     expect(screen.getByText(/Tecnología, Cliente, Equipo/)).toBeInTheDocument();
@@ -114,7 +114,7 @@ describe('RoadmapPhaseList', () => {
   });
 
   it('un roadmap vacío se presenta como resultado, no como error', () => {
-    // Cumplir el mínimo en las seis dimensiones es un desenlace sano.
+    // Meeting the minimum in all six dimensions is a healthy outcome.
     render(
       <RoadmapPhaseList
         roadmap={{

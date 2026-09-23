@@ -12,16 +12,16 @@ import {
 import { likertText } from '../lib/likert-options';
 
 /**
- * Resumen de las respuestas antes de procesar el diagnóstico.
+ * Summary of the answers before processing the diagnostic.
  *
- * Una tabla por dimensión con **Afirmación / Puntaje seleccionado /
- * Justificación**. Las seis dimensiones se recorren por pestañas, como en el
- * cuestionario, y no se apilan las seis tablas. Es de solo lectura: se corrige
- * volviendo al cuestionario.
+ * One table per dimension with **Afirmación / Puntaje seleccionado /
+ * Justificación**. The six dimensions are browsed through tabs, as in the
+ * questionnaire, instead of stacking six tables. It is read-only: answers
+ * are corrected by going back to the questionnaire.
  *
- * Cada dimensión lleva su color —en la pestaña, en la cabecera de la tabla y en
- * la barra del puntaje— para que se reconozca la misma dimensión que se vio en
- * el cuestionario.
+ * Each dimension carries its color — on the tab, the table header and the
+ * score bar — so it is recognized as the same dimension seen in the
+ * questionnaire.
  */
 interface Props {
   readonly dimensions: QuestionnaireStructure['dimensions'];

@@ -6,17 +6,17 @@ import { Card, CardContent } from '@/shared/ui/card';
 
 interface Props {
   readonly recommendation: RecommendationResponse;
-  /** Nombre de la iniciativa, para dirigirse a ella. */
+  /** Name of the initiative, to address it. */
   readonly subject?: string;
 }
 
 /**
- * Resultado para el líder de iniciativa.
+ * Result for the initiative leader.
  *
- * Deliberadamente sin números: ni puntajes ni pesos. El score es un
- * detalle interno de la calibración y mostrarlo invita a discutir el
- * número en vez de la recomendación. Quien quiera el desglose lo tiene en
- * la explicación de cómo se llegó a ella.
+ * Deliberately without numbers: neither scores nor weights. The score is an
+ * internal detail of the calibration and showing it invites discussing the
+ * number instead of the recommendation. Whoever wants the breakdown has it
+ * in the explanation of how it was reached.
  */
 export function RecommendationSummary({
   recommendation,

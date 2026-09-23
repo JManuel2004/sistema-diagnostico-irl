@@ -5,13 +5,13 @@ import { DimensionTabs } from './DimensionTabs';
 import { QuestionnaireSkeleton } from './QuestionnaireSkeleton';
 
 /**
- * Vista raíz del cuestionario IRL (HU-07).
+ * Root view of the IRL questionnaire (HU-07).
  *
- * Estados:
- *  - Cargando: esqueleto con shimmer.
- *  - Error: `Alert` crítica con su icono y CTA "Reintentar". Color nunca
- *    es la única señal — el icono y el texto van siempre juntos.
- *  - Éxito: tabs de las 6 dimensiones con sus 48 afirmaciones.
+ * States:
+ *  - Loading: skeleton with shimmer.
+ *  - Error: a critical `Alert` with its icon and a "Reintentar" CTA. Color
+ *    is never the only signal — icon and text always go together.
+ *  - Success: tabs of the 6 dimensions with their 48 statements.
  */
 
 export function QuestionnaireView() {

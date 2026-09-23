@@ -32,20 +32,19 @@ import { GetMaturityProfileUseCase } from '../../../diagnosis/application/use-ca
 import { irlLevelsByDimension } from '../../../../shared/irl-taxonomy/domain/services/irl-levels-by-dimension.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
-import { toRecomendacionResponse } from '../dtos/map-recommendation-response.js';
+import { toRecommendationResponse } from '../dtos/map-recommendation-response.js';
 
 export interface GenerateRecommendationCommand {
   diagnosticId: string;
 }
 
 /**
- * Orquesta las tres capas del motor y persiste el resultado.
+ * Orchestrates the three layers of the engine and persists the result.
  *
- * El caso de uso resuelve la IO —perfil, caracterización, configuración
- * vigente— y luego encadena cuatro servicios de dominio puros. Ninguno de
- * ellos toca la base de datos, que es lo que permite que el simulador del
- * ciclo de configuración ejecute exactamente el mismo motor que
- * producción sin montar media aplicación.
+ * The use case resolves the IO — profile, characterization, live
+ * configuration — and then chains four pure domain services. None of them
+ * touches the database, so the engine can be exercised whole without
+ * booting the application.
  */
 @Injectable()
 export class GenerateRecommendationUseCase {
@@ -55,9 +54,9 @@ export class GenerateRecommendationUseCase {
     @Inject(RECOMMENDATION_REPOSITORY)
     private readonly recommendations: RecommendationRepositoryPort,
     @Inject(INITIATIVE_CHARACTERIZATION_READER)
-    private readonly caracterizaciones: InitiativeCharacterizationPort,
-    private readonly perfiles: GetMaturityProfileUseCase,
-    private readonly traductor: OrdinalTranslatorService,
+    private readonly characterizations: InitiativeCharacterizationPort,
+    private readonly maturityProfiles: GetMaturityProfileUseCase,
+    private readonly translator: OrdinalTranslatorService,
     private readonly eligibility: EligibilityFilterService,
     private readonly scorer: AffinityScorerService,
     private readonly exceptions: ExceptionEngineService,
@@ -78,48 +77,48 @@ export class GenerateRecommendationUseCase {
       );
     }
 
-    const hechos = await this.construirHechos(diagnosticId.value);
-    if (!hechos.ok) {
-      return Result.err(hechos.error);
+    const builtFacts = await this.buildFacts(diagnosticId.value);
+    if (!builtFacts.ok) {
+      return Result.err(builtFacts.error);
     }
-    const { facts, nombres } = hechos.value;
+    const { facts, dimensionNames } = builtFacts.value;
 
-    // ── Capa 0: traducir el vocabulario ordinal a números ──────────────
-    const fichasNumericas = this.traductor.translate(config.profiles, config.scale);
+    // ── Layer 0: translate the ordinal vocabulary into numbers ─────────
+    const numericProfiles = this.translator.translate(config.profiles, config.scale);
 
-    // ── Capa 1: filtro duro ────────────────────────────────────────────
+    // ── Layer 1: hard filter ────────────────────────────────────────────
     const { eligible, excluded } = this.eligibility.filter(
-      fichasNumericas,
+      numericProfiles,
       config.eligibilityRules,
       facts,
     );
 
-    // ── Capa 2: cálculo de afinidad ────────────────────────────────────
-    const puntuados = this.scorer.score(eligible, facts, config.parameters);
-    const rankingPre = [...puntuados].sort(ordenarCandidatos);
+    // ── Layer 2: affinity calculation ────────────────────────────────────
+    const scored = this.scorer.score(eligible, facts, config.parameters);
+    const initialRanking = [...scored].sort(compareCandidates);
 
-    // ── Capa 3: ajustes puntuales ──────────────────────────────────────
-    const { rankingPost, applied, discarded } = this.exceptions.apply(
-      rankingPre,
+    // ── Layer 3: manual adjustments ──────────────────────────────────────
+    const { finalRanking, applied, discarded } = this.exceptions.apply(
+      initialRanking,
       config.exceptionRules,
       facts,
     );
 
     const recommendation = Recommendation.create({
       diagnosticId,
-      finalRanking: rankingPost,
+      finalRanking: finalRanking,
       minimumThreshold: config.parameters.minimumThreshold,
       alternativesCount: config.parameters.alternativesCount,
-      justification: construirJustificacion(rankingPost, applied, nombres),
+      justification: buildJustification(finalRanking, applied, dimensionNames),
       noRecommendationReason: null,
       trace: {
         layer1Excluded: excluded,
-        rankingBeforeExceptions: rankingPre,
+        rankingBeforeExceptions: initialRanking,
         appliedExceptions: applied,
         discardedExceptions: discarded,
-        rankingAfterExceptions: rankingPost,
-        incompleteCharacterization: camposAusentes(facts),
-        factsHash: hashDe(facts),
+        rankingAfterExceptions: finalRanking,
+        incompleteCharacterization: missingCharacterizationFields(facts),
+        factsHash: hashOf(facts),
       },
       generatedAt: new Date(),
     });
@@ -134,52 +133,52 @@ export class GenerateRecommendationUseCase {
       }),
     );
 
-    return Result.ok(toRecomendacionResponse(recommendation));
+    return Result.ok(toRecommendationResponse(recommendation));
   }
 
   /**
-   * Arma los hechos del diagnóstico.
+   * Builds the facts of the diagnostic.
    *
-   * Los niveles, el cuello de botella y las brechas se toman del perfil
-   * calculado, no de las columnas persistidas de `dimension_result`; el
-   * porqué está en `irlLevelsByDimension`.
+   * The levels, the bottleneck and the gaps are taken from the computed
+   * profile, not from the persisted `dimension_result` columns; the reason
+   * is in `irlLevelsByDimension`.
    */
-  private async construirHechos(
+  private async buildFacts(
     diagnosticId: string,
   ): Promise<
     Result<
-      { facts: DiagnosticFacts; nombres: ReadonlyMap<string, string> },
+      { facts: DiagnosticFacts; dimensionNames: ReadonlyMap<string, string> },
       ProfileNotComputedError
     >
   > {
-    const resultado = await this.perfiles.execute({ diagnosticId });
-    if (!resultado.ok) {
+    const result = await this.maturityProfiles.execute({ diagnosticId });
+    if (!result.ok) {
       return Result.err(new ProfileNotComputedError(diagnosticId));
     }
-    const perfil = resultado.value;
+    const profile = result.value;
 
     const characterization =
-      await this.caracterizaciones.findByDiagnosticId(diagnosticId);
+      await this.characterizations.findByDiagnosticId(diagnosticId);
 
     const levelByDimension = Object.fromEntries(
-      irlLevelsByDimension(perfil.dimensionResults),
+      irlLevelsByDimension(profile.dimensionResults),
     ) as Record<DimensionCode, number>;
 
-    const niveles = perfil.dimensionResults.map((r) => r.irlLevel);
-    const averageLevel = niveles.reduce((a, b) => a + b, 0) / niveles.length;
+    const levels = profile.dimensionResults.map((r) => r.irlLevel);
+    const averageLevel = levels.reduce((a, b) => a + b, 0) / levels.length;
 
     // Names for the justification, which the initiative leader reads: it must
     // say «Negocio», not `BRL`.
-    const nombres = new Map(perfil.dimensionResults.map((r) => [r.dimensionCode, r.shortName]));
+    const dimensionNames = new Map(profile.dimensionResults.map((r) => [r.dimensionCode, r.shortName]));
 
     const facts: DiagnosticFacts = {
       diagnosticId,
       levelByDimension,
-      bottlenecks: perfil.bottleneck.dimensions,
-      gaps: perfil.gaps.dimensions,
-      // El contrato HTTP expone las clasificaciones en inglés minúsculas;
-      // el dominio del motor trabaja con las del marco, en español.
-      imbalances: (perfil.imbalances ?? []).map((i) => ({
+      bottlenecks: profile.bottleneck.dimensions,
+      gaps: profile.gaps.dimensions,
+      // The HTTP contract exposes the classifications in lowercase;
+      // the engine's domain works with the framework's uppercase codes.
+      imbalances: (profile.imbalances ?? []).map((i) => ({
         left: i.left,
         right: i.right,
         difference: i.difference,
@@ -193,21 +192,20 @@ export class GenerateRecommendationUseCase {
       averageLevel,
       characterization,
     };
-    return Result.ok({ facts, nombres });
+    return Result.ok({ facts, dimensionNames });
   }
 }
 
 /**
- * Orden del ranking: score descendente y, ante empate exacto, por
- * `idService` ascendente.
+ * Ranking order: score descending and, on an exact tie, `idService`
+ * ascending.
  *
- * El desempate por id no es "justo" en ningún sentido de negocio, pero es
- * determinista y reproducible, que es lo que exige la traza. Un empate en
- * el primer puesto es además una señal de que la calibración no
- * discrimina, y el validador inter-capas del ciclo de configuración es el
- * lugar donde eso debe hacerse visible.
+ * Breaking the tie by id is not "fair" in any business sense, but it is
+ * deterministic and reproducible, which is what the trace requires. A tie
+ * for first place is also a sign that the calibration does not
+ * discriminate.
  */
-function ordenarCandidatos(
+function compareCandidates(
   a: { total: number; idService: number },
   b: { total: number; idService: number },
 ): number {
@@ -215,58 +213,57 @@ function ordenarCandidatos(
   return a.idService - b.idService;
 }
 
-function camposAusentes(facts: DiagnosticFacts): string[] {
+function missingCharacterizationFields(facts: DiagnosticFacts): string[] {
   const c = facts.characterization;
-  const ausentes: string[] = [];
-  if (c.stage === null) ausentes.push('stage');
-  if (c.sector === null) ausentes.push('sector');
-  if (c.teamSize === null) ausentes.push('teamSize');
-  if (c.academicLinkage === null) ausentes.push('academicLinkage');
-  return ausentes;
+  const missing: string[] = [];
+  if (c.stage === null) missing.push('stage');
+  if (c.sector === null) missing.push('sector');
+  if (c.teamSize === null) missing.push('teamSize');
+  if (c.academicLinkage === null) missing.push('academicLinkage');
+  return missing;
 }
 
 /**
- * Huella de los hechos de entrada. Permite comprobar, al reproducir una
- * recomendación antigua, que se está evaluando el mismo perfil y no uno
- * que cambió por debajo.
+ * Fingerprint of the input facts. When re-reading an old recommendation,
+ * it allows checking that the same profile is being evaluated and not one
+ * that changed underneath.
  */
-function hashDe(facts: DiagnosticFacts): string {
+function hashOf(facts: DiagnosticFacts): string {
   return createHash('sha256').update(JSON.stringify(facts)).digest('hex');
 }
 
 /**
- * Justificación en el vocabulario del marco, no en números ni en códigos.
+ * Justification in the framework's vocabulary, not in numbers or codes.
  *
- * Cuando un ajuste puntual decide el primer puesto, se dice
- * explícitamente y se cita su reason declarado: una recomendación que
- * proviene de una decisión del centro y no del cálculo tiene que
- * presentarse como tal.
+ * When a manual adjustment decides first place, it says so explicitly and
+ * quotes its declared reason: a recommendation that comes from a decision
+ * of the center and not from the calculation has to be presented as such.
  *
- * Las dimensiones se nombran con su nombre corto del catálogo: el texto lo
- * lee el líder de la iniciativa, que no conoce las siglas del marco.
+ * Dimensions are named by their short catalog name: the text is read by
+ * the initiative leader, who does not know the framework's acronyms.
  */
-export function construirJustificacion(
+export function buildJustification(
   ranking: readonly { serviceName: string; contributions: { bottleneck: { details: readonly { dimension: string; sourceLabel: string }[] } } }[],
   applied: readonly { targetService: string; declaredReason: string }[],
-  nombres: ReadonlyMap<string, string>,
+  dimensionNames: ReadonlyMap<string, string>,
 ): string | null {
-  const ganador = ranking[0];
-  if (!ganador) return null;
+  const winner = ranking[0];
+  if (!winner) return null;
 
-  const decisiva = applied.find(
-    (e) => e.targetService === ganador.serviceName,
+  const decisive = applied.find(
+    (e) => e.targetService === winner.serviceName,
   );
-  if (decisiva) {
-    return `${ganador.serviceName} — ${decisiva.declaredReason}`;
+  if (decisive) {
+    return `${winner.serviceName} — ${decisive.declaredReason}`;
   }
 
-  const foco = ganador.contributions.bottleneck.details
+  const focus = winner.contributions.bottleneck.details
     .filter((d) => d.sourceLabel !== 'not_applicable')
-    .map((d) => nombres.get(d.dimension) ?? d.dimension);
-  const enumerado =
-    foco.length > 1 ? `${foco.slice(0, -1).join(', ')} y ${foco[foco.length - 1]}` : foco.join('');
+    .map((d) => dimensionNames.get(d.dimension) ?? d.dimension);
+  const enumerated =
+    focus.length > 1 ? `${focus.slice(0, -1).join(', ')} y ${focus[focus.length - 1]}` : focus.join('');
 
-  return foco.length > 0
-    ? `${ganador.serviceName} atiende de forma directa la dimensión más rezagada de tu iniciativa: ${enumerado}.`
-    : `${ganador.serviceName} es el servicio con mayor afinidad global con el perfil de la iniciativa.`;
+  return focus.length > 0
+    ? `${winner.serviceName} atiende de forma directa la dimensión más rezagada de tu iniciativa: ${enumerated}.`
+    : `${winner.serviceName} es el servicio con mayor afinidad global con el perfil de la iniciativa.`;
 }

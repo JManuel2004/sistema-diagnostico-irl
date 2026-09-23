@@ -65,12 +65,12 @@ export class FinalizeInitialDiagnosisUseCase {
   ): Promise<
     Result<MaturityProfileResponse, NotFoundError | ConflictError | InvariantViolationError>
   > {
-    const diagnostico = await this.diagnostics.findById(cmd.diagnosticId);
-    if (!diagnostico) {
+    const diagnosis = await this.diagnostics.findById(cmd.diagnosticId);
+    if (!diagnosis) {
       return Result.err(new NotFoundError('Diagnosis', cmd.diagnosticId));
     }
 
-    const current = diagnostico.state.value;
+    const current = diagnosis.state.value;
     if (!FINALIZABLE_STATES.includes(current)) {
       return Result.err(
         new ConflictError(`Diagnosis cannot be finalized from state ${current}`, {
@@ -104,17 +104,17 @@ export class FinalizeInitialDiagnosisUseCase {
       })),
     });
 
-    if (diagnostico.state.canTransitionTo('QUESTIONNAIRE_IN_PROGRESS')) {
-      diagnostico.transitionTo('QUESTIONNAIRE_IN_PROGRESS');
+    if (diagnosis.state.canTransitionTo('QUESTIONNAIRE_IN_PROGRESS')) {
+      diagnosis.transitionTo('QUESTIONNAIRE_IN_PROGRESS');
     }
-    if (diagnostico.state.canTransitionTo('QUESTIONNAIRE_COMPLETE')) {
-      diagnostico.transitionTo('QUESTIONNAIRE_COMPLETE');
+    if (diagnosis.state.canTransitionTo('QUESTIONNAIRE_COMPLETE')) {
+      diagnosis.transitionTo('QUESTIONNAIRE_COMPLETE');
     }
-    if (diagnostico.state.canTransitionTo('PROFILE_GENERATED')) {
-      diagnostico.transitionTo('PROFILE_GENERATED');
+    if (diagnosis.state.canTransitionTo('PROFILE_GENERATED')) {
+      diagnosis.transitionTo('PROFILE_GENERATED');
     }
 
-    await this.diagnostics.save(diagnostico);
+    await this.diagnostics.save(diagnosis);
 
     const dimensions = await this.taxonomy.findAllDimensions();
     return Result.ok(toMaturityProfileResponse(profile, imbalances, dimensions));

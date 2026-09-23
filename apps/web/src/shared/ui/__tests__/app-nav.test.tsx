@@ -121,9 +121,9 @@ describe('AppNav — navegación de las pantallas posteriores al asistente', () 
     renderAt('/panel');
 
     expect(screen.getByRole('link', { name: 'Panel' })).toBeInTheDocument();
-    const resultados = await screen.findByText('Resultados');
+    const results = await screen.findByText('Resultados');
     expect(screen.queryByRole('link', { name: 'Resultados' })).not.toBeInTheDocument();
-    expect(resultados).toHaveAttribute('aria-disabled', 'true');
+    expect(results).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('dentro de un diagnóstico no pide la lista de diagnósticos', () => {
@@ -141,7 +141,7 @@ describe('AppNav — navegación de las pantallas posteriores al asistente', () 
   });
 });
 
-// El descriptor lleva al panel donde hay navegación y a la portada donde no.
+// The descriptor leads to the panel where there is navigation and to the landing where there is none.
 describe('BrandDescriptor — destino según la pantalla', () => {
   it('con navegación (resultados, panel) lleva al panel', () => {
     renderAt(`/diagnosticos/${CURRENT}/resultados`);

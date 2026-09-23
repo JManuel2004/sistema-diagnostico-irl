@@ -3,12 +3,12 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * `Badge` — etiqueta corta de estado o categoría (sector, etapa, gravedad).
+ * `Badge` — short status or category label (sector, stage, severity).
  *
- * Los tonos son los semánticos del sistema; el color nunca es la única señal:
- * el texto (y, donde hace falta, un icono) dice lo mismo. Etiqueta en
- * mayúsculas de 14px (no baja de `text-sm`) sobre un fondo suave de su tono,
- * con esquinas rectas.
+ * The tones are the system's semantic ones; color is never the only
+ * signal: the text (and, where needed, an icon) says the same. An uppercase
+ * 14px label (never below `text-sm`) over a soft wash of its tone, with
+ * straight corners.
  */
 const badgeVariants = cva(
   'inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-bold uppercase leading-none tracking-[0.06em]',

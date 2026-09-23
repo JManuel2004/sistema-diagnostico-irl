@@ -4,9 +4,9 @@ import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * `DimensionChip` — el nombre de una dimensión con su icono y su color, para
- * que la misma dimensión se reconozca igual en el radar, las tarjetas, los
- * pares y el plan. El nombre siempre lo recibe de la respuesta del backend.
+ * `DimensionChip` — the name of a dimension with its icon and its color, so
+ * the same dimension is recognized the same way in the radar, the cards,
+ * the pairs and the plan. The name always comes from the backend response.
  */
 interface DimensionChipProps {
   readonly code: DimensionCode;

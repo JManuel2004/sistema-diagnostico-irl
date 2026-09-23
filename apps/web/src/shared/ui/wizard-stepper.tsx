@@ -4,20 +4,20 @@ import { Check } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * `WizardStepper` — los pasos de un asistente y en cuál se va.
+ * `WizardStepper` — the steps of a wizard and which one the user is on.
  *
- * El estado no se comunica solo por color (`DESIGN.md`): cada paso lleva su
- * número o una marca de completado, y el actual se anuncia con
- * `aria-current="step"`. Los pasos anteriores son enlaces, para volver a
- * corregirlos; los posteriores no lo son: se llega a ellos con «Continuar».
- * Los completados llevan un check verde y la línea que los une es azul.
- * En móvil la lista se reduce a «Paso N de M · Nombre» con una barra de
- * segmentos; volver atrás se hace con el «Atrás» de cada paso.
+ * The state is not conveyed by color alone (`DESIGN.md`): each step carries
+ * its number or a completion mark, and the current one is announced with
+ * `aria-current="step"`. Previous steps are links, to go back and correct
+ * them; later ones are not: they are reached with «Continuar». Completed
+ * steps carry a green check and the line joining them is blue. On mobile
+ * the list shrinks to «Paso N de M · Nombre» with a segment bar; going back
+ * is done with each step's «Atrás».
  */
 export interface WizardStep {
   readonly key: string;
   readonly label: string;
-  /** Destino del paso; solo se usa si el paso ya quedó atrás. */
+  /** Target of the step; only used if the step is already behind. */
   readonly to: string;
 }
 
@@ -36,7 +36,7 @@ export function WizardStepper({ steps, currentKey, className }: WizardStepperPro
 
   return (
     <nav aria-label="Pasos del diagnóstico" className={className}>
-      {/* Móvil: el paso en curso y una barra de segmentos; la lista no cabe en una fila. */}
+      {/* Mobile: the current step and a segment bar; the list does not fit in a row. */}
       <div className="flex flex-col gap-2.5 sm:hidden">
         <p className="text-foreground text-sm font-bold">
           Paso {currentIndex + 1} de {steps.length}

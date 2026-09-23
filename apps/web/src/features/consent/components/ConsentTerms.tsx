@@ -2,7 +2,7 @@ import type { JSX } from 'react';
 import { Card, CardContent } from '@/shared/ui/card';
 import { CONSENT_SECTIONS, CONSENT_TITLE } from '../lib/consent-terms';
 
-/** El texto del consentimiento (RF-03), tal como se acepta. */
+/** The consent text (RF-03), exactly as it is accepted. */
 export function ConsentTerms(): JSX.Element {
   return (
     <Card>

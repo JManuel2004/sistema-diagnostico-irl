@@ -3,13 +3,13 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * `Tooltip` — explicación breve que aparece al pasar el cursor o al enfocar
- * con el teclado. Radix, igual que `Dialog`: gestiona el foco, `Escape`,
- * `aria-describedby` y el posicionamiento.
+ * `Tooltip` — short explanation that appears on hover or on keyboard
+ * focus. Radix, like `Dialog`: it manages focus, `Escape`,
+ * `aria-describedby` and positioning.
  *
- * Cada `Tooltip` lleva su propio `Provider`, así que funciona en cualquier
- * parte sin un proveedor global. Superficie y borde son los del sistema
- * (`popover`, `border`); no define color, radio ni sombra propios.
+ * Each `Tooltip` carries its own `Provider`, so it works anywhere without a
+ * global provider. Surface and border are the system's (`popover`,
+ * `border`); it defines no color, radius or shadow of its own.
  */
 
 interface TooltipProps {

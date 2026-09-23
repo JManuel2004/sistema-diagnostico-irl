@@ -6,15 +6,15 @@ import type { Recommendation } from '../../domain/entities/recommendation.aggreg
 import type { ScoredCandidate } from '../../domain/value-objects/scored-candidate.vo.js';
 
 /**
- * Mapea el agregado a la respuesta pública.
+ * Maps the aggregate to the public response.
  *
- * La respuesta al líder de iniciativa NO incluye la traza. Son dos
- * audiencias distintas: quien recibe la recomendación necesita saber qué
- * se le sugiere y por qué en lenguaje llano; quien la audita necesita el
- * desglose por capas. Mezclarlas convertiría la pantalla de resultado en
- * un volcado de cálculo.
+ * The response to the initiative leader does NOT include the trace. They
+ * are two different audiences: whoever receives the recommendation needs to
+ * know what is suggested and why in plain words; whoever audits it needs
+ * the breakdown by layers. Mixing them would turn the result screen into a
+ * calculation dump.
  */
-export function toRecomendacionResponse(
+export function toRecommendationResponse(
   recommendation: Recommendation,
 ): RecommendationResponse {
   return {
@@ -33,13 +33,13 @@ export function toRecomendacionResponse(
 }
 
 /**
- * Mapea la traza. Audiencia: el equipo de INNLAB.
+ * Maps the trace. Audience: the INNLAB team.
  *
- * `ajustadoPorExcepcion` se deriva del agregado y no se recalcula aquí:
- * es la afirmación de que el servicio recomendado no es el que ganó el
- * cálculo, y tiene que salir de un solo sitio.
+ * `adjustedByException` is derived from the aggregate and not recalculated
+ * here: it is the statement that the recommended service is not the one
+ * that won the calculation, and it has to come from a single place.
  */
-export function toTrazaCapasResponse(
+export function toLayerTraceResponse(
   recommendation: Recommendation,
 ): LayerTraceResponse {
   const t = recommendation.trace;

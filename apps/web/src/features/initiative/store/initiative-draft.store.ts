@@ -3,17 +3,17 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { RegisterInitiativeCommand } from '@innlab/contracts';
 
 /**
- * Borrador del formulario de la iniciativa mientras el consentimiento no está
- * aceptado.
+ * Draft of the initiative form while the consent is not accepted.
  *
- * El asistente pide la iniciativa antes que el consentimiento, pero el sistema
- * no guarda ningún dato de la iniciativa hasta que se acepta el tratamiento de
- * datos (RF-03, RNF-06). Entre el paso 1 y el 2 el formulario vive aquí, en el
- * navegador, y se envía al backend al aceptar. Es estado de borrador de
- * interfaz (Zustand), no estado del servidor.
+ * The wizard asks for the initiative before the consent, but the system
+ * stores no data of the initiative until the data processing is accepted
+ * (RF-03, RNF-06). Between steps 1 and 2 the form lives here, in the
+ * browser, and is sent to the backend on acceptance. It is interface draft
+ * state (Zustand), not server state.
  *
- * Persiste en `sessionStorage`, igual que el borrador del cuestionario: sobrevive
- * a un F5 y muere con la pestaña. Se vacía apenas la iniciativa queda registrada.
+ * It persists in `sessionStorage`, like the questionnaire draft: it
+ * survives an F5 and dies with the tab. It is emptied as soon as the
+ * initiative is registered.
  */
 interface State {
   diagnosticId: string | null;
@@ -21,7 +21,7 @@ interface State {
 }
 
 interface Actions {
-  /** Cambiar de diagnóstico descarta el borrador del anterior. */
+  /** Switching diagnostic discards the previous one's draft. */
   initialize: (diagnosticId: string | null) => void;
   save: (command: RegisterInitiativeCommand) => void;
   clear: () => void;

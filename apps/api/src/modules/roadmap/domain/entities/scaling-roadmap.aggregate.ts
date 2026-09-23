@@ -70,16 +70,16 @@ export class ScalingRoadmap {
     phases: readonly RoadmapPhase[];
     generatedAt: Date;
   }): ScalingRoadmap {
-    const intervenidas = new Set<DimensionCode>();
-    for (const fase of input.phases) {
-      for (const d of fase.dimensions) {
-        if (intervenidas.has(d.dimensionCode)) {
+    const intervened = new Set<DimensionCode>();
+    for (const phase of input.phases) {
+      for (const d of phase.dimensions) {
+        if (intervened.has(d.dimensionCode)) {
           throw new RoadmapCalculationError(
             `La dimensión '${d.dimensionCode}' aparece en más de una fase del roadmap`,
             { dimension: d.dimensionCode },
           );
         }
-        intervenidas.add(d.dimensionCode);
+        intervened.add(d.dimensionCode);
 
         if (d.targetLevel <= d.currentLevel) {
           // If a dimension entered the roadmap it is because something
@@ -91,32 +91,32 @@ export class ScalingRoadmap {
               `(${d.currentLevel}); no habría nada que hacer en esa fase`,
             {
               dimension: d.dimensionCode,
-              nivelActual: d.currentLevel,
-              nivelMeta: d.targetLevel,
+              currentLevel: d.currentLevel,
+              targetLevel: d.targetLevel,
             },
           );
         }
       }
     }
 
-    const ordenes = input.phases.map((f) => f.order);
-    const esperado = ordenes.map((_, i) => i + 1);
-    if (ordenes.join(',') !== esperado.join(',')) {
+    const orders = input.phases.map((f) => f.order);
+    const expected = orders.map((_, i) => i + 1);
+    if (orders.join(',') !== expected.join(',')) {
       throw new RoadmapCalculationError(
-        `Las fases deben numerarse consecutivamente desde 1; se recibió [${ordenes.join(', ')}]`,
-        { ordenes },
+        `Las fases deben numerarse consecutivamente desde 1; se recibió [${orders.join(', ')}]`,
+        { orders },
       );
     }
 
     return new ScalingRoadmap(
       input.diagnosticId,
       input.phases,
-      DIMENSION_CODES.filter((c) => !intervenidas.has(c)),
+      DIMENSION_CODES.filter((c) => !intervened.has(c)),
       input.generatedAt,
     );
   }
 
-  /** Un perfil que cumple el mínimo en las seis dimensions. */
+  /** A profile that meets the minimum in all six dimensions. */
   isEmpty(): boolean {
     return this.phases.length === 0;
   }

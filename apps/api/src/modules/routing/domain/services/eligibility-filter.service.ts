@@ -1,26 +1,25 @@
 import type { DiagnosticFacts } from '@innlab/contracts';
 import type { NumericProfile } from '../value-objects/ordinal-profile.vo.js';
 import type { ExpressionTree } from './predicate-compiler.service.js';
-import { evaluarExpresion } from './predicate-compiler.service.js';
+import { evaluateExpression } from './predicate-compiler.service.js';
 
 /**
- * Capa 1 — filtro duro.
+ * Layer 1 — hard filter.
  *
- * Una regla de elegibilidad expresa imposibilidad, no preferencia: si se
- * cumple, el servicio queda fuera y ya no compite. No resta puntos, no
- * baja positions. Esa distinción es la razón de que el compilador
- * rechace operadores de comparación numérica en modo `BOOLEANO`: en el
- * momento en que una exclusión admite grado, deja de ser un filtro y
- * pertenece a la capa 2.
+ * An eligibility rule expresses impossibility, not preference: if it holds,
+ * the service is out and no longer competes. It does not subtract points or
+ * lower positions. That distinction is why the compiler rejects numeric
+ * comparison operators in `BOOLEAN` mode: the moment an exclusion admits a
+ * degree, it stops being a filter and belongs to layer 2.
  *
- * Un servicio sin ninguna regla asociada es elegible por defecto.
+ * A service with no associated rule is eligible by default.
  *
- * Servicio puro, sin IO ni decoradores.
+ * Pure service, no IO and no decorators.
  */
 export interface CompiledEligibilityRule {
-  readonly idRegla: string;
+  readonly ruleId: string;
   readonly idService: number;
-  readonly expresion: ExpressionTree;
+  readonly expression: ExpressionTree;
   readonly exclusionMessage: string;
 }
 
@@ -45,19 +44,18 @@ export class EligibilityFilterService {
     const excluded: ExcludedService[] = [];
 
     for (const profile of profiles) {
-      const aplicables = rules.filter((r) => r.idService === profile.idService);
-      // La primera regla que se cumple excluye; el mensaje que se reporta
-      // es el suyo, para que el reason mostrado sea el que efectivamente
-      // dejó fuera al servicio.
-      const disparada = aplicables.find((r) =>
-        evaluarExpresion(r.expresion, facts),
+      const applicable = rules.filter((r) => r.idService === profile.idService);
+      // The first rule that holds excludes; the reported message is its own,
+      // so the reason shown is the one that actually left the service out.
+      const fired = applicable.find((r) =>
+        evaluateExpression(r.expression, facts),
       );
 
-      if (disparada) {
+      if (fired) {
         excluded.push({
           idService: profile.idService,
           name: profile.serviceName,
-          exclusionMessage: disparada.exclusionMessage,
+          exclusionMessage: fired.exclusionMessage,
         });
       } else {
         eligible.push(profile);

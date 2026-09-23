@@ -73,7 +73,7 @@ describe('AppRoutes — el flujo de diagnóstico', () => {
 
     it('sin sesión manda al inicio de sesión recordando /diagnosticos/nuevo para continuar al volver', () => {
       session.active = false;
-      // `ProtectedRoute` recuerda la ruta de `window.location`, no la del router.
+      // `ProtectedRoute` remembers the route of `window.location`, not the router's.
       window.history.pushState({}, '', '/diagnosticos/nuevo');
 
       open('/diagnosticos/nuevo');

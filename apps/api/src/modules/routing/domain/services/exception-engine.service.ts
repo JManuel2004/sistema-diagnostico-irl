@@ -1,39 +1,39 @@
 import type { DiagnosticFacts, EXCEPTION_ACTIONS } from '@innlab/contracts';
 import type { ScoredCandidate } from '../value-objects/scored-candidate.vo.js';
 import type { ExpressionTree } from './predicate-compiler.service.js';
-import { evaluarExpresion } from './predicate-compiler.service.js';
+import { evaluateExpression } from './predicate-compiler.service.js';
 
 /**
- * Capa 3 — ajustes puntuales sobre el ranking calculado.
+ * Layer 3 — manual adjustments over the calculated ranking.
  *
- * Aquí es donde el centro interviene deliberadamente: forzar un servicio,
- * vetarlo, promoverlo o degradarlo unas positions cuando el cálculo, por
- * correcto que sea, no captura una consideración de criterio.
+ * This is where the center deliberately steps in: forcing a service,
+ * vetoing it, or promoting or demoting it a few positions when the
+ * calculation, however correct, does not capture a judgement call.
  *
- * Las excepciones se recorren en orden `priorityOrder` ascendente. Ese
- * orden es único dentro de una versión por restricción de base de datos,
- * así que la cascada es total y determinista: no hay empates que resolver
- * ni dependencia del orden en que la base devuelva las filas.
+ * Exceptions are walked in ascending `priorityOrder`. That order is unique
+ * by database constraint, so the cascade is total and deterministic: there
+ * are no ties to resolve and no dependency on the order in which the
+ * database returns the rows.
  *
- * ── El riesgo que esta capa introduce ──────────────────────────────────
+ * ── The risk this layer introduces ─────────────────────────────────────
  *
- * Una excepción escrita para un patrón general puede desplazar a un
- * servicio que el cálculo había identificado bien, porque dos escenarios
- * distintos activan la misma condición. El sistema no puede resolver eso
- * automáticamente: es un problema de contenido, no de forma.
+ * An exception written for a general pattern can displace a service the
+ * calculation had identified well, because two different scenarios trigger
+ * the same condition. The system cannot resolve that automatically: it is a
+ * content problem, not a form problem.
  *
- * Lo que sí hace, y por eso está construido así:
- *   - registra el ranking antes y después de **cada** excepción, no solo
- *     el resultado final, de modo que el efecto de una sea atribuible;
- *   - registra también las descartadas y por qué, para que "no pasó nada"
- *     sea una afirmación verificable y no una ausencia de información.
+ * What it does do, and why it is built this way:
+ *   - it records the ranking before and after **each** exception, not only
+ *     the final result, so the effect of each one is attributable;
+ *   - it also records the discarded ones and why, so that "nothing happened"
+ *     is a verifiable statement and not an absence of information.
  */
 export type ExceptionAction = (typeof EXCEPTION_ACTIONS)[number];
 
 export interface CompiledExceptionRule {
   readonly code: string;
   readonly priorityOrder: number;
-  readonly expresion: ExpressionTree;
+  readonly expression: ExpressionTree;
   readonly action: ExceptionAction;
   readonly idTargetService: number;
   readonly positions: number | null;
@@ -58,27 +58,27 @@ export interface DiscardedException {
 }
 
 export interface ExceptionResult {
-  readonly rankingPost: readonly ScoredCandidate[];
+  readonly finalRanking: readonly ScoredCandidate[];
   readonly applied: readonly AppliedException[];
   readonly discarded: readonly DiscardedException[];
 }
 
 export class ExceptionEngineService {
   apply(
-    rankingPre: readonly ScoredCandidate[],
+    initialRanking: readonly ScoredCandidate[],
     exceptions: readonly CompiledExceptionRule[],
     facts: DiagnosticFacts,
   ): ExceptionResult {
     const applied: AppliedException[] = [];
     const discarded: DiscardedException[] = [];
-    let ranking: ScoredCandidate[] = [...rankingPre];
+    let ranking: ScoredCandidate[] = [...initialRanking];
 
-    const enOrden = [...exceptions].sort(
+    const ordered = [...exceptions].sort(
       (a, b) => a.priorityOrder - b.priorityOrder,
     );
 
-    for (const rule of enOrden) {
-      if (!evaluarExpresion(rule.expresion, facts)) {
+    for (const rule of ordered) {
+      if (!evaluateExpression(rule.expression, facts)) {
         discarded.push({
           code: rule.code,
           order: rule.priorityOrder,
@@ -87,15 +87,15 @@ export class ExceptionEngineService {
         continue;
       }
 
-      const indice = ranking.findIndex(
+      const index = ranking.findIndex(
         (c) => c.idService === rule.idTargetService,
       );
 
-      if (indice === -1) {
-        // El objetivo no está en el ranking: quedó excluido en la capa 1 o
-        // vetado por una excepción anterior. Se descarta con reason
-        // explícito en vez de fallar en silencio — es justo el conflicto
-        // entre capas que el validador debe detectar al configurar.
+      if (index === -1) {
+        // The target is not in the ranking: it was excluded in layer 1 or
+        // vetoed by an earlier exception. It is discarded with an explicit
+        // reason instead of failing silently — exactly the conflict between
+        // layers that the validator must catch when configuring.
         discarded.push({
           code: rule.code,
           order: rule.priorityOrder,
@@ -106,33 +106,33 @@ export class ExceptionEngineService {
         continue;
       }
 
-      const antes = [...ranking];
-      const { siguiente, effect } = this.aplicarAccion(ranking, indice, rule);
-      ranking = siguiente;
+      const before = [...ranking];
+      const { next, effect } = this.applyAction(ranking, index, rule);
+      ranking = next;
 
       applied.push({
         code: rule.code,
         order: rule.priorityOrder,
         action: rule.action,
-        targetService: antes[indice].serviceName,
+        targetService: before[index].serviceName,
         declaredReason: rule.declaredReason,
-        rankingBefore: antes,
+        rankingBefore: before,
         rankingAfter: [...ranking],
         effect,
       });
     }
 
-    return { rankingPost: ranking, applied, discarded };
+    return { finalRanking: ranking, applied, discarded };
   }
 
-  private aplicarAccion(
+  private applyAction(
     ranking: readonly ScoredCandidate[],
-    indice: number,
+    index: number,
     rule: CompiledExceptionRule,
-  ): { siguiente: ScoredCandidate[]; effect: string } {
+  ): { next: ScoredCandidate[]; effect: string } {
     const list = [...ranking];
-    const [objetivo] = list.splice(indice, 1);
-    return ACTION_STRATEGIES[rule.action]({ list, objetivo, indice, rule });
+    const [target] = list.splice(index, 1);
+    return ACTION_STRATEGIES[rule.action]({ list, target, index, rule });
   }
 }
 
@@ -140,33 +140,33 @@ export class ExceptionEngineService {
 interface ActionContext {
   /** The ranking with the target already removed. */
   readonly list: ScoredCandidate[];
-  readonly objetivo: ScoredCandidate;
+  readonly target: ScoredCandidate;
   /** Position (0-based) the target had before the action. */
-  readonly indice: number;
+  readonly index: number;
   readonly rule: CompiledExceptionRule;
 }
 
 type ActionStrategy = (ctx: ActionContext) => {
-  siguiente: ScoredCandidate[];
+  next: ScoredCandidate[];
   effect: string;
 };
 
 function moveBy(direction: 'up' | 'down'): ActionStrategy {
-  return ({ list, objetivo, indice, rule }) => {
-    const salto = rule.positions ?? 0;
-    const delta = direction === 'up' ? -salto : salto;
-    // Saturación en los extremos: promover 3 desde el puesto 2 deja
-    // el puesto 1, no un índice negativo.
-    const destino = Math.max(0, Math.min(list.length, indice + delta));
-    list.splice(destino, 0, objetivo);
-    const verbo = direction === 'up' ? 'sube' : 'baja';
-    const name = objetivo.serviceName;
+  return ({ list, target, index, rule }) => {
+    const step = rule.positions ?? 0;
+    const delta = direction === 'up' ? -step : step;
+    // Saturation at the ends: promoting 3 from position 2 leaves it in
+    // position 1, not at a negative index.
+    const destination = Math.max(0, Math.min(list.length, index + delta));
+    list.splice(destination, 0, target);
+    const verb = direction === 'up' ? 'sube' : 'baja';
+    const name = target.serviceName;
     return {
-      siguiente: list,
+      next: list,
       effect:
-        destino === indice
-          ? `${name} se mantiene en el puesto ${indice + 1} (ya estaba en el extremo)`
-          : `${name} ${verbo} del puesto ${indice + 1} al puesto ${destino + 1}`,
+        destination === index
+          ? `${name} se mantiene en el puesto ${index + 1} (ya estaba en el extremo)`
+          : `${name} ${verb} del puesto ${index + 1} al puesto ${destination + 1}`,
     };
   };
 }
@@ -182,20 +182,20 @@ function moveBy(direction: 'up' | 'down'): ActionStrategy {
  * `ck_published_exception_rule_action` (and `_positions`) constraints.
  */
 const ACTION_STRATEGIES: Record<ExceptionAction, ActionStrategy> = {
-  FORCE: ({ list, objetivo, indice }) => {
-    list.unshift(objetivo);
-    const name = objetivo.serviceName;
+  FORCE: ({ list, target, index }) => {
+    list.unshift(target);
+    const name = target.serviceName;
     return {
-      siguiente: list,
+      next: list,
       effect:
-        indice === 0
+        index === 0
           ? `${name} ya ocupaba el puesto 1; la excepción lo fija explícitamente`
-          : `${name} pasa del puesto ${indice + 1} al puesto 1`,
+          : `${name} pasa del puesto ${index + 1} al puesto 1`,
     };
   },
-  VETO: ({ list, objetivo, indice }) => ({
-    siguiente: list,
-    effect: `${objetivo.serviceName} se retira del ranking (estaba en el puesto ${indice + 1})`,
+  VETO: ({ list, target, index }) => ({
+    next: list,
+    effect: `${target.serviceName} se retira del ranking (estaba en el puesto ${index + 1})`,
   }),
   PROMOTE: moveBy('up'),
   DEMOTE: moveBy('down'),

@@ -3,23 +3,22 @@ import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
 import { uuidSchema } from '../common/uuid.schema.js';
 
 /**
- * Los hechos del diagnóstico: la entrada del motor de enrutamiento.
+ * The facts of the diagnostic: the input of the routing engine.
  *
- * Es un contrato deliberadamente explícito. El motor no recibe el
- * agregado `MaturityProfile` ni consulta otros módulos: recibe este
- * objeto plano, ya resuelto por el orquestador. Eso mantiene los
- * servicios de dominio puros y hace que simular un perfil sea construir
- * una estructura, no montar media base de datos.
+ * It is a deliberately explicit contract. The engine does not receive the
+ * `MaturityProfile` aggregate nor query other modules: it receives this
+ * plain object, already resolved by the orchestrator. That keeps the domain
+ * services pure and makes simulating a profile a matter of building a
+ * structure, not of setting up half a database.
  *
- * `bottlenecks` es un array porque el mínimo IRL puede empatar (RF-08).
- * Ningún consumidor debe asumir cardinalidad 1.
+ * `bottlenecks` is an array because the minimum IRL can tie (RF-08). No
+ * consumer may assume cardinality 1.
  *
- * Los cuatro campos de `characterization` son nullable porque el registro
- * de iniciativa (RF-04 / HU-06) no está implementado: hoy nada los
- * escribe. El motor trata `null` como "no coincide" en afinidad de etapa
- * y como "no excluye" en elegibilidad, y lo deja anotado en la traza —
- * una recomendación calculada sin caracterización es más débil, y eso
- * tiene que verse en lugar de pasar en silencio.
+ * The four `characterization` fields are nullable because the initiative
+ * may lack them. The engine treats `null` as "does not match" in stage
+ * affinity and as "does not exclude" in eligibility, and notes it in the
+ * trace — a recommendation calculated without characterization is weaker,
+ * and that has to show instead of passing silently.
  */
 export const imbalanceFactClassificationSchema = z.enum([
   'CRITICAL',
@@ -53,6 +52,6 @@ export const diagnosticFactsSchema = z
     averageLevel: z.number().min(1).max(9),
     characterization: characterizationSchema,
   })
-  .describe('Entrada del motor de enrutamiento de portafolio');
+  .describe('Input of the portfolio routing engine');
 
 export type DiagnosticFacts = z.infer<typeof diagnosticFactsSchema>;

@@ -17,12 +17,12 @@ import { ApiError } from '@/shared/api/http';
 import { wizardPath } from './wizard/wizard-steps';
 
 /**
- * `/diagnosticos/:id/iniciativa` — corregir el perfil de la iniciativa
- * (HU-06 / RF-04) una vez terminado el asistente; al guardar se vuelve al panel.
+ * `/diagnosticos/:id/iniciativa` — correct the initiative profile
+ * (HU-06 / RF-04) once the wizard is finished; saving goes back to the panel.
  *
- * El primer registro de la iniciativa es el paso 1 del asistente, no esta
- * pantalla: si el diagnóstico todavía no tiene iniciativa registrada se manda
- * al asistente, que sabe en qué paso está.
+ * The first registration of the initiative is wizard step 1, not this
+ * screen: if the diagnostic has no registered initiative yet, the user is
+ * sent to the wizard, which knows which step it is on.
  */
 export default function InitiativePage(): JSX.Element {
   const { id: diagnosticId } = useParams<{ id: string }>();

@@ -5,55 +5,54 @@ import type { LucideIcon } from 'lucide-react';
 import { PALETTE } from './palette';
 
 /**
- * Metadata visual de las dimensiones IRL — single source of truth.
+ * Visual metadata of the IRL dimensions — single source of truth.
  *
- * Por qué vive aquí (en `shared/lib/`) y no dentro del feature
- * `questionnaire`: la información cromática y el orden canónico se
- * consumen desde múltiples superficies — la landing, el cuestionario
- * y los futuros componentes del perfil (HU-13/HU-14) — y el principio
- * de "modules communicate by id only" prohíbe que páginas alcancen
- * dentro de la carpeta de un feature.
+ * Why it lives here (in `shared/lib/`) and not inside the `questionnaire`
+ * feature: the colors and the canonical order are consumed from several
+ * surfaces — the landing, the questionnaire and the results — and the
+ * feature isolation rule forbids pages from reaching into a feature's
+ * folder.
  *
- * Qué NO va aquí:
- *  - Nombres (completo y corto) y descripción canónica → vienen del backend,
- *    del catálogo: `GET /catalog/questionnaire` y los campos `name` /
- *    `shortName` de las respuestas que nombran dimensiones (perfil,
- *    roadmap). Duplicarlos aquí crearía dos verdades.
- *  - Copy de marketing (`shortDescription` del landing) → es contenido
- *    editorial de la página, no metadata del marco; vive en el page.
+ * What does NOT go here:
+ *  - Names (full and short) and the canonical description → they come from
+ *    the backend catalog: `GET /catalog/questionnaire` and the `name` /
+ *    `shortName` fields of the responses that name dimensions (profile,
+ *    roadmap). Duplicating them here would create two truths.
+ *  - Marketing copy (the landing's `shortDescription`) → it is editorial
+ *    content of the page, not framework metadata; it lives in the page.
  *
- * Qué SÍ va aquí:
- *  - Mapeo `code → clases Tailwind` para que ningún componente repita
- *    `{ TRL: 'bg-dimension-trl', ... }`, y el icono de cada dimensión.
- *  - Orden canónico de presentación (`DIMENSION_ORDER`).
+ * What DOES go here:
+ *  - The `code → Tailwind classes` mapping so no component repeats
+ *    `{ TRL: 'bg-dimension-trl', ... }`, and the icon of each dimension.
+ *  - The canonical display order (`DIMENSION_ORDER`).
  */
 export interface DimensionVisualMeta {
-  /** Clase Tailwind para fondos sólidos (barras de acento, dots, chips). */
+  /** Tailwind class for solid backgrounds (accent bars, dots, chips). */
   readonly bg: string;
-  /** Clase Tailwind para texto oscurecido a AA sobre fondo blanco. */
+  /** Tailwind class for text darkened to AA on a white background. */
   readonly textInk: string;
-  /** Borde del color de la dimensión (acentos de tarjetas y pestañas). */
+  /** Border in the dimension's color (card and tab accents). */
   readonly border: string;
-  /** Borde inferior del color de la dimensión en una pestaña activa (clase literal para Tailwind). */
+  /** Bottom border in the dimension's color on an active tab (literal class for Tailwind). */
   readonly tabActive: string;
-  /** Fondo de cabeceras y chips: neutro para todas; el color de la dimensión va en su icono, su texto y sus barras. */
+  /** Background of headers and chips: neutral for all; the dimension's color goes on its icon, its text and its bars. */
   readonly tint: string;
-  /** Fondo suave del chip de la dimensión: su color al 10 %. */
+  /** Soft background of the dimension chip: its color at 10 %. */
   readonly chip: string;
-  /** Fondo intermedio (tramo por recorrer en una barra de nivel). */
+  /** Intermediate background (the stretch still to go on a level bar). */
   readonly soft: string;
-  /** Icono de la dimensión. */
+  /** Icon of the dimension. */
   readonly icon: LucideIcon;
   /**
-   * Relleno de la dimensión para SVG (los puntos del radar): el color pleno,
-   * el mismo de `bg`; `color` es la variante oscura, para texto.
+   * Fill of the dimension for SVG (the radar points): the full color, the
+   * same as `bg`; `color` is the dark variant, for text.
    */
   readonly fill: string;
   /**
-   * Color de la dimensión para lo que no admite clases: atributos SVG y
-   * estilos en línea (p. ej. el radar de recharts). Es la variante `-ink`,
-   * la que alcanza contraste AA sobre blanco, porque en SVG se usa para
-   * texto; el mismo valor que la clase `textInk`, salido de `PALETTE`.
+   * Color of the dimension for what does not accept classes: SVG attributes
+   * and inline styles (e.g. the recharts radar). It is the `-ink` variant,
+   * the one that reaches AA contrast on white, because in SVG it is used for
+   * text; the same value as the `textInk` class, taken from `PALETTE`.
    */
   readonly color: string;
 }
@@ -134,20 +133,20 @@ const DIMENSION_VISUAL: Record<DimensionCode, DimensionVisualMeta> = {
 };
 
 /**
- * Devuelve la metadata visual de una dimensión por código.
+ * Returns the visual metadata of a dimension by code.
  *
- * Se reexporta también `DIMENSION_ORDER` por si algún consumidor quiere
- * iterar sin disponer del catálogo (p. ej. la landing antes de
- * tener una respuesta del API).
+ * `DIMENSION_ORDER` is also exported in case a consumer wants to iterate
+ * without the catalog at hand (e.g. the landing before it has an API
+ * response).
  */
 export function getDimensionVisual(code: DimensionCode): DimensionVisualMeta {
   return DIMENSION_VISUAL[code];
 }
 
 /**
- * Orden canónico KTH — espeja `DIMENSION_CODES` de `@innlab/contracts`.
- * Importarlo desde aquí evita acoplamiento accidental al orden
- * declarativo del enum en `@innlab/contracts` cuando lo único que se
- * necesita es la secuencia de presentación.
+ * Canonical KTH order — mirrors `DIMENSION_CODES` of `@innlab/contracts`.
+ * Importing it from here avoids accidental coupling to the declarative
+ * order of the enum in `@innlab/contracts` when all that is needed is the
+ * display sequence.
  */
 export const DIMENSION_ORDER: readonly DimensionCode[] = DIMENSION_CODES;

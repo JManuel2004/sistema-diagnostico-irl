@@ -31,14 +31,14 @@ export class ApplyConsentToDiagnosisUseCase {
   ) {}
 
   async execute(cmd: ApplyConsentToDiagnosisCommand): Promise<Result<void, NotFoundError>> {
-    const diagnostico = await this.diagnostics.findById(cmd.diagnosticId);
-    if (!diagnostico) {
+    const diagnosis = await this.diagnostics.findById(cmd.diagnosticId);
+    if (!diagnosis) {
       return Result.err(new NotFoundError('Diagnosis', cmd.diagnosticId));
     }
 
-    if (diagnostico.state.value === 'STARTED') {
-      diagnostico.transitionTo('WITH_CONSENT');
-      await this.diagnostics.save(diagnostico);
+    if (diagnosis.state.value === 'STARTED') {
+      diagnosis.transitionTo('WITH_CONSENT');
+      await this.diagnostics.save(diagnosis);
     }
 
     return Result.ok(undefined);

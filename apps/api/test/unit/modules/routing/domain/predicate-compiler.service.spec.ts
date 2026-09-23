@@ -3,7 +3,7 @@ import { QUERYABLE_FIELDS, type DiagnosticFacts } from '@innlab/contracts';
 import {
   FIELD_KIND,
   PredicateCompilerService,
-  evaluarExpresion,
+  evaluateExpression,
 } from '../../../../../src/modules/routing/domain/services/predicate-compiler.service.js';
 import { PredicateCompilationError } from '../../../../../src/modules/routing/domain/exceptions/routing.errors.js';
 
@@ -34,8 +34,8 @@ const FACTS: DiagnosticFacts = {
 describe('PredicateCompilerService', () => {
   describe('separación de modos', () => {
     it('rechaza un operador de grado en modo BOOLEAN', () => {
-      // Es la garantía estructural de que una condición de grado no puede
-      // colarse al filtro duro de elegibilidad.
+      // This is the structural guarantee that a degree condition cannot
+      // slip into the hard eligibility filter.
       expect(() =>
         compiler.compile(
           { field: 'averageLevel', op: '<', value: 3 },
@@ -71,9 +71,9 @@ describe('PredicateCompilerService', () => {
 
   describe('validación al compilar', () => {
     it('rechaza un campo desconocido y nombra los disponibles', () => {
-      // Falla cuando alguien escribe la regla, no meses después cuando un
-      // diagnóstico la activa. Esa diferencia de momento es el valor de
-      // compilar en vez de interpretar.
+      // It fails when someone writes the rule, not months later when a
+      // diagnostic triggers it. That difference in timing is the value of
+      // compiling instead of interpreting.
       expect(() =>
         compiler.compile(
           { field: 'nivelDeMadurezInventado', op: '=', value: 3 },
@@ -180,37 +180,37 @@ it('rechaza un nodo que no es un objeto', () => {
   });
 
   describe('evaluación', () => {
-    const compilarYEvaluar = (p: unknown, facts = FACTS) =>
-      evaluarExpresion(compiler.compile(p, 'WITH_DEGREE'), facts);
+    const compileAndEvaluate = (p: unknown, facts = FACTS) =>
+      evaluateExpression(compiler.compile(p, 'WITH_DEGREE'), facts);
 
     it('resuelve pertenencia sobre el cuello de botella', () => {
       expect(
-        compilarYEvaluar({ field: 'bottleneck', op: 'contains', value: 'IPRL' }),
+        compileAndEvaluate({ field: 'bottleneck', op: 'contains', value: 'IPRL' }),
       ).toBe(true);
       expect(
-        compilarYEvaluar({ field: 'bottleneck', op: 'contains', value: 'TRL' }),
+        compileAndEvaluate({ field: 'bottleneck', op: 'contains', value: 'TRL' }),
       ).toBe(false);
     });
 
     it('resuelve el conteo de gaps', () => {
       expect(
-        compilarYEvaluar({ field: 'gaps', op: 'count>=', value: 3 }),
+        compileAndEvaluate({ field: 'gaps', op: 'count>=', value: 3 }),
       ).toBe(true);
       expect(
-        compilarYEvaluar({ field: 'gaps', op: 'count>=', value: 4 }),
+        compileAndEvaluate({ field: 'gaps', op: 'count>=', value: 4 }),
       ).toBe(false);
     });
 
     it('deriva los pares en desequilibrio crítico a partir de los facts', () => {
       expect(
-        compilarYEvaluar({
+        compileAndEvaluate({
           field: 'criticalImbalances',
           op: 'contains',
           value: 'TRL-IPRL',
         }),
       ).toBe(true);
       expect(
-        compilarYEvaluar({
+        compileAndEvaluate({
           field: 'criticalImbalances',
           op: 'contains',
           value: 'CRL-BRL',
@@ -220,13 +220,13 @@ it('rechaza un nodo que no es un objeto', () => {
 
     it('resuelve un nivel dimensional concreto', () => {
       expect(
-        compilarYEvaluar({ field: 'levelByDimension.IPRL', op: '<=', value: 2 }),
+        compileAndEvaluate({ field: 'levelByDimension.IPRL', op: '<=', value: 2 }),
       ).toBe(true);
     });
 
     it('combina con y / o / no', () => {
       expect(
-        compilarYEvaluar({
+        compileAndEvaluate({
           op: 'and',
           operands: [
             { field: 'bottleneck', op: 'contains', value: 'IPRL' },
@@ -239,7 +239,7 @@ it('rechaza un nodo que no es un objeto', () => {
       ).toBe(true);
 
       expect(
-        compilarYEvaluar({
+        compileAndEvaluate({
           op: 'or',
           operands: [
             { field: 'bottleneck', op: 'contains', value: 'TRL' },
@@ -251,9 +251,9 @@ it('rechaza un nodo que no es un objeto', () => {
 
 
     describe('cobertura de todos los operadores', () => {
-      // Un operador sin probar en un evaluador de DSL es el sitio exacto
-      // donde se esconde un fallo silencioso: devuelve `false` para todo y
-      // la regla parece no cumplirse nunca.
+      // An untested operator in a DSL evaluator is exactly where a silent
+      // failure hides: it returns `false` for everything and the rule seems
+      // never to hold.
       it.each([
         [{ field: 'bottleneck', op: 'not_contains', value: 'TRL' }, true],
         [{ field: 'bottleneck', op: 'not_contains', value: 'IPRL' }, false],
@@ -279,27 +279,27 @@ it('rechaza un nodo que no es un objeto', () => {
         ],
       ] as [Record<string, unknown>, boolean][])(
         'evalúa %j como %s',
-        (predicate, esperado) => {
-          expect(compilarYEvaluar(predicate)).toBe(esperado);
+        (predicate, expected) => {
+          expect(compileAndEvaluate(predicate)).toBe(expected);
         },
       );
 
       it('un nivel dimensional inexistente resuelve a null y no cumple', () => {
-        const sinTrl = {
+        const withoutTrl = {
           ...FACTS,
           levelByDimension: { CRL: 4 },
         } as unknown as DiagnosticFacts;
         expect(
-          compilarYEvaluar(
+          compileAndEvaluate(
             { field: 'levelByDimension.TRL', op: '>=', value: 1 },
-            sinTrl,
+            withoutTrl,
           ),
         ).toBe(false);
       });
     });
 
     describe('datos ausentes', () => {
-      const sinCaracterizacion: DiagnosticFacts = {
+      const noCharacterization: DiagnosticFacts = {
         ...FACTS,
         characterization: {
           stage: null,
@@ -310,22 +310,22 @@ it('rechaza un nodo que no es un objeto', () => {
       };
 
       it('una comparación de orden contra un dato ausente es falsa', () => {
-        // La falta de información no puede disparar reglas: si lo hiciera,
-        // un diagnóstico sin iniciativa registrada activaría exclusiones
-        // que nadie configuró para él.
+        // Missing information cannot fire rules: if it did, a diagnostic
+        // without a registered initiative would trigger exclusions nobody
+        // configured for it.
         expect(
-          compilarYEvaluar(
+          compileAndEvaluate(
             { field: 'characterization.teamSize', op: '<', value: 2 },
-            sinCaracterizacion,
+            noCharacterization,
           ),
         ).toBe(false);
       });
 
       it('una igualdad contra un dato ausente es falsa', () => {
         expect(
-          compilarYEvaluar(
+          compileAndEvaluate(
             { field: 'characterization.academicLinkage', op: '=', value: false },
-            sinCaracterizacion,
+            noCharacterization,
           ),
         ).toBe(false);
       });

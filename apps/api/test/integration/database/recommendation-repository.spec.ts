@@ -13,16 +13,14 @@ import { Uuid } from '../../../src/shared/kernel/domain/value-objects/uuid.vo.js
 import type { ScoredCandidate } from '../../../src/modules/routing/domain/value-objects/scored-candidate.vo.js';
 
 /**
- * Pruebas de integración del repositorio de recomendaciones.
+ * Integration tests of the recommendation repository.
  *
- * La primera es la que importa: **verifica que la escritura sea atómica**.
- * El puerto de perfil de madurez ya promete atomicidad en su docstring y
- * su caso de uso la rompe con un `Promise.all`; documentar el contrato no
- * basta, así que aquí se comprueba cortando la escritura a la mitad y
- * confirmando que no queda nada.
+ * The first one is what matters: **it checks the write is atomic**. A
+ * docstring promising atomicity is not enough, so here it is checked by
+ * cutting the write halfway and confirming nothing is left.
  *
- * También cubre la garantía que sostiene la base de datos por
- * construcción: una sola recomendación por diagnóstico.
+ * It also covers the guarantee the database holds by construction: a
+ * single recommendation per diagnostic.
  */
 describe('Recomendación — persistencia (integration)', () => {
   let container: StartedPostgreSqlContainer;
@@ -74,7 +72,7 @@ describe('Recomendación — persistencia (integration)', () => {
     ormRepo = dataSource.getRepository(PortfolioRecommendationOrm);
     repo = new TypeOrmRecommendationRepository(ormRepo);
 
-    // Configuración mínima para satisfacer las claves foráneas.
+    // Minimum configuration to satisfy the foreign keys.
     [{ id: idService }] = await dataSource.query(
       `INSERT INTO irl_catalog.portfolio_service (name, is_active)
        VALUES ('Consultoría', true) RETURNING id`,
@@ -134,14 +132,14 @@ describe('Recomendación — persistencia (integration)', () => {
   });
 
   it('no deja nada escrito si la transacción falla a mitad de camino', async () => {
-    // Se rompe la tercera escritura (la traza) forzando un fallo de
-    // longitud en `facts_hash` (varchar(64)). Si la transacción no
-    // envolviera las tres, la fila de recomendación y su alternativa
-    // quedarían huérfanas: una recomendación sin traza no se puede
-    // explicar, que es exactamente lo que este módulo promete evitar.
+    // The third write (the trace) is broken by forcing a length failure
+    // on `facts_hash` (varchar(64)). If the transaction did not wrap all
+    // three, the recommendation row and its alternative would be orphaned:
+    // a recommendation without a trace cannot be explained, which is exactly
+    // what this module promises to avoid.
     const primary = candidate(idService, 'Consultoría', 5.55);
     const alternate = candidate(idService + 1, 'Mentoría', 3.8);
-    const rota = Recommendation.create({
+    const broken = Recommendation.create({
       diagnosticId: Uuid.create(diagnosticId),
       finalRanking: [primary, alternate],
       minimumThreshold: 2.5,
@@ -160,15 +158,15 @@ describe('Recomendación — persistencia (integration)', () => {
       generatedAt: new Date(),
     });
 
-    await expect(repo.save(rota)).rejects.toThrow();
+    await expect(repo.save(broken)).rejects.toThrow();
 
     const [{ count: recs }] = await dataSource.query<{ count: string }[]>(
       `SELECT COUNT(*)::text AS count FROM irl_diagnostic.portfolio_recommendation
         WHERE id_diagnostic = $1`,
       [diagnosticId],
     );
-    // Acotado a este diagnóstico: los casos anteriores dejan sus propias
-    // filas y un conteo global las contaría también.
+    // Scoped to this diagnostic: the previous cases leave their own rows
+    // and a global count would include them too.
     const [{ count: alts }] = await dataSource.query<{ count: string }[]>(
       `SELECT COUNT(*)::text AS count
          FROM irl_diagnostic.recommendation_alternative a

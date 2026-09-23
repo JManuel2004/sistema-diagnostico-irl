@@ -2,19 +2,19 @@ import { z } from 'zod';
 import { uuidSchema } from '../common/uuid.schema.js';
 
 /**
- * Recomendación de portafolio tal como la expone la API.
+ * Portfolio recommendation as the API exposes it.
  *
- * `resultType` distingue una recomendación real del desenlace legítimo en
- * que ningún candidato superó el umbral o todos quedaron excluidos. En ese
- * caso `primary` viene `null` y `noRecommendationReason` explica por qué:
- * RF-15 exige que el sistema no devuelva una recomendación vacía ni
- * ambigua, no que siempre encuentre una.
+ * `resultType` tells a real recommendation from the legitimate outcome in
+ * which no candidate cleared the threshold or all were excluded. In that
+ * case `primary` is `null` and `noRecommendationReason` explains why: RF-15
+ * requires the system not to return an empty or ambiguous recommendation,
+ * not to always find one.
  *
- * `alternatives` son las posiciones 2..N. Nunca incluye la principal.
+ * `alternatives` are positions 2..N. It never includes the primary one.
  *
- * Ya no lleva `configurationVersion`: el esquema de versionado de
- * configuración se retiró — hay una sola configuración
- * vigente, sin historial de versiones que numerar.
+ * It no longer carries `configurationVersion`: the configuration
+ * versioning scheme was retired — there is a single live configuration,
+ * with no version history to number.
  */
 export const recommendedServiceSchema = z.object({
   idService: z.number().int().positive(),
@@ -35,6 +35,6 @@ export const recommendationResponseSchema = z
     alternatives: z.array(recommendedServiceSchema),
     generatedAt: z.string().datetime(),
   })
-  .describe('Recomendación de portafolio (response)');
+  .describe('Portfolio recommendation (response)');
 
 export type RecommendationResponse = z.infer<typeof recommendationResponseSchema>;

@@ -6,20 +6,19 @@ import { ValidationExceptionFilter } from './filters/validation-exception.filter
 import { GlobalExceptionFilter } from './filters/global-exception.filter.js';
 
 /**
- * Aplica el pipeline de request compartido: pipe de validación, filtros de
- * excepción y prefijo de versión.
+ * Applies the shared request pipeline: validation pipe, exception filters
+ * and version prefix.
  *
- * Existe para que `main.ts` y las pruebas e2e no puedan divergir. Antes de
- * extraerlo, la suite e2e montaba la app solo con el `ValidationPipe` y sin
- * ningún filtro, de modo que cualquier `DomainError` salía como 500
- * genérico en vez del estado que le corresponde. Solo probaba caminos
- * felices, así que la diferencia pasó inadvertida — y una prueba e2e que
- * no ejerce el mismo pipeline que producción no está probando el sistema
- * que se despliega.
+ * It exists so `main.ts` and the e2e tests cannot diverge. Before it was
+ * extracted, the e2e suite mounted the app with only the `ValidationPipe`
+ * and no filter, so any `DomainError` came out as a generic 500 instead of
+ * its proper status. The suite only tested happy paths, so the difference
+ * went unnoticed — and an e2e test that does not run the same pipeline as
+ * production is not testing the system that gets deployed.
  *
- * El orden de los filtros importa: Nest prueba primero el más
- * específicamente tipado para la excepción lanzada, y el `@Catch()` sin
- * argumentos es la red de seguridad.
+ * The order of the filters matters: Nest first tries the one most
+ * specifically typed for the thrown exception, and the argument-less
+ * `@Catch()` is the safety net.
  */
 export function configureApp(app: INestApplication): void {
   app.useGlobalPipes(

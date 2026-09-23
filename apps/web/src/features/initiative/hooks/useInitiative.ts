@@ -21,7 +21,7 @@ export function useStages() {
   });
 }
 
-/** `null` cuando el diagnóstico aún no tiene iniciativa registrada. */
+/** `null` while the diagnostic has no registered initiative. */
 export function useInitiative(diagnosticId: string | undefined) {
   return useQuery({
     queryKey: diagnosticId
@@ -34,8 +34,8 @@ export function useInitiative(diagnosticId: string | undefined) {
 }
 
 /**
- * Registrar (o actualizar) la iniciativa mueve el diagnóstico de estado en el
- * backend, así que también se invalida el diagnóstico y su lista.
+ * Registering (or updating) the initiative moves the diagnostic's state in
+ * the backend, so the diagnostic and its list are invalidated too.
  */
 export function useRegisterInitiative(diagnosticId: string | undefined) {
   const queryClient = useQueryClient();

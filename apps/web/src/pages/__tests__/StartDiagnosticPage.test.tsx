@@ -50,7 +50,7 @@ describe('StartDiagnosticPage — continuar solo tras «Iniciar diagnóstico»',
     expect(await screen.findByText('ASISTENTE_STUB')).toBeInTheDocument();
   });
 
-  // StrictMode monta los efectos dos veces en desarrollo: sin guarda serían dos POST a la vez.
+  // StrictMode mounts effects twice in development: without a guard there would be two POSTs at once.
   it('pide el diagnóstico una sola vez, también bajo StrictMode', async () => {
     let peticiones = 0;
     server.use(

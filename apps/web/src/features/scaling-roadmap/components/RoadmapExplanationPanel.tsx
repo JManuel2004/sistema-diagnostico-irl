@@ -10,13 +10,13 @@ interface Props {
 }
 
 /**
- * «Cómo se armó este plan» — la contraparte de la explicación de la
- * recomendación, con el mismo patrón plegable.
+ * «Cómo se armó este plan» — the counterpart of the recommendation's
+ * explanation, with the same collapsible pattern.
  *
- * Tres pasos en lenguaje llano (qué entra, qué meta se fija, qué va primero) y
- * las dimensiones que quedaron fuera. Lo que cada dimensión necesita ya está en
- * su tarjeta; aquí se explica la lógica del conjunto. Todo sale de la
- * respuesta; el panel no calcula nada.
+ * Three steps in plain language (what goes in, which target is set, what
+ * comes first) and the dimensions left out. What each dimension needs is
+ * already on its card; here the logic of the whole is explained. Everything
+ * comes from the response; the panel calculates nothing.
  */
 export function RoadmapExplanationPanel({ roadmap }: Props): JSX.Element {
   const dimensions = roadmap.phases.flatMap((phase) => phase.dimensions);

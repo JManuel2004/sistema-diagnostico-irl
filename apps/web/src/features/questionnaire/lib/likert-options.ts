@@ -1,6 +1,6 @@
 import type { LikertValue } from '@innlab/contracts';
 
-/** La escala Likert 1..5 con el texto de cada nivel; la usan la escala y el resumen. */
+/** The 1..5 Likert scale with the text of each level; used by the scale and the summary. */
 export const LIKERT_OPTIONS: readonly { value: LikertValue; label: string }[] = [
   { value: 1, label: 'Totalmente en desacuerdo' },
   { value: 2, label: 'En desacuerdo' },

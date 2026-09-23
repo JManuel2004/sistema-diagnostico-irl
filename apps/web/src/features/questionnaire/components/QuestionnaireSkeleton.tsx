@@ -1,11 +1,11 @@
 /**
- * Skeleton del cuestionario IRL.
+ * Skeleton of the IRL questionnaire.
  *
- * Reproduce la silueta real: progress strip + tabs (lista de 6
- * columnas) + layout de dos columnas (sidebar de dimensión sticky +
- * lista de 8 afirmaciones). En móvil colapsa a una sola columna,
- * igual que el layout real. Usa el wash Azul Icesi (`surface-muted`)
- * para los placeholders en vez de un gris muerto.
+ * It reproduces the real silhouette: progress strip + tabs (a 6-column
+ * list) + a two-column layout (sticky dimension sidebar + a list of 8
+ * statements). On mobile it collapses into a single column, like the real
+ * layout. It uses the Azul Icesi wash (`surface-muted`) for the
+ * placeholders instead of a dead grey.
  */
 export function QuestionnaireSkeleton() {
   return (

@@ -11,16 +11,16 @@ import { LevelBar } from '@/shared/ui/level-bar';
 import type { HighlightHandler } from './MaturityProfileSummary';
 
 /**
- * Un par de dimensiones que deberían avanzar juntas, con qué tan lejos van una
- * de la otra. La gravedad (`classification`) la calcula el backend con las
- * reglas del marco; aquí se traduce a color, icono y una frase que cualquier
- * persona entienda, sin códigos ni símbolos.
+ * A pair of dimensions that should move forward together, with how far
+ * apart they are. The severity (`classification`) is computed by the
+ * backend with the framework's rules; here it is turned into color, icon
+ * and a sentence anyone can understand, without codes or symbols.
  */
 interface Props {
   readonly pair: ImbalancePairResult;
   readonly names: ReadonlyMap<DimensionCode, string>;
   readonly levels: ReadonlyMap<DimensionCode, number>;
-  /** Las dos dimensiones están en brecha: no hay una «adelantada» que frenar. */
+  /** Both dimensions are in gap: there is no "ahead" one to hold back. */
   readonly bothInGap: boolean;
   readonly onHighlight?: HighlightHandler;
 }

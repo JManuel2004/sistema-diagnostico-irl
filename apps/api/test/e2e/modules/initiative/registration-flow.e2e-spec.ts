@@ -370,15 +370,15 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
     });
 
     it('un diagnóstico ajeno se responde como inexistente', async () => {
-      const otro = randomUUID();
+      const other = randomUUID();
       await dataSource.query(
         `INSERT INTO irl_diagnostic.diagnostic (id, cognito_user_id, state, irl_framework_version)
          VALUES ($1, 'otro-usuario', 'PROFILE_GENERATED', 'KTH-IRL-1.0')`,
-        [otro],
+        [other],
       );
-      created.push(otro);
+      created.push(other);
 
-      await agent.get(`/api/v1/diagnostics/${otro}`).expect(404);
+      await agent.get(`/api/v1/diagnostics/${other}`).expect(404);
     });
   });
 });

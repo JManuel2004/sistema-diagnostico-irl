@@ -6,19 +6,19 @@ import type {
 } from '../value-objects/ordinal-profile.vo.js';
 
 /**
- * Resuelve las etiquetas ordinales de cada ficha contra una escala.
+ * Resolves the ordinal labels of each profile against a scale.
  *
- * Servicio puro, sin IO ni decoradores.
+ * Pure service, no IO and no decorators.
  *
- * Se ejecuta en tiempo de consulta y no al publicar. Precalcular los
- * valores dentro de la ficha sería más rápido, pero congelaría cada ficha
- * contra la calibración vigente en el momento de publicarla; reproducir
- * una recomendación antigua exige poder releer sus fichas con **su**
- * escala, no con la de hoy.
+ * It runs at query time rather than when the profile is seeded. Storing
+ * the values inside the profile would be faster, but it would freeze each
+ * profile against the calibration of that moment; re-reading an old
+ * recommendation requires resolving its profiles with **its** scale, not
+ * today's.
  *
- * Conserva la label original junto al valor para que la explicación al
- * usuario pueda hablar en el vocabulario de negocio ("es *principal* en
- * Modelo de Negocio") en vez de exponer el número.
+ * It keeps the original label next to the value so that the explanation
+ * to the user can speak the business vocabulary ("it is *primary* in
+ * Business Model") instead of exposing the number.
  */
 export class OrdinalTranslatorService {
   translate(
@@ -30,9 +30,9 @@ export class OrdinalTranslatorService {
       const labels = new Map<DimensionCode, string>();
 
       for (const [dimension, label] of profile.intensities.entries()) {
-        // Una label ausente en la escala lanza: es configuración rota,
-        // no un cero silencioso.
-        intensities.set(dimension, scale.valorDe(label));
+        // A label missing from the scale throws: it is broken configuration,
+        // not a silent zero.
+        intensities.set(dimension, scale.valueFor(label));
         labels.set(dimension, label);
       }
 

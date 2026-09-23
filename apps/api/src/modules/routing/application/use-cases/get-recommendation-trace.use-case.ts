@@ -6,20 +6,19 @@ import {
 } from '../../domain/repositories/recommendation.repository.port.js';
 import { RecommendationNotGeneratedError } from '../../domain/exceptions/routing.errors.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
-import { toTrazaCapasResponse } from '../dtos/map-recommendation-response.js';
+import { toLayerTraceResponse } from '../dtos/map-recommendation-response.js';
 
 export interface GetRecommendationTraceQuery {
   diagnosticId: string;
 }
 
 /**
- * Devuelve la traza por capas. Caso de uso separado del anterior a
- * propósito: son dos audiencias con necesidades distintas, y tenerlos
- * separados permite que la autorización los trate distinto cuando exista
- * el módulo de identidad.
+ * Returns the trace by layers. A use case separate from the recommendation
+ * read on purpose: they serve two audiences with different needs, and
+ * keeping them apart lets authorization treat them differently.
  *
- * "Todavía no generada" es una salida normal y esperada, no una condición
- * excepcional.
+ * "Not generated yet" is a normal, expected outcome, not an exceptional
+ * condition.
  */
 @Injectable()
 export class GetRecommendationTraceUseCase {
@@ -38,6 +37,6 @@ export class GetRecommendationTraceUseCase {
       return Result.err(new RecommendationNotGeneratedError(query.diagnosticId));
     }
 
-    return Result.ok(toTrazaCapasResponse(recommendation));
+    return Result.ok(toLayerTraceResponse(recommendation));
   }
 }

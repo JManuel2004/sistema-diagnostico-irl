@@ -6,7 +6,7 @@ import { setupServer } from 'msw/node';
 import LandingPage from '../LandingPage';
 import { clearSession, saveSession } from '@/shared/auth/session';
 
-// Sin handlers: cualquier petición al montar la portada haría fallar la suite.
+// No handlers: any request when mounting the landing would fail the suite.
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => server.resetHandlers());
@@ -33,7 +33,7 @@ describe('LandingPage — portada pública', () => {
     const cta = screen.getAllByRole('link', { name: 'Iniciar diagnóstico' });
     expect(cta).toHaveLength(1);
     expect(cta[0]).toHaveAttribute('href', '/diagnosticos/nuevo');
-    // No hay otra acción competidora: ni «Conocer INNLAB» ni otro botón.
+    // There is no competing action: neither «Conocer INNLAB» nor any other button.
     expect(screen.queryByRole('link', { name: 'Conocer INNLAB' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });

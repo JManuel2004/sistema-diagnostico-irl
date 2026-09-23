@@ -71,13 +71,13 @@ export class GenerateScalingRoadmapUseCase {
     // as `GET /diagnostics/:id/profile`. Propagated as this use case's
     // own `Result.err` rather than unwrapped further: same condition,
     // same deserved response.
-    const resultado = await this.profiles.execute({
+    const result = await this.profiles.execute({
       diagnosticId: diagnosticId.value,
     });
-    if (!resultado.ok) {
-      return Result.err(resultado.error);
+    if (!result.ok) {
+      return Result.err(result.error);
     }
-    const profile = resultado.value;
+    const profile = result.value;
 
     if (profile.dimensionResults.length !== 6) {
       throw new RoadmapCalculationError(

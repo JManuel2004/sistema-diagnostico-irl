@@ -7,19 +7,19 @@ import { Card, CardContent } from '@/shared/ui/card';
 import { PageShell } from '@/shared/ui/page-shell';
 
 /**
- * Retorno del SSO de INNLAB (HU-01 / RF-00).
+ * Return from the INNLAB SSO (HU-01 / RF-00).
  *
- * El Hub devuelve al usuario aquí con `?code=xxxx`. Esta pantalla canjea
- * ese código por los tokens, los guarda y devuelve al usuario a donde
- * quería ir.
+ * The Hub sends the user back here with `?code=xxxx`. This screen exchanges
+ * that code for the tokens, stores them and takes the user back to where
+ * they wanted to go.
  *
- * Debe ser una ruta pública: por definición el usuario todavía no tiene
- * sesión cuando llega. Envolverla en `<ProtectedRoute>` la mandaría de
- * vuelta al Hub en un bucle.
+ * It must be a public route: by definition the user has no session yet
+ * when arriving. Wrapping it in `<ProtectedRoute>` would send it back to the
+ * Hub in a loop.
  *
- * El código expira en 30 segundos, así que la pantalla no muestra nada
- * pesado mientras canjea, y ante un fallo ofrece rehacer el flujo completo
- * en vez de reintentar con un código ya gastado.
+ * The code expires in 30 seconds, so the screen shows nothing heavy while
+ * exchanging, and on failure it offers to redo the whole flow instead of
+ * retrying with an already spent code.
  */
 export default function AuthCallbackPage(): JSX.Element {
   const [searchParams] = useSearchParams();

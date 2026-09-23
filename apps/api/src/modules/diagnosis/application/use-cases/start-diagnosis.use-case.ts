@@ -42,9 +42,9 @@ export class StartDiagnosisUseCase {
       return toDiagnosticResponse(latest);
     }
 
-    const diagnostico = Diagnosis.start(cmd.userId);
-    await this.diagnostics.save(diagnostico);
+    const diagnosis = Diagnosis.start(cmd.userId);
+    await this.diagnostics.save(diagnosis);
 
-    return toDiagnosticResponse(diagnostico);
+    return toDiagnosticResponse(diagnosis);
   }
 }

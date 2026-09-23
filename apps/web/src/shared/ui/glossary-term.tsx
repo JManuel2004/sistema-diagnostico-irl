@@ -3,15 +3,15 @@ import { GLOSSARY, type GlossaryKey } from '@/shared/lib/glossary';
 import { Tooltip } from './tooltip';
 
 /**
- * Un término técnico con su explicación en un `Tooltip`.
+ * A technical term with its explanation in a `Tooltip`.
  *
- * Es un botón (no un `span`) para que se pueda enfocar con el teclado y el
- * tooltip aparezca también sin ratón; el subrayado punteado avisa de que hay
- * una explicación.
+ * It is a button (not a `span`) so it can be focused with the keyboard and
+ * the tooltip also appears without a mouse; the dotted underline signals
+ * there is an explanation.
  */
 interface GlossaryTermProps {
   readonly term: GlossaryKey;
-  /** Texto visible si debe distinguirse del término del glosario (p. ej. «brechas»). */
+  /** Visible text, if it must differ from the glossary term (e.g. «brechas»). */
   readonly children?: string;
   readonly className?: string;
 }

@@ -2,26 +2,25 @@ import { z } from 'zod';
 import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
 
 /**
- * Clasificación del desequilibrio entre dos dimensiones (RF-10):
+ * Classification of the imbalance between two dimensions (RF-10):
  *
- *   - `critical`    — diferencia > 3 niveles IRL
- *   - `moderate`    — diferencia de 2 o 3 niveles IRL
- *   - `acceptable`  — diferencia < 2 niveles IRL
+ *   - `critical`    — difference > 3 IRL levels
+ *   - `moderate`    — difference of 2 or 3 IRL levels
+ *   - `acceptable`  — difference < 2 IRL levels
  *
- * Los thresholds son del marco KTH y no son negociables. El frontend
- * usa la clasificación para decidir color/ícono/texto en la lista de
- * desequilibrios (HU-15).
+ * The thresholds belong to the KTH framework and are not negotiable. The
+ * frontend uses the classification to decide color, icon and text in the
+ * list of imbalances (HU-15).
  */
 export const imbalanceClassificationSchema = z
   .enum(['critical', 'moderate', 'acceptable'])
-  .describe('Clasificación del desequilibrio entre un par de dimensiones');
+  .describe('Classification of the imbalance between a pair of dimensions');
 
 export type ImbalanceClassification = z.infer<typeof imbalanceClassificationSchema>;
 
 /**
- * Las seis duplas evaluadas para desequilibrio según el marco KTH —
- * el sistema **siempre** evalúa estas y solo estas (ver los hechos
- * de dominio no negociables del proyecto).
+ * The six pairs evaluated for imbalance according to the KTH framework —
+ * the system **always** evaluates these and only these.
  */
 export const IMBALANCE_PAIRS = [
   ['TRL', 'CRL'],
@@ -33,12 +32,12 @@ export const IMBALANCE_PAIRS = [
 ] as const;
 
 /**
- * Resultado de evaluar una dupla de dimensiones para desequilibrio.
+ * Result of evaluating a pair of dimensions for imbalance.
  *
- * Convención de orden: `(left, right)` siguen el orden listado en
- * `IMBALANCE_PAIRS`. La función `diff(leftLevel, rightLevel)` del
- * marco es order-insensitive (`abs(a - b)`), pero estabilizar el orden
- * en el contrato facilita el match en pruebas y en la UI.
+ * Order convention: `(left, right)` follow the order listed in
+ * `IMBALANCE_PAIRS`. The framework's `diff(leftLevel, rightLevel)` is
+ * order-insensitive (`abs(a - b)`), but fixing the order in the contract
+ * makes matching easier in tests and in the UI.
  */
 export const imbalancePairResultSchema = z
   .object({
@@ -49,9 +48,9 @@ export const imbalancePairResultSchema = z
       .int()
       .min(0)
       .max(8)
-      .describe('Diferencia absoluta entre niveles IRL del par'),
+      .describe('Absolute difference between the IRL levels of the pair'),
     classification: imbalanceClassificationSchema,
   })
-  .describe('Resultado del análisis de desequilibrio para un par de dimensiones');
+  .describe('Result of the imbalance analysis for a pair of dimensions');
 
 export type ImbalancePairResult = z.infer<typeof imbalancePairResultSchema>;

@@ -80,17 +80,17 @@ describe('DisclosurePanel', () => {
         <p>Contenido</p>
       </DisclosurePanel>,
     );
-    const boton = screen.getByRole('button', { name: /Cómo se llegó/ });
+    const button = screen.getByRole('button', { name: /Cómo se llegó/ });
 
-    expect(boton).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(onOpen).not.toHaveBeenCalled();
 
-    await userEvent.click(boton);
-    expect(boton).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.click(button);
+    expect(button).toHaveAttribute('aria-expanded', 'true');
     expect(onOpen).toHaveBeenCalledTimes(1);
 
-    await userEvent.click(boton);
-    expect(boton).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(button);
+    expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
 });

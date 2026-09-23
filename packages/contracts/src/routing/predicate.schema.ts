@@ -1,32 +1,28 @@
 import { z } from 'zod';
 
 /**
- * DSL de predicados del motor de enrutamiento.
+ * Predicate DSL of the routing engine.
  *
- * Un predicado es un árbol: hojas que comparan un campo de los hechos del
- * diagnóstico contra un valor, y nodos `and` / `or` / `not` que las
- * combinan.
+ * A predicate is a tree: leaves that compare a field of the diagnostic's
+ * facts against a value, and `and` / `or` / `not` nodes that combine them.
  *
- * Se serializa como `jsonb`, no como texto libre. La tabla
- * `regla_enrutamiento` que este modelo reemplaza tenía `condicion
- * varchar(2000)` sin formato definido en ninguna parte; con `jsonb`
- * Postgres valida la sintaxis al escribir y el predicado sigue siendo
- * consultable desde SQL, que es lo que necesita el validador inter-capas.
+ * It is serialized as `jsonb`, not as free text: Postgres validates the
+ * syntax on write and the predicate stays queryable from SQL.
  *
- * El modo de compilación es lo que separa las capas 1 y 3:
- *   - `BOOLEAN` (elegibilidad) admite solo igualdad y pertenencia. Una
- *     regla de elegibilidad expresa imposibilidad, no grado.
- *   - `WITH_DEGREE` (excepciones) admite además comparaciones numéricas.
+ * The compilation mode is what separates layers 1 and 3:
+ *   - `BOOLEAN` (eligibility) allows only equality and membership. An
+ *     eligibility rule expresses impossibility, not degree.
+ *   - `WITH_DEGREE` (exceptions) also allows numeric comparisons.
  *
- * Rechazar los operadores de comparación en modo `BOOLEAN` es lo que
- * impide estructuralmente que una condición de grado se cuele al filtro
- * duro, en vez de dejarlo a la disciplina de quien configura.
+ * Rejecting the comparison operators in `BOOLEAN` mode is what
+ * structurally keeps a degree condition out of the hard filter, instead of
+ * leaving it to the discipline of whoever configures.
  */
 
-/** Operadores admitidos en ambos modos. */
+/** Operators allowed in both modes. */
 export const BOOLEAN_OPERATORS = ['=', '!=', 'contains', 'not_contains'] as const;
 
-/** Operadores que solo admite el modo `WITH_DEGREE`. */
+/** Operators that only the `WITH_DEGREE` mode allows. */
 export const DEGREE_OPERATORS = [
   '>=',
   '<=',
@@ -44,10 +40,10 @@ export const operatorSchema = z.enum([
 export type Operator = z.infer<typeof operatorSchema>;
 
 /**
- * Lista blanca de campos consultables. Un campo fuera de esta lista falla
- * al compilar, no al evaluar: configurar una regla contra un campo que no
- * existe debe romperse cuando alguien la escribe, no meses después cuando
- * un diagnóstico la activa.
+ * Whitelist of queryable fields. A field outside this list fails when
+ * compiling, not when evaluating: configuring a rule against a field that
+ * does not exist must break when someone writes it, not months later when
+ * a diagnostic triggers it.
  */
 export const QUERYABLE_FIELDS = [
   'bottleneck',
@@ -76,7 +72,7 @@ export const predicateLeafSchema = z
     op: operatorSchema,
     value: z.union([z.string(), z.number(), z.boolean(), z.null()]),
   })
-  .describe('Comparación de un campo de los hechos contra un valor');
+  .describe('Comparison of a field of the facts against a value');
 
 export type PredicateLeaf = z.infer<typeof predicateLeafSchema>;
 
@@ -94,6 +90,6 @@ export const predicateSchema: z.ZodType<Predicate> = z.lazy(() =>
   ]),
 );
 
-/** Modo de compilación — determina qué operadores se aceptan. */
+/** Compilation mode — decides which operators are accepted. */
 export const compilationModeSchema = z.enum(['BOOLEAN', 'WITH_DEGREE']);
 export type CompilationMode = z.infer<typeof compilationModeSchema>;

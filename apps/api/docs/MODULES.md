@@ -1,6 +1,6 @@
 # API Modules
 
-Deliberately short. Anything that can be derived from the code is **not** documented by hand: the endpoint list is Swagger (`/api/v1/docs`), the folder layout is the repository, and what each module owns and exposes is in the `README.md` at the root of that module. This file is only the map that ties them together.
+Deliberately short. Anything that can be derived from the code is **not** documented by hand: the endpoint list is Swagger (`/api/docs`), the folder layout is the repository, and what each module owns and exposes is in the `README.md` at the root of that module. This file is only the map that ties them together.
 
 ## Modules
 

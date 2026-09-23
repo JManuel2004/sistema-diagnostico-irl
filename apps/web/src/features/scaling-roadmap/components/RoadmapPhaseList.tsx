@@ -9,13 +9,13 @@ interface Props {
 }
 
 /**
- * El roadmap completo: fases en orden y, al pie, las dimensiones que no
- * requieren intervención.
+ * The whole roadmap: the phases in order and, at the bottom, the dimensions
+ * that need no intervention.
  *
- * Esa lista final no es decorativa. El roadmap cubre solo las
- * dimensiones a intervenir, no las seis, así que sin decir explícitamente
- * cuáles quedaron fuera la ausencia de una dimensión se leería como un
- * olvido del sistema en vez de como un resultado.
+ * That final list is not decorative. The roadmap covers only the
+ * dimensions to intervene, not all six, so without saying explicitly which
+ * ones were left out, a dimension's absence would read as an oversight of
+ * the system instead of as a result.
  */
 export function RoadmapPhaseList({ roadmap }: Props): JSX.Element {
   if (roadmap.phases.length === 0) {

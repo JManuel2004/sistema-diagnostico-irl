@@ -3,9 +3,9 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { DimensionCode, LikertValue } from '@innlab/contracts';
 
 /**
- * Borrador del cuestionario IRL — Story 3 (HU-09 / DIAGIRL-31).
+ * Draft of the IRL questionnaire (HU-09).
  *
- * Owns three slices of cross-component state that must survive
+ * Owns four slices of cross-component state that must survive
  * dimension-tab navigation, route navigation within the SPA, and a
  * page reload (F5):
  *

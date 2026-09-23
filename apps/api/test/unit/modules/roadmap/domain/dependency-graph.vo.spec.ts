@@ -8,8 +8,8 @@ import {
 
 const DIMS: DimensionCode[] = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'];
 
-const minimosCompletos = (nivel = 4) =>
-  DIMS.map((d) => ({ dimension: d, minimumExpectedLevel: nivel }));
+const completeMinimums = (level = 4) =>
+  DIMS.map((d) => ({ dimension: d, minimumExpectedLevel: level }));
 
 const edge = (
   source: DimensionCode,
@@ -22,14 +22,14 @@ describe('DependencyGraph', () => {
     it('acepta un graph acíclico con mínimos completos', () => {
       const g = DependencyGraph.create(
         [edge('TmRL', 'TRL'), edge('TRL', 'CRL')],
-        minimosCompletos(),
+        completeMinimums(),
       );
       expect(g.expectedMinimum('TRL')).toBe(4);
       expect(g.nodes()).toHaveLength(6);
     });
 
     it('acepta un graph sin ninguna edge', () => {
-      const g = DependencyGraph.create([], minimosCompletos());
+      const g = DependencyGraph.create([], completeMinimums());
       expect(g.allEdges()).toEqual([]);
       expect(g.incomingEdges('FRL')).toEqual([]);
     });
@@ -37,7 +37,7 @@ describe('DependencyGraph', () => {
     it('indexa edges entrantes y salientes por dimensión', () => {
       const g = DependencyGraph.create(
         [edge('BRL', 'FRL', 3), edge('IPRL', 'FRL', 4)],
-        minimosCompletos(),
+        completeMinimums(),
       );
       expect(g.incomingEdges('FRL')).toHaveLength(2);
       expect(g.outgoingEdges('BRL')).toHaveLength(1);
@@ -45,8 +45,8 @@ describe('DependencyGraph', () => {
     });
 
     it('admite mínimos distintos por dimensión', () => {
-      // El esquema no asume un mínimo global; que el seed use 4 uniforme
-      // es una decisión de datos, no una restricción del motor.
+      // The schema does not assume a global minimum; the seed using a uniform 4
+      // is a data decision, not a constraint of the engine.
       const g = DependencyGraph.create(
         [],
         [
@@ -65,7 +65,7 @@ describe('DependencyGraph', () => {
   describe('rechazo de configuración inválida', () => {
     it('rechaza una edge reflexiva', () => {
       expect(() =>
-        DependencyGraph.create([edge('TRL', 'TRL')], minimosCompletos()),
+        DependencyGraph.create([edge('TRL', 'TRL')], completeMinimums()),
       ).toThrow(/reflexiva/);
     });
 
@@ -73,28 +73,28 @@ describe('DependencyGraph', () => {
       expect(() =>
         DependencyGraph.create(
           [edge('TRL', 'CRL', 3), edge('TRL', 'CRL', 4)],
-          minimosCompletos(),
+          completeMinimums(),
         ),
       ).toThrow(/duplicada/);
     });
 
     it('acepta A→B y B→A como edges distintas, pero las detecta como ciclo', () => {
-      // No son duplicadas: son direcciones opuestas. Lo que las descarta
-      // es la aciclicidad, no la unicidad del par.
+      // They are not duplicates: they are opposite directions. What rules them
+      // out is acyclicity, not the uniqueness of the pair.
       expect(() =>
         DependencyGraph.create(
           [edge('TRL', 'CRL'), edge('CRL', 'TRL')],
-          minimosCompletos(),
+          completeMinimums(),
         ),
       ).toThrow(DependencyGraphCycleError);
     });
 
     it('rechaza un nivel requerido fuera de [1,9]', () => {
       expect(() =>
-        DependencyGraph.create([edge('TRL', 'CRL', 10)], minimosCompletos()),
+        DependencyGraph.create([edge('TRL', 'CRL', 10)], completeMinimums()),
       ).toThrow(/\[1, 9\]/);
       expect(() =>
-        DependencyGraph.create([edge('TRL', 'CRL', 0)], minimosCompletos()),
+        DependencyGraph.create([edge('TRL', 'CRL', 0)], completeMinimums()),
       ).toThrow(/\[1, 9\]/);
     });
 
@@ -126,7 +126,7 @@ describe('DependencyGraph', () => {
       expect(() =>
         DependencyGraph.create(
           [],
-          [...minimosCompletos(), { dimension: 'TRL', minimumExpectedLevel: 5 }],
+          [...completeMinimums(), { dimension: 'TRL', minimumExpectedLevel: 5 }],
         ),
       ).toThrow(/duplicado/);
     });
@@ -134,9 +134,9 @@ describe('DependencyGraph', () => {
 
   describe('detección de ciclos', () => {
     it('detecta un ciclo de tres nodos y nombra las dimensions implicadas', () => {
-      // La base de datos no puede ver esto: UNIQUE(source, target)
-      // impide duplicados, no que el recorrido se cierre sobre sí mismo.
-      let capturado: DependencyGraphCycleError | undefined;
+      // The database cannot see this: UNIQUE(source, target) prevents
+      // duplicates, not the walk closing on itself.
+      let caught: DependencyGraphCycleError | undefined;
       try {
         DependencyGraph.create(
           [
@@ -144,38 +144,38 @@ describe('DependencyGraph', () => {
             edge('CRL', 'BRL'),
             edge('BRL', 'TRL'),
           ],
-          minimosCompletos(),
+          completeMinimums(),
         );
       } catch (e) {
-        capturado = e as DependencyGraphCycleError;
+        caught = e as DependencyGraphCycleError;
       }
 
-      expect(capturado).toBeInstanceOf(DependencyGraphCycleError);
-      expect(capturado!.code).toBe('ROADMAP_GRAPH_HAS_CYCLE');
-      expect(capturado!.dimensionesImplicadas).toEqual(
+      expect(caught).toBeInstanceOf(DependencyGraphCycleError);
+      expect(caught!.code).toBe('ROADMAP_GRAPH_HAS_CYCLE');
+      expect(caught!.involvedDimensions).toEqual(
         expect.arrayContaining(['TRL', 'CRL', 'BRL']),
       );
-      expect(capturado!.message).toMatch(/ciclo/);
+      expect(caught!.message).toMatch(/ciclo/);
     });
 
     it('detecta un ciclo de dos nodos', () => {
       expect(() =>
         DependencyGraph.create(
           [edge('IPRL', 'FRL'), edge('FRL', 'IPRL')],
-          minimosCompletos(),
+          completeMinimums(),
         ),
       ).toThrow(DependencyGraphCycleError);
     });
 
     it('un ciclo es un RoadmapCalculationError, y por tanto un 500', () => {
-      // Un graph mal declarado es un defecto de configuración del
-      // sistema, no un error de la petición del usuario.
+      // A badly declared graph is a configuration defect of the system,
+      // not an error in the user's request.
       const error = new DependencyGraphCycleError(['TRL', 'CRL']);
       expect(error).toBeInstanceOf(RoadmapCalculationError);
     });
 
     it('no confunde un rombo con un ciclo', () => {
-      // A→B, A→C, B→D, C→D es un DAG perfectamente válido.
+      // A→B, A→C, B→D, C→D is a perfectly valid DAG.
       expect(() =>
         DependencyGraph.create(
           [
@@ -184,7 +184,7 @@ describe('DependencyGraph', () => {
             edge('TRL', 'FRL'),
             edge('CRL', 'FRL'),
           ],
-          minimosCompletos(),
+          completeMinimums(),
         ),
       ).not.toThrow();
     });
@@ -200,10 +200,10 @@ describe('DependencyGraph — accesos defensivos', () => {
   });
 
   it('`expectedMinimum` lanza ante una dimensión sin mínimo declarado', () => {
-    // Inalcanzable por la vía normal —`create()` exige las seis— pero la
-    // guarda existe para que una regresión falle en voz alta en vez de
-    // devolver `undefined` y propagar un NaN por todo el cálculo.
-    const g = DependencyGraph.create([], minimosCompletos());
+    // Unreachable the normal way — `create()` demands all six — but the
+    // guard exists so a regression fails loudly instead of returning
+    // `undefined` and spreading a NaN through the whole calculation.
+    const g = DependencyGraph.create([], completeMinimums());
     expect(() => g.expectedMinimum('INVENTADA' as DimensionCode)).toThrow(
       /no tiene nivel mínimo esperado/,
     );

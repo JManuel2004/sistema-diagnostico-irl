@@ -20,7 +20,7 @@ function pair(
   return { left, right, difference, classification };
 }
 
-/** Levels: Tecnología 8, Cliente 6, Negocio 4, Propiedad intelectual 3, Equipo 5, Financiación 3. */
+/** Levels: TRL 8, CRL 6, BRL 4, IPRL 3, TmRL 5, FRL 3. */
 const LEVELS: Record<DimensionCode, number> = { TRL: 8, CRL: 6, BRL: 4, IPRL: 3, TmRL: 5, FRL: 3 };
 
 function profile(over: Partial<MaturityProfileResponse> = {}): MaturityProfileResponse {

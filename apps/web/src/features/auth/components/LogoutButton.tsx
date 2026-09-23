@@ -4,11 +4,11 @@ import { Button } from '@/shared/ui/button';
 import { useLogout } from '../hooks/useLogout';
 
 /**
- * Salida de sesión del ecosistema.
+ * Logout from the ecosystem.
  *
- * El copy dice "Cerrar sesión" a secas, pero conviene recordar que el
- * logout es centralizado: Core hace `GlobalSignOut` en Cognito, así que
- * el usuario sale de todos los productos INNLAB, no solo de este.
+ * The copy says just "Cerrar sesión", but keep in mind the logout is
+ * centralized: Core runs `GlobalSignOut` in Cognito, so the user leaves
+ * every INNLAB product, not only this one.
  */
 export function LogoutButton(): JSX.Element {
   const { logout, isLoggingOut } = useLogout();
@@ -21,7 +21,7 @@ export function LogoutButton(): JSX.Element {
       className="text-muted-foreground hover:text-foreground w-11 px-0 sm:w-auto sm:px-4"
     >
       <LogOut className="size-5 shrink-0" aria-hidden="true" />
-      {/* En móvil solo queda el icono; el texto sigue siendo su nombre accesible. */}
+      {/* On mobile only the icon remains; the text is still its accessible name. */}
       <span className="sr-only sm:not-sr-only">
         {isLoggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
       </span>

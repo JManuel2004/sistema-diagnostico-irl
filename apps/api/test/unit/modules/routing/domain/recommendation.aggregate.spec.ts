@@ -19,7 +19,7 @@ import { INITIATIVE_CHARACTERIZATION_READER } from '../../../../../src/modules/r
 
 const DIAG = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
-const sinAportes: ScoredCandidate['contributions'] = {
+const noContributions: ScoredCandidate['contributions'] = {
   bottleneck: { value: 0, details: [] },
   gaps: { value: 0, details: [] },
   imbalances: { value: 0, details: [] },
@@ -30,7 +30,7 @@ const sinAportes: ScoredCandidate['contributions'] = {
 const cand = (id: number, name: string, total: number): ScoredCandidate => ({
   idService: id,
   serviceName: name,
-  contributions: sinAportes,
+  contributions: noContributions,
   total,
 });
 
@@ -47,7 +47,7 @@ function trace(over: Partial<EvaluationTrace> = {}): EvaluationTrace {
   };
 }
 
-function crear(
+function buildRecommendation(
   ranking: ScoredCandidate[],
   over: { minimumThreshold?: number; alternativesCount?: number; trace?: EvaluationTrace } = {},
 ) {
@@ -65,7 +65,7 @@ function crear(
 
 describe('Recommendation (agregado)', () => {
   it('toma como primary el primero por encima del threshold', () => {
-    const r = crear([
+    const r = buildRecommendation([
       cand(3, 'Consultoría', 5.55),
       cand(2, 'Mentoría', 3.8),
       cand(5, 'Proyectos Integradores', 3.05),
@@ -76,7 +76,7 @@ describe('Recommendation (agregado)', () => {
   });
 
   it('limita las alternatives a `alternativesCount` y nunca incluye la primary', () => {
-    const r = crear(
+    const r = buildRecommendation(
       [
         cand(3, 'Consultoría', 5.55),
         cand(2, 'Mentoría', 3.8),
@@ -93,7 +93,7 @@ describe('Recommendation (agregado)', () => {
   });
 
   it('descarta del ranking a los que no llegan al threshold', () => {
-    const r = crear(
+    const r = buildRecommendation(
       [cand(3, 'Consultoría', 5.55), cand(2, 'Mentoría', 1.2)],
       { minimumThreshold: 2.5 },
     );
@@ -102,10 +102,10 @@ describe('Recommendation (agregado)', () => {
   });
 
   it('devuelve SIN_RECOMENDACION cuando nadie supera el threshold', () => {
-    // Es un desenlace legítimo, no un fallo: RF-15 pide que el sistema no
-    // devuelva una recomendación vacía ni ambigua, no que siempre
-    // encuentre una.
-    const r = crear([cand(3, 'Consultoría', 1.0)], { minimumThreshold: 2.5 });
+    // It is a legitimate outcome, not a failure: RF-15 asks the system not
+    // to return an empty or ambiguous recommendation, not to always find
+    // one.
+    const r = buildRecommendation([cand(3, 'Consultoría', 1.0)], { minimumThreshold: 2.5 });
 
     expect(r.resultType).toBe('NO_RECOMMENDATION');
     expect(r.primary).toBeNull();
@@ -115,13 +115,13 @@ describe('Recommendation (agregado)', () => {
   });
 
   it('devuelve SIN_RECOMENDACION cuando no queda ningún candidate', () => {
-    const r = crear([]);
+    const r = buildRecommendation([]);
     expect(r.resultType).toBe('NO_RECOMMENDATION');
   });
 
   describe('adjustedByException', () => {
     it('es falso cuando el ganador del cálculo también gana al final', () => {
-      const r = crear([cand(3, 'Consultoría', 5.55)], {
+      const r = buildRecommendation([cand(3, 'Consultoría', 5.55)], {
         trace: trace({
           rankingBeforeExceptions: [cand(3, 'Consultoría', 5.55)],
           rankingAfterExceptions: [cand(3, 'Consultoría', 5.55)],
@@ -131,9 +131,10 @@ describe('Recommendation (agregado)', () => {
     });
 
     it('es verdadero cuando un ajuste desplazó al ganador del cálculo', () => {
-      // La distinción que separa un sistema auditable de uno que parece
-      // objetivo sin serlo, por eso se deriva del agregado y no de la UI.
-      const r = crear([cand(4, 'Retos en el Aula', 3.4)], {
+      // The distinction that separates an auditable system from one that
+      // looks objective without being so, which is why it is derived from the
+      // aggregate and not from the UI.
+      const r = buildRecommendation([cand(4, 'Retos en el Aula', 3.4)], {
         trace: trace({
           rankingBeforeExceptions: [cand(3, 'Consultoría', 5.55)],
           rankingAfterExceptions: [cand(4, 'Retos en el Aula', 3.4)],
@@ -143,7 +144,7 @@ describe('Recommendation (agregado)', () => {
     });
 
     it('es falso si la trace está vacía, en vez de reventar', () => {
-      expect(crear([cand(3, 'C', 5)]).adjustedByException()).toBe(false);
+      expect(buildRecommendation([cand(3, 'C', 5)]).adjustedByException()).toBe(false);
     });
   });
 
@@ -194,8 +195,8 @@ describe('errores del módulo de enrutamiento', () => {
   });
 
   it('los puertos se identifican por símbolo, no por name de clase', () => {
-    // Es lo que permite que la aplicación dependa del puerto y nunca del
-    // adaptador concreto.
+    // It is what lets the application depend on the port and never on
+    // the concrete adapter.
     expect(typeof ACTIVE_CONFIGURATION_REPOSITORY).toBe('symbol');
     expect(typeof RECOMMENDATION_REPOSITORY).toBe('symbol');
     expect(typeof INITIATIVE_CHARACTERIZATION_READER).toBe('symbol');

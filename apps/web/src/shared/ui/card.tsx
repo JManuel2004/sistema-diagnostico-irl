@@ -2,15 +2,14 @@ import { forwardRef, type HTMLAttributes } from 'react';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * Familia `Card` alineada con `DESIGN.md`.
+ * `Card` family aligned with `DESIGN.md`.
  *
- * El sistema favorece **hairlines Gris 2** (`#CECFD4`) sobre
- * sombras para indicar profundidad — más legible en proyectores
- * de baja DPI usados en talleres de INNLAB (RNF-08).
+ * The system favors **Gris 2 hairlines** (`#CECFD4`) over shadows to
+ * convey depth — more readable on the low-DPI projectors used in INNLAB
+ * workshops (RNF-08).
  *
- * El root es semánticamente neutro (`<div>`). Las páginas que
- * necesiten landmark envuelven la tarjeta en `<section
- * aria-labelledby>` por fuera.
+ * The root is semantically neutral (`<div>`). Pages that need a landmark
+ * wrap the card in a `<section aria-labelledby>` outside.
  */
 export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function Card(
   { className, ...props },

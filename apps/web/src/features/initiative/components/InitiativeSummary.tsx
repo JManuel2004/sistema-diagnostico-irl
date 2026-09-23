@@ -6,16 +6,17 @@ import { Badge } from '@/shared/ui/badge';
 import { Card } from '@/shared/ui/card';
 
 /**
- * La iniciativa tal como se registró: el resumen que se ve en el panel y antes
- * de procesar el diagnóstico.
+ * The initiative as it was registered: the summary shown in the panel and
+ * before processing the diagnostic.
  *
- * Abre con su nombre y su sector y baja a lo demás en bloques con su icono,
- * a tamaño de lectura: es lo que el usuario contó de sí mismo y tiene que
- * poder releerlo de un vistazo, no descifrarlo de una lista de definiciones.
+ * It opens with its name and its sector and goes down to the rest in blocks
+ * with their icon, at reading size: it is what the user said about
+ * themselves and they must be able to reread it at a glance, not decode it
+ * from a definition list.
  */
 interface Props {
   readonly initiative: Initiative;
-  /** A la derecha del nombre: p. ej. el enlace para corregirla. */
+  /** To the right of the name: e.g. the link to correct it. */
   readonly action?: ReactNode;
 }
 

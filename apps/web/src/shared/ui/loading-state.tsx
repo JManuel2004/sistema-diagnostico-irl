@@ -2,12 +2,12 @@ import type { JSX } from 'react';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * `LoadingState` — estado de carga de una página o de un bloque.
+ * `LoadingState` — loading state of a page or a block.
  *
- * Un solo tratamiento (indicador giratorio y texto) para todo lo que espera
- * datos, en lugar de un texto suelto distinto por pantalla. El
- * esqueleto del cuestionario es aparte a propósito: reproduce la forma de
- * las 48 tarjetas, que un indicador genérico no puede.
+ * A single treatment (spinner and text) for everything that waits for data,
+ * instead of a different loose text per screen. The questionnaire skeleton
+ * is separate on purpose: it reproduces the shape of the 48 cards, which a
+ * generic indicator cannot.
  */
 interface LoadingStateProps {
   readonly label: string;

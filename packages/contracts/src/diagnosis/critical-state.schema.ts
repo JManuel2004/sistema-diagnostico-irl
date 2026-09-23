@@ -2,18 +2,18 @@ import { z } from 'zod';
 import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
 
 /**
- * Estado crítico del perfil (RF-13).
+ * Critical state of the profile (RF-13).
  *
- * Solo CRL, BRL y TmRL pueden estar en estado crítico, y lo están cuando su
- * nivel IRL está en brecha. Se calcula en el backend
- * (`MaturityProfile.criticalState()`); el cliente solo lo muestra.
+ * Only CRL, BRL and TmRL can be in critical state, and they are when their
+ * IRL level is in gap. It is computed in the backend
+ * (`MaturityProfile.criticalState()`); the client only shows it.
  */
 export const criticalStateSchema = z
   .object({
     dimensions: z
       .array(dimensionCodeSchema)
-      .describe('Dimensiones en estado crítico (una brecha en CRL, BRL o TmRL)'),
+      .describe('Dimensions in critical state (a gap in CRL, BRL or TmRL)'),
   })
-  .describe('Dimensiones en estado crítico del perfil de madurez');
+  .describe('Dimensions in critical state of the maturity profile');
 
 export type CriticalState = z.infer<typeof criticalStateSchema>;

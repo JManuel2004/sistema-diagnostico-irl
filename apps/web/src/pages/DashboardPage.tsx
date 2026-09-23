@@ -14,22 +14,22 @@ import { useStartDiagnostic } from '@/shared/hooks/useStartDiagnostic';
 import { wizardPath } from './wizard/wizard-steps';
 
 /**
- * `/panel` — el panel de la iniciativa.
+ * `/panel` — the initiative panel.
  *
- * Es el destino del descriptor institucional en las pantallas con navegación.
- * Muestra la iniciativa del último diagnóstico con resultados y los accesos a
- * corregirla y a ver esos resultados. Si el usuario dejó un diagnóstico a
- * medias, ofrece continuarlo en el asistente. El historial de diagnósticos
- * pasados tiene su espacio reservado pero no se construye aquí: es una historia
- * de usuario futura.
+ * It is where the institutional descriptor leads on the screens with
+ * navigation. It shows the initiative of the latest diagnostic with results
+ * and the links to correct it and to see those results. If the user left a
+ * diagnostic halfway, it offers to continue it in the wizard. The history
+ * of past diagnostics has its space reserved but is not built here: it is a
+ * future user story.
  *
- * Jerarquía: un solo botón naranja por pantalla. Con un diagnóstico en curso
- * lo es «Continuar diagnóstico» y «Ver resultados» baja a secundario; sin él,
- * «Ver resultados» es la acción principal.
+ * Hierarchy: a single primary button per screen. With a diagnostic in
+ * progress it is «Continuar diagnóstico» and «Ver resultados» drops to
+ * secondary; without one, «Ver resultados» is the main action.
  */
 export default function DashboardPage(): JSX.Element {
   const diagnostics = useMyDiagnostics();
-  // La lista viene del más reciente al más antiguo.
+  // The list comes most recent first.
   const list = diagnostics.data ?? [];
   const completed = list.find((d) => d.completed);
   const inProgress = list.find((d) => !d.completed);
@@ -124,7 +124,7 @@ export default function DashboardPage(): JSX.Element {
         {completed && initiative.data && (
           <>
             <InitiativeSummary initiative={initiative.data} />
-            {/* Un solo botón naranja por pantalla: si hay un diagnóstico en curso, lo es «Continuar». */}
+            {/* A single primary button per screen: with a diagnostic in progress, it is «Continuar». */}
             <nav
               aria-label="Accesos del diagnóstico"
               className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:gap-3"
@@ -145,8 +145,10 @@ export default function DashboardPage(): JSX.Element {
           </>
         )}
 
-        {/* Reservado: el historial de diagnósticos pasados es una historia de usuario futura.
-            Va como nota discreta, sin tarjeta, para no competir con lo que sí funciona. */}
+        {/*
+          Reserved: the history of past diagnostics is a future user story.
+          It goes as a discreet note, without a card, so it does not compete with what works.
+        */}
         <section aria-labelledby="dashboard-history" className="border-border border-t pt-6">
           <h2 id="dashboard-history" className="text-foreground text-base font-bold">
             Historial de diagnósticos

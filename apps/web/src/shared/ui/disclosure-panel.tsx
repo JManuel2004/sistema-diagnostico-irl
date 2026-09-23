@@ -4,24 +4,23 @@ import type { LucideIcon } from 'lucide-react';
 import { Card } from './card';
 
 /**
- * `DisclosurePanel` — panel plegable de explicación.
+ * `DisclosurePanel` — collapsible explanation panel.
  *
- * Es el patrón de «cómo se llegó a esto»: colapsado por defecto porque no
- * es lo que el usuario necesita en primer plano, accesible sin cambiar de
- * pantalla. Lo usan la traza de la recomendación y la explicación del
- * roadmap para que las dos pantallas expliquen igual.
+ * It is the "how we got here" pattern: collapsed by default because it is
+ * not what the user needs up front, reachable without changing screens.
+ * The recommendation trace and the roadmap explanation use it so both
+ * explain the same way.
  *
- * El contenido queda montado aunque esté plegado (`hidden`), así que
- * `onOpen` sirve para pedir datos pesados solo cuando alguien abre el
- * panel.
+ * The content stays mounted while collapsed (`hidden`), so `onOpen` serves
+ * to request heavy data only when someone opens the panel.
  */
 interface DisclosurePanelProps {
-  /** Identificador del bloque de contenido, para `aria-controls`. */
+  /** Identifier of the content block, for `aria-controls`. */
   readonly id: string;
   readonly title: string;
-  /** Texto a la derecha del título (p. ej. la audiencia). */
+  /** Text to the right of the title (e.g. the audience). */
   readonly tag?: string;
-  /** Icono a la izquierda del título, para que el panel se lea como una invitación. */
+  /** Icon to the left of the title, so the panel reads as an invitation. */
   readonly icon?: LucideIcon;
   readonly onOpen?: () => void;
   readonly children: ReactNode;

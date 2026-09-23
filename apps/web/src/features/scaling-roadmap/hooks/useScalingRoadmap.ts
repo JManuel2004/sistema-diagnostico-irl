@@ -3,9 +3,8 @@ import { queryKeys } from '@/shared/api/query-keys';
 import { getScalingRoadmap } from '../api/scaling-roadmap.api';
 
 /**
- * El roadmap es una función determinista del perfil y del grafo
- * sembrado, así que es un snapshot igual de estable que el perfil de
- * madurez y comparte su `staleTime` de 5 minutos.
+ * The roadmap is a saved result of the deep analysis, as stable a snapshot
+ * as the maturity profile, so it shares its 5-minute `staleTime`.
  */
 export function useScalingRoadmap(diagnosticId: string | undefined) {
   return useQuery({

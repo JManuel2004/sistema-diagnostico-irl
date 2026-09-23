@@ -27,7 +27,7 @@ export class TypeOrmAnswerSheetRepository implements AnswerSheetRepositoryPort {
 
   async findByDiagnosticId(diagnosticId: string): Promise<AnswerSheet | null> {
     const rows = await this.orm.find({
-      where: { idDiagnostico: diagnosticId },
+      where: { diagnosticId: diagnosticId },
       order: { idStatement: 'ASC' },
     });
     if (rows.length === 0) return null;
@@ -47,12 +47,12 @@ export class TypeOrmAnswerSheetRepository implements AnswerSheetRepositoryPort {
 
     await this.orm.manager.transaction(async (manager) => {
       await manager.delete(AnswerOrm, {
-        idDiagnostico: sheet.diagnosticId.value,
+        diagnosticId: sheet.diagnosticId.value,
       });
       if (snapshot.length > 0) {
         const rows = snapshot.map((a) =>
           manager.create(AnswerOrm, {
-            idDiagnostico: sheet.diagnosticId.value,
+            diagnosticId: sheet.diagnosticId.value,
             idStatement: a.statementId,
             likertValue: a.value,
             justification: a.justification,

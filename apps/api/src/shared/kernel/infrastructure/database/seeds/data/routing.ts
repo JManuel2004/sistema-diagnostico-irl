@@ -1,31 +1,31 @@
 /**
- * Configuración inicial del motor de enrutamiento de portafolio.
+ * Initial configuration of the portfolio routing engine.
  *
- * ⚠ TODOS ESTOS VALORES SON HIPOTÉTICOS Y PROVISIONALES.
+ * ⚠ ALL THESE VALUES ARE HYPOTHETICAL AND PROVISIONAL.
  *
- * Provienen del documento de enfoques aplicado al caso AgroConecta, no de
- * INNLAB. El SRS (SA-03) declara que la tabla de enrutamiento real "debe
- * ser entregada por INNLAB antes del inicio de la implementación de
- * RF-15" y que "su ausencia bloquea ese módulo". Hasta que llegue, esta
- * configuración existe para que el sistema arranque con una versión
- * vigente y para que la prueba de aceptación tenga un caso reproducible.
+ * They come from the approaches document applied to the AgroConecta case,
+ * not from INNLAB. The SRS (SA-03) states that the real routing table "must
+ * be delivered by INNLAB before the implementation of RF-15 starts" and
+ * that "its absence blocks that module". Until it arrives, this
+ * configuration exists so the system starts with a live configuration and
+ * the acceptance test has a reproducible case.
  *
- * Antes de producción hay que reemplazar: los seis servicios, las 36
- * intensities ordinales, los rangos de nivel, las etapas pertinentes,
- * los ocho pesos, y las reglas de elegibilidad y excepción. La estructura
- * puede quedarse; los números no.
+ * Before production, replace: the six services, the 36 ordinal
+ * intensities, the level ranges, the relevant stages, the eight weights,
+ * and the eligibility and exception rules. The structure can stay; the
+ * numbers cannot.
  *
- * Se sigue el precedente de `statements.ts`, que se autodocumenta como
- * texto provisional pendiente de aprobación de stakeholders.
+ * It follows the precedent of `statements.ts`, which documents itself as
+ * provisional text pending stakeholder approval.
  */
 
 // ─────────────────────────────────────────────────────────────────────────
-// Servicios del portafolio
+// Portfolio services
 // ─────────────────────────────────────────────────────────────────────────
 //
-// Los seis que nombra el SRS en SA-02. Nótese que SA-03 lista solo cinco:
-// omite "retos en el aula". La contradicción está en el SRS y no se
-// resuelve aquí; se siembran los seis de SA-02 porque el caso los usa.
+// The six named by the SRS in SA-02. Note that SA-03 lists only five: it
+// leaves out "retos en el aula". The contradiction is in the SRS and is not
+// resolved here; the six of SA-02 are seeded because the case uses them.
 
 export interface ServiceSeed {
   readonly name: string;
@@ -66,29 +66,29 @@ export const SERVICES: readonly ServiceSeed[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
-// Etapas de iniciativa
+// Initiative stages
 // ─────────────────────────────────────────────────────────────────────────
 
-export interface EtapaSeed {
-  readonly codigo: string;
-  readonly nombre: string;
-  readonly orden: number;
+export interface StageSeed {
+  readonly code: string;
+  readonly name: string;
+  readonly order: number;
 }
 
-export const ETAPAS: readonly EtapaSeed[] = [
-  { codigo: 'idea', nombre: 'Idea', orden: 1 },
-  { codigo: 'validacion', nombre: 'Validación', orden: 2 },
-  { codigo: 'crecimiento', nombre: 'Crecimiento', orden: 3 },
+export const STAGES: readonly StageSeed[] = [
+  { code: 'idea', name: 'Idea', order: 1 },
+  { code: 'validacion', name: 'Validación', order: 2 },
+  { code: 'crecimiento', name: 'Crecimiento', order: 3 },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
-// Escala de calibración
+// Calibration scale
 // ─────────────────────────────────────────────────────────────────────────
 //
-// `orden` expresa la monotonía: 1 es el peldaño más alto. Los valores
-// deben ser estrictamente decrecientes en ese orden, invariante que
-// comprueba `CalibrationScale.create()` porque es una propiedad del
-// conjunto y ninguna restricción de fila puede expresarla.
+// `order` expresses the monotonicity: 1 is the highest step. The values
+// must be strictly decreasing in that order, an invariant
+// `CalibrationScale.create()` checks because it is a property of the set
+// and no row constraint can express it.
 
 export interface ScaleTierSeed {
   readonly label: string;
@@ -104,30 +104,30 @@ export const CALIBRATION_SCALE: readonly ScaleTierSeed[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
-// Pesos globales
+// Global weights
 // ─────────────────────────────────────────────────────────────────────────
 
 export const SCORING_PARAMETERS = {
-  /** El problema más agudo pesa el triple que una brecha ordinaria. */
+  /** The sharpest problem weighs three times an ordinary gap. */
   bottleneckWeight: 3.0,
-  /** Cada dimensión en brecha suma proporcionalmente a la intensidad. */
+  /** Each dimension in gap adds in proportion to the intensity. */
   gapWeight: 1.5,
-  /** Desequilibrios de 2–3 niveles: desalineación, no bloqueo. */
+  /** Imbalances of 2–3 levels: misalignment, not a block. */
   moderateImbalanceWeight: 0.5,
-  /** Desequilibrios de más de 3 niveles: bloquean el avance. */
+  /** Imbalances of more than 3 levels: they block progress. */
   criticalImbalanceWeight: 1.0,
-  /** La etapa refina la recomendación, no la decide. */
+  /** The stage refines the recommendation; it does not decide it. */
   stageAffinityWeight: 0.8,
-  /** Operar fuera de la banda de madurez del servicio cuesta 2 puntos. */
+  /** Operating outside the service's maturity band costs 2 points. */
   outOfRangePenalty: 2.0,
-  /** Por debajo de esto, el sistema prefiere no recomendar. */
+  /** Below this, the system prefers not to recommend. */
   minimumThreshold: 2.5,
-  /** Cuántas alternatives acompañan a la recomendación principal. */
+  /** How many alternatives accompany the main recommendation. */
   alternativesCount: 2,
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────
-// Fichas ordinales — 6 servicios × 6 dimensiones
+// Ordinal profiles — 6 services × 6 dimensions
 // ─────────────────────────────────────────────────────────────────────────
 
 export type OrdinalLabel =
@@ -174,8 +174,8 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     },
   },
   {
-    // Rango alto: la asesoría estratégica requiere cierta madurez previa
-    // para ser útil.
+    // High range: strategic advisory needs some prior maturity to be
+    // useful.
     service: 'Consultoría',
     minLevel: 4,
     maxLevel: 9,
@@ -204,8 +204,8 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     },
   },
   {
-    // Más apropiados temprano, cuando la iniciativa aún necesita
-    // desarrollo técnico guiado.
+    // Most suitable early on, while the initiative still needs guided
+    // technical development.
     service: 'Proyectos Integradores',
     minLevel: 1,
     maxLevel: 5,
@@ -220,8 +220,8 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     },
   },
   {
-    // Cubren casi todo el rango porque se adaptan: investigación
-    // temprana, validación de viabilidad o aceleración.
+    // They cover almost the whole range because they adapt: early
+    // research, feasibility validation or acceleration.
     service: 'Proyectos de Grado',
     minLevel: 1,
     maxLevel: 7,
@@ -238,13 +238,13 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
-// Capa 1 — reglas de elegibilidad (booleanas puras)
+// Layer 1 — eligibility rules (pure booleans)
 // ─────────────────────────────────────────────────────────────────────────
 //
-// Expresan imposibilidad, no preferencia. Por eso no pueden comparar
-// `averageLevel` ni magnitudes: el compilador en modo BOOLEAN rechaza
-// los operadores de orden, así que una condición de grado no puede
-// colarse a este filtro ni por descuido.
+// They express impossibility, not preference. That is why they cannot
+// compare `averageLevel` or magnitudes: the compiler in BOOLEAN mode
+// rejects the order operators, so a degree condition cannot slip into
+// this filter even by accident.
 
 export interface EligibilityRuleSeed {
   readonly code: string;
@@ -275,13 +275,13 @@ export const ELIGIBILITY_RULES: readonly EligibilityRuleSeed[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
-// Capa 3 — ajustes puntuales
+// Layer 3 — manual adjustments
 // ─────────────────────────────────────────────────────────────────────────
 //
-// El orden importa y es total: `priorityOrder` es único dentro de una
-// versión por restricción de base de datos. E-01 se evalúa primero y
-// puede forzar un servicio al puesto 1; E-02 y E-03 siguen evaluándose
-// después, pero sobre el ranking que E-01 ya dejó.
+// The order matters and is total: `priorityOrder` is unique by database
+// constraint. E-01 is evaluated first and can force a service into first
+// place; E-02 and E-03 are still evaluated afterwards, but over the ranking
+// E-01 already left.
 
 export interface ExceptionRuleSeed {
   readonly code: string;

@@ -2,12 +2,12 @@ import type { JSX, PropsWithChildren } from 'react';
 import { Toaster } from 'sonner';
 
 /**
- * Monta el `Toaster` de Sonner una vez en el root. Cualquier componente
- * descendiente puede emitir toasts vía `import { toast } from 'sonner'`
- * — no se requiere contexto adicional.
+ * Mounts Sonner's `Toaster` once at the root. Any descendant component can
+ * emit toasts with `import { toast } from 'sonner'` — no extra context is
+ * needed.
  *
- * `richColors` aplica colores semánticos por tipo (success/error/info),
- * `closeButton` añade el ícono de cierre por accesibilidad.
+ * `richColors` applies semantic colors per type (success/error/info),
+ * `closeButton` adds the close icon for accessibility.
  */
 export function ToastProvider({ children }: PropsWithChildren): JSX.Element {
   return (

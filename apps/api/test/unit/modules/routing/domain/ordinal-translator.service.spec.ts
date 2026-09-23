@@ -27,17 +27,17 @@ const translator = new OrdinalTranslatorService();
 
 describe('OrdinalTranslatorService', () => {
   it('resuelve cada label a su value numérico', () => {
-    const [resultado] = translator.translate([profile], scale);
-    expect(resultado.intensities.get('CRL')).toBe(1.0);
-    expect(resultado.intensities.get('IPRL')).toBe(0.5);
-    expect(resultado.intensities.get('TRL')).toBe(0.0);
+    const [result] = translator.translate([profile], scale);
+    expect(result.intensities.get('CRL')).toBe(1.0);
+    expect(result.intensities.get('IPRL')).toBe(0.5);
+    expect(result.intensities.get('TRL')).toBe(0.0);
   });
 
   it('conserva la label original junto al value', () => {
-    // Sin esto la explicación al usuario tendría que hablar en números,
-    // que es exactamente lo que la escala ordinal existe para evitar.
-    const [resultado] = translator.translate([profile], scale);
-    expect(resultado.labels.get('CRL')).toBe('primary');
+    // Without this the explanation to the user would have to speak in
+    // numbers, which is exactly what the ordinal scale exists to avoid.
+    const [result] = translator.translate([profile], scale);
+    expect(result.labels.get('CRL')).toBe('primary');
   });
 
   it('es determinista: dos traducciones iguales producen lo mismo', () => {
@@ -47,19 +47,19 @@ describe('OrdinalTranslatorService', () => {
   });
 
   it('propaga el fallo si una profile usa una label ausente en la scale', () => {
-    const rota: OrdinalProfile = {
+    const broken: OrdinalProfile = {
       ...profile,
       intensities: new Map<DimensionCode, string>([['CRL', 'critico']]),
     };
-    expect(() => translator.translate([rota], scale)).toThrow(
-      /no existe en la scale/,
+    expect(() => translator.translate([broken], scale)).toThrow(
+      /no existe en la escala/,
     );
   });
 
   it('conserva rango y etapas sin alterarlos', () => {
-    const [resultado] = translator.translate([profile], scale);
-    expect(resultado.minLevel).toBe(4);
-    expect(resultado.maxLevel).toBe(9);
-    expect(resultado.relevantStages).toEqual(['validacion']);
+    const [result] = translator.translate([profile], scale);
+    expect(result.minLevel).toBe(4);
+    expect(result.maxLevel).toBe(9);
+    expect(result.relevantStages).toEqual(['validacion']);
   });
 });
