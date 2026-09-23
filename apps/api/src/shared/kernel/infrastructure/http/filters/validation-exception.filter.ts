@@ -1,4 +1,9 @@
-import { BadRequestException, Catch, HttpStatus, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Catch,
+  Logger,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ClsService } from 'nestjs-cls';
@@ -9,13 +14,16 @@ import type { ProblemDetails } from '../problem-details.js';
  * `ValidationPipe` (class-validator decorators) into an RFC 7807 problem
  * document with a `validationErrors` array.
  */
-@Catch(BadRequestException)
+@Catch(BadRequestException, UnprocessableEntityException)
 export class ValidationExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(ValidationExceptionFilter.name);
 
   constructor(private readonly cls: ClsService) {}
 
-  catch(exception: BadRequestException, host: ArgumentsHost): void {
+  catch(
+    exception: BadRequestException | UnprocessableEntityException,
+    host: ArgumentsHost,
+  ): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<FastifyReply>();
     const request = ctx.getRequest<FastifyRequest>();
@@ -23,11 +31,12 @@ export class ValidationExceptionFilter implements ExceptionFilter {
     const correlationId = this.cls.get<string>('correlationId');
     const raw = exception.getResponse();
     const errors = this.extractValidationErrors(raw);
+    const status = exception.getStatus();
 
     const body: ProblemDetails = {
       type: 'https://errors.innlab.icesi.edu.co/validation-failed',
       title: 'validation failed',
-      status: HttpStatus.BAD_REQUEST,
+      status,
       detail: 'One or more request fields did not satisfy the contract.',
       instance: request.url,
       code: 'VALIDATION_FAILED',
@@ -40,10 +49,7 @@ export class ValidationExceptionFilter implements ExceptionFilter {
       'Validation failed',
     );
 
-    void response
-      .status(HttpStatus.BAD_REQUEST)
-      .type('application/problem+json')
-      .send(body);
+    void response.status(status).type('application/problem+json').send(body);
   }
 
   private extractValidationErrors(raw: unknown): Record<string, unknown>[] {

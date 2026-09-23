@@ -1,18 +1,23 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { InitiativeStage, Sector } from '@innlab/contracts';
 import {
   ListSectorsUseCase,
   ListStagesUseCase,
 } from '../../application/use-cases/list-initiative-catalog.use-case.js';
+import { ApiErrors } from '../../../../shared/kernel/presentation/api-errors.decorator.js';
+import {
+  InitiativeStageResponseDto,
+  SectorResponseDto,
+} from './dto/initiative.response.dto.js';
 
-/**
- * Read-only catalogs the initiative registration form needs.
- *
- *   - `GET /api/v1/initiative-catalog/sectors`
- *   - `GET /api/v1/initiative-catalog/stages`
- */
 @ApiTags('initiative')
+@ApiBearerAuth()
 @Controller('initiative-catalog')
 export class InitiativeCatalogController {
   constructor(
@@ -21,13 +26,23 @@ export class InitiativeCatalogController {
   ) {}
 
   @Get('sectors')
-  @ApiOkResponse({ description: 'Active sectors, by name' })
+  @ApiOperation({
+    summary: 'List the sectors',
+    description: 'Active sectors, by name.',
+  })
+  @ApiOkResponse({ type: [SectorResponseDto] })
+  @ApiErrors()
   listSectors(): Promise<Sector[]> {
     return this.sectors.execute();
   }
 
   @Get('stages')
-  @ApiOkResponse({ description: 'Active initiative stages, in order' })
+  @ApiOperation({
+    summary: 'List the initiative stages',
+    description: 'Active stages, in order.',
+  })
+  @ApiOkResponse({ type: [InitiativeStageResponseDto] })
+  @ApiErrors()
   listStages(): Promise<InitiativeStage[]> {
     return this.stages.execute();
   }

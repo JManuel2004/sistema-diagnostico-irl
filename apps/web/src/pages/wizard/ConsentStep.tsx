@@ -9,6 +9,7 @@ import {
 } from '@features/initiative';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
+import { notify } from '@/shared/ui/notify';
 import { Button, buttonVariants } from '@/shared/ui/button';
 import { isApiErrorWithStatus } from '@/shared/api/http';
 import { formatDateTime } from '@/shared/lib/format';
@@ -23,9 +24,9 @@ interface Props {
   readonly draft: RegisterInitiativeCommand | null;
 }
 
-type Failure = 'consent-stale' | 'consent' | 'initiative' | null;
+type Failure = 'consent-stale' | 'consent' | 'initiative';
 
-const MESSAGES: Record<Exclude<Failure, null>, string> = {
+const MESSAGES: Record<Failure, string> = {
   'consent-stale':
     'El texto del consentimiento cambió mientras lo leías. Recarga la página para ver la versión vigente.',
   consent: `No fue posible registrar tu aceptación. ${RETRY_LATER}`,
@@ -44,7 +45,6 @@ const MESSAGES: Record<Exclude<Failure, null>, string> = {
 export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props): JSX.Element {
   const navigate = useNavigate();
   const [accepted, setAccepted] = useState(false);
-  const [failure, setFailure] = useState<Failure>(null);
   const recordConsent = useRecordConsent(diagnosticId);
   const register = useRegisterInitiative(diagnosticId);
   const clearDraft = useInitiativeDraftStore(selectDraftClear);
@@ -54,13 +54,11 @@ export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props)
   const needsInitiative = initiative === null;
 
   async function handleContinue(): Promise<void> {
-    setFailure(null);
-
     if (!alreadyAccepted) {
       try {
         await recordConsent.mutateAsync();
       } catch (error) {
-        setFailure(isApiErrorWithStatus(error, 409) ? 'consent-stale' : 'consent');
+        notify.error(MESSAGES[isApiErrorWithStatus(error, 409) ? 'consent-stale' : 'consent']);
         return;
       }
     }
@@ -74,12 +72,13 @@ export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props)
       try {
         await register.mutateAsync(draft);
       } catch {
-        setFailure('initiative');
+        notify.error(MESSAGES.initiative);
         return;
       }
     }
 
     clearDraft();
+    if (!alreadyAccepted) notify.success('Consentimiento registrado.');
     void navigate(wizardPath(diagnosticId, 'cuestionario'));
   }
 
@@ -120,8 +119,6 @@ export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props)
             </span>
           </label>
         )}
-
-        {failure && <Alert tone="critical" title={MESSAGES[failure]} />}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link

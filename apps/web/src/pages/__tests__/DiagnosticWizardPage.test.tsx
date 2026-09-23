@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { toast } from 'sonner';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http as mswHttp, HttpResponse } from 'msw';
@@ -246,9 +247,13 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await fillInitiative(user);
       await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
-      expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
-        'Consentimiento para el tratamiento de datos',
-      );
+      // The submission is asynchronous (the form validates before sending): wait for step 2.
+      expect(
+        await screen.findByRole('heading', {
+          level: 1,
+          name: 'Consentimiento para el tratamiento de datos',
+        }),
+      ).toBeInTheDocument();
       expect(where()).toBe(step('consentimiento'));
       expect(api.calls).toEqual([]);
     });
@@ -359,6 +364,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
       });
       expect(api.calls).toEqual(['consent', 'initiative']);
       expect(api.initiative?.name).toBe('AgroConecta');
+      expect(toast.success).toHaveBeenCalledWith('Consentimiento registrado.');
       expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Cuestionario IRL');
     });
 
@@ -386,7 +392,11 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await user.click(screen.getByRole('checkbox'));
       await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('Tu aceptación quedó registrada');
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
+          expect.stringContaining('Tu aceptación quedó registrada'),
+        );
+      });
       expect(where()).toBe(step('consentimiento'));
 
       api.failInitiative = false;
@@ -396,6 +406,8 @@ describe('DiagnosticWizardPage — el asistente', () => {
         expect(where()).toBe(step('cuestionario'));
       });
       expect(api.calls).toEqual(['consent', 'initiative', 'initiative']);
+      // The consent was accepted on the first try: only that success is announced.
+      expect(toast.success).not.toHaveBeenCalled();
     });
 
     it('si el texto cambió mientras se leía (409) pide recargar y no registra la iniciativa', async () => {
@@ -407,7 +419,11 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await user.click(screen.getByRole('checkbox'));
       await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('El texto del consentimiento cambió');
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
+          expect.stringContaining('El texto del consentimiento cambió'),
+        );
+      });
       expect(api.calls).toEqual(['consent']);
       expect(where()).toBe(step('consentimiento'));
     });
@@ -421,7 +437,11 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await user.click(screen.getByRole('checkbox'));
       await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('No fue posible registrar tu aceptación');
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
+          expect.stringContaining('No fue posible registrar tu aceptación'),
+        );
+      });
       expect(api.calls).toEqual(['consent']);
     });
   });

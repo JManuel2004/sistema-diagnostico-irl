@@ -9,6 +9,7 @@ import { Alert } from '@/shared/ui/alert';
 import { Button, buttonVariants } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
 import { LoadingState } from '@/shared/ui/loading-state';
+import { notify } from '@/shared/ui/notify';
 import { useMyDiagnostics } from '@/shared/hooks/useDiagnostics';
 import { useStartDiagnostic } from '@/shared/hooks/useStartDiagnostic';
 import { paths } from '@/shared/lib/paths';
@@ -65,21 +66,16 @@ export default function DashboardPage(): JSX.Element {
                 size="lg"
                 className="mt-5 w-full sm:w-auto"
                 onClick={() => {
-                  start.mutate();
+                  start.mutate(undefined, {
+                    onError: () => {
+                      notify.error(`No fue posible iniciar el diagnóstico. ${RETRY_LATER}`);
+                    },
+                  });
                 }}
                 disabled={start.isPending}
               >
                 {start.isPending ? 'Preparando tu diagnóstico…' : 'Iniciar diagnóstico'}
               </Button>
-              {start.isError && (
-                <Alert
-                  tone="critical"
-                  className="mt-4"
-                  title="No fue posible iniciar el diagnóstico"
-                >
-                  {RETRY_LATER}
-                </Alert>
-              )}
             </CardContent>
           </Card>
         )}

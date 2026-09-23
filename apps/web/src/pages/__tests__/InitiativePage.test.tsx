@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { toast } from 'sonner';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -133,7 +134,11 @@ describe('InitiativePage — corregir la iniciativa ya registrada (HU-06)', () =
     await user.type(name, ' v2');
     await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
 
-    expect(await screen.findByText(/No fue posible guardar la iniciativa/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        expect.stringContaining('No fue posible guardar la iniciativa'),
+      );
+    });
     expect(name).toHaveValue('AgroConecta v2');
   });
 

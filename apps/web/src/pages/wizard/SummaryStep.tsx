@@ -12,6 +12,7 @@ import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
 import { Button, buttonVariants } from '@/shared/ui/button';
 import { LoadingState } from '@/shared/ui/loading-state';
+import { notify } from '@/shared/ui/notify';
 import { useFinalizeDiagnostic } from '@/shared/hooks/useFinalizeDiagnostic';
 import { RETRY_LATER } from '@/shared/lib/copy';
 import { wizardPath } from './wizard-steps';
@@ -82,14 +83,6 @@ export function SummaryStep({ diagnosticId }: Props): JSX.Element {
         </section>
       </div>
 
-      {process.isError && (
-        <Alert
-          tone="critical"
-          className="mt-6"
-          title={`No fue posible generar el diagnóstico. ${RETRY_LATER}`}
-        />
-      )}
-
       <div className="border-border mt-8 flex flex-wrap items-center justify-between gap-3 border-t pt-6">
         <Link
           to={wizardPath(diagnosticId, 'cuestionario')}
@@ -105,6 +98,14 @@ export function SummaryStep({ diagnosticId }: Props): JSX.Element {
                 value,
                 justification: (justifications[statementId] ?? '').trim(),
               })),
+              {
+                onSuccess: () => {
+                  notify.success('Diagnóstico procesado.');
+                },
+                onError: () => {
+                  notify.error(`No fue posible generar el diagnóstico. ${RETRY_LATER}`);
+                },
+              },
             );
           }}
           disabled={process.isPending}

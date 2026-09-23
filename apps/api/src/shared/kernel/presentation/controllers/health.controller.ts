@@ -5,7 +5,7 @@ import {
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 import type { HealthCheckResult } from '@nestjs/terminus';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../identity/presentation/decorators/public.decorator.js';
 
 /**
@@ -29,6 +29,10 @@ export class HealthController {
 
   @Public()
   @Get('live')
+  @ApiOperation({
+    summary: 'Liveness probe',
+    description: 'The process is up.',
+  })
   @HealthCheck()
   live(): Promise<HealthCheckResult> {
     return this.health.check([]);
@@ -36,6 +40,10 @@ export class HealthController {
 
   @Public()
   @Get('ready')
+  @ApiOperation({
+    summary: 'Readiness probe',
+    description: 'The database answers.',
+  })
   @HealthCheck()
   ready(): Promise<HealthCheckResult> {
     return this.health.check([() => this.db.pingCheck('database')]);

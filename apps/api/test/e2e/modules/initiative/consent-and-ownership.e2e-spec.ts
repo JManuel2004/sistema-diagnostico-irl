@@ -166,11 +166,20 @@ describe('Consentimiento e iniciativa (e2e)', () => {
     it('rechaza con 409 una versión de términos desactualizada, sin avanzar el estado', async () => {
       await agent
         .post(`/api/v1/diagnostics/${ownWithoutConsent}/consent`)
-        .send({ version: 'v0-vieja' })
+        .send({ version: 'v0' })
         .expect(409);
 
       expect(await countDiagnostics('consent', ownWithoutConsent)).toBe(0);
       expect(await stateOf(ownWithoutConsent)).toBe('STARTED');
+    });
+
+    it('rechaza con 422 una versión que no cumple el formato del contrato', async () => {
+      await agent
+        .post(`/api/v1/diagnostics/${ownWithoutConsent}/consent`)
+        .send({ version: 'v0-vieja' })
+        .expect(422);
+
+      expect(await countDiagnostics('consent', ownWithoutConsent)).toBe(0);
     });
   });
 

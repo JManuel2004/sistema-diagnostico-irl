@@ -11,6 +11,7 @@ import { PageShell } from '@/shared/ui/page-shell';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
 import { LoadingState } from '@/shared/ui/loading-state';
+import { notify } from '@/shared/ui/notify';
 import { isApiErrorWithStatus } from '@/shared/api/http';
 import { paths } from '@/shared/lib/paths';
 import { RETRY_LATER } from '@/shared/lib/copy';
@@ -59,17 +60,18 @@ export default function InitiativePage(): JSX.Element {
           initial={initiativeToFormValues(initiative.data)}
           isSubmitting={register.isPending}
           submitLabel="Guardar cambios"
-          submitError={
-            register.isError
-              ? isApiErrorWithStatus(register.error, 404)
-                ? 'No encontramos este diagnóstico.'
-                : `No fue posible guardar la iniciativa. ${RETRY_LATER}`
-              : undefined
-          }
           onSubmit={(command) => {
             register.mutate(command, {
               onSuccess: () => {
+                notify.success('Cambios guardados.');
                 void navigate(paths.panel);
+              },
+              onError: (error) => {
+                notify.error(
+                  isApiErrorWithStatus(error, 404)
+                    ? 'No encontramos este diagnóstico.'
+                    : `No fue posible guardar la iniciativa. ${RETRY_LATER}`,
+                );
               },
             });
           }}

@@ -53,14 +53,6 @@ export interface InnLabCoreConfig {
   readonly internalKey: string;
 }
 
-export interface SmtpConfig {
-  readonly host: string;
-  readonly port: number;
-  readonly user: string;
-  readonly pass: string;
-  readonly from: string;
-}
-
 export interface AppConfig {
   readonly nodeEnv: NodeEnv;
   readonly isProduction: boolean;
@@ -70,7 +62,6 @@ export interface AppConfig {
   readonly database: DatabaseConfig;
   readonly cognito: CognitoConfig;
   readonly innlabCore: InnLabCoreConfig;
-  readonly smtp: SmtpConfig;
 }
 
 /**
@@ -103,13 +94,6 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       baseUrl: requireString(env.INNLAB_API_BASE_URL, 'INNLAB_API_BASE_URL'),
       timeoutMs: Number(env.INNLAB_API_TIMEOUT ?? 5000),
       internalKey: requireString(env.CORE_INTERNAL_KEY, 'CORE_INTERNAL_KEY'),
-    },
-    smtp: {
-      host: requireString(env.SMTP_HOST, 'SMTP_HOST'),
-      port: Number(env.SMTP_PORT ?? 587),
-      user: requireString(env.SMTP_USER, 'SMTP_USER'),
-      pass: requireString(env.SMTP_PASS, 'SMTP_PASS'),
-      from: requireString(env.SMTP_FROM, 'SMTP_FROM'),
     },
   };
 }

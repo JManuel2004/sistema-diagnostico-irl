@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { HttpStatus, ValidationPipe } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { DomainExceptionFilter } from './filters/domain-exception.filter.js';
@@ -22,10 +22,14 @@ import { GlobalExceptionFilter } from './filters/global-exception.filter.js';
  */
 export function configureApp(app: INestApplication): void {
   app.useGlobalPipes(
+    // The request DTOs of `presentation/` (class-validator). A body that
+    // does not satisfy them answers 422, the same status the domain gives
+    // for a rule it rejects: both mean "the content breaks the contract".
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
     }),
   );
 

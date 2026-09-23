@@ -1,5 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ResolveUserContextUseCase } from '../../application/use-cases/resolve-user-context.use-case.js';
 import { CurrentUser } from '../decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../application/dtos/authenticated-user.js';
@@ -12,14 +17,19 @@ import type { AuthenticatedUser } from '../../application/dtos/authenticated-use
  * the whole integration: without a bearer token it must answer 401, which
  * proves the global guard is live.
  */
-@ApiTags('identidad')
+@ApiTags('identity')
+@ApiBearerAuth()
 @Controller('me')
 export class MeController {
-  constructor(
-    private readonly resolveUserContext: ResolveUserContextUseCase,
-  ) {}
+  constructor(private readonly resolveUserContext: ResolveUserContextUseCase) {}
 
   @Get('context')
+  @ApiOperation({
+    summary: 'Read the caller’s context',
+    description:
+      'The identity of the access token plus the company context INNLAB Core holds for ' +
+      'the user (cached in memory for the session).',
+  })
   @ApiOkResponse({
     description: 'Token identity plus the company context from INNLAB Core',
   })

@@ -6,6 +6,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
 import helmet from '@fastify/helmet';
+import fastifySwagger, { type StaticDocumentSpec } from '@fastify/swagger';
+import fastifySwaggerUi from '@fastify/swagger-ui';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import {
@@ -54,7 +56,19 @@ async function bootstrap(): Promise<void> {
       .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
       .build(),
   );
-  SwaggerModule.setup('api/docs', app, swaggerDocument);
+  // Nest builds the OpenAPI document from the controllers and their DTOs;
+  // `@fastify/swagger` publishes it as is (`static` mode) and
+  // `@fastify/swagger-ui` serves the UI at `/api/docs` (JSON at
+  // `/api/docs/json`).
+  await app.register(fastifySwagger, {
+    mode: 'static',
+    // Nest's `OpenAPIObject` and `openapi-types` describe the same OpenAPI 3
+    // document with slightly different typings.
+    specification: {
+      document: swaggerDocument as unknown as StaticDocumentSpec['document'],
+    },
+  });
+  await app.register(fastifySwaggerUi, { routePrefix: '/api/docs' });
 
   await app.listen(cfg.appPort, '0.0.0.0');
 }

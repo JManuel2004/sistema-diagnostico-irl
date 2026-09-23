@@ -1,7 +1,8 @@
-import { Suspense, useState, type FormEvent, type JSX, type ReactNode } from 'react';
+import { Suspense, type JSX, type ReactNode } from 'react';
+import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   INITIATIVE_TEXT_MAX,
-  registerInitiativeSchema,
   type InitiativeStage,
   type RegisterInitiativeCommand,
   type Sector,
@@ -9,33 +10,15 @@ import {
 import { Alert } from '@/shared/ui/alert';
 import { Button } from '@/shared/ui/button';
 import { Field, Input, Select, Textarea } from '@/shared/ui/field';
-import { InitiativeAutofill, type InitiativeAutofillValues } from '@/dev/dev-autofill';
+import { InitiativeAutofill } from '@/dev/dev-autofill';
+import {
+  EMPTY_INITIATIVE_FORM,
+  initiativeFormSchema,
+  type InitiativeFormValues,
+} from '../lib/form-values';
 
-/**
- * Form of the initiative profile (HU-06 / RF-04).
- *
- * Every field is mandatory. The validation is the contract's
- * (`registerInitiativeSchema`), the same one the backend applies: the
- * message shown is the contract's, not one of the form's own.
- *
- * The fields are kept as text and `teamSize` is turned into a number on
- * validation. They are grouped in three blocks (the initiative, the team,
- * market and funding); sector and stage are still native `<select>`s.
- */
-type Values = InitiativeAutofillValues;
-type Errors = Partial<Record<keyof Values, string>>;
-
-const EMPTY: Values = {
-  name: '',
-  sectorId: '',
-  productType: '',
-  stageId: '',
-  declaredStage: '',
-  teamSize: '',
-  teamDescription: '',
-  targetMarket: '',
-  currentFunding: '',
-};
+type Values = InitiativeFormValues;
+type FormControl = Control<Values, unknown, RegisterInitiativeCommand>;
 
 export interface InitiativeFormProps {
   readonly sectors: readonly Sector[];
@@ -44,59 +27,49 @@ export interface InitiativeFormProps {
   readonly initial?: Values;
   readonly onSubmit: (command: RegisterInitiativeCommand) => void;
   readonly isSubmitting: boolean;
-  readonly submitError?: string;
   readonly submitLabel?: string;
 }
 
-function toCommand(values: Values): unknown {
-  return {
-    ...values,
-    teamSize: values.teamSize.trim() === '' ? undefined : Number(values.teamSize),
-  };
-}
-
+/**
+ * Form of the initiative profile (HU-06 / RF-04).
+ *
+ * Every field is mandatory. It is a `react-hook-form` form validated by
+ * `initiativeFormSchema`, which is the contract's `registerInitiativeSchema`
+ * — the same one the backend applies — so the message shown is the
+ * contract's. The fields hold text and `teamSize` becomes a number on
+ * validation; `onSubmit` receives the command ready to send.
+ *
+ * The nine fields are grouped in three blocks (the initiative, the team,
+ * market and funding); sector and stage are native `<select>`s.
+ */
 export function InitiativeForm({
   sectors,
   stages,
   initial,
   onSubmit,
   isSubmitting,
-  submitError,
   submitLabel = 'Guardar y continuar',
 }: InitiativeFormProps): JSX.Element {
-  const [values, setValues] = useState<Values>(initial ?? EMPTY);
-  const [errors, setErrors] = useState<Errors>({});
-
-  function set<K extends keyof Values>(key: K, value: Values[K]): void {
-    setValues((v) => ({ ...v, [key]: value }));
-  }
-
-  function handleSubmit(event: FormEvent): void {
-    event.preventDefault();
-    const parsed = registerInitiativeSchema.safeParse(toCommand(values));
-    if (!parsed.success) {
-      const next: Errors = {};
-      for (const issue of parsed.error.issues) {
-        const key = issue.path[0] as keyof Values;
-        next[key] ??=
-          key === 'teamSize' && values.teamSize.trim() === ''
-            ? 'El tamaño del equipo es obligatorio'
-            : issue.message;
-      }
-      // Empty selections do not carry the contract's message («String must contain…»).
-      if (values.sectorId === '') next.sectorId = 'Elige un sector';
-      if (values.stageId === '') next.stageId = 'Elige una etapa';
-      setErrors(next);
-      return;
-    }
-    setErrors({});
-    onSubmit(parsed.data);
-  }
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<Values, unknown, RegisterInitiativeCommand>({
+    resolver: zodResolver(initiativeFormSchema),
+    defaultValues: initial ?? EMPTY_INITIATIVE_FORM,
+  });
 
   const limit = `Máximo ${String(INITIATIVE_TEXT_MAX)} caracteres`;
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-10">
+    <form
+      onSubmit={(event) => {
+        void handleSubmit(onSubmit)(event);
+      }}
+      noValidate
+      className="flex flex-col gap-10"
+    >
       {InitiativeAutofill && (
         <Suspense fallback={null}>
           <div>
@@ -104,8 +77,7 @@ export function InitiativeForm({
               sectors={sectors}
               stages={stages}
               onFill={(filled) => {
-                setValues(filled);
-                setErrors({});
+                reset(filled);
               }}
             />
           </div>
@@ -117,98 +89,50 @@ export function InitiativeForm({
         title="La iniciativa"
         description="Qué es y en qué punto está. Contextualiza tu perfil de madurez."
       >
-        <Field label="Nombre de la iniciativa" error={errors.name}>
-          {(c) => (
-            <Input
-              {...c}
-              name="name"
-              value={values.name}
-              maxLength={120}
-              onChange={(e) => {
-                set('name', e.target.value);
-              }}
-            />
-          )}
-        </Field>
+        <TextField
+          control={control}
+          name="name"
+          label="Nombre de la iniciativa"
+          error={errors.name?.message}
+          maxLength={120}
+        />
 
         <div className="grid gap-5 sm:grid-cols-2 sm:items-start">
-          <Field label="Sector" error={errors.sectorId}>
-            {(c) => (
-              <Select
-                {...c}
-                name="sectorId"
-                value={values.sectorId}
-                onChange={(e) => {
-                  set('sectorId', e.target.value);
-                }}
-              >
-                <option value="">Selecciona un sector</option>
-                {sectors.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-          <Field
+          <SelectField
+            control={control}
+            name="sectorId"
+            label="Sector"
+            error={errors.sectorId?.message}
+            placeholder="Selecciona un sector"
+            options={sectors}
+          />
+          <SelectField
+            control={control}
+            name="stageId"
             label="Etapa"
             hint="La etapa del catálogo de INNLAB más cercana a la tuya."
-            error={errors.stageId}
-          >
-            {(c) => (
-              <Select
-                {...c}
-                name="stageId"
-                value={values.stageId}
-                onChange={(e) => {
-                  set('stageId', e.target.value);
-                }}
-              >
-                <option value="">Selecciona una etapa</option>
-                {stages.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
+            error={errors.stageId?.message}
+            placeholder="Selecciona una etapa"
+            options={stages}
+          />
         </div>
 
-        <Field label="Tipo de producto o servicio" hint={limit} error={errors.productType}>
-          {(c) => (
-            <Textarea
-              {...c}
-              name="productType"
-              rows={2}
-              maxLength={INITIATIVE_TEXT_MAX}
-              value={values.productType}
-              onChange={(e) => {
-                set('productType', e.target.value);
-              }}
-            />
-          )}
-        </Field>
-
-        <Field
+        <TextField
+          control={control}
+          name="productType"
+          label="Tipo de producto o servicio"
+          hint={limit}
+          error={errors.productType?.message}
+          multiline
+        />
+        <TextField
+          control={control}
+          name="declaredStage"
           label="Etapa declarada"
           hint={`Cuéntala con tus palabras. ${limit}`}
-          error={errors.declaredStage}
-        >
-          {(c) => (
-            <Textarea
-              {...c}
-              name="declaredStage"
-              rows={2}
-              maxLength={INITIATIVE_TEXT_MAX}
-              value={values.declaredStage}
-              onChange={(e) => {
-                set('declaredStage', e.target.value);
-              }}
-            />
-          )}
-        </Field>
+          error={errors.declaredStage?.message}
+          multiline
+        />
       </FormSection>
 
       <FormSection
@@ -217,39 +141,21 @@ export function InitiativeForm({
         description="Quiénes la impulsan hoy y con qué dedicación."
       >
         <div className="grid gap-5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-start">
-          <Field label="Personas en el equipo" error={errors.teamSize}>
-            {(c) => (
-              <Input
-                {...c}
-                name="teamSize"
-                type="number"
-                min={1}
-                inputMode="numeric"
-                value={values.teamSize}
-                onChange={(e) => {
-                  set('teamSize', e.target.value);
-                }}
-              />
-            )}
-          </Field>
-          <Field
+          <TextField
+            control={control}
+            name="teamSize"
+            label="Personas en el equipo"
+            error={errors.teamSize?.message}
+            type="number"
+          />
+          <TextField
+            control={control}
+            name="teamDescription"
             label="Equipo"
             hint={`Quiénes son y qué dedicación tienen. ${limit}`}
-            error={errors.teamDescription}
-          >
-            {(c) => (
-              <Textarea
-                {...c}
-                name="teamDescription"
-                rows={2}
-                maxLength={INITIATIVE_TEXT_MAX}
-                value={values.teamDescription}
-                onChange={(e) => {
-                  set('teamDescription', e.target.value);
-                }}
-              />
-            )}
-          </Field>
+            error={errors.teamDescription?.message}
+            multiline
+          />
         </div>
       </FormSection>
 
@@ -258,41 +164,27 @@ export function InitiativeForm({
         title="Mercado y financiamiento"
         description="A quién se dirige y con qué recursos cuenta."
       >
-        <Field label="Mercado objetivo" hint={limit} error={errors.targetMarket}>
-          {(c) => (
-            <Textarea
-              {...c}
-              name="targetMarket"
-              rows={2}
-              maxLength={INITIATIVE_TEXT_MAX}
-              value={values.targetMarket}
-              onChange={(e) => {
-                set('targetMarket', e.target.value);
-              }}
-            />
-          )}
-        </Field>
-
-        <Field label="Financiamiento actual" hint={limit} error={errors.currentFunding}>
-          {(c) => (
-            <Textarea
-              {...c}
-              name="currentFunding"
-              rows={2}
-              maxLength={INITIATIVE_TEXT_MAX}
-              value={values.currentFunding}
-              onChange={(e) => {
-                set('currentFunding', e.target.value);
-              }}
-            />
-          )}
-        </Field>
+        <TextField
+          control={control}
+          name="targetMarket"
+          label="Mercado objetivo"
+          hint={limit}
+          error={errors.targetMarket?.message}
+          multiline
+        />
+        <TextField
+          control={control}
+          name="currentFunding"
+          label="Financiamiento actual"
+          hint={limit}
+          error={errors.currentFunding?.message}
+          multiline
+        />
       </FormSection>
 
       {Object.keys(errors).length > 0 && (
         <Alert tone="critical" title="Revisa los campos marcados antes de continuar." />
       )}
-      {submitError && <Alert tone="critical" title={submitError} />}
 
       <div className="border-border border-t pt-8">
         <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={isSubmitting}>
@@ -300,6 +192,87 @@ export function InitiativeForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+interface FieldBaseProps {
+  readonly control: FormControl;
+  readonly name: FieldPath<Values>;
+  readonly label: string;
+  readonly hint?: string;
+  readonly error?: string;
+}
+
+/**
+ * A text field bound to the form. Controlled on purpose: `Textarea` grows
+ * with its value, so it has to receive it, also when the form is reset.
+ */
+function TextField({
+  control,
+  name,
+  label,
+  hint,
+  error,
+  multiline = false,
+  type,
+  maxLength = INITIATIVE_TEXT_MAX,
+}: FieldBaseProps & {
+  readonly multiline?: boolean;
+  readonly type?: 'number';
+  readonly maxLength?: number;
+}): JSX.Element {
+  return (
+    <Field label={label} hint={hint} error={error}>
+      {(c) => (
+        <Controller<Values, FieldPath<Values>, RegisterInitiativeCommand>
+          control={control}
+          name={name}
+          render={({ field }) =>
+            multiline ? (
+              <Textarea {...c} {...field} rows={2} maxLength={maxLength} />
+            ) : type === 'number' ? (
+              <Input {...c} {...field} type="number" min={1} inputMode="numeric" />
+            ) : (
+              <Input {...c} {...field} maxLength={maxLength} />
+            )
+          }
+        />
+      )}
+    </Field>
+  );
+}
+
+function SelectField({
+  control,
+  name,
+  label,
+  hint,
+  error,
+  placeholder,
+  options,
+}: FieldBaseProps & {
+  readonly placeholder: string;
+  readonly options: readonly { readonly id: string; readonly name: string }[];
+}): JSX.Element {
+  return (
+    <Field label={label} hint={hint} error={error}>
+      {(c) => (
+        <Controller<Values, FieldPath<Values>, RegisterInitiativeCommand>
+          control={control}
+          name={name}
+          render={({ field }) => (
+            <Select {...c} {...field}>
+              <option value="">{placeholder}</option>
+              {options.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </Select>
+          )}
+        />
+      )}
+    </Field>
   );
 }
 

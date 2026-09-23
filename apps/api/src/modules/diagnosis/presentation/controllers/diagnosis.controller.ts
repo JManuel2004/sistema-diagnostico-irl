@@ -1,36 +1,34 @@
-import { Controller, Body, Get, Param, Post } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import type {
+  AcceptDeepAnalysisResponse,
+  Diagnostic,
+  MaturityProfileResponse,
+} from '@innlab/contracts';
 import { FinalizeInitialDiagnosisUseCase } from '../../application/use-cases/finalize-initial-diagnosis.use-case.js';
 import { GetDiagnosisUseCase } from '../../application/use-cases/get-diagnosis.use-case.js';
 import { StartDiagnosisUseCase } from '../../application/use-cases/start-diagnosis.use-case.js';
+import { RequestDeepAnalysisUseCase } from '../../application/use-cases/request-deep-analysis.use-case.js';
 import { CurrentUser } from '../../../../shared/identity/presentation/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../../../shared/identity/application/dtos/authenticated-user.js';
-import { RequestDeepAnalysisUseCase } from '../../application/use-cases/request-deep-analysis.use-case.js';
 import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
-import type {
-  Diagnostic,
-  MaturityProfileResponse,
-  AcceptDeepAnalysisResponse,
-} from '@innlab/contracts';
+import { DiagnosticIdParam } from '../../../../shared/kernel/presentation/dto/diagnostic-id.param.js';
+import { ApiErrors } from '../../../../shared/kernel/presentation/api-errors.decorator.js';
+import { AnswersRequestDto } from './dto/answers.request.dto.js';
+import {
+  AcceptDeepAnalysisResponseDto,
+  DiagnosticResponseDto,
+  MaturityProfileResponseDto,
+} from './dto/diagnosis.response.dto.js';
 
-/**
- * HTTP surface for the diagnostic orchestrator.
- *
- * Routes:
- *   - `POST /api/v1/diagnostics`        (HU-04) — start a diagnostic, or resume
- *     the user's unfinished one (idempotent).
- *
- * Routes that arrive with later user stories:
- *   - `GET  /api/v1/diagnostics`        (HU-03) — list the user's own
- *     (served by `initiative/`'s `MyDiagnosesController`).
- *   - `GET  /api/v1/diagnostics/:id`    — fetch a single diagnostic.
- *   - `POST /api/v1/diagnostics/:id/finalize-initial` — orchestrates
- *     `Questionnaire` + `MaturityProfile` (out of phase-1 scope).
- *   - `POST /api/v1/diagnostics/:id/deep-analysis` (RF-11) — accepts
- *     deep analysis; fires `DeepAnalysisRequestedEvent` for `routing/`
- *     and `roadmap/` to react to independently.
- */
 @ApiTags('diagnostics')
+@ApiBearerAuth()
 @Controller('diagnostics')
 export class DiagnosisController {
   constructor(
@@ -41,56 +39,73 @@ export class DiagnosisController {
   ) {}
 
   @Post()
-  @ApiCreatedResponse({
+  @ApiOperation({
+    summary: 'Start (or resume) a diagnostic',
     description:
-      'Diagnóstico del usuario autenticado: el que tenga sin terminar (se reanuda) o, si no ' +
-      'tiene ninguno, uno nuevo en STARTED',
+      'Idempotent per user: returns the caller’s unfinished diagnostic if there is one; ' +
+      'otherwise creates one in `STARTED` (HU-04).',
   })
+  @ApiCreatedResponse({ type: DiagnosticResponseDto })
+  @ApiErrors()
   start(@CurrentUser() user: AuthenticatedUser): Promise<Diagnostic> {
     return this.startDiagnosis.execute({ userId: user.id });
   }
 
   @Get(':id')
-  @ApiOkResponse({
+  @ApiOperation({
+    summary: 'Read one of the caller’s diagnostics',
     description:
-      'Diagnóstico del usuario autenticado, con su estado y si aceptó el análisis profundo',
+      'With `completed` and `deepAnalysisAccepted`, derived from the state. A foreign ' +
+      'diagnostic answers 404, like a missing one, so its id does not leak.',
   })
+  @ApiOkResponse({ type: DiagnosticResponseDto })
+  @ApiErrors(404, 422)
   async get(
-    @Param('id') diagnosticId: string,
+    @Param() { id }: DiagnosticIdParam,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<Diagnostic> {
-    return unwrapResult(await this.getDiagnosis.execute({ diagnosticId, userId: user.id }));
+    return unwrapResult(
+      await this.getDiagnosis.execute({ diagnosticId: id, userId: user.id }),
+    );
   }
 
   @Post(':id/finalize-initial')
-  @ApiCreatedResponse({
+  @ApiOperation({
+    summary: 'Process the questionnaire',
     description:
-      'Cuestionario persistido, perfil calculado y diagnóstico en PROFILE_GENERATED',
+      'Saves the 48 answers with their justifications, computes the maturity profile and ' +
+      'moves the diagnostic to `PROFILE_GENERATED` (RF-06, RF-07). Requires the initiative.',
   })
+  @ApiCreatedResponse({ type: MaturityProfileResponseDto })
+  @ApiErrors(404, 409, 422)
   async finalize(
-    @Param('id') diagnosticId: string,
-    @Body()
-    body: { answers: { statementId: string; value: number; justification: string }[] },
+    @Param() { id }: DiagnosticIdParam,
+    @Body() body: AnswersRequestDto,
   ): Promise<MaturityProfileResponse> {
     return unwrapResult(
       await this.finalizeInitial.execute({
-        diagnosticId,
+        diagnosticId: id,
         answers: body.answers,
       }),
     );
   }
 
   @Post(':id/deep-analysis')
-  @ApiCreatedResponse({
+  @ApiOperation({
+    summary: 'Accept the deep analysis',
     description:
-      'Análisis profundo aceptado — diagnóstico en DEEP_ANALYSIS_IN_PROGRESS. ' +
-      'Idempotente si ya estaba aceptado.',
+      'Moves the diagnostic to `DEEP_ANALYSIS_IN_PROGRESS` and publishes ' +
+      '`DeepAnalysisRequestedEvent`; the recommendation and the roadmap are calculated and ' +
+      'saved before the response. Idempotent in the state: repeating it retries a failed ' +
+      'calculation (RF-11).',
   })
+  @ApiCreatedResponse({ type: AcceptDeepAnalysisResponseDto })
+  @ApiErrors(404, 409, 422)
   async requestDeepAnalysisFor(
-    @Param('id') diagnosticId: string,
+    @Param() { id }: DiagnosticIdParam,
   ): Promise<AcceptDeepAnalysisResponse> {
     return unwrapResult(
-      await this.requestDeepAnalysis.execute({ diagnosticId }),
+      await this.requestDeepAnalysis.execute({ diagnosticId: id }),
     );
   }
 }

@@ -11,6 +11,7 @@ import {
   useRegisterInitiative,
 } from '@features/initiative';
 import { PageHeader } from '@/shared/ui/page-header';
+import { notify } from '@/shared/ui/notify';
 import { wizardPath } from './wizard-steps';
 import { RETRY_LATER } from '@/shared/lib/copy';
 
@@ -60,7 +61,11 @@ export function InitiativeStep({
     register.mutate(command, {
       onSuccess: () => {
         clearDraft();
+        notify.success('Iniciativa guardada.');
         void navigate(next);
+      },
+      onError: () => {
+        notify.error(`No fue posible guardar la iniciativa. ${RETRY_LATER}`);
       },
     });
   }
@@ -77,9 +82,6 @@ export function InitiativeStep({
         initial={initial}
         isSubmitting={register.isPending}
         submitLabel="Continuar"
-        submitError={
-          register.isError ? `No fue posible guardar la iniciativa. ${RETRY_LATER}` : undefined
-        }
         onSubmit={handleSubmit}
       />
     </>

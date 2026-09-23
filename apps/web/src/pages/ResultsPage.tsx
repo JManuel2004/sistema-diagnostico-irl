@@ -32,6 +32,7 @@ import { SectionHeader } from '@/shared/ui/section-header';
 import { ResultMeta } from '@/shared/ui/result-meta';
 import { Alert } from '@/shared/ui/alert';
 import { LoadingState } from '@/shared/ui/loading-state';
+import { notify } from '@/shared/ui/notify';
 import {
   AcceptDeepAnalysisCard,
   RetryDeepAnalysisCard,
@@ -160,13 +161,19 @@ export default function ResultsPage(): JSX.Element {
               ) : (
                 <AcceptDeepAnalysisCard
                   onAccept={() => {
-                    accept.mutate();
+                    accept.mutate(undefined, {
+                      onSuccess: () => {
+                        notify.success('Análisis profundo listo.');
+                      },
+                      onError: (error) => {
+                        notify.error(acceptErrorMessage(error));
+                      },
+                    });
                   }}
                   failed={accept.isError}
                   subject={subject}
                 />
               )}
-              {accept.isError && <Alert tone="critical" title={acceptErrorMessage(accept.error)} />}
             </>
           )}
 

@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { toast } from 'sonner';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http as mswHttp, HttpResponse } from 'msw';
@@ -281,11 +282,11 @@ describe('SummaryStep — resumen antes de procesar', () => {
 
       await user.click(await screen.findByRole('button', { name: 'Procesar diagnóstico' }));
 
-      expect(
-        await screen.findByText(
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
           'No fue posible generar el diagnóstico. Intenta de nuevo en unos minutos.',
-        ),
-      ).toBeInTheDocument();
+        );
+      });
       expect(screen.queryByText('RESULTADOS_STUB')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Procesar diagnóstico' })).toBeEnabled();
     });

@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { toast } from 'sonner';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -283,8 +284,8 @@ describe('ResultsPage — sin análisis profundo', () => {
     await user.click(await screen.findByRole('button', { name: 'Solicitar análisis profundo' }));
 
     expect(await screen.findByRole('button', { name: 'Intentar de nuevo' })).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'No fue posible aceptar el análisis profundo',
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.stringContaining('No fue posible aceptar el análisis profundo'),
     );
   });
 });

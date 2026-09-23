@@ -31,7 +31,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           recharts: ['recharts'],
-          radix: ['@radix-ui/react-dialog', '@radix-ui/react-radio-group', '@radix-ui/react-tabs'],
+          radix: ['@radix-ui/react-radio-group', '@radix-ui/react-tabs', '@radix-ui/react-tooltip'],
         },
       },
     },

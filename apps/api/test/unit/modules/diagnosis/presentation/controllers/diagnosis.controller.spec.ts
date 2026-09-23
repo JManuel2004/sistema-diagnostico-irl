@@ -12,8 +12,12 @@ const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
 describe('DiagnosisController', () => {
   let controller: DiagnosisController;
-  let mockUseCase: jest.Mocked<Pick<FinalizeInitialDiagnosisUseCase, 'execute'>>;
-  let mockDeepAnalysis: jest.Mocked<Pick<RequestDeepAnalysisUseCase, 'execute'>>;
+  let mockUseCase: jest.Mocked<
+    Pick<FinalizeInitialDiagnosisUseCase, 'execute'>
+  >;
+  let mockDeepAnalysis: jest.Mocked<
+    Pick<RequestDeepAnalysisUseCase, 'execute'>
+  >;
   let mockStart: jest.Mocked<Pick<StartDiagnosisUseCase, 'execute'>>;
   let mockGet: jest.Mocked<Pick<GetDiagnosisUseCase, 'execute'>>;
 
@@ -33,9 +37,14 @@ describe('DiagnosisController', () => {
   it('delegates finalize-initial to the orchestrator use case', async () => {
     const profile = { diagnosticId: DIAGNOSTIC_ID } as MaturityProfileResponse;
     mockUseCase.execute.mockResolvedValueOnce(Result.ok(profile));
-    const answers = [{ statementId: '1', value: 3, justification: 'Porque sí.' }];
+    const answers = [
+      { statementId: '1', value: 3, justification: 'Porque sí.' },
+    ];
 
-    const result = await controller.finalize(DIAGNOSTIC_ID, { answers });
+    const result = await controller.finalize(
+      { id: DIAGNOSTIC_ID },
+      { answers },
+    );
 
     expect(mockUseCase.execute).toHaveBeenCalledWith({
       diagnosticId: DIAGNOSTIC_ID,
@@ -49,7 +58,7 @@ describe('DiagnosisController', () => {
     mockUseCase.execute.mockResolvedValueOnce(Result.err(error));
 
     await expect(
-      controller.finalize(DIAGNOSTIC_ID, { answers: [] }),
+      controller.finalize({ id: DIAGNOSTIC_ID }, { answers: [] }),
     ).rejects.toThrow(error);
   });
   it('starts a diagnostic owned by the authenticated user', async () => {
@@ -82,17 +91,25 @@ describe('DiagnosisController', () => {
     };
     mockGet.execute.mockResolvedValueOnce(Result.ok(diagnostic));
 
-    const result = await controller.get(DIAGNOSTIC_ID, { id: 'user-1' });
+    const result = await controller.get(
+      { id: DIAGNOSTIC_ID },
+      { id: 'user-1' },
+    );
 
-    expect(mockGet.execute).toHaveBeenCalledWith({ diagnosticId: DIAGNOSTIC_ID, userId: 'user-1' });
+    expect(mockGet.execute).toHaveBeenCalledWith({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'user-1',
+    });
     expect(result).toBe(diagnostic);
   });
 
-  it('throws NotFound when the diagnostic is not the caller\'s', async () => {
+  it("throws NotFound when the diagnostic is not the caller's", async () => {
     const error = new NotFoundError('Diagnosis', DIAGNOSTIC_ID);
     mockGet.execute.mockResolvedValueOnce(Result.err(error));
 
-    await expect(controller.get(DIAGNOSTIC_ID, { id: 'other' })).rejects.toThrow(error);
+    await expect(
+      controller.get({ id: DIAGNOSTIC_ID }, { id: 'other' }),
+    ).rejects.toThrow(error);
   });
 
   describe('requestDeepAnalysisFor', () => {
@@ -103,7 +120,9 @@ describe('DiagnosisController', () => {
       };
       mockDeepAnalysis.execute.mockResolvedValueOnce(Result.ok(expected));
 
-      const result = await controller.requestDeepAnalysisFor(DIAGNOSTIC_ID);
+      const result = await controller.requestDeepAnalysisFor({
+        id: DIAGNOSTIC_ID,
+      });
 
       expect(mockDeepAnalysis.execute).toHaveBeenCalledWith({
         diagnosticId: DIAGNOSTIC_ID,
@@ -116,7 +135,7 @@ describe('DiagnosisController', () => {
       mockDeepAnalysis.execute.mockResolvedValueOnce(Result.err(error));
 
       await expect(
-        controller.requestDeepAnalysisFor(DIAGNOSTIC_ID),
+        controller.requestDeepAnalysisFor({ id: DIAGNOSTIC_ID }),
       ).rejects.toThrow(error);
     });
   });

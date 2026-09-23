@@ -1,8 +1,16 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { RoadmapResponse } from '@innlab/contracts';
 import { GetScalingRoadmapUseCase } from '../../application/use-cases/get-scaling-roadmap.use-case.js';
 import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
+import { DiagnosticIdParam } from '../../../../shared/kernel/presentation/dto/diagnostic-id.param.js';
+import { ApiErrors } from '../../../../shared/kernel/presentation/api-errors.decorator.js';
+import { RoadmapResponseDto } from './dto/roadmap.response.dto.js';
 
 /**
  * HTTP surface for the scaling roadmap (RF-14).
@@ -18,17 +26,21 @@ import { unwrapResult } from '../../../../shared/kernel/application/unwrap-resul
  * listeners, not a chain. The frontend composes both.
  */
 @ApiTags('roadmap')
+@ApiBearerAuth()
 @Controller('diagnostics/:id/roadmap')
 export class RoadmapController {
   constructor(private readonly roadmap: GetScalingRoadmapUseCase) {}
 
   @Get()
-  @ApiOkResponse({
+  @ApiOperation({
+    summary: 'Read the scaling roadmap',
     description:
-      'Saved phased scaling roadmap. An empty `phases` means the initiative ' +
-      'meets the expected minimum in all six dimensions.',
+      'The roadmap saved when the deep analysis was accepted (RF-14); 409 before that. An ' +
+      'empty `phases` means the initiative meets the expected minimum in all six dimensions.',
   })
-  async get(@Param('id') diagnosticId: string): Promise<RoadmapResponse> {
-    return unwrapResult(await this.roadmap.execute({ diagnosticId }));
+  @ApiOkResponse({ type: RoadmapResponseDto })
+  @ApiErrors(409, 422)
+  async get(@Param() { id }: DiagnosticIdParam): Promise<RoadmapResponse> {
+    return unwrapResult(await this.roadmap.execute({ diagnosticId: id }));
   }
 }

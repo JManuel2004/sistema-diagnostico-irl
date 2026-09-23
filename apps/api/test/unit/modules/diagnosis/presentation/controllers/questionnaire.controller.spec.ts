@@ -12,7 +12,9 @@ describe('QuestionnaireController', () => {
 
   beforeEach(() => {
     mockUseCase = { execute: jest.fn() };
-    controller = new QuestionnaireController(mockUseCase as unknown as SubmitQuestionnaireUseCase);
+    controller = new QuestionnaireController(
+      mockUseCase as unknown as SubmitQuestionnaireUseCase,
+    );
   });
 
   describe('submitQuestionnaire', () => {
@@ -24,8 +26,19 @@ describe('QuestionnaireController', () => {
       };
       mockUseCase.execute.mockResolvedValueOnce(Result.ok(expected) as never);
 
-      const body = { answers: [{ statementId: '1', value: 3, justification: 'Justificación de prueba' }] };
-      const result = await controller.submitQuestionnaire(DIAGNOSTIC_ID, body);
+      const body = {
+        answers: [
+          {
+            statementId: '1',
+            value: 3,
+            justification: 'Justificación de prueba',
+          },
+        ],
+      };
+      const result = await controller.submitQuestionnaire(
+        { id: DIAGNOSTIC_ID },
+        body,
+      );
 
       expect(mockUseCase.execute).toHaveBeenCalledWith({
         diagnosticId: DIAGNOSTIC_ID,
@@ -39,14 +52,14 @@ describe('QuestionnaireController', () => {
       mockUseCase.execute.mockResolvedValueOnce(Result.err(error));
 
       await expect(
-        controller.submitQuestionnaire(DIAGNOSTIC_ID, { answers: [] }),
+        controller.submitQuestionnaire({ id: DIAGNOSTIC_ID }, { answers: [] }),
       ).rejects.toThrow(error);
     });
 
     it('propagates use case errors', async () => {
       mockUseCase.execute.mockRejectedValueOnce(new Error('domain error'));
       await expect(
-        controller.submitQuestionnaire(DIAGNOSTIC_ID, { answers: [] }),
+        controller.submitQuestionnaire({ id: DIAGNOSTIC_ID }, { answers: [] }),
       ).rejects.toThrow('domain error');
     });
   });

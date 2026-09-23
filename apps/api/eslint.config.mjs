@@ -81,7 +81,15 @@ export default [
         {
           type: 'infra-global',
           mode: 'full',
-          pattern: 'src/shared/kernel/{infrastructure,presentation}/**',
+          pattern: 'src/shared/kernel/{infrastructure,presentation/controllers}/**',
+        },
+        // Presentation helpers every controller shares (route parameter
+        // DTOs, the documented error answers). Not a technical layer: it
+        // may only reach the kernel.
+        {
+          type: 'kernel-presentation',
+          mode: 'full',
+          pattern: 'src/shared/kernel/presentation/**',
         },
         { type: 'shared-kernel', mode: 'full', pattern: 'src/shared/kernel/**' },
         {
@@ -158,11 +166,20 @@ export default [
               from: { type: 'ctx-presentation' },
               allow: {
                 to: {
-                  type: ['ctx-presentation', 'ctx-application', 'shared-kernel'],
+                  type: [
+                    'ctx-presentation',
+                    'ctx-application',
+                    'shared-kernel',
+                    'kernel-presentation',
+                  ],
                 },
               },
             },
             { from: { type: 'config' }, allow: { to: { type: ['config'] } } },
+            {
+              from: { type: 'kernel-presentation' },
+              allow: { to: { type: ['kernel-presentation', 'shared-kernel'] } },
+            },
             {
               // Technical layers of the kernel (DB tooling, HTTP filters,
               // health probe) compose the application: they may import
