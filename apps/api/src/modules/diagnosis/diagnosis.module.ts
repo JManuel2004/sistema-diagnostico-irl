@@ -30,6 +30,7 @@ import { FinalizeInitialDiagnosisUseCase } from './application/use-cases/finaliz
 import { SubmitQuestionnaireUseCase } from './application/use-cases/submit-questionnaire.use-case.js';
 import { ComputeMaturityProfileUseCase } from './application/use-cases/compute-maturity-profile.use-case.js';
 import { GetMaturityProfileUseCase } from './application/use-cases/get-maturity-profile.use-case.js';
+import { FindDiagnosisOwnerQuery } from './application/use-cases/find-diagnosis-owner.query.js';
 import { ListUserDiagnosesQuery } from './application/use-cases/list-user-diagnoses.query.js';
 import { GetDiagnosisUseCase } from './application/use-cases/get-diagnosis.use-case.js';
 import { ApplyInitiativeToDiagnosisUseCase } from './application/use-cases/apply-initiative-to-diagnosis.use-case.js';
@@ -74,6 +75,7 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
   ],
   providers: [
     ListUserDiagnosesQuery,
+    FindDiagnosisOwnerQuery,
     { provide: DIAGNOSIS_REPOSITORY, useClass: TypeOrmDiagnosisRepository },
     { provide: ANSWER_SHEET_REPOSITORY, useClass: TypeOrmAnswerSheetRepository },
     {
@@ -114,7 +116,9 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     QuestionnaireCatalogController,
   ],
   exports: [
-    DIAGNOSIS_REPOSITORY,
+    // Consumed by InitiativeModule: ownership check before writing consent
+    // or the initiative.
+    FindDiagnosisOwnerQuery,
     // Consumed by InitiativeModule: the history of a user's diagnostics,
     // as summaries.
     ListUserDiagnosesQuery,
