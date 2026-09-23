@@ -1,9 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
 import type { Diagnostic } from '@innlab/contracts';
-import {
-  DIAGNOSIS_REPOSITORY,
-  type DiagnosisRepositoryPort,
-} from '../../domain/repositories/diagnosis.repository.port.js';
+import { type DiagnosisRepositoryPort } from '../../domain/repositories/diagnosis.repository.port.js';
 import { toDiagnosticResponse } from '../dtos/map-diagnostic-response.js';
 import { Diagnosis } from '../../domain/entities/diagnosis.aggregate.js';
 
@@ -29,12 +25,8 @@ export interface StartDiagnosisCommand {
  * Known limit: the check and the insert are not one atomic step, so two
  * requests that arrive at the same instant (two tabs) can each create one.
  */
-@Injectable()
 export class StartDiagnosisUseCase {
-  constructor(
-    @Inject(DIAGNOSIS_REPOSITORY)
-    private readonly diagnostics: DiagnosisRepositoryPort,
-  ) {}
+  constructor(private readonly diagnostics: DiagnosisRepositoryPort) {}
 
   async execute(cmd: StartDiagnosisCommand): Promise<Diagnostic> {
     const latest = await this.diagnostics.findLatestByUserId(cmd.userId);

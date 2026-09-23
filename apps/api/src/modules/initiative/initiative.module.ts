@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { applicationProvider } from '../../shared/kernel/infrastructure/nest/application-provider.js';
+import { EVENT_PUBLISHER } from '../../shared/kernel/application/ports/event-publisher.port.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DiagnosisModule } from '../diagnosis/diagnosis.module.js';
 
@@ -74,14 +76,14 @@ import { MyDiagnosesController } from './presentation/controllers/my-diagnoses.c
     },
     { provide: DIAGNOSTIC_OWNERSHIP, useClass: DiagnosisOwnershipAdapter },
     { provide: USER_DIAGNOSES, useClass: UserDiagnosesAdapter },
-    RegisterInitiativeUseCase,
-    GetInitiativeUseCase,
-    RecordConsentUseCase,
-    GetConsentUseCase,
-    ListMyDiagnosesUseCase,
-    GetInitiativeCharacterizationUseCase,
-    ListSectorsUseCase,
-    ListStagesUseCase,
+    applicationProvider(RegisterInitiativeUseCase, [INITIATIVE_REPOSITORY, INITIATIVE_CATALOG_REPOSITORY, CONSENT_REPOSITORY, DIAGNOSTIC_OWNERSHIP, EVENT_PUBLISHER]),
+    applicationProvider(GetInitiativeUseCase, [INITIATIVE_REPOSITORY, INITIATIVE_CATALOG_REPOSITORY]),
+    applicationProvider(RecordConsentUseCase, [CONSENT_REPOSITORY, DIAGNOSTIC_OWNERSHIP, EVENT_PUBLISHER]),
+    applicationProvider(GetConsentUseCase, [CONSENT_REPOSITORY]),
+    applicationProvider(ListMyDiagnosesUseCase, [USER_DIAGNOSES]),
+    applicationProvider(GetInitiativeCharacterizationUseCase, [INITIATIVE_REPOSITORY, INITIATIVE_CATALOG_REPOSITORY]),
+    applicationProvider(ListSectorsUseCase, [INITIATIVE_CATALOG_REPOSITORY]),
+    applicationProvider(ListStagesUseCase, [INITIATIVE_CATALOG_REPOSITORY]),
   ],
   controllers: [
     InitiativeController,

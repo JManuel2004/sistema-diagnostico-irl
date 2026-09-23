@@ -1,13 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
 import type { RoadmapResponse } from '@innlab/contracts';
-import {
-  TAXONOMY_REPOSITORY,
-  type TaxonomyRepositoryPort,
-} from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
-import {
-  ROADMAP_REPOSITORY,
-  type RoadmapRepositoryPort,
-} from '../../domain/repositories/roadmap.repository.port.js';
+import { type TaxonomyRepositoryPort } from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
+import { type RoadmapRepositoryPort } from '../../domain/repositories/roadmap.repository.port.js';
 import { RoadmapNotGeneratedError } from '../../domain/exceptions/roadmap.errors.js';
 import { toRoadmapResponse } from '../dtos/map-roadmap-response.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
@@ -25,12 +18,9 @@ export interface GetScalingRoadmapQuery {
  * recalculate. "Not generated yet" is the normal state before the user
  * accepts the deep analysis, so it is a `Result.err`, not an exception.
  */
-@Injectable()
 export class GetScalingRoadmapUseCase {
   constructor(
-    @Inject(ROADMAP_REPOSITORY)
     private readonly roadmaps: RoadmapRepositoryPort,
-    @Inject(TAXONOMY_REPOSITORY)
     private readonly taxonomy: TaxonomyRepositoryPort,
   ) {}
 

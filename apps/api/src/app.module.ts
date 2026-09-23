@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService, ConfigType } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { EventsModule } from './shared/kernel/infrastructure/events/events.module.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from 'nestjs-pino';
 import { ClsModule, ClsService } from 'nestjs-cls';
@@ -85,6 +86,7 @@ import { ApiModule } from './api.module.js';
     // no queue infrastructure, `EventEmitter2` dispatch is enough for
     // the current volume and topology.
     EventEmitterModule.forRoot(),
+    EventsModule,
     ApiModule,
   ],
 })

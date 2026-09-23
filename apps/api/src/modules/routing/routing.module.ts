@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { GetMaturityProfileUseCase } from '../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
+import { applicationProvider } from '../../shared/kernel/infrastructure/nest/application-provider.js';
+import { EVENT_PUBLISHER } from '../../shared/kernel/application/ports/event-publisher.port.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CalibrationLabelValueOrm } from './infrastructure/database/orm-entities/calibration-label-value.orm-entity.js';
 import { ScoringParametersOrm } from './infrastructure/database/orm-entities/scoring-parameters.orm-entity.js';
@@ -71,9 +74,9 @@ import { InitiativeModule } from '../initiative/initiative.module.js';
     EligibilityFilterService,
     AffinityScorerService,
     ExceptionEngineService,
-    GenerateRecommendationUseCase,
-    GetRecommendationUseCase,
-    GetRecommendationTraceUseCase,
+    applicationProvider(GenerateRecommendationUseCase, [ACTIVE_CONFIGURATION_REPOSITORY, RECOMMENDATION_REPOSITORY, INITIATIVE_CHARACTERIZATION_READER, GetMaturityProfileUseCase, OrdinalTranslatorService, EligibilityFilterService, AffinityScorerService, ExceptionEngineService, EVENT_PUBLISHER]),
+    applicationProvider(GetRecommendationUseCase, [RECOMMENDATION_REPOSITORY]),
+    applicationProvider(GetRecommendationTraceUseCase, [RECOMMENDATION_REPOSITORY]),
     DeepAnalysisRequestedListener,
     {
       provide: ACTIVE_CONFIGURATION_REPOSITORY,

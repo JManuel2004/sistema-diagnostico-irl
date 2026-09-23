@@ -190,34 +190,15 @@ export default [
     },
   },
   {
-    // Application layer: IO stays banned, the NestJS DI decorators do not.
-    //
-    // Why the exception (ADR-001). Use cases are wired as providers and
-    // resolve their ports by `Symbol`, which needs `@Inject(TOKEN)` on the
-    // constructor parameters. The alternative — one `useFactory` + `inject:`
-    // binding per use case, the way `GetQuestionnaireStructureQuery` does it
-    // — keeps the layer literally framework-free but multiplies the wiring
-    // boilerplate in every module without buying any real decoupling: the
-    // dependency still points at the port and never at the adapter, which is
-    // the property that actually matters.
-    //
-    // The ban that carries the architectural weight is on IO — persistence,
-    // HTTP clients, mailers, filesystem, sockets. That one stays intact, and
-    // so does the ban on the NestJS packages that have no business here
-    // (`@nestjs/core`, `@nestjs/typeorm`, the platform adapters).
+    // Application layer: no framework and no IO either. Use cases and
+    // queries are plain classes; each module binds them with
+    // `applicationProvider()` (a `useFactory` + `inject:` list), and they
+    // publish domain events through the `EventPublisher` port.
     files: [`src/{${DEFINITIVE_LAYER_CONTEXTS}}/application/**/*.ts`],
     rules: {
       'no-restricted-imports': [
         'error',
-        {
-          patterns: [
-            ...FRAMEWORK_PACKAGES.filter((p) => p !== '@nestjs/*'),
-            ...IO_PACKAGES,
-            '@nestjs/core',
-            '@nestjs/typeorm',
-            '@nestjs/platform-*',
-          ],
-        },
+        { patterns: [...FRAMEWORK_PACKAGES, ...IO_PACKAGES] },
       ],
     },
   },

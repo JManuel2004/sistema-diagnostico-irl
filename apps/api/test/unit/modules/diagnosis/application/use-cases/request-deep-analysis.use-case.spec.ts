@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import type { EventEmitter2 } from '@nestjs/event-emitter';
+import type { EventPublisher } from '../../../../../../src/shared/kernel/application/ports/event-publisher.port.js';
 import { RequestDeepAnalysisUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/request-deep-analysis.use-case.js';
 import type { DiagnosisRepositoryPort } from '../../../../../../src/modules/diagnosis/domain/repositories/diagnosis.repository.port.js';
 import { Diagnosis } from '../../../../../../src/modules/diagnosis/domain/entities/diagnosis.aggregate.js';
@@ -21,7 +21,7 @@ function diagnosisIn(state: string): Diagnosis {
 
 describe('RequestDeepAnalysisUseCase', () => {
   let diagnostics: jest.Mocked<DiagnosisRepositoryPort>;
-  let emitAsync: jest.Mock<(...args: unknown[]) => Promise<unknown[]>>;
+  let publish: jest.Mock<EventPublisher['publish']>;
   let useCase: RequestDeepAnalysisUseCase;
 
   beforeEach(() => {
@@ -31,10 +31,10 @@ describe('RequestDeepAnalysisUseCase', () => {
       findAllByUserId: jest.fn(),
       save: jest.fn(() => Promise.resolve(undefined)),
     };
-    emitAsync = jest.fn(() => Promise.resolve([]));
+    publish = jest.fn(() => Promise.resolve());
     useCase = new RequestDeepAnalysisUseCase(diagnostics, {
-      emitAsync,
-    } as unknown as EventEmitter2);
+      publish,
+    });
   });
 
   it('transitions PROFILE_GENERATED to DEEP_ANALYSIS_IN_PROGRESS and publishes the event after saving', async () => {
@@ -50,15 +50,15 @@ describe('RequestDeepAnalysisUseCase', () => {
     });
     expect(diagnostics.save.mock.calls[0][0].state.value).toBe('DEEP_ANALYSIS_IN_PROGRESS');
 
-    expect(emitAsync).toHaveBeenCalledTimes(1);
-    const [name, event] = emitAsync.mock.calls[0] as [string, DeepAnalysisRequestedEvent];
-    expect(name).toBe(DeepAnalysisRequestedEvent.eventName);
+    expect(publish).toHaveBeenCalledTimes(1);
+    const [event] = publish.mock.calls[0] as [DeepAnalysisRequestedEvent];
+    expect(event.name).toBe(DeepAnalysisRequestedEvent.eventName);
     expect(event).toBeInstanceOf(DeepAnalysisRequestedEvent);
     expect(event.payload).toEqual({ diagnosticId: DIAGNOSTIC_ID });
 
     // The event fires only once the transition it represents is saved.
     expect(diagnostics.save.mock.invocationCallOrder[0]).toBeLessThan(
-      emitAsync.mock.invocationCallOrder[0],
+      publish.mock.invocationCallOrder[0],
     );
   });
 
@@ -73,7 +73,7 @@ describe('RequestDeepAnalysisUseCase', () => {
       if (!result.ok) throw new Error('expected ok result');
       expect(result.value.state).toBe(state);
       expect(diagnostics.save).not.toHaveBeenCalled();
-      expect(emitAsync).toHaveBeenCalledTimes(1);
+      expect(publish).toHaveBeenCalledTimes(1);
     },
   );
 
@@ -88,7 +88,7 @@ describe('RequestDeepAnalysisUseCase', () => {
       if (result.ok) throw new Error('expected err result');
       expect(result.error).toBeInstanceOf(ConflictError);
       expect(diagnostics.save).not.toHaveBeenCalled();
-      expect(emitAsync).not.toHaveBeenCalled();
+      expect(publish).not.toHaveBeenCalled();
     },
   );
 
@@ -100,6 +100,6 @@ describe('RequestDeepAnalysisUseCase', () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('expected err result');
     expect(result.error).toBeInstanceOf(NotFoundError);
-    expect(emitAsync).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalled();
   });
 });

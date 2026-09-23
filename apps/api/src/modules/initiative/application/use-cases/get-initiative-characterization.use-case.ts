@@ -1,13 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
 import type { Characterization } from '@innlab/contracts';
-import {
-  INITIATIVE_REPOSITORY,
-  type InitiativeRepositoryPort,
-} from '../../domain/repositories/initiative.repository.port.js';
-import {
-  INITIATIVE_CATALOG_REPOSITORY,
-  type InitiativeCatalogPort,
-} from '../../domain/repositories/initiative-catalog.port.js';
+import { type InitiativeRepositoryPort } from '../../domain/repositories/initiative.repository.port.js';
+import { type InitiativeCatalogPort } from '../../domain/repositories/initiative-catalog.port.js';
 
 const NO_CHARACTERIZATION: Characterization = {
   stage: null,
@@ -32,12 +25,9 @@ const NO_CHARACTERIZATION: Characterization = {
  * `routing/` now calls this use case instead of reaching into
  * `initiative/`'s tables itself.
  */
-@Injectable()
 export class GetInitiativeCharacterizationUseCase {
   constructor(
-    @Inject(INITIATIVE_REPOSITORY)
     private readonly initiatives: InitiativeRepositoryPort,
-    @Inject(INITIATIVE_CATALOG_REPOSITORY)
     private readonly catalog: InitiativeCatalogPort,
   ) {}
 
@@ -46,7 +36,9 @@ export class GetInitiativeCharacterizationUseCase {
     if (!initiative) return NO_CHARACTERIZATION;
 
     const [stage, sector] = await Promise.all([
-      initiative.stageId === null ? null : this.catalog.findStageById(initiative.stageId),
+      initiative.stageId === null
+        ? null
+        : this.catalog.findStageById(initiative.stageId),
       this.catalog.findSectorById(initiative.sectorId),
     ]);
 

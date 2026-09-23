@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { initiativeSchema } from '@innlab/contracts';
-import type { EventEmitter2 } from '@nestjs/event-emitter';
+import type { EventPublisher } from '../../../../../../src/shared/kernel/application/ports/event-publisher.port.js';
 import { InitiativeRegisteredEvent } from '../../../../../../src/shared/kernel/events/initiative-registered.event.js';
 import { RegisterInitiativeUseCase } from '../../../../../../src/modules/initiative/application/use-cases/register-initiative.use-case.js';
 import type { InitiativeRepositoryPort } from '../../../../../../src/modules/initiative/domain/repositories/initiative.repository.port.js';
@@ -22,7 +22,7 @@ describe('RegisterInitiativeUseCase', () => {
   let catalog: jest.Mocked<InitiativeCatalogPort>;
   let consents: jest.Mocked<ConsentRepositoryPort>;
   let verify: jest.Mock<DiagnosticOwnershipPort['verify']>;
-  let emitAsync: jest.Mock<EventEmitter2['emitAsync']>;
+  let publish: jest.Mock<EventPublisher['publish']>;
   let useCase: RegisterInitiativeUseCase;
 
   const command = {
@@ -67,10 +67,10 @@ describe('RegisterInitiativeUseCase', () => {
       save: jest.fn(() => Promise.resolve(undefined)),
     };
     verify = jest.fn(() => Promise.resolve(Result.ok(undefined)));
-    emitAsync = jest.fn<EventEmitter2['emitAsync']>().mockResolvedValue([]);
+    publish = jest.fn<EventPublisher['publish']>().mockResolvedValue();
     useCase = new RegisterInitiativeUseCase(initiatives, catalog, consents, { verify }, {
-      emitAsync,
-    } as unknown as EventEmitter2);
+      publish,
+    });
   });
 
   it('registers the initiative when the caller owns the diagnostic', async () => {
@@ -112,7 +112,7 @@ describe('RegisterInitiativeUseCase', () => {
     if (result.ok) throw new Error('expected err result');
     expect(result.error).toBeInstanceOf(ConflictError);
     expect(initiatives.save).not.toHaveBeenCalled();
-    expect(emitAsync).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalled();
     expect(consents.findByDiagnosticId).toHaveBeenCalledWith(DIAGNOSTIC_ID);
   });
 
@@ -144,7 +144,7 @@ describe('RegisterInitiativeUseCase', () => {
     if (result.ok) throw new Error('expected err result');
     expect(result.error).toBeInstanceOf(NotFoundError);
     expect(initiatives.save).not.toHaveBeenCalled();
-    expect(emitAsync).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalled();
   });
 
   // Registering the initiative moves the diagnostic on, through the
@@ -152,12 +152,12 @@ describe('RegisterInitiativeUseCase', () => {
   it('publishes InitiativeRegisteredEvent once the initiative is saved', async () => {
     await useCase.execute(command);
 
-    expect(emitAsync).toHaveBeenCalledTimes(1);
-    const call = emitAsync.mock.calls[0];
-    expect(call[0]).toBe(InitiativeRegisteredEvent.eventName);
-    expect((call[1] as InitiativeRegisteredEvent).payload).toEqual({ diagnosticId: DIAGNOSTIC_ID });
+    expect(publish).toHaveBeenCalledTimes(1);
+    const [event] = publish.mock.calls[0] as [InitiativeRegisteredEvent];
+    expect(event.name).toBe(InitiativeRegisteredEvent.eventName);
+    expect(event.payload).toEqual({ diagnosticId: DIAGNOSTIC_ID });
     expect(initiatives.save.mock.invocationCallOrder[0]).toBeLessThan(
-      emitAsync.mock.invocationCallOrder[0],
+      publish.mock.invocationCallOrder[0],
     );
   });
 
@@ -166,6 +166,6 @@ describe('RegisterInitiativeUseCase', () => {
 
     await useCase.execute(command);
 
-    expect(emitAsync).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalled();
   });
 });

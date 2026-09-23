@@ -25,7 +25,9 @@ export function toMaturityProfileResponse(
   const gaps = profile.gaps();
   // RF-13: which dimensions may be critical comes from the catalog.
   const critical = profile.criticalState(
-    new Set(dimensions.filter((d) => d.isCriticalDimension).map((d) => d.code.value)),
+    new Set(
+      dimensions.filter((d) => d.isCriticalDimension).map((d) => d.code.value),
+    ),
   );
 
   return {

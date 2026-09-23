@@ -1,20 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common';
-import {
-  DIAGNOSIS_REPOSITORY,
-  type DiagnosisRepositoryPort,
-} from '../../domain/repositories/diagnosis.repository.port.js';
+import { type DiagnosisRepositoryPort } from '../../domain/repositories/diagnosis.repository.port.js';
 
 /**
  * Who owns a diagnostic: the owner's user id, or `null` if the diagnostic
  * does not exist. Exported read query so other modules can check ownership
  * before writing without seeing the `Diagnosis` aggregate.
  */
-@Injectable()
 export class FindDiagnosisOwnerQuery {
-  constructor(
-    @Inject(DIAGNOSIS_REPOSITORY)
-    private readonly diagnoses: DiagnosisRepositoryPort,
-  ) {}
+  constructor(private readonly diagnoses: DiagnosisRepositoryPort) {}
 
   async execute(diagnosticId: string): Promise<string | null> {
     const diagnosis = await this.diagnoses.findById(diagnosticId);

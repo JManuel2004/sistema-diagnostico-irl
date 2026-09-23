@@ -1,10 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { EventPublisher } from '../../../../shared/kernel/application/ports/event-publisher.port.js';
 import type { AcceptDeepAnalysisResponse } from '@innlab/contracts';
-import {
-  DIAGNOSIS_REPOSITORY,
-  type DiagnosisRepositoryPort,
-} from '../../domain/repositories/diagnosis.repository.port.js';
+import { type DiagnosisRepositoryPort } from '../../domain/repositories/diagnosis.repository.port.js';
 import { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
 import { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
@@ -14,7 +10,10 @@ export interface RequestDeepAnalysisCommand {
   diagnosticId: string;
 }
 
-const ALREADY_ACCEPTED_STATES = new Set(['DEEP_ANALYSIS_IN_PROGRESS', 'DEEP_ANALYSIS_COMPLETE']);
+const ALREADY_ACCEPTED_STATES = new Set([
+  'DEEP_ANALYSIS_IN_PROGRESS',
+  'DEEP_ANALYSIS_COMPLETE',
+]);
 
 /**
  * `RequestDeepAnalysisUseCase` (RF-11 / HU-xx).
@@ -38,17 +37,17 @@ const ALREADY_ACCEPTED_STATES = new Set(['DEEP_ANALYSIS_IN_PROGRESS', 'DEEP_ANAL
  * The state transition is saved *before* the event is published — the
  * event fires only once the transition it represents has committed.
  */
-@Injectable()
 export class RequestDeepAnalysisUseCase {
   constructor(
-    @Inject(DIAGNOSIS_REPOSITORY)
     private readonly diagnostics: DiagnosisRepositoryPort,
-    private readonly events: EventEmitter2,
+    private readonly events: EventPublisher,
   ) {}
 
   async execute(
     cmd: RequestDeepAnalysisCommand,
-  ): Promise<Result<AcceptDeepAnalysisResponse, NotFoundError | ConflictError>> {
+  ): Promise<
+    Result<AcceptDeepAnalysisResponse, NotFoundError | ConflictError>
+  > {
     const diagnosis = await this.diagnostics.findById(cmd.diagnosticId);
     if (!diagnosis) {
       return Result.err(new NotFoundError('Diagnosis', cmd.diagnosticId));
@@ -58,10 +57,13 @@ export class RequestDeepAnalysisUseCase {
     if (!ALREADY_ACCEPTED_STATES.has(current)) {
       if (current !== 'PROFILE_GENERATED') {
         return Result.err(
-          new ConflictError(`Deep analysis cannot be requested from state ${current}`, {
-            diagnosticId: cmd.diagnosticId,
-            state: current,
-          }),
+          new ConflictError(
+            `Deep analysis cannot be requested from state ${current}`,
+            {
+              diagnosticId: cmd.diagnosticId,
+              state: current,
+            },
+          ),
         );
       }
 
@@ -69,8 +71,7 @@ export class RequestDeepAnalysisUseCase {
       await this.diagnostics.save(diagnosis);
     }
 
-    await this.events.emitAsync(
-      DeepAnalysisRequestedEvent.eventName,
+    await this.events.publish(
       new DeepAnalysisRequestedEvent({ diagnosticId: diagnosis.id.value }),
     );
 

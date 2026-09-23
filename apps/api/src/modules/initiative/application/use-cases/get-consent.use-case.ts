@@ -1,9 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
 import type { ConsentRecord } from '@innlab/contracts';
-import {
-  CONSENT_REPOSITORY,
-  type ConsentRepositoryPort,
-} from '../../domain/repositories/consent.repository.port.js';
+import { type ConsentRepositoryPort } from '../../domain/repositories/consent.repository.port.js';
 import { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
 
@@ -13,14 +9,12 @@ import { Result } from '../../../../shared/kernel/domain/result.js';
  * that to decide whether to show the terms screen. It is a normal,
  * expected outcome, not an exceptional condition.
  */
-@Injectable()
 export class GetConsentUseCase {
-  constructor(
-    @Inject(CONSENT_REPOSITORY)
-    private readonly consents: ConsentRepositoryPort,
-  ) {}
+  constructor(private readonly consents: ConsentRepositoryPort) {}
 
-  async execute(diagnosticId: string): Promise<Result<ConsentRecord, NotFoundError>> {
+  async execute(
+    diagnosticId: string,
+  ): Promise<Result<ConsentRecord, NotFoundError>> {
     const consent = await this.consents.findByDiagnosticId(diagnosticId);
     if (!consent) {
       return Result.err(new NotFoundError('Consent', diagnosticId));

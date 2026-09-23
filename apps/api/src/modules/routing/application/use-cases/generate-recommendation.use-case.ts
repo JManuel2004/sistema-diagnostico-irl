@@ -1,34 +1,24 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { EventPublisher } from '../../../../shared/kernel/application/ports/event-publisher.port.js';
 import { createHash } from 'node:crypto';
 import type {
   DimensionCode,
   DiagnosticFacts,
   RecommendationResponse,
 } from '@innlab/contracts';
-import {
-  ACTIVE_CONFIGURATION_REPOSITORY,
-  type ActiveConfigurationRepositoryPort,
-} from '../../domain/repositories/active-configuration.repository.port.js';
-import {
-  RECOMMENDATION_REPOSITORY,
-  type RecommendationRepositoryPort,
-} from '../../domain/repositories/recommendation.repository.port.js';
-import {
-  INITIATIVE_CHARACTERIZATION_READER,
-  type InitiativeCharacterizationPort,
-} from '../../domain/repositories/initiative-characterization.port.js';
-import { OrdinalTranslatorService } from '../../domain/services/ordinal-translator.service.js';
-import { EligibilityFilterService } from '../../domain/services/eligibility-filter.service.js';
-import { AffinityScorerService } from '../../domain/services/affinity-scorer.service.js';
-import { ExceptionEngineService } from '../../domain/services/exception-engine.service.js';
+import { type ActiveConfigurationRepositoryPort } from '../../domain/repositories/active-configuration.repository.port.js';
+import { type RecommendationRepositoryPort } from '../../domain/repositories/recommendation.repository.port.js';
+import { type InitiativeCharacterizationPort } from '../../domain/repositories/initiative-characterization.port.js';
+import type { OrdinalTranslatorService } from '../../domain/services/ordinal-translator.service.js';
+import type { EligibilityFilterService } from '../../domain/services/eligibility-filter.service.js';
+import type { AffinityScorerService } from '../../domain/services/affinity-scorer.service.js';
+import type { ExceptionEngineService } from '../../domain/services/exception-engine.service.js';
 import { Recommendation } from '../../domain/entities/recommendation.aggregate.js';
 import { PortfolioRecommendationCalculatedEvent } from '../../../../shared/kernel/events/portfolio-recommendation-calculated.event.js';
 import {
   NoActiveConfigurationError,
   ProfileNotComputedError,
 } from '../../domain/exceptions/routing.errors.js';
-import { GetMaturityProfileUseCase } from '../../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
+import type { GetMaturityProfileUseCase } from '../../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
 import { irlLevelsByDimension } from '../../../../shared/irl-taxonomy/domain/services/irl-levels-by-dimension.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
@@ -46,27 +36,26 @@ export interface GenerateRecommendationCommand {
  * touches the database, so the engine can be exercised whole without
  * booting the application.
  */
-@Injectable()
 export class GenerateRecommendationUseCase {
   constructor(
-    @Inject(ACTIVE_CONFIGURATION_REPOSITORY)
     private readonly configuration: ActiveConfigurationRepositoryPort,
-    @Inject(RECOMMENDATION_REPOSITORY)
     private readonly recommendations: RecommendationRepositoryPort,
-    @Inject(INITIATIVE_CHARACTERIZATION_READER)
     private readonly characterizations: InitiativeCharacterizationPort,
     private readonly maturityProfiles: GetMaturityProfileUseCase,
     private readonly translator: OrdinalTranslatorService,
     private readonly eligibility: EligibilityFilterService,
     private readonly scorer: AffinityScorerService,
     private readonly exceptions: ExceptionEngineService,
-    private readonly events: EventEmitter2,
+    private readonly events: EventPublisher,
   ) {}
 
   async execute(
     cmd: GenerateRecommendationCommand,
   ): Promise<
-    Result<RecommendationResponse, NoActiveConfigurationError | ProfileNotComputedError>
+    Result<
+      RecommendationResponse,
+      NoActiveConfigurationError | ProfileNotComputedError
+    >
   > {
     const diagnosticId = Uuid.create(cmd.diagnosticId);
 
@@ -84,7 +73,10 @@ export class GenerateRecommendationUseCase {
     const { facts, dimensionNames } = builtFacts.value;
 
     // ── Layer 0: translate the ordinal vocabulary into numbers ─────────
-    const numericProfiles = this.translator.translate(config.profiles, config.scale);
+    const numericProfiles = this.translator.translate(
+      config.profiles,
+      config.scale,
+    );
 
     // ── Layer 1: hard filter ────────────────────────────────────────────
     const { eligible, excluded } = this.eligibility.filter(
@@ -126,8 +118,7 @@ export class GenerateRecommendationUseCase {
     await this.recommendations.save(recommendation);
 
     // Published once the recommendation is persisted. No listener yet.
-    await this.events.emitAsync(
-      PortfolioRecommendationCalculatedEvent.eventName,
+    await this.events.publish(
       new PortfolioRecommendationCalculatedEvent({
         diagnosticId: diagnosticId.value,
       }),
@@ -169,7 +160,9 @@ export class GenerateRecommendationUseCase {
 
     // Names for the justification, which the initiative leader reads: it must
     // say «Negocio», not `BRL`.
-    const dimensionNames = new Map(profile.dimensionResults.map((r) => [r.dimensionCode, r.shortName]));
+    const dimensionNames = new Map(
+      profile.dimensionResults.map((r) => [r.dimensionCode, r.shortName]),
+    );
 
     const facts: DiagnosticFacts = {
       diagnosticId,
@@ -243,16 +236,21 @@ function hashOf(facts: DiagnosticFacts): string {
  * the initiative leader, who does not know the framework's acronyms.
  */
 export function buildJustification(
-  ranking: readonly { serviceName: string; contributions: { bottleneck: { details: readonly { dimension: string; sourceLabel: string }[] } } }[],
+  ranking: readonly {
+    serviceName: string;
+    contributions: {
+      bottleneck: {
+        details: readonly { dimension: string; sourceLabel: string }[];
+      };
+    };
+  }[],
   applied: readonly { targetService: string; declaredReason: string }[],
   dimensionNames: ReadonlyMap<string, string>,
 ): string | null {
   const winner = ranking[0];
   if (!winner) return null;
 
-  const decisive = applied.find(
-    (e) => e.targetService === winner.serviceName,
-  );
+  const decisive = applied.find((e) => e.targetService === winner.serviceName);
   if (decisive) {
     return `${winner.serviceName} — ${decisive.declaredReason}`;
   }
@@ -261,7 +259,9 @@ export function buildJustification(
     .filter((d) => d.sourceLabel !== 'not_applicable')
     .map((d) => dimensionNames.get(d.dimension) ?? d.dimension);
   const enumerated =
-    focus.length > 1 ? `${focus.slice(0, -1).join(', ')} y ${focus[focus.length - 1]}` : focus.join('');
+    focus.length > 1
+      ? `${focus.slice(0, -1).join(', ')} y ${focus[focus.length - 1]}`
+      : focus.join('');
 
   return focus.length > 0
     ? `${winner.serviceName} atiende de forma directa la dimensión más rezagada de tu iniciativa: ${enumerated}.`

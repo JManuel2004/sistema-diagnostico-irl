@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import type { EventEmitter2 } from '@nestjs/event-emitter';
+import type { EventPublisher } from '../../../../../../src/shared/kernel/application/ports/event-publisher.port.js';
 import {
   RecordConsentUseCase,
   CURRENT_TERMS_VERSION,
@@ -18,7 +18,7 @@ const USER_ID = 'user-1';
 describe('RecordConsentUseCase', () => {
   let consents: jest.Mocked<ConsentRepositoryPort>;
   let verify: jest.Mock<DiagnosticOwnershipPort['verify']>;
-  let emitAsync: jest.Mock<(...args: unknown[]) => Promise<unknown[]>>;
+  let publish: jest.Mock<EventPublisher['publish']>;
   let useCase: RecordConsentUseCase;
 
   const command = {
@@ -33,10 +33,10 @@ describe('RecordConsentUseCase', () => {
       save: jest.fn(() => Promise.resolve(undefined)),
     };
     verify = jest.fn(() => Promise.resolve(Result.ok(undefined)));
-    emitAsync = jest.fn(() => Promise.resolve([]));
+    publish = jest.fn(() => Promise.resolve());
     useCase = new RecordConsentUseCase(consents, { verify }, {
-      emitAsync,
-    } as unknown as EventEmitter2);
+      publish,
+    });
   });
 
   it('saves the consent and publishes ConsentRecordedEvent after saving', async () => {
@@ -50,11 +50,11 @@ describe('RecordConsentUseCase', () => {
     expect(verify).toHaveBeenCalledWith(DIAGNOSTIC_ID, USER_ID);
     expect(consents.save).toHaveBeenCalledTimes(1);
 
-    const [name, event] = emitAsync.mock.calls[0] as [string, ConsentRecordedEvent];
-    expect(name).toBe(ConsentRecordedEvent.eventName);
+    const [event] = publish.mock.calls[0] as [ConsentRecordedEvent];
+    expect(event.name).toBe(ConsentRecordedEvent.eventName);
     expect(event.payload).toEqual({ diagnosticId: DIAGNOSTIC_ID });
     expect(consents.save.mock.invocationCallOrder[0]).toBeLessThan(
-      emitAsync.mock.invocationCallOrder[0],
+      publish.mock.invocationCallOrder[0],
     );
   });
 
@@ -70,7 +70,7 @@ describe('RecordConsentUseCase', () => {
     if (result.ok) throw new Error('expected err result');
     expect(result.error).toBe(error);
     expect(consents.save).not.toHaveBeenCalled();
-    expect(emitAsync).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalled();
   });
 
   it('checks ownership before the terms version', async () => {
@@ -90,6 +90,6 @@ describe('RecordConsentUseCase', () => {
     if (result.ok) throw new Error('expected err result');
     expect(result.error).toBeInstanceOf(ConflictError);
     expect(consents.save).not.toHaveBeenCalled();
-    expect(emitAsync).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalled();
   });
 });

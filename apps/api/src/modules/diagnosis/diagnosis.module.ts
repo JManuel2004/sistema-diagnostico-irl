@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { applicationProvider } from '../../shared/kernel/infrastructure/nest/application-provider.js';
+import { EVENT_PUBLISHER } from '../../shared/kernel/application/ports/event-publisher.port.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module.js';
 import { TAXONOMY_REPOSITORY } from '../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
@@ -74,8 +76,8 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     IrlTaxonomyModule,
   ],
   providers: [
-    ListUserDiagnosesQuery,
-    FindDiagnosisOwnerQuery,
+    applicationProvider(ListUserDiagnosesQuery, [DIAGNOSIS_REPOSITORY]),
+    applicationProvider(FindDiagnosisOwnerQuery, [DIAGNOSIS_REPOSITORY]),
     { provide: DIAGNOSIS_REPOSITORY, useClass: TypeOrmDiagnosisRepository },
     { provide: ANSWER_SHEET_REPOSITORY, useClass: TypeOrmAnswerSheetRepository },
     {
@@ -89,16 +91,16 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     { provide: IMBALANCE_REPOSITORY, useClass: TypeOrmImbalanceRepository },
     IrlCalculatorService,
     ImbalanceEvaluatorService,
-    FinalizeInitialDiagnosisUseCase,
-    SubmitQuestionnaireUseCase,
-    ComputeMaturityProfileUseCase,
-    GetMaturityProfileUseCase,
-    RequestDeepAnalysisUseCase,
-    StartDiagnosisUseCase,
-    GetDiagnosisUseCase,
-    ApplyInitiativeToDiagnosisUseCase,
+    applicationProvider(FinalizeInitialDiagnosisUseCase, [DIAGNOSIS_REPOSITORY, ANSWER_SHEET_REPOSITORY, SubmitQuestionnaireUseCase, ComputeMaturityProfileUseCase, TAXONOMY_REPOSITORY]),
+    applicationProvider(SubmitQuestionnaireUseCase, [ANSWER_SHEET_REPOSITORY]),
+    applicationProvider(ComputeMaturityProfileUseCase, [STATEMENT_CATALOG_REPOSITORY, TAXONOMY_REPOSITORY, MATURITY_PROFILE_REPOSITORY, IMBALANCE_REPOSITORY, IrlCalculatorService, ImbalanceEvaluatorService]),
+    applicationProvider(GetMaturityProfileUseCase, [MATURITY_PROFILE_REPOSITORY, IMBALANCE_REPOSITORY, TAXONOMY_REPOSITORY]),
+    applicationProvider(RequestDeepAnalysisUseCase, [DIAGNOSIS_REPOSITORY, EVENT_PUBLISHER]),
+    applicationProvider(StartDiagnosisUseCase, [DIAGNOSIS_REPOSITORY]),
+    applicationProvider(GetDiagnosisUseCase, [DIAGNOSIS_REPOSITORY]),
+    applicationProvider(ApplyInitiativeToDiagnosisUseCase, [DIAGNOSIS_REPOSITORY]),
     InitiativeRegisteredListener,
-    ApplyConsentToDiagnosisUseCase,
+    applicationProvider(ApplyConsentToDiagnosisUseCase, [DIAGNOSIS_REPOSITORY]),
     ConsentRecordedListener,
     {
       provide: GetQuestionnaireStructureQuery,

@@ -1,22 +1,15 @@
-import { Inject, Injectable } from '@nestjs/common';
-import {
-  DEPENDENCY_GRAPH_REPOSITORY,
-  type DependencyGraphRepositoryPort,
-} from '../../domain/repositories/dependency-graph.repository.port.js';
-import {
-  ROADMAP_REPOSITORY,
-  type RoadmapRepositoryPort,
-} from '../../domain/repositories/roadmap.repository.port.js';
+import { type DependencyGraphRepositoryPort } from '../../domain/repositories/dependency-graph.repository.port.js';
+import { type RoadmapRepositoryPort } from '../../domain/repositories/roadmap.repository.port.js';
 import { DependencyGraph } from '../../domain/value-objects/dependency-graph.vo.js';
-import { RoadmapClosureService } from '../../domain/services/roadmap-closure.service.js';
-import { TopologicalLayeringService } from '../../domain/services/topological-layering.service.js';
-import { TargetLevelCalculatorService } from '../../domain/services/target-level-calculator.service.js';
+import type { RoadmapClosureService } from '../../domain/services/roadmap-closure.service.js';
+import type { TopologicalLayeringService } from '../../domain/services/topological-layering.service.js';
+import type { TargetLevelCalculatorService } from '../../domain/services/target-level-calculator.service.js';
 import {
   ScalingRoadmap,
   type RoadmapPhase,
 } from '../../domain/entities/scaling-roadmap.aggregate.js';
 import { RoadmapCalculationError } from '../../domain/exceptions/roadmap.errors.js';
-import { GetMaturityProfileUseCase } from '../../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
+import type { GetMaturityProfileUseCase } from '../../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
 import { irlLevelsByDimension } from '../../../../shared/irl-taxonomy/domain/services/irl-levels-by-dimension.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
@@ -48,16 +41,13 @@ export interface GenerateScalingRoadmapCommand {
  * The levels come from `irlLevelsByDimension`, which also explains why the
  * persisted `dimension_result` flags are not consumed.
  */
-@Injectable()
 export class GenerateScalingRoadmapUseCase {
   constructor(
-    @Inject(DEPENDENCY_GRAPH_REPOSITORY)
     private readonly graphs: DependencyGraphRepositoryPort,
     private readonly profiles: GetMaturityProfileUseCase,
     private readonly closure: RoadmapClosureService,
     private readonly layering: TopologicalLayeringService,
     private readonly targets: TargetLevelCalculatorService,
-    @Inject(ROADMAP_REPOSITORY)
     private readonly roadmaps: RoadmapRepositoryPort,
   ) {}
 

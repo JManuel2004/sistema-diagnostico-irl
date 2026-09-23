@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { GetMaturityProfileUseCase } from '../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
+import { TAXONOMY_REPOSITORY } from '../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
+import { applicationProvider } from '../../shared/kernel/infrastructure/nest/application-provider.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScalingRoadmapOrm } from './infrastructure/database/orm-entities/scaling-roadmap.orm-entity.js';
 import { TypeOrmRoadmapRepository } from './infrastructure/database/repositories/typeorm-roadmap.repository.js';
@@ -45,8 +48,18 @@ import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module
     RoadmapClosureService,
     TopologicalLayeringService,
     TargetLevelCalculatorService,
-    GenerateScalingRoadmapUseCase,
-    GetScalingRoadmapUseCase,
+    applicationProvider(GenerateScalingRoadmapUseCase, [
+      DEPENDENCY_GRAPH_REPOSITORY,
+      GetMaturityProfileUseCase,
+      RoadmapClosureService,
+      TopologicalLayeringService,
+      TargetLevelCalculatorService,
+      ROADMAP_REPOSITORY,
+    ]),
+    applicationProvider(GetScalingRoadmapUseCase, [
+      ROADMAP_REPOSITORY,
+      TAXONOMY_REPOSITORY,
+    ]),
     DeepAnalysisRequestedListener,
     { provide: ROADMAP_REPOSITORY, useClass: TypeOrmRoadmapRepository },
     {

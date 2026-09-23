@@ -1,17 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
 import type { MaturityProfileResponse } from '@innlab/contracts';
-import {
-  MATURITY_PROFILE_REPOSITORY,
-  type MaturityProfileRepositoryPort,
-} from '../../domain/repositories/maturity-profile.repository.port.js';
-import {
-  IMBALANCE_REPOSITORY,
-  type ImbalanceRepositoryPort,
-} from '../../domain/repositories/imbalance.repository.port.js';
-import {
-  TAXONOMY_REPOSITORY,
-  type TaxonomyRepositoryPort,
-} from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
+import { type MaturityProfileRepositoryPort } from '../../domain/repositories/maturity-profile.repository.port.js';
+import { type ImbalanceRepositoryPort } from '../../domain/repositories/imbalance.repository.port.js';
+import { type TaxonomyRepositoryPort } from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
 import { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
 import { toMaturityProfileResponse } from '../dtos/map-maturity-profile-response.js';
@@ -27,14 +17,10 @@ export interface GetMaturityProfileQuery {
  * generation use cases, both of which call this one internally, propagate
  * that same `Result.err` as their own instead of catching an exception.
  */
-@Injectable()
 export class GetMaturityProfileUseCase {
   constructor(
-    @Inject(MATURITY_PROFILE_REPOSITORY)
     private readonly profiles: MaturityProfileRepositoryPort,
-    @Inject(IMBALANCE_REPOSITORY)
     private readonly imbalances: ImbalanceRepositoryPort,
-    @Inject(TAXONOMY_REPOSITORY)
     private readonly taxonomy: TaxonomyRepositoryPort,
   ) {}
 
@@ -50,8 +36,12 @@ export class GetMaturityProfileUseCase {
       );
     }
 
-    const storedImbalances = await this.imbalances.findByDiagnosticId(query.diagnosticId);
+    const storedImbalances = await this.imbalances.findByDiagnosticId(
+      query.diagnosticId,
+    );
     const dimensions = await this.taxonomy.findAllDimensions();
-    return Result.ok(toMaturityProfileResponse(profile, storedImbalances, dimensions));
+    return Result.ok(
+      toMaturityProfileResponse(profile, storedImbalances, dimensions),
+    );
   }
 }

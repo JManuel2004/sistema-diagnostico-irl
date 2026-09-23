@@ -1,27 +1,14 @@
-import { Inject, Injectable } from '@nestjs/common';
-import {
-  MATURITY_PROFILE_REPOSITORY,
-  type MaturityProfileRepositoryPort,
-} from '../../domain/repositories/maturity-profile.repository.port.js';
-import {
-  IMBALANCE_REPOSITORY,
-  type ImbalanceRepositoryPort,
-} from '../../domain/repositories/imbalance.repository.port.js';
-import {
-  STATEMENT_CATALOG_REPOSITORY,
-  type StatementCatalogPort,
-} from '../../domain/repositories/statement-catalog.port.js';
-import {
-  TAXONOMY_REPOSITORY,
-  type TaxonomyRepositoryPort,
-} from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
-import { IrlCalculatorService } from '../../domain/services/irl-calculator.service.js';
-import { ImbalanceEvaluatorService } from '../../domain/services/imbalance-evaluator.service.js';
+import { type MaturityProfileRepositoryPort } from '../../domain/repositories/maturity-profile.repository.port.js';
+import { type ImbalanceRepositoryPort } from '../../domain/repositories/imbalance.repository.port.js';
+import { type StatementCatalogPort } from '../../domain/repositories/statement-catalog.port.js';
+import { type TaxonomyRepositoryPort } from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
+import type { IrlCalculatorService } from '../../domain/services/irl-calculator.service.js';
+import type { ImbalanceEvaluatorService } from '../../domain/services/imbalance-evaluator.service.js';
 import { MaturityProfile } from '../../domain/entities/maturity-profile.aggregate.js';
 import { MaturityProfileCalculationError } from '../../domain/exceptions/maturity-profile-calculation.error.js';
 import type { ImbalanceResult } from '../../domain/value-objects/imbalance-result.vo.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
-import { DimensionCode } from '../../../../shared/kernel/domain/value-objects/dimension-code.js';
+import type { DimensionCode } from '../../../../shared/kernel/domain/value-objects/dimension-code.js';
 import { LikertValue } from '../../../../shared/kernel/domain/value-objects/likert-value.vo.js';
 
 export interface ComputeMaturityProfileCommand {
@@ -39,16 +26,11 @@ export interface ComputeMaturityProfileCommand {
  * outcomes of a well-formed request. `MaturityProfileCalculationError`
  * maps to 500 for exactly that reason. Stays a thrown exception.
  */
-@Injectable()
 export class ComputeMaturityProfileUseCase {
   constructor(
-    @Inject(STATEMENT_CATALOG_REPOSITORY)
     private readonly statementCatalog: StatementCatalogPort,
-    @Inject(TAXONOMY_REPOSITORY)
     private readonly taxonomy: TaxonomyRepositoryPort,
-    @Inject(MATURITY_PROFILE_REPOSITORY)
     private readonly profiles: MaturityProfileRepositoryPort,
-    @Inject(IMBALANCE_REPOSITORY)
     private readonly imbalanceRepo: ImbalanceRepositoryPort,
     private readonly calculator: IrlCalculatorService,
     private readonly imbalanceEvaluator: ImbalanceEvaluatorService,
@@ -88,14 +70,19 @@ export class ComputeMaturityProfileUseCase {
           { statementId: answer.statementId },
         );
       }
-      const existingKey = [...answersByDimension.keys()].find((k) => k.equals(dimension));
+      const existingKey = [...answersByDimension.keys()].find((k) =>
+        k.equals(dimension),
+      );
       const key = existingKey ?? dimension;
       const list = answersByDimension.get(key) ?? [];
       list.push(LikertValue.create(answer.value));
       answersByDimension.set(key, list);
     }
 
-    const dimensionResults = this.calculator.calculate(answersByDimension, conversionTable);
+    const dimensionResults = this.calculator.calculate(
+      answersByDimension,
+      conversionTable,
+    );
 
     const profile = MaturityProfile.create({
       diagnosticId,

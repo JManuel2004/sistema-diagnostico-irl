@@ -1,14 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import type { EventPublisher } from '../../../../shared/kernel/application/ports/event-publisher.port.js';
 import type { ConsentRecord } from '@innlab/contracts';
-import {
-  CONSENT_REPOSITORY,
-  type ConsentRepositoryPort,
-} from '../../domain/repositories/consent.repository.port.js';
-import {
-  DIAGNOSTIC_OWNERSHIP,
-  type DiagnosticOwnershipPort,
-} from '../../domain/repositories/diagnostic-ownership.port.js';
+import { type ConsentRepositoryPort } from '../../domain/repositories/consent.repository.port.js';
+import { type DiagnosticOwnershipPort } from '../../domain/repositories/diagnostic-ownership.port.js';
 import { Consent } from '../../domain/entities/consent.entity.js';
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
@@ -54,20 +47,22 @@ export interface RecordConsentCommand {
  * `diagnosis/` listens to in order to advance its own state machine —
  * `initiative/` never calls `diagnosis/` to do it.
  */
-@Injectable()
 export class RecordConsentUseCase {
   constructor(
-    @Inject(CONSENT_REPOSITORY)
     private readonly consents: ConsentRepositoryPort,
-    @Inject(DIAGNOSTIC_OWNERSHIP)
     private readonly ownership: DiagnosticOwnershipPort,
-    private readonly events: EventEmitter2,
+    private readonly events: EventPublisher,
   ) {}
 
   async execute(
     cmd: RecordConsentCommand,
-  ): Promise<Result<ConsentRecord, NotFoundError | ForbiddenError | ConflictError>> {
-    const owned = await this.ownership.verify(cmd.diagnosticId, cmd.cognitoUserId);
+  ): Promise<
+    Result<ConsentRecord, NotFoundError | ForbiddenError | ConflictError>
+  > {
+    const owned = await this.ownership.verify(
+      cmd.diagnosticId,
+      cmd.cognitoUserId,
+    );
     if (!owned.ok) return owned;
 
     if (cmd.version !== CURRENT_TERMS_VERSION) {
@@ -89,8 +84,7 @@ export class RecordConsentUseCase {
 
     await this.consents.save(consent);
 
-    await this.events.emitAsync(
-      ConsentRecordedEvent.eventName,
+    await this.events.publish(
       new ConsentRecordedEvent({ diagnosticId: consent.diagnosticId.value }),
     );
 

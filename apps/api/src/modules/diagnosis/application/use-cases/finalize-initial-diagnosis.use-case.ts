@@ -1,20 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
 import type { MaturityProfileResponse } from '@innlab/contracts';
-import {
-  DIAGNOSIS_REPOSITORY,
-  type DiagnosisRepositoryPort,
-} from '../../domain/repositories/diagnosis.repository.port.js';
+import { type DiagnosisRepositoryPort } from '../../domain/repositories/diagnosis.repository.port.js';
 import type { DiagnosisStateName } from '../../domain/value-objects/diagnosis-state.vo.js';
-import { SubmitQuestionnaireUseCase } from './submit-questionnaire.use-case.js';
-import {
-  ANSWER_SHEET_REPOSITORY,
-  type AnswerSheetRepositoryPort,
-} from '../../domain/repositories/answer-sheet.repository.port.js';
-import { ComputeMaturityProfileUseCase } from './compute-maturity-profile.use-case.js';
-import {
-  TAXONOMY_REPOSITORY,
-  type TaxonomyRepositoryPort,
-} from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
+import type { SubmitQuestionnaireUseCase } from './submit-questionnaire.use-case.js';
+import { type AnswerSheetRepositoryPort } from '../../domain/repositories/answer-sheet.repository.port.js';
+import type { ComputeMaturityProfileUseCase } from './compute-maturity-profile.use-case.js';
+import { type TaxonomyRepositoryPort } from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
 import { toMaturityProfileResponse } from '../dtos/map-maturity-profile-response.js';
 import { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
 import { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
@@ -47,23 +37,22 @@ export interface FinalizeInitialDiagnosticCommand {
  * validated the questionnaire was submitted), not business outcomes, and
  * stay thrown exceptions the same as before this adoption.
  */
-@Injectable()
 export class FinalizeInitialDiagnosisUseCase {
   constructor(
-    @Inject(DIAGNOSIS_REPOSITORY)
     private readonly diagnostics: DiagnosisRepositoryPort,
-    @Inject(ANSWER_SHEET_REPOSITORY)
     private readonly answerSheets: AnswerSheetRepositoryPort,
     private readonly submitQuestionnaire: SubmitQuestionnaireUseCase,
     private readonly computeProfile: ComputeMaturityProfileUseCase,
-    @Inject(TAXONOMY_REPOSITORY)
     private readonly taxonomy: TaxonomyRepositoryPort,
   ) {}
 
   async execute(
     cmd: FinalizeInitialDiagnosticCommand,
   ): Promise<
-    Result<MaturityProfileResponse, NotFoundError | ConflictError | InvariantViolationError>
+    Result<
+      MaturityProfileResponse,
+      NotFoundError | ConflictError | InvariantViolationError
+    >
   > {
     const diagnosis = await this.diagnostics.findById(cmd.diagnosticId);
     if (!diagnosis) {
@@ -73,10 +62,13 @@ export class FinalizeInitialDiagnosisUseCase {
     const current = diagnosis.state.value;
     if (!FINALIZABLE_STATES.includes(current)) {
       return Result.err(
-        new ConflictError(`Diagnosis cannot be finalized from state ${current}`, {
-          diagnosticId: cmd.diagnosticId,
-          state: current,
-        }),
+        new ConflictError(
+          `Diagnosis cannot be finalized from state ${current}`,
+          {
+            diagnosticId: cmd.diagnosticId,
+            state: current,
+          },
+        ),
       );
     }
 
@@ -117,6 +109,8 @@ export class FinalizeInitialDiagnosisUseCase {
     await this.diagnostics.save(diagnosis);
 
     const dimensions = await this.taxonomy.findAllDimensions();
-    return Result.ok(toMaturityProfileResponse(profile, imbalances, dimensions));
+    return Result.ok(
+      toMaturityProfileResponse(profile, imbalances, dimensions),
+    );
   }
 }
