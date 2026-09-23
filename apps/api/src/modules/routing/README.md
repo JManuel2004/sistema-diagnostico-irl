@@ -1,39 +1,37 @@
 # routing
 
-## Alcance
-Calcula la recomendación de portafolio de INNLAB para un diagnóstico: fichas ordinales → exclusiones (elegibilidad) → puntaje (afinidad) → ajustes (excepciones) → explicación con traza por capas. Incluye el catálogo de los seis servicios. **No cubre** el perfil de madurez (`diagnosis/`) ni el roadmap (`roadmap/`).
+## Scope
+Computes INNLAB's portfolio recommendation for a diagnostic: ordinal profiles → exclusions (eligibility) → score (affinity) → adjustments (exceptions) → explanation with a per-layer trace. Includes the catalog of the six services. **Does not cover** the maturity profile (`diagnosis/`) or the roadmap (`roadmap/`).
 
-## Reglas que deben respetarse
-- **No hay versionado de configuración**: existe una sola configuración de puntaje (`scoring_parameters` es un singleton por índice único) y el motor no lee versiones históricas — retirado deliberadamente: ningún actor del sistema publica una segunda versión.
-- `layer_trace` se conserva: es la auditoría de cada cálculo, no versionado de configuración.
-- Una recomendación por diagnóstico (`UNIQUE (id_diagnostic)`); recalcular la reemplaza, no acumula.
-- No lee `DimensionOrm`: consume `shared/irl-taxonomy` solo por su puerto.
-- No es llamado por `diagnosis/`: reacciona a `DeepAnalysisRequestedEvent`. Un `Result.err` en el listener se registra y no propaga, para no impedir que `roadmap/` reaccione.
+## Rules that must hold
+- **There is no configuration versioning**: there is a single scoring configuration (`scoring_parameters` is a singleton through a unique index) and the engine reads no historical versions — removed on purpose: no actor of the system publishes a second version.
+- `layer_trace` is kept: it is the audit of each computation, not configuration versioning.
+- One recommendation per diagnostic (`UNIQUE (id_diagnostic)`); recomputing replaces it, it does not accumulate.
+- It reads the taxonomy only through `shared/irl-taxonomy`'s port, never its ORM entities.
+- `diagnosis/` never calls it: it reacts to `DeepAnalysisRequestedEvent`. A `Result.err` in the listener is logged and not propagated, so `roadmap/` can still react.
+- **The justification is read by the initiative leader:** it names dimensions by the catalog's short name, never by their code or by the internal ordinal label (`primary`, `secondary`); when an adjustment decides, it quotes the reason declared by the center.
 
-## Nivel de completitud
-Implementado: motor de tres capas, traza, persistencia idempotente, caso de aceptación AgroConecta. Sin pantalla de administración de la configuración (fuera de alcance). El antiguo `POST diagnostics/:id/recommendation` se retiró: la recomendación solo se genera por `DeepAnalysisRequestedEvent`.
+## Completeness
+Implemented: three-layer engine, trace, idempotent persistence, AgroConecta acceptance case. No administration screen for the configuration (out of scope). The recommendation is generated only by `DeepAnalysisRequestedEvent`; there is no endpoint to generate it. Pending: the read endpoints do not verify that the diagnostic belongs to the caller.
 
-## Responsabilidad (lenguaje ubicuo)
-"Qué servicio de INNLAB le conviene a esta iniciativa y por qué": la recomendación, sus alternativas y la explicación de cómo se llegó a ella.
+## Responsibility (ubiquitous language)
+"Which INNLAB service suits this initiative, and why": the recommendation, its alternatives and the explanation of how it was reached.
 
-## Conceptos de dominio
-`Recommendation` (agregado), `OrdinalProfile`, `CalibrationScale`, `ScoringParameters`, `ScoredCandidate`; servicios `EligibilityFilter`, `AffinityScorer`, `ExceptionEngine`, `OrdinalTranslator`, `PredicateCompiler`.
+## Domain concepts
+`Recommendation` (aggregate), `OrdinalProfile`, `CalibrationScale`, `ScoringParameters`, `ScoredCandidate`; services `EligibilityFilter`, `AffinityScorer`, `ExceptionEngine`, `OrdinalTranslator`, `PredicateCompiler`.
 
-## Qué expone hacia afuera
-- **Eventos que publica:** `PortfolioRecommendationCalculatedEvent` (`shared/kernel/events/`, pensado para `reporting/`).
-- **Eventos que escucha:** `DeepAnalysisRequestedEvent`.
-- **HTTP (solo lectura):** `GET diagnostics/:id/recommendation` y `…/recommendation/trace`. Contratos en Swagger.
+## What it exposes
+- **Events it publishes:** `PortfolioRecommendationCalculatedEvent` (`shared/kernel/events/`); no module consumes it yet.
+- **Events it listens to:** `DeepAnalysisRequestedEvent`.
+- **HTTP (read only):** `GET diagnostics/:id/recommendation` and `GET diagnostics/:id/recommendation/trace`. Contracts in Swagger (`/api/docs`).
 
-## De qué depende
-`diagnosis/` por `GetMaturityProfileUseCase`; `initiative/` por `GetInitiativeCharacterizationUseCase` (vía `InitiativeCharacterizationPort`); `shared/irl-taxonomy` por `TAXONOMY_REPOSITORY`.
+## What it depends on
+`diagnosis/` through its exported `GetMaturityProfileUseCase`; `initiative/` through its exported `GetInitiativeCharacterizationUseCase` (behind `InitiativeCharacterizationPort`); `shared/irl-taxonomy` through `TAXONOMY_REPOSITORY`; `shared/kernel` for `EVENT_PUBLISHER`.
 
-## Datos que posee
-Escribe: `irl_diagnostic.portfolio_recommendation`, `recommendation_alternative`, `layer_trace`. Es dueño (solo seed) de: `irl_catalog.portfolio_service`, `published_ordinal_profile`, `published_ordinal_intensity`, `published_eligibility_rule`, `published_exception_rule`, `scoring_parameters`, `calibration_label_value`.
+## Data it owns
+Writes: `irl_diagnostic.portfolio_recommendation`, `recommendation_alternative`, `layer_trace`. Owns (seed only): `irl_catalog.portfolio_service`, `published_ordinal_profile`, `published_ordinal_intensity`, `published_eligibility_rule`, `published_exception_rule`, `scoring_parameters`, `calibration_label_value`.
 
-## Cobertura de pruebas
-- **Unitarias:** dominio del motor, aceptación AgroConecta (`acceptance/agroconecta.spec.ts`), casos de uso, listener.
-- **Integración:** `recommendation-repository` (persistencia y atomicidad).
+## Test coverage
+- **Unit:** the engine's domain, AgroConecta acceptance (`acceptance/agroconecta.spec.ts`), justification builder, listener.
+- **Integration:** `recommendation-repository` (persistence and atomicity).
 - **E2E:** `generate-recommendation`, `deep-analysis-events`.
-
-- **La justificación de la recomendación la lee el líder de la iniciativa:** nombra las dimensiones por su nombre corto del catálogo y no por su código ni por la etiqueta ordinal interna (`primary`, `secondary`); cuando decide un ajuste, cita la razón declarada por el centro.
-

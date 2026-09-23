@@ -6,14 +6,12 @@ import type { DiagnosisStateName } from '../value-objects/diagnosis-state.vo.js'
  * `Diagnosis` — aggregate root for a single diagnostic process.
  *
  * The aggregate carries the foundational fields and the state-machine
- * VO. Use-case-level transitions (`acceptTerms`, `registerInitiative`,
- * `completeQuestionnaire`, etc.) arrive with the HU that needs them
- * and consist of one `next(...)` call followed by a domain event
- * emission. Stage 1 keeps the API surface minimal.
+ * VO; each transition is one `transitionTo(...)` call made by the use case or
+ * listener that needs it.
  *
  * Modules communicate by id only. Other modules never receive a
- * `Diagnosis` instance — they ask the orchestrator via the use
- * cases that live here.
+ * `Diagnosis` instance — they read through the queries this module
+ * exports.
  */
 export interface DiagnosisPersistence {
   readonly id: string;

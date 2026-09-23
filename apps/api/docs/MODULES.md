@@ -13,17 +13,21 @@ Deliberately short. Anything that can be derived from the code is **not** docume
 | `shared/irl-taxonomy` | Shared Kernel — read-only IRL framework catalog | [README](../src/shared/irl-taxonomy/README.md) |
 | `shared/identity` | Anticorruption Layer — Cognito + INNLAB Core | [README](../src/shared/identity/README.md) |
 | `shared/kernel` | Generic primitives, cross-module events, global technical layers | — |
-| `reporting` (`audit`, `notifications`, `report`) | Not built — only ORM entities exist | — |
 
 ## How modules talk to each other
 
-- **Events** (`shared/kernel/events/`), in-process through `@nestjs/event-emitter`:
-  - `initiative` → `ConsentRecordedEvent` → `diagnosis`
+- **Events** (`shared/kernel/events/`), in-process through `@nestjs/event-emitter`. Use cases publish through the `EVENT_PUBLISHER` port; listeners live in `infrastructure/messaging/` ([ADR 0002](../../../docs/architecture/decisions/0002-domain-events-between-modules.md)):
+  - `initiative` → `ConsentRecordedEvent`, `InitiativeRegisteredEvent` → `diagnosis`
   - `diagnosis` → `DeepAnalysisRequestedEvent` → `routing`, `roadmap`
-  - `routing` → `PortfolioRecommendationCalculatedEvent`, `roadmap` → `ScalingRoadmapCalculatedEvent` → (`reporting`, when it exists)
-- **Ports**: a module reads another's exported port only for read-only data (`diagnosis` → `GetMaturityProfileUseCase` for `routing`/`roadmap`; `initiative` → `GetInitiativeCharacterizationUseCase` for `routing`; `shared/irl-taxonomy` → `TAXONOMY_REPOSITORY` for everyone).
+  - `routing` → `PortfolioRecommendationCalculatedEvent`, `roadmap` → `ScalingRoadmapCalculatedEvent` → no consumer yet (reserved for a future reporting context)
+- **Exported read queries**: a module consumes another's exported query only for read-only data, behind a port declared in the consumer and implemented by an adapter in its `infrastructure/`:
+  - `diagnosis` → `GetMaturityProfileUseCase` for `routing` and `roadmap`; `FindDiagnosisOwnerQuery` and `ListUserDiagnosesQuery` for `initiative`.
+  - `initiative` → `GetInitiativeCharacterizationUseCase` for `routing`.
+  - `shared/irl-taxonomy` → `TAXONOMY_REPOSITORY` for everyone.
 - Never entity objects across a module boundary; never a direct call into another module's process.
 
 ## Rules that do not change
 
-Catalogs (`irl_catalog` schema) are read-only at runtime: application code reads, never writes; changes go through seeds gated by a migration. Layer rules and language policy: [`docs/conventions/CODE-STYLE.md`](../../../docs/conventions/CODE-STYLE.md), enforced by `eslint.config.mjs`.
+Catalogs (`irl_catalog` schema) are read-only at runtime: application code reads, never writes; changes go through seeds gated by a migration. Layer rules (the application layer imports no framework: use cases are wired with `applicationProvider`, [ADR 0005](../../../docs/architecture/decisions/0005-framework-free-application-layer.md)) and language policy: [`docs/conventions/CODE-STYLE.md`](../../../docs/conventions/CODE-STYLE.md), enforced by `eslint.config.mjs`.
+
+The overall architecture and its decisions: [`docs/architecture/`](../../../docs/architecture/README.md).

@@ -25,7 +25,7 @@ Three principles guide every test we write:
 - **E2E** boots the real `AppModule` against the database in `DATABASE_URL`, which must be migrated and seeded first (`docker compose up -d postgres`, then `pnpm --filter @innlab/api db:migration:run && db:seed`). Each suite creates its own rows with random ids and deletes them afterwards, because suites share the database and run in parallel.
 - Repository adapters that only unit tests exercise with in-memory doubles can hide schema drift (a renamed column mapped under its old name passes every unit test). Persistence adapters need an integration test against a real database.
 
-### Coverage thresholds (enforced in CI)
+### Coverage thresholds (enforced by `test:cov`)
 
 ```js
 // jest.config.js
@@ -75,7 +75,7 @@ describe('IrlCalculatorService', () => {
 });
 ```
 
-For **application use cases** with port stubs:
+For **application use cases** with port stubs. A use case is a plain class (no Nest decorators), so the test builds it with `new` and hand-written stubs of its ports — never `Test.createTestingModule`:
 
 ```ts
 // test/unit/modules/diagnosis/application/submit-questionnaire.use-case.spec.ts
@@ -223,7 +223,7 @@ routes on its own.
 | -------------------- | ---------------------------------------- | ------------------------------ | ----------------------------------------------------- |
 | **Unit / component** | `apps/web/src/**/*.{spec,test}.{ts,tsx}` | Vitest + Testing Library       | Components in isolation, custom hooks, Zustand stores |
 | **Integration**      | `apps/web/src/**/*.test.tsx` with MSW    | Vitest + Testing Library + MSW | A feature with mocked HTTP                            |
-| **E2E**              | `apps/web/tests/e2e/`                    | Playwright                     | One spec per user story, full SPA with mocked auth    |
+| **E2E**              | `apps/web/tests/e2e/`                    | Playwright (Chromium)          | Whole flows in the built SPA, API faked with `page.route` |
 
 ### Component tests — what to write
 
@@ -292,25 +292,26 @@ MSW intercepts at the network layer; your real HTTP client code runs.
 
 ### Playwright E2E
 
-One spec per user story:
+`apps/web/tests/e2e/` holds the browser tests of whole flows; `diagnostic-flow.spec.ts` goes from the landing through the four wizard steps to the results. `pnpm --filter @innlab/web test:e2e` builds the app, serves it with `vite preview` on port 4173 and runs the specs in Chromium (`playwright.config.ts`).
+
+- **The API is faked in the browser** with `page.route`: a small in-memory backend per spec, so what the app reads back is what it wrote. The payloads come from the same fixtures the component tests use (`src/test/fixtures/`), typed with the `@innlab/contracts` types.
+- **The INNLAB session is seeded** into `localStorage` under `innlab.session.v1` before the page loads. No Hub, no Cognito, no backend.
+- Assert what the user sees (headings, buttons, toasts) and, where it matters, which calls the flow made and in which order (the consent before the initiative).
+- The backend's own HTTP behaviour is covered by its e2e suites, not here.
 
 ```ts
-// tests/e2e/submit-questionnaire.spec.ts
-import { test, expect } from '@playwright/test';
-import { signInAsTestUser } from './fixtures/auth';
+test('from the landing to the results through the four wizard steps', async ({ page }) => {
+  const calls = await fakeBackend(page);
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Iniciar diagnóstico' }).first().click();
+  // ... the initiative, the consent, the 48 answers, the summary
+  await page.getByRole('button', { name: 'Procesar diagnóstico' }).click();
 
-test('HU-10: blocks submission and points to missing items', async ({ page }) => {
-  await signInAsTestUser(page);
-  await page.goto('/diagnosticos/test-diag/cuestionario');
-
-  await page.getByRole('button', { name: /procesar diagnóstico/i }).click();
-
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByText(/faltan/i)).toBeVisible();
+  await expect(page).toHaveURL(`/diagnosticos/${ID}/resultados`);
+  await expect(page.getByText('Diagnóstico procesado.')).toBeVisible();
+  expect(calls).toEqual(['start', 'consent', 'initiative', 'finalize:48']);
 });
 ```
-
-The INNLAB session is stubbed at the fixture level (`signInAsTestUser` writes a session into `localStorage` under `innlab.session.v1`). No real Hub, no real Cognito in E2E.
 
 ## Shared testing rules
 
@@ -380,10 +381,12 @@ This is always a real problem, never a flake. Common causes:
 
 ## CI fan-out
 
+There is no CI pipeline in the repository yet, and the Husky hooks are inactive (`.npmrc` sets `ignore-scripts`). Until there is one, run the gates by hand; this is the intended fan-out:
+
 | Trigger                   | Tests run                                                                 |
 | ------------------------- | ------------------------------------------------------------------------- |
-| PR opened or pushed       | Unit + integration on both apps; component tests on web; lint + typecheck |
-| Merge to `dev`            | All of the above + E2E (backend e2e + Playwright)                         |
+| Before pushing            | Lint + typecheck; unit + integration (api); vitest (web)                  |
+| Before merging to `dev`   | All of the above + backend e2e + Playwright                               |
 | Merge to `main` (release) | Full suite + smoke tests against staging                                  |
 
 If you find yourself wanting to skip a test for CI, talk to the team first. Skipped tests rot.

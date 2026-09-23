@@ -1,32 +1,32 @@
 # irl-taxonomy
 
-## Alcance
-El catálogo de solo lectura del marco KTH IRL: las seis dimensiones, sus pares de desequilibrio y la tabla de conversión promedio→nivel (SA-06). Es Shared Kernel: cualquier módulo puede importar su dominio. **No cubre** las afirmaciones del cuestionario (`diagnosis/`).
+## Scope
+The read-only catalog of the KTH IRL framework: the six dimensions, their imbalance pairs and the average→level conversion table (SA-06). It is a Shared Kernel: any module may import its domain. **Does not cover** the questionnaire statements (`diagnosis/`).
 
-## Reglas que deben respetarse
-- **Solo lectura en tiempo de ejecución**: los datos cambian únicamente por seed, y el seed exige una migración.
-- Los códigos de dimensión son exactamente `TRL`, `CRL`, `BRL`, `IPRL`, `TmRL`, `FRL`; la escala IRL es 1..9.
-- Los demás módulos lo consumen **solo por `TAXONOMY_REPOSITORY`**; leer `DimensionOrm` directamente no es una excepción aceptada.
+## Rules that must hold
+- **Read only at runtime**: the data changes only through seeds, and a seed requires a migration.
+- Dimension codes are exactly `TRL`, `CRL`, `BRL`, `IPRL`, `TmRL`, `FRL`; the IRL scale is 1..9.
+- Other modules consume it **only through `TAXONOMY_REPOSITORY`**; reading its ORM entities directly is not an accepted exception.
 
-## Nivel de completitud
-Implementado y en uso por `routing/`, `roadmap/` y `GetQuestionnaireStructureQuery`. Pendiente: `diagnosis/` aún accede a `DimensionOrm` directamente.
+## Completeness
+Implemented and used by `diagnosis/` (questionnaire structure, profile, imbalances), `routing/` and `roadmap/`. No module reads its ORM entities any more.
 
-## Responsabilidad (lenguaje ubicuo)
-"El marco": qué dimensiones se miden, cómo se convierte un promedio en un nivel y qué pares de dimensiones se comparan.
+## Responsibility (ubiquitous language)
+"The framework": which dimensions are measured, how an average becomes a level and which pairs of dimensions are compared.
 
-## Conceptos de dominio
-`Dimension` (incluye el nivel mínimo esperado), `DimensionPair`, `ConversionRange`.
+## Domain concepts
+`Dimension` (including its expected minimum level and whether it can be in critical state), `DimensionPair`, `ConversionRange`.
 
-## Qué expone hacia afuera
-Puerto `TAXONOMY_REPOSITORY`; entidades de dominio `Dimension`, `DimensionPair`, `ConversionRange`. Sin endpoints ni eventos.
+## What it exposes
+The `TAXONOMY_REPOSITORY` port; domain entities `Dimension`, `DimensionPair`, `ConversionRange`. No endpoints or events.
 
-## De qué depende
-Solo de `shared/kernel`.
+## What it depends on
+Only `shared/kernel`.
 
-## Datos que posee
-`irl_catalog.dimension`, `dimension_pair`, `conversion_range` (escritos solo por seed).
+## Data it owns
+`irl_catalog.dimension`, `dimension_pair`, `conversion_range` (written only by seed).
 
-## Cobertura de pruebas
-- **Unitarias:** entidades `Dimension`, `DimensionPair` y `ConversionRange`.
-- **Integración:** `seed` (idempotencia y contenido del seed).
-- **Falta:** integración del repositorio contra base real.
+## Test coverage
+- **Unit:** `Dimension`, `DimensionPair` and `ConversionRange` entities; `irl-levels-by-dimension`.
+- **Integration:** `seed` (idempotency and content of the seed).
+- **Missing:** integration of the repository against a real database.

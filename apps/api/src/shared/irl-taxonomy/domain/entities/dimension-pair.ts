@@ -7,9 +7,9 @@ import { InvariantViolationError } from '../../../../shared/kernel/domain/errors
  *
  *   TRL ↔ CRL · TRL ↔ BRL · CRL ↔ BRL · TmRL ↔ FRL · BRL ↔ IPRL · TRL ↔ IPRL
  *
- * The KTH framework fixes these six pairs; the imbalance evaluator
- * (in the `maturity-profile` module, out of Stage 1 scope) consumes
- * them to classify the gap as critical / moderate / acceptable.
+ * The KTH framework fixes these six pairs; `diagnosis/`'s
+ * `ImbalanceEvaluatorService` consumes them to classify the gap as
+ * critical / moderate / acceptable.
  */
 export interface DimensionPairPersistence {
   readonly id: number;

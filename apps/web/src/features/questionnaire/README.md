@@ -1,70 +1,27 @@
 # `features/questionnaire`
 
-Capacidad de UI con frontera propia que cubre el cuestionario IRL de 48
-afirmaciones.
+The IRL questionnaire in the browser: the 48 statements grouped by dimension, the Likert answer and the justification of each one, the progress, and the summary table shown before processing. It talks to `diagnosis` (`GET catalog/questionnaire`); sending the answers is `finalize-initial`, in `shared/` because the wizard's summary step owns it.
 
-## Stage 1 — qué existe
+## What it holds
 
-- La estructura de carpetas documentada en `apps/web/docs/MODULES.md`:
+| Folder        | Contents                                                                                                   |
+| ------------- | ---------------------------------------------------------------------------------------------------------- |
+| `api/`        | `questionnaire-catalog.api.ts` — the questionnaire structure, parsed with `@innlab/contracts`              |
+| `components/` | `QuestionnaireView` (tabs, panel, navigation, progress), `StatementCard`, `LikertScale`, `AnswersSummary` |
+| `hooks/`      | `useQuestionnaireStructure`, `useQuestionnaireCompletion`, `useAnswerForStatement`                         |
+| `store/`      | `questionnaire-draft.store.ts` — the Zustand draft, persisted to `sessionStorage`                          |
+| `lib/`        | `likert-options.ts` — the five Likert labels shown to the user                                            |
 
-  ```
-  features/questionnaire/
-  ├── api/           # API client functions
-  ├── components/    # React components privados del feature
-  ├── hooks/         # hooks privados del feature
-  ├── store/         # store Zustand (draft del cuestionario)
-  ├── utils/         # helpers puros
-  └── index.ts       # superficie pública — actualmente vacía
-  ```
+Public surface (`index.ts`): `QuestionnaireView`, `AnswersSummary`, `useQuestionnaireDraftStore` and its selectors, `useQuestionnaireCompletion`, `useQuestionnaireStructure`.
 
-- Un `index.ts` que no exporta nada. El feature **no es importable**
-  como caja negra en Stage 1; `QuestionnairePage` renderiza solo un
-  placeholder.
+## Rules
 
-## Stage 2 — qué llega
+- **A statement is complete only with its Likert value and a non-blank justification** (`isStatementComplete`, RF-06); the summary step cannot be reached while any of the 48 is incomplete. The backend validates the same again before storing anything.
+- The draft belongs to one diagnostic: `initialize(diagnosticId)` wipes it when it belongs to another. Its shape and lifetime are in [`STATE_MANAGEMENT.md`](../../../docs/STATE_MANAGEMENT.md#zustand).
+- Dimension names and descriptions come from the catalog response; only colors and icons are local (`shared/lib/dimensions.ts`).
+- `DimensionTabs` scrolls to the top of its panel only when the dimension changes, never on mount.
+- Like every feature, it imports no other feature; pages compose it (`QuestionnaireStep`, `SummaryStep`).
 
-Las tres historias objetivo de Stage 2 (HU-07, HU-08, HU-09) aterrizan
-todas aquí.
+## Out of scope
 
-| Capa          | Archivo                                                                                                                                                                               |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `api/`        | `questionnaire.api.ts` — GET estructura del catálogo, POST/PUT respuestas                                                                                                             |
-| `components/` | `QuestionnaireForm.tsx`, `DimensionTabs.tsx`, `DimensionPanel.tsx`, `StatementCard.tsx`, `LikertScale.tsx`, `ProgressIndicator.tsx`, `SubmitButton.tsx`, `IncompleteSubmitDialog.tsx` |
-| `hooks/`      | `useQuestionnaireStructure.ts`, `useQuestionnaireDraft.ts`, `useSubmitQuestionnaire.ts`, `useResumeDraft.ts`                                                                          |
-| `store/`      | `questionnaire-draft.store.ts` — Zustand store con `persist` middleware → `sessionStorage`. Ver STATE_MANAGEMENT.md                                                                   |
-| `utils/`      | `group-by-dimension.ts`, `compute-progress.ts`                                                                                                                                        |
-| Public API    | `QuestionnaireForm` + `useQuestionnaireDraft`                                                                                                                                         |
-
-## Fronteras (forzadas por ESLint)
-
-- **Un feature no puede importar de otro feature.** El plugin
-  `eslint-plugin-boundaries` lo bloquea en `apps/web/eslint.config.mjs`.
-  Cualquier reutilización entre features pasa por `shared/`.
-- Dentro del feature, el barrel `index.ts` es el único archivo que
-  los consumidores deben importar.
-- Los schemas vienen de `@innlab/contracts` (ya disponibles:
-  `dimensionCodeSchema`, `statementSchema`,
-  `questionnaireStructureSchema`, `answerItemSchema`,
-  `submitQuestionnaireSchema`).
-- Los componentes UI vienen de `@/shared/ui` (shadcn) — no se usan
-  primitivos ad-hoc en el feature; si falta uno, se agrega a
-  `shared/ui/` siguiendo el patrón shadcn.
-
-## State management
-
-Este es el **único feature en phase 1 que es dueño de un store
-Zustand**. El shape exacto (estado, acciones, configuración de
-`persist`, `partialize`) está fijado en
-`apps/web/docs/STATE_MANAGEMENT.md` §"Store shape — the questionnaire
-draft". No se inventa un shape nuevo; se copia.
-
-## Fuera de scope
-
-- Persistencia cross-session del draft (guardado server-side cada N
-  segundos). Candidato a phase 2. Hasta entonces, `sessionStorage`
-  sobrevive a la navegación dentro de la pestaña; cerrar la pestaña
-  descarta el draft, por diseño.
-- HU-10 ("Verificar completitud antes del cálculo") **no** está en las
-  tres historias objetivo. El check de completitud lo hace el frontend
-  leyendo el store Zustand; la re-validación server-side (RF-06) y el
-  endpoint `POST /diagnosticos/:id/cuestionario` llegan con HU-10.
+Server-side drafts: closing the tab discards the answers not yet processed, by design.

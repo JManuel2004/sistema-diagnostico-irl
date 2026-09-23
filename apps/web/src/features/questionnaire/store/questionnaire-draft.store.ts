@@ -15,7 +15,7 @@ import type { DimensionCode, LikertValue } from '@innlab/contracts';
  *   3. `activeTab` — currently selected dimension code
  *   4. `diagnosticId` — guards against cross-diagnostic contamination
  *
- * Persistence: `sessionStorage` (per `STATE_MANAGEMENT.md` §289). The
+ * Persistence: `sessionStorage` (see `STATE_MANAGEMENT.md` §"Zustand"). The
  * draft survives `F5` but dies with the tab — by design, since the
  * intended deployment is a multi-user coworking space.
  *

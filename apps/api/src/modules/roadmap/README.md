@@ -1,37 +1,37 @@
 # roadmap
 
-## Alcance
-Calcula el roadmap de escalamiento: qué dimensiones subir, en qué orden y hasta qué nivel, a partir del perfil de madurez y del grafo de dependencias entre dimensiones. **No cubre** el perfil (`diagnosis/`) ni la recomendación de portafolio (`routing/`).
+## Scope
+Computes the scaling roadmap: which dimensions to raise, in which order and up to which level, from the maturity profile and the dependency graph between dimensions. **Does not cover** the profile (`diagnosis/`) or the portfolio recommendation (`routing/`).
 
-## Reglas que deben respetarse
-- El grafo de dependencias no está versionado: no existe un indicador de arista activa (`dimension_dependency.is_active` se retiró: nadie podía operarlo).
-- El roadmap es un **resultado guardado con su fecha**, como el perfil y la recomendación: se calcula y se guarda cuando el usuario acepta el análisis profundo (`DeepAnalysisRequestedEvent`), y `GET` solo lo lee; antes de aceptar responde `409 ROADMAP_NOT_GENERATED`. Un diagnóstico tiene un solo roadmap: calcular de nuevo lo reemplaza.
-- El cálculo sigue siendo una función pura del perfil y del grafo; solo el resultado se guarda.
-- El orden es refutable: cada dimensión expone qué desbloquea, por qué está en el plan (`inclusionReason`: por debajo de su mínimo o habilitadora de otra) y qué fija su meta (`targetDrivenBy`: la dimensión que la exige, o `null` si la meta es su mínimo esperado).
-- No lee `DimensionOrm`: usa `shared/irl-taxonomy` por su puerto.
-- Reacciona a `DeepAnalysisRequestedEvent` de forma independiente de `routing/`; un `Result.err` se registra y no propaga.
+## Rules that must hold
+- The dependency graph is not versioned: there is no active-edge flag (`dimension_dependency.is_active` was removed: no one could operate it).
+- The roadmap is a **stored result with its date**, like the profile and the recommendation: it is computed and saved when the user accepts the deep analysis (`DeepAnalysisRequestedEvent`), and `GET` only reads it; before the acceptance it answers `409 ROADMAP_NOT_GENERATED`. A diagnostic has a single roadmap: computing again replaces it.
+- The computation is a pure function of the profile and the graph; only the result is stored.
+- The order can be challenged: each dimension states what it unlocks, why it is in the plan (`inclusionReason`: below its minimum, or enabler of another) and what sets its target (`targetDrivenBy`: the dimension that demands it, or `null` when the target is its expected minimum).
+- It reads the taxonomy only through `shared/irl-taxonomy`'s port, never its ORM entities.
+- It reacts to `DeepAnalysisRequestedEvent` independently of `routing/`; a `Result.err` is logged and not propagated.
 
-## Nivel de completitud
-Implementado: cierre transitivo, capas topológicas, nivel objetivo por dimensión con su explicación, caso AgroConecta y persistencia del resultado (`scaling_roadmap`, `jsonb` con las fases en códigos de dimensión; los nombres se leen del catálogo). `GenerateScalingRoadmapUseCase` calcula y guarda; el listener lo ejecuta y publica `ScalingRoadmapCalculatedEvent` solo tras un cálculo exitoso, nunca en un `GET`.
+## Completeness
+Implemented: transitive closure, topological layers, target level per dimension with its explanation, the AgroConecta case, and persistence of the result (`scaling_roadmap`, `jsonb` with the phases as dimension codes; names are read from the catalog). `GenerateScalingRoadmapUseCase` computes and saves; the listener runs it and publishes `ScalingRoadmapCalculatedEvent` only after a successful computation, never on a `GET`. Pending: `GET diagnostics/:id/roadmap` does not verify that the diagnostic belongs to the caller.
 
-## Responsabilidad (lenguaje ubicuo)
-"Por dónde escalar": el camino ordenado de mejoras que le conviene a la iniciativa según su perfil.
+## Responsibility (ubiquitous language)
+"Where to scale from": the ordered path of improvements that suits the initiative given its profile.
 
-## Conceptos de dominio
-`ScalingRoadmap` (agregado), `DependencyGraph`; servicios `RoadmapClosureService`, `TopologicalLayeringService`, `TargetLevelCalculatorService` (incluye `demandedBy`, que nombra a la dimensión que fija una meta).
+## Domain concepts
+`ScalingRoadmap` (aggregate), `DependencyGraph`; services `RoadmapClosureService`, `TopologicalLayeringService`, `TargetLevelCalculatorService` (including `demandedBy`, which names the dimension that sets a target).
 
-## Qué expone hacia afuera
-- **Eventos que publica:** `ScalingRoadmapCalculatedEvent` (`shared/kernel/events/`, pensado para `reporting/`).
-- **Eventos que escucha:** `DeepAnalysisRequestedEvent`.
-- **HTTP:** `diagnostics/:id/roadmap` (lee el roadmap guardado). Contrato en Swagger. Nombra cada dimensión con su `name` y `shortName` del catálogo (`GetScalingRoadmapUseCase`); el frontend no mantiene nombres propios.
+## What it exposes
+- **Events it publishes:** `ScalingRoadmapCalculatedEvent` (`shared/kernel/events/`); no module consumes it yet.
+- **Events it listens to:** `DeepAnalysisRequestedEvent`.
+- **HTTP:** `GET diagnostics/:id/roadmap` (reads the stored roadmap). Contract in Swagger (`/api/docs`). Each dimension is named with the catalog's `name` and `shortName` (`GetScalingRoadmapUseCase`); the frontend keeps no names of its own.
 
-## De qué depende
-`diagnosis/` por `GetMaturityProfileUseCase`; `shared/irl-taxonomy` por `TAXONOMY_REPOSITORY`.
+## What it depends on
+`diagnosis/` through its exported `GetMaturityProfileUseCase`; `shared/irl-taxonomy` through `TAXONOMY_REPOSITORY`; `shared/kernel` for `EVENT_PUBLISHER`.
 
-## Datos que posee
-Escribe `irl_diagnostic.scaling_roadmap` (una fila por diagnóstico). Es dueño (solo seed) de `irl_catalog.dimension_dependency` y `roadmap_text`.
+## Data it owns
+Writes `irl_diagnostic.scaling_roadmap` (one row per diagnostic). Owns (seed only) `irl_catalog.dimension_dependency` and `roadmap_text`.
 
-## Cobertura de pruebas
-- **Unitarias:** dominio (grafo, cierre, capas, niveles y `demandedBy`), aceptación AgroConecta, casos de uso (calcular y guardar; leer lo guardado, `ROADMAP_NOT_GENERATED`), listener.
-- **Integración:** `roadmap-graph-seed`, `roadmap-repository` (lo leído es lo guardado, reemplazo, borrado en cascada).
-- **E2E:** `roadmap` (409 antes de aceptar, explicación en la respuesta HTTP, fecha estable entre lecturas), `deep-analysis-events`.
+## Test coverage
+- **Unit:** domain (graph, closure, layers, levels and `demandedBy`, property tests), AgroConecta acceptance, use cases (compute and save; read the stored one, `ROADMAP_NOT_GENERATED`), listener.
+- **Integration:** `roadmap-graph-seed`, `roadmap-repository` (what is read is what was saved, replacement, cascade delete).
+- **E2E:** `roadmap` (409 before accepting, explanation in the HTTP response, date stable between reads), `deep-analysis-events`.

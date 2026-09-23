@@ -2,14 +2,13 @@
 
 How a new developer gets from a blank laptop to a running stack. This is the document you open on day one.
 
-If at any step something fails, check [`docs/troubleshooting.md`](../troubleshooting.md) before asking the team — most blockers are listed there.
+If at any step something fails, check [Common first-time issues](#common-first-time-issues) before asking the team.
 
 ## What you'll have running at the end
 
 - **Backend** (`@innlab/api`) on <http://localhost:3000>
 - **Frontend** (`@innlab/web`) on <http://localhost:5173>
-- **PostgreSQL** on `localhost:5432`
-- **Mailpit** (SMTP catcher) on <http://localhost:8025>
+- **PostgreSQL** on `localhost:5433` (the container's 5432, published on 5433)
 
 Estimated time: **30–45 minutes** the first time, including a Docker pull. Subsequent starts are under 2 minutes.
 
@@ -67,7 +66,7 @@ pnpm install
 
 This installs every dependency for every workspace package (api, web, contracts, plus the root tooling). The first install pulls ~1.2 GB into a pnpm content-addressable store, but subsequent installs across other projects reuse the same store.
 
-If install fails with `opencollective` errors or similar postinstall failures on Windows, see [`docs/troubleshooting.md#pnpm-install-fails-on-windows`](../troubleshooting.md#pnpm-install-fails-on-windows).
+Install scripts are disabled (`.npmrc` sets `ignore-scripts=true`), so postinstall failures do not happen; the side effect is that the Husky git hooks are never installed. `engine-strict=true` makes the install fail on a Node older than 24.9.
 
 ## Step 3 — Build the shared contracts package
 
@@ -100,10 +99,9 @@ Open `apps/api/.env.local` and review:
 | `COGNITO_ISSUER`                    | Ask the Core team — same pool as `COGNITO_JWKS_URI`. Required at boot       |
 | `INNLAB_API_BASE_URL`               | Base URL of `innlab-core-api`                                              |
 | `CORE_INTERNAL_KEY`                 | Static `x-internal-key`; the Core team registers it by hand, no self-service |
-| `SMTP_HOST` / `_PORT`               | Leave as-is; matches Mailpit                                                |
 | `LOG_LEVEL`                         | `debug` for local dev                                                       |
 
-Full variable reference: [`docs/environments/env-variables.md`](../environments/env-variables.md).
+Every variable is described in `apps/api/.env.example` and validated at boot by `apps/api/src/config/env.validation.ts`.
 
 ### Frontend
 
@@ -123,22 +121,20 @@ Open `apps/web/.env.local`:
 
 ### 5a. Database
 
-The repo ships a single `docker-compose.dev.yml` at the root. Convenience scripts wrap it:
+The repo ships a single `docker-compose.yml` at the root, with one service (`postgres`). The root scripts wrap it:
 
 ```bash
-pnpm db:up          # starts postgres
-
-# or all at once:
-docker compose -f docker-compose.dev.yml up -d
+pnpm db:up          # docker compose up -d postgres
+pnpm db:down        # docker compose down
 ```
 
 Check they're healthy:
 
 ```bash
-docker compose -f docker-compose.dev.yml ps
+docker compose ps
 ```
 
-You should see `postgres` with status `running` (and `healthy` after ~10s). Keycloak and Mailpit are commented out in the compose file.
+You should see `irl-postgres` with status `running` (and `healthy` after ~10s). There is no mail catcher: the system sends no email.
 
 ### 5b. Cognito credentials — first-time only
 
@@ -230,12 +226,10 @@ pnpm --filter @innlab/web dev
 
 Open the apps:
 
-- API health: <http://localhost:3000/health/live> should return `{"status":"ok"}`.
-- API docs: <http://localhost:3000/api/v1/docs> should render Swagger UI.
-- Frontend: <http://localhost:5173> should redirect to the INNLAB Hub for SSO. Sign in with an account of the shared INNLAB Cognito pool.
-- After sign-in: you should land on the home page, then be able to start a new diagnostic.
-
-Mailpit UI is at <http://localhost:8025> — any email the backend sends shows up here.
+- API health: <http://localhost:3000/api/v1/health/live> should return `{"status":"ok"}`.
+- API docs: <http://localhost:3000/api/docs> should render Swagger UI (JSON at `/api/docs/json`).
+- Frontend: <http://localhost:5173> shows the public landing page. «Iniciar diagnóstico» sends you to the INNLAB Hub for SSO; sign in with an account of the shared INNLAB Cognito pool.
+- After sign-in you come back to the wizard of a new (or resumed) diagnostic.
 
 ## Day-to-day after first setup
 
@@ -251,20 +245,20 @@ pnpm dev
 When you finish for the day:
 
 ```bash
-docker compose -f docker-compose.dev.yml stop    # stop containers without removing data
+docker compose stop    # stop containers without removing data
 ```
 
 Use `down` instead of `stop` if you want to clear the local DB:
 
 ```bash
-docker compose -f docker-compose.dev.yml down -v   # -v also wipes the postgres volume
+docker compose down -v   # -v also wipes the postgres volume
 ```
 
 ## Common first-time issues
 
-### "Port 5432 is already allocated"
+### "Port 5433 is already allocated"
 
-You have another Postgres running. Either stop it, or change `POSTGRES_PORT` in `docker-compose.dev.yml` and update `DATABASE_URL` in `.env.local` to match.
+Something else listens on 5433. Either stop it, or change the published port in `docker-compose.yml` and update `DATABASE_URL` in `apps/api/.env.local` to match.
 
 ### "Cannot find module '@innlab/contracts'" in api or web
 
@@ -288,4 +282,4 @@ Disable browser-side source maps in dev tools (Settings → Sources → Disable 
 
 ## Next steps
 
-Once your stack runs pick a low-risk ticket and walk through [`docs/workflows/daily-development.md`](./daily-development.md) end to end.
+Once your stack runs pick a low-risk ticket and walk through [`docs/workflows/DAILY-DEVELOPMENT.md`](./DAILY-DEVELOPMENT.md) end to end.

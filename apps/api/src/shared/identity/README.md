@@ -1,33 +1,33 @@
 # identity
 
-## Alcance
-Anticorruption Layer hacia INNLAB Core y el pool de Cognito compartido: autentica la petición (JWT), expone quién es el usuario (`@CurrentUser()`) y resuelve su contexto (empresa, rol) desde Core. **No es dominio propio de SEMI**: la integración con Core es externa (`innlab-core-http.client.ts` lo declara en su cabecera).
+## Scope
+Anticorruption layer towards INNLAB Core and the shared Cognito pool: it authenticates the request (JWT), exposes who the user is (`@CurrentUser()`) and resolves their context (company, role) from Core. **It is not a SEMI domain of its own**: the Core integration is external (`innlab-core-http.client.ts` says so in its header).
 
-## Reglas que deben respetarse
-- **No hay login, hash de contraseñas ni sesiones aquí**: la autenticación la hace Cognito; este módulo solo valida el token.
-- El JWT no lleva empresa, rol ni workspace: esos datos se leen de Core por `UserContextPort`, nunca se infieren del token.
-- Core se llama con credenciales de servicio (`client_credentials`), nunca con el JWT del usuario (RNF-05); los tokens no se guardan en base de datos.
-- `JwtAuthGuard` es global (`APP_GUARD`): toda ruta requiere token salvo las marcadas `@Public()`.
-- Los decoradores y el guard viven en `presentation/` (son HTTP); el tipo `AuthenticatedUser` se publica por `application/dtos/` para que otros módulos no importen el dominio de identity.
+## Rules that must hold
+- **There is no login, password hashing or session here**: Cognito authenticates; this module only validates the token against the pool's JWKS.
+- The JWT carries no company, role or workspace: those are read from Core through `UserContextPort`, never inferred from the token.
+- Core is called with the service credential (the static `x-internal-key` header, `CORE_INTERNAL_KEY`), never with the user's JWT (RNF-05); tokens are never stored in the database.
+- `JwtAuthGuard` is global (`APP_GUARD`): every route requires a token except those marked `@Public()`.
+- The decorators and the guard live in `presentation/` (they are HTTP); the `AuthenticatedUser` type is published through `application/dtos/` so other modules do not import identity's domain.
 
-## Nivel de completitud
-Implementado: validación JWT (HU-01), contexto de usuario con caché en memoria (HU-02). Sin persistencia propia.
+## Completeness
+Implemented: JWT validation (HU-01), user context with an in-memory cache (HU-02). No persistence of its own.
 
-## Responsabilidad (lenguaje ubicuo)
-"Quién está usando el sistema y a qué empresa pertenece".
+## Responsibility (ubiquitous language)
+"Who is using the system and which company they belong to".
 
-## Conceptos de dominio
+## Domain concepts
 `AuthenticatedUser`, `UserContext`.
 
-## Qué expone hacia afuera
-`@CurrentUser()`, `@Public()`, `JwtAuthGuard`, tipo `AuthenticatedUser`, `ResolveUserContextUseCase`. HTTP: `me/context`.
+## What it exposes
+`@CurrentUser()`, `@Public()`, `JwtAuthGuard`, the `AuthenticatedUser` type, `ResolveUserContextUseCase`. HTTP: `GET me/context`.
 
-## De qué depende
-INNLAB Core (HTTP, integración externa) y el JWKS de Cognito.
+## What it depends on
+INNLAB Core (HTTP, external integration) and Cognito's JWKS.
 
-## Datos que posee
-Ninguna tabla. Caché en memoria del contexto de usuario.
+## Data it owns
+No tables. An in-memory cache of the user context.
 
-## Cobertura de pruebas
-- **Unitarias:** estrategia JWT, guard, cliente de Core, caché, caso de uso.
-- **E2E:** `cognito-jwt-guard`; el resto de suites e2e atraviesan la autenticación real con un JWT firmado y un JWKS simulado.
+## Test coverage
+- **Unit:** JWT strategy, guard, Core client, cache, use case.
+- **E2E:** `cognito-jwt-guard`; every other e2e suite goes through real authentication with a signed JWT and a mocked JWKS.

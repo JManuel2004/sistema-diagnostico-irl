@@ -22,8 +22,8 @@ import { InvariantViolationError } from '../../../../shared/kernel/domain/errors
  * Both bounds are inclusive on the lower end and inclusive on the upper
  * end (the table is continuous and exhaustive for averages in `[1, 5]`).
  *
- * The actual `irl-calculator` service (RF-07) lives in the
- * `maturity-profile` module and is **out of scope** for Stage 1.
+ * The calculator that applies it (RF-07) is `diagnosis/`'s
+ * `IrlCalculatorService`.
  */
 export interface ConversionRangePersistence {
   readonly avgMin: number;

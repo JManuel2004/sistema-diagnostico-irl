@@ -1,50 +1,51 @@
 # initiative
 
-## Alcance
+## Scope
 
-El perfil de la iniciativa (nombre, sector, tipo de producto, etapa del catálogo y etapa declarada, equipo, mercado objetivo, financiamiento actual) y el consentimiento de tratamiento de datos (Ley 1581, RF-03), más el historial de diagnósticos del usuario. **No cubre** el estado del diagnóstico ni el cuestionario (`diagnosis/`). El consentimiento vive aquí, no en `diagnosis/` (la Ley 1581 liga el consentimiento a los datos que se tratan, y buena parte son los de la iniciativa).
+The initiative profile (name, sector, product type, catalog stage and declared stage, team, target market, current funding) and the data-processing consent (Law 1581, RF-03), plus the user's list of diagnostics. **Does not cover** the diagnostic's state or the questionnaire (`diagnosis/`). The consent lives here, not in `diagnosis/`: Law 1581 ties the consent to the data being processed, and most of it is the initiative's.
 
-## Reglas que deben respetarse
+## Rules that must hold
 
-- Antes de escribir un consentimiento o una iniciativa, el `diagnosticId` debe **existir y pertenecer al usuario autenticado** (`DiagnosticOwnershipPort`): `NotFoundError` si no existe, `ForbiddenError` si es de otro usuario. La comprobación va antes que cualquier otra validación.
-- La versión de los términos la fija el backend (`CURRENT_TERMS_VERSION`); un cliente con una versión distinta recibe `ConflictError`, no se acepta en silencio.
-- No existe "rechazar consentimiento": quien no acepta no envía la petición.
-- **La iniciativa exige el consentimiento registrado** (RF-03, RNF-06): `RegisterInitiativeUseCase` responde `ConflictError` (409) si el diagnóstico no tiene consentimiento y no guarda nada. La propiedad se comprueba antes que el consentimiento. El asistente del frontend pide la iniciativa primero, la mantiene como borrador del navegador y la envía después de registrar el consentimiento.
-- `initiative/` no cambia el estado del diagnóstico: publica `ConsentRecordedEvent` **después** de guardar el consentimiento e `InitiativeRegisteredEvent` **después** de guardar la iniciativa, y `diagnosis/` mueve su propia máquina de estados.
-- **Todos los campos del perfil son obligatorios** (el contrato y el agregado los validan; texto libre de hasta 500 caracteres, nombre de 3 a 120, equipo de al menos una persona). La etapa del catálogo (`stageId`) es la que lee el enrutador; `declaredStage` es la descripción del usuario y solo se muestra de vuelta.
-- Registrar dos veces la iniciativa del mismo diagnóstico reemplaza el registro anterior (así se edita desde el panel) y no retrocede el diagnóstico.
+- Before writing a consent or an initiative, the `diagnosticId` must **exist and belong to the authenticated user** (`DiagnosticOwnershipPort`): `NotFoundError` if it does not exist, `ForbiddenError` if it belongs to someone else. This check comes before any other validation.
+- The terms version is set by the backend (`CURRENT_TERMS_VERSION`); a client sending a different one gets `ConflictError` (409), it is never silently accepted. A malformed version is rejected earlier by the request DTO (422).
+- There is no "reject consent": whoever does not accept does not send the request.
+- **The initiative requires a recorded consent** (RF-03, RNF-06): `RegisterInitiativeUseCase` answers `ConflictError` (409) if the diagnostic has no consent, and stores nothing. Ownership is checked before the consent. The frontend wizard asks for the initiative first, keeps it as a browser draft and sends it after recording the consent ([ADR 0007](../../../../../docs/architecture/decisions/0007-initiative-draft-before-consent.md)).
+- `initiative/` never changes the diagnostic's state: it publishes `ConsentRecordedEvent` **after** saving the consent and `InitiativeRegisteredEvent` **after** saving the initiative, and `diagnosis/` moves its own state machine.
+- **Every profile field is mandatory** (the contract and the aggregate validate them; free text up to 500 characters, name from 3 to 120, a team of at least one person). The catalog stage (`stageId`) is what the router reads; `declaredStage` is the user's own description and is only shown back.
+- Registering the initiative of the same diagnostic twice replaces the previous record (that is how it is edited from the panel) and does not move the diagnostic backwards.
 
-## Nivel de completitud
+## Completeness
 
-- Implementado: registro y lectura del consentimiento (HU-05, paso 2 del asistente), registro y lectura de la iniciativa (HU-06, con su formulario y su panel en el frontend), catálogos de sectores y etapas para el formulario, lista de "mis diagnósticos" (HU-03), caracterización para `routing/`.
-- El registro de la iniciativa avanza el diagnóstico a `WITH_INITIATIVE` por evento (`InitiativeRegisteredEvent`).
-- Pendiente: `GetConsent`/`GetInitiative` no verifican propiedad. El catálogo de sectores solo tiene el del caso AgroConecta: falta la taxonomía de INNLAB.
+- Implemented: recording and reading the consent (HU-05, wizard step 2), recording and reading the initiative (HU-06, with its form and its panel in the frontend), sector and stage catalogs for the form, "my diagnostics" list (HU-03), characterization for `routing/`.
+- Registering the initiative moves the diagnostic to `WITH_INITIATIVE` through an event (`InitiativeRegisteredEvent`).
+- Pending: `GetConsent` and `GetInitiative` do not verify ownership. `initiative.academic_linkage` has no writer. The sector catalog only holds the AgroConecta case's sector: INNLAB's taxonomy is missing.
 
-## Responsabilidad (lenguaje ubicuo)
+## Responsibility (ubiquitous language)
 
-"Quién es la iniciativa y qué aceptó": los datos básicos de la iniciativa que se está diagnosticando y la constancia de que su líder aceptó el tratamiento de datos.
+"Who the initiative is and what it accepted": the basic data of the initiative being diagnosed and the record that its leader accepted the data processing.
 
-## Conceptos de dominio
+## Domain concepts
 
-`Initiative` (agregado), `Consent` (entidad), catálogos de sector y etapa (`InitiativeCatalogPort`).
+`Initiative` (aggregate), `Consent` (entity), sector and stage catalogs (`InitiativeCatalogPort`).
 
-## Qué expone hacia afuera
+## What it exposes
 
-- **Puertos/casos de uso:** `GetInitiativeCharacterizationUseCase` (lo consume `routing/`).
-- **Eventos que publica:** `ConsentRecordedEvent` e `InitiativeRegisteredEvent` (`shared/kernel/events/`).
-- **HTTP:** `diagnostics/:id/consent`, `diagnostics/:id/initiative`, `diagnostics` (lista propia), `initiative-catalog/sectors` e `initiative-catalog/stages`. Contratos en Swagger.
+- **Exported use case:** `GetInitiativeCharacterizationUseCase` (consumed by `routing/` through its `InitiativeCharacterizationPort`).
+- **Events it publishes:** `ConsentRecordedEvent` and `InitiativeRegisteredEvent` (`shared/kernel/events/`).
+- **HTTP:** `POST/GET diagnostics/:id/consent`, `POST/GET diagnostics/:id/initiative`, `GET diagnostics` (one's own list, most recent first), `GET initiative-catalog/sectors` and `GET initiative-catalog/stages`. Contracts in Swagger (`/api/docs`); request bodies are validated by the class-validator DTOs in `presentation/controllers/dto/`.
 
-## De qué depende
+## What it depends on
 
-`diagnosis/` a través de `DIAGNOSIS_REPOSITORY` (puerto exportado), consumido solo por `DiagnosisOwnershipAdapter` y `ListMyDiagnosesUseCase`. `shared/identity` para `@CurrentUser()`.
+- `diagnosis/` only through its exported read queries, each behind a port declared here: `DiagnosticOwnershipPort` (`DiagnosisOwnershipAdapter` over `FindDiagnosisOwnerQuery`) and `UserDiagnosesPort` (`UserDiagnosesAdapter` over `ListUserDiagnosesQuery`).
+- `shared/identity` for `@CurrentUser()`; `shared/kernel` for `EVENT_PUBLISHER`.
 
-## Datos que posee
+## Data it owns
 
-Escribe: `irl_diagnostic.consent`, `irl_diagnostic.initiative`. Los catálogos `irl_catalog.sector` e `initiative_stage` se leen (solo se modifican por seed; el de sectores lo siembra `seed-catalog.ts`).
+Writes: `irl_diagnostic.consent`, `irl_diagnostic.initiative`. Owns (seed only): `irl_catalog.sector` and `initiative_stage`.
 
-## Cobertura de pruebas
+## Test coverage
 
-- **Unitarias:** entidades `Consent`/`Initiative`, `RecordConsentUseCase`, `RegisterInitiativeUseCase` (incluye el evento), `DiagnosisOwnershipAdapter`.
-- **Integración:** `initiative-repository` (perfil completo, actualización, catálogos sembrados).
-- **E2E:** `consent-and-ownership` (consentimiento → `WITH_CONSENT`, 403/404/409), `registration-flow` (iniciar → iniciativa → cuestionario → perfil).
-- **Falta:** integración del repositorio de consentimiento; pruebas de los controladores y de los casos de uso de lectura.
+- **Unit:** `Consent` and `Initiative` entities, `RecordConsentUseCase`, `RegisterInitiativeUseCase` (including the event), `ListMyDiagnosesUseCase`, `DiagnosisOwnershipAdapter`.
+- **Integration:** `initiative-repository` (full profile, update, seeded catalogs).
+- **E2E:** `consent-and-ownership` (consent → `WITH_CONSENT`, 403/404/409/422), `registration-flow` (start → initiative → questionnaire → profile).
+- **Missing:** integration of the consent repository; tests of the controllers and of the read use cases.

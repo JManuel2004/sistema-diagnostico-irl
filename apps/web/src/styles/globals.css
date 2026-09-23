@@ -58,7 +58,7 @@
     --muted: 240 33% 98%;
     --muted-foreground: 0 0% 40%;
 
-    /* Destructive (system warnings, not used in phase 1) */
+    /* Destructive (system warnings) */
     --destructive: 6 63% 46%;
     --destructive-foreground: 0 0% 100%;
 

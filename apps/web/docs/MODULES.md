@@ -22,7 +22,7 @@ There is no `diagnostic` feature: starting, reading and processing a diagnostic 
 
 ## Pages and flow
 
-`/` (landing, public, no navigation, one button) → **Iniciar diagnóstico** → `/diagnosticos/nuevo` (protected: without a session it goes through the INNLAB sign-in and continues here on return; with one it just proceeds) → asks the backend for the user's diagnostic, which **resumes the unfinished one** or creates one → the wizard `/diagnosticos/:id/asistente/:paso` (no navigation) → `/diagnosticos/:id/resultados` (the first screen with navigation) → `/panel`.
+`/` (landing, public, no navigation, one button) → **Iniciar diagnóstico** → `/diagnosticos/nuevo` (protected: without a session it goes through the INNLAB sign-in and continues here on return; with one it just proceeds) → asks the backend for the user's diagnostic, which **resumes the unfinished one** or creates one → the wizard `/diagnosticos/:id/asistente/:step` (no navigation) → `/diagnosticos/:id/resultados` (the first screen with navigation) → `/panel`.
 
 The wizard has four steps, in this order: `iniciativa` (initiative profile), `consentimiento` (privacy consent), `cuestionario` (48 statements, each with its justification) and `resumen` (a table per dimension, in tabs, with **Statement / Score / Justification**; «Procesar diagnóstico» sends the answers and computes the profile). Which step applies is decided by what the server already has (initiative registered, consent recorded), not by a local flag: resuming lands on the first missing step and a later step cannot be opened by URL. A diagnostic that already has results is not resumed: its results open.
 
@@ -53,7 +53,7 @@ The wizard has four steps, in this order: `iniciativa` (initiative profile), `co
 
 ## Design system (`shared/ui`, `shared/lib`)
 
-Brand and visual rules are in `DESIGN.md` at the project root. Two of them decide most of what follows, both measured on <https://innlab.org>: **colour is a budget** (its interior pages keep 90% of the area white or light grey and spend accent colour on 1–5%), so here colour rides on the data (bars, radar, dimension icons), on one brand mosaic per screen, on the primary button and on the footer; and **corners are straight** everywhere except circles. What the code offers so no screen writes its own:
+Brand and visual rules are in `DESIGN.md`, kept next to the repository (not inside it). Two of them decide most of what follows, both measured on <https://innlab.org>: **colour is a budget** (its interior pages keep 90% of the area white or light grey and spend accent colour on 1–5%), so here colour rides on the data (bars, radar, dimension icons), on one brand mosaic per screen, on the primary button and on the footer; and **corners are straight** everywhere except circles. What the code offers so no screen writes its own:
 
 | Piece | Use |
 | --- | --- |
@@ -66,10 +66,11 @@ Brand and visual rules are in `DESIGN.md` at the project root. Two of them decid
 | `DisclosurePanel` | Collapsible «how we got here» panel (recommendation trace, roadmap explanation). |
 | `AcceptDeepAnalysisCard` | The invitation to accept deep analysis, on the results page and for retrying a calculation that failed. |
 | `SectionHeader` | Title of a section inside a page (`h2`), with its description, its result metadata and, optionally, an icon inside a blue circle. |
-| `Tooltip`, `GlossaryTerm` | One-sentence explanations of the technical terms (`shared/lib/glossary.ts`), reachable by hover and by keyboard. Radix, like `Dialog`. |
+| `Tooltip`, `GlossaryTerm` | One-sentence explanations of the technical terms (`shared/lib/glossary.ts`), reachable by hover and by keyboard (Radix). |
 | `Field`, `Input`, `Textarea`, `Select` | Form controls with label, hint and error wired with `aria-describedby`, from the `DESIGN.md` form input: 48px high, 16px text so mobile browsers do not zoom in, and `Select` is still a native `<select>` with its own chevron. `Textarea` grows with its content: a long answer is read whole, with no scrollbar inside the field. |
 | `AppNav` | Navigation after the institutional descriptor: panel and results of the active diagnostic (the one in the URL, else the latest with results). Only on the screens after the wizard (results, panel, correcting the initiative); opt-in per page (`PageShell showNavigation`). |
 | `BrandDescriptor` | The institutional descriptor; it links to `/panel` where the page has navigation and to `/` (the landing) where it does not (landing, wizard). |
 | `Badge`, `LevelBar`, `DimensionChip` | Small pieces that make a result readable at a glance: a labelled category or severity (`Badge`, an uppercase 14px label over a soft wash of its tone), the 1 to 9 scale as nine segments with an optional goal and gap threshold (`LevelBar`), and a dimension with its icon and color (`DimensionChip`). The icon, `bg`, `chip`, `tint`, `border` and `fill` of each dimension come from `getDimensionVisual` (`shared/lib/dimensions.ts`); `tint` is neutral, so a dimension is told by its icon, its text and its bars. |
 | `WizardStepper` | The steps of the wizard and the current one (number or check, `aria-current="step"`); earlier steps are links, later ones are not. Under `sm` the list becomes «Paso N de M» with a segment bar: four steps do not fit in a 390px row. |
+| `notify` | Toasts for the outcome of an action (`notify.success`, `notify.error`), over Sonner. Errors while loading a screen stay inline, as `Alert`. |
 | `PageShell` | The chrome of every page: institutional descriptor, navigation (opt-in) and the blue footer with the Icesi | INNLAB lockup and the KTH attribution. Under `md` the navigation drops to its own tab row and the side gutter is 16px. |

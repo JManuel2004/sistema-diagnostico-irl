@@ -198,10 +198,13 @@ ESLint's `no-floating-promises` rule catches forgotten awaits. Don't suppress it
 | Use case method  | always `execute(command)`                                       | —                               |
 | Repository port  | `<Aggregate>RepositoryPort`                                     | `DiagnosisRepositoryPort`     |
 | Repository impl  | `TypeOrm<Aggregate>Repository`                                  | `TypeOrmDiagnosisRepository`  |
-| External port    | `<Service>Port`                                                 | `MailerPort`, `UserContextPort` |
+| External port    | `<Service>Port`                                                 | `UserContextPort`, `DiagnosticOwnershipPort` |
 | External adapter | `<Technology><Service>Adapter` or `<Technology><Service>Client` | `InnlabCoreHttpClient`          |
-| HTTP DTO input   | `<Verb><Noun>Dto`                                               | `SubmitQuestionnaireDto`        |
-| HTTP DTO output  | `<Noun>Response`                                                | `MaturityProfileResponse`       |
+| Adapter over another module's query | `<Source><Purpose>Adapter`                       | `DiagnosisOwnershipAdapter`     |
+| Exported read query | `<Verb><Noun>Query`                                          | `FindDiagnosisOwnerQuery`       |
+| HTTP request DTO | `<Noun>RequestDto` (class-validator)                            | `AnswersRequestDto`             |
+| HTTP param DTO   | `<Noun>Param`                                                   | `DiagnosticIdParam`             |
+| HTTP response DTO | `<Noun>ResponseDto`, implements the contract type              | `MaturityProfileResponseDto`    |
 | Domain error     | `<Description>Error`                                            | `QuestionnaireIncompleteError`  |
 | Value object     | PascalCase, noun                                                | `LikertValue`, `IrlLevel`       |
 | Aggregate root   | PascalCase, noun                                                | `AnswerSheet`, `Diagnosis`    |
@@ -211,10 +214,10 @@ ESLint's `no-floating-promises` rule catches forgotten awaits. Don't suppress it
 | Construct          | Pattern                      | Example                                                      |
 | ------------------ | ---------------------------- | ------------------------------------------------------------ |
 | Component          | PascalCase                   | `StatementCard`, `RadarChart`                                |
-| Page component     | PascalCase, `Page` suffix    | `QuestionnairePage`                                          |
-| Custom hook        | camelCase, `use` prefix      | `useQuestionnaireDraft`                                      |
-| Zustand store hook | camelCase, `use` prefix      | `useQuestionnaireDraft` (same as a regular hook — by design) |
-| API function       | camelCase, verb              | `submitQuestionnaire`, `getProfile`                          |
+| Page component     | PascalCase, `Page` suffix    | `ResultsPage`                                                |
+| Custom hook        | camelCase, `use` prefix      | `useQuestionnaireCompletion`                                 |
+| Zustand store hook | camelCase, `use…Store`       | `useQuestionnaireDraftStore`                                 |
+| API function       | camelCase, verb              | `finalizeDiagnostic`, `getScalingRoadmap`                    |
 | Zod schema         | camelCase, `Schema` suffix   | `answerItemSchema`                                           |
 | Type from schema   | PascalCase, no `Type` suffix | `AnswerItem`                                                 |
 
@@ -226,14 +229,20 @@ Inside each `modules/<name>/` folder (and the two `shared/` contexts, `irl-taxon
 
 ```
 domain/              # framework-free: entities, value-objects, services, exceptions, repositories (ports), events
-application/         # depends on domain: use-cases, dtos
-infrastructure/      # depends on domain + application: database/{orm-entities,repositories}, messaging, integrations
-presentation/        # depends on application only: controllers
-<name>.module.ts
+application/         # depends on domain only, no framework: use-cases, dtos, ports
+infrastructure/      # depends on domain + application: database/{orm-entities,repositories}, messaging, integrations, adapters
+presentation/        # depends on application only: controllers and their dto/
+<name>.module.ts     # wires use cases with applicationProvider(UseCase, [tokens])
 README.md            # scope, rules, completeness, exposed API, dependencies, owned data, tests
 ```
 
-`presentation/` never imports from `domain/` or `infrastructure/`; `eslint-plugin-boundaries` fails the lint if it does. Ports live in `domain/repositories/` (not `domain/ports/`). Events that cross modules live in `shared/kernel/events/`. The global technical layers (migrations, seeds, HTTP filters) live in `shared/kernel/infrastructure/`, not in a top-level `infrastructure/` folder.
+`presentation/` never imports from `domain/` or `infrastructure/`; `eslint-plugin-boundaries` fails the lint if it does. Ports live in `domain/repositories/` (not `domain/ports/`); a port whose result is an application DTO (another module's read model, such as `UserDiagnosesPort`) lives in `application/ports/`.
+
+**The application layer is framework-free** ([ADR 0005](../architecture/decisions/0005-framework-free-application-layer.md)). A use case is a plain class: no `@Injectable`, no `@Inject`, no `@nestjs/*`, `typeorm` or HTTP client import (the lint bans them in `application/` as in `domain/`). Its constructor takes its ports; the module builds it with `applicationProvider(UseCase, [TOKEN_A, TOKEN_B])` (`shared/kernel/infrastructure/nest/application-provider.ts`), listing the tokens in constructor order. A use case publishes events through the `EVENT_PUBLISHER` port, never through `EventEmitter2`.
+
+**Using another module:** import its module and inject one of the read queries it exports, behind a port declared in the consumer and implemented by an adapter in the consumer's `infrastructure/`. Never its repositories, its ORM entities or its write use cases; a reaction to what another module did is a domain event.
+
+**Request validation** happens at the HTTP boundary with class-validator DTOs; invariants stay in the domain ([ADR 0006](../architecture/decisions/0006-validation-at-the-http-boundary.md)). Shared pieces of `presentation/` (the `DiagnosticIdParam` DTO, `ApiErrors(...)`) live in `shared/kernel/presentation/`. Events that cross modules live in `shared/kernel/events/`. The global technical layers (migrations, seeds, HTTP filters) live in `shared/kernel/infrastructure/`, not in a top-level `infrastructure/` folder.
 
 Don't introduce new top-level folders inside a module without discussion. If you find yourself wanting `services/` at the module root, decide whether it's domain or infrastructure and place it there.
 
@@ -242,14 +251,59 @@ Don't introduce new top-level folders inside a module without discussion. If you
 Inside each `features/<name>/` folder:
 
 ```
-api/                 # API functions
+api/                 # API functions, parsed with @innlab/contracts schemas
 components/          # feature-private components
 hooks/               # feature-private hooks
-store/               # zustand store (only if needed)
-schemas/             # zod schemas (re-export from @innlab/contracts when shared)
-utils/               # pure helpers
-index.ts             # public surface — only export what other features/pages need
+store/               # zustand draft (only if needed)
+lib/ or utils/       # pure helpers
+index.ts             # public surface — only export what pages need
 ```
+
+## Documentation
+
+What can be derived from the code is not written by hand: the endpoints are Swagger (`/api/docs`), the folder tree is the repository, the schema is the single migration. What the code cannot say is written once, next to what it explains:
+
+| What | Where |
+| --- | --- |
+| Why a non-obvious design decision was taken | An ADR in [`docs/architecture/decisions/`](../architecture/README.md): context, decision, consequences. Immutable once accepted; a later change is a new ADR that supersedes it |
+| Why a domain invariant is the way it is | A short comment next to the invariant, in `domain/` |
+| Project conventions | One file per kind in `docs/conventions/`, with a correct and a wrong example |
+| A backend module's scope and rules | The `README.md` at the root of the module, with the template below |
+
+Every backend module (`modules/<name>/`, `shared/irl-taxonomy/`, `shared/identity/`) has a `README.md` with exactly these sections, in this order:
+
+```markdown
+# <module>
+
+## Scope
+What business responsibility it covers and, explicitly, what it does not (the boundary with its neighbours).
+
+## Rules that must hold
+The business invariants and architecture constraints specific to this module that a change cannot break without a conscious decision. Not the generic rules of this file.
+
+## Completeness
+What part of the scope is implemented today and what is missing, referring to user stories or known findings — never a loose "stage 1".
+
+## Responsibility (ubiquitous language)
+The capability, in the words someone at INNLAB would use.
+
+## Domain concepts
+The aggregates, entities and value objects this module owns.
+
+## What it exposes
+The exported queries, events and HTTP endpoints others may use. Anything not listed is internal.
+
+## What it depends on
+Other modules' exported queries or ports it consumes — and any violation, so it stays visible.
+
+## Data it owns
+The tables it writes, and the catalogs it owns through seeds.
+
+## Test coverage
+What exists per tier (unit, integration, e2e) and what is explicitly missing.
+```
+
+A change is not done while it leaves documentation stale: a change that alters a module's scope, rules, exposed API or completeness updates its `README.md` in the same commit.
 
 ## Comments
 

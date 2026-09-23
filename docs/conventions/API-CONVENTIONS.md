@@ -18,11 +18,11 @@ REST conventions for the `@innlab/api` backend. These rules apply to every endpo
 
 ```
 GET    /api/v1/diagnostics                   ✓
-GET    /api/v1/diagnostics                  ✗ (Spanish)
+GET    /api/v1/diagnosticos                  ✗ (Spanish)
 GET    /api/v1/diagnostic                    ✗ (singular)
 
 GET    /api/v1/catalog/questionnaire         ✓
-GET    /api/v1/catalog/questionnaire         ✗
+GET    /api/v1/catalogo/cuestionario         ✗ (Spanish)
 ```
 
 A resource that is a singleton under its parent (there is one consent and one initiative per diagnostic) is singular: `diagnostics/:id/consent`, `diagnostics/:id/initiative`.
@@ -83,7 +83,7 @@ POST /api/v1/diagnostics/abc/questionnaire
 }
 ```
 
-Note: `statementId`, not `afirmacionId`. JSON keys are in English camelCase even though URL segments are Spanish. The justification: frontend code reads these keys, and `data.statementId` reads naturally; mixing Spanish keys with English variable names inside React components creates friction.
+Note: `statementId`, not `afirmacionId`. JSON keys are English camelCase, like URL segments and every other identifier; only the values a user reads (the justification text, catalog names) are Spanish.
 
 ### Response body: camelCase JSON
 
@@ -161,15 +161,14 @@ Fields:
 
 | Status | Used when                                                                              |
 | ------ | -------------------------------------------------------------------------------------- |
-| 400    | Request didn't pass validation (class-validator or Zod)                                |
 | 401    | No JWT, expired JWT, or invalid JWT                                                    |
 | 403    | Authenticated but not permitted to access this resource                                |
 | 404    | Resource doesn't exist                                                                 |
 | 409    | Conflict — the request can't be applied to current state (e.g., resubmit after submit) |
-| 422    | Domain invariant violated (questionnaire incomplete, etc.)                             |
+| 422    | Malformed body or path parameter (class-validator DTO), or a domain invariant violated |
 | 503    | An upstream service we depend on is unavailable (InnLab Core)                          |
 
-The full mapping of domain errors → HTTP status is in [`apps/api/docs/error-codes.md`](../../apps/api/docs/error-codes.md).
+The mapping of domain errors to HTTP status lives in the exception filters of `apps/api/src/shared/kernel/infrastructure/http/`; each endpoint lists its statuses in Swagger (`ApiErrors(...)`). A validation failure answers 422 with the code `VALIDATION_FAILED` and the list of failed fields ([ADR 0006](../architecture/decisions/0006-validation-at-the-http-boundary.md)).
 
 ### Error codes are stable
 
@@ -205,56 +204,56 @@ A request with a valid token but trying to access another user's resource return
 
 ## Correlation IDs
 
-Every request must carry an `X-Correlation-Id` header (frontend generates a `nanoid`). The backend echoes it in:
+Every request carries an `X-Correlation-Id` header (the frontend's HTTP interceptor generates a `nanoid`; the backend generates one when it is missing). The backend echoes it in:
 
 - Every log line for that request.
-- The error response body when `instance` is set.
-- The `X-Correlation-Id` response header.
+- The `correlationId` field of an error response.
 
 This is the single most useful feature for production debugging. Don't skip it.
 
 ## OpenAPI / Swagger
 
-The backend generates OpenAPI 3.x from `@nestjs/swagger` decorators on DTOs and controllers. Available at `/api/v1/docs` in non-production environments only — never expose in production (it leaks the API surface).
+The backend generates OpenAPI 3.x from `@nestjs/swagger` decorators on DTOs and controllers. `@fastify/swagger` publishes that document as is and `@fastify/swagger-ui` serves it at `/api/docs` (JSON at `/api/docs/json`). It is mounted in every environment today; hiding it in production is pending.
 
 Conventions:
 
-- Every controller method has `@ApiOperation({ summary, description })`.
-- Every DTO has `@ApiProperty()` decorators on fields with examples.
-- Every error response is documented with `@ApiResponse({ status, schema: problemDetailsSchema })`.
+- Every controller method has `@ApiOperation({ summary, description })` and `@ApiBearerAuth()` unless it is `@Public()`.
+- Request bodies are class-validator DTOs in `presentation/controllers/dto/`, with `@ApiProperty()` on each field; response DTOs `implement` the `@innlab/contracts` type they document, so the compiler catches a drift.
+- Path parameters go through a DTO too (`DiagnosticIdParam`, `@IsUUID`), never a raw `@Param('id')`.
+- Error statuses are declared with `ApiErrors(...)` (`shared/kernel/presentation/api-errors.decorator.ts`).
 
 ## Versioning policy
 
 - **Backwards-compatible changes** to `/api/v1/`: add fields, add endpoints, add optional query params. No version bump.
 - **Breaking changes**: introduce `/api/v2/`. Old version stays live for a deprecation window of at least one sprint.
-- **Internal changes** (renaming `id_respuesta` in the DB) are not API changes. Don't change the API surface to mirror DB refactors.
+- **Internal changes** (renaming a column in the DB) are not API changes. Don't change the API surface to mirror DB refactors.
 
 ## Examples — full endpoints
 
-### Submit the questionnaire
+### Process the questionnaire
 
 ```http
-POST /api/v1/diagnostics/abc-123/questionnaire
+POST /api/v1/diagnostics/3f1c…/finalize-initial
 Authorization: Bearer ...
 X-Correlation-Id: V1StGXR8_Z5jdHi6B-myT
 Content-Type: application/json
 
 {
   "answers": [
-    { "statementId": "...", "value": 4 },
-    { "statementId": "...", "value": 2 }
-    // ... 46 more, 48 total
+    { "statementId": "1", "value": 4, "justification": "Tenemos un prototipo probado con tres productores." },
+    { "statementId": "2", "value": 2, "justification": "..." }
+    // ... 48 in total
   ]
 }
 ```
 
 Responses:
 
-- `200 OK` with the computed `MaturityProfileResponse` body (calculated synchronously per RF-07; this is a small enough computation).
-- `400` if any answer is malformed.
-- `404` if the diagnostic doesn't belong to the caller (see above).
-- `409` if the diagnostic is already past the questionnaire phase.
-- `422 QUESTIONNAIRE_INCOMPLETE` if fewer than 48 answers, with the `missing` array.
+- `201 Created` with the computed `MaturityProfileResponse` (calculated synchronously per RF-07).
+- `422 VALIDATION_FAILED` if the id is not a UUID or an answer is malformed (DTO).
+- `404` if the diagnostic does not exist.
+- `409` if the diagnostic is not at the step that accepts the questionnaire (the initiative is missing, or it is already processed).
+- `422` if there are not exactly 48 answers or a justification is blank (domain invariant); nothing is stored.
 
 ### Retrieve the profile of an existing diagnostic
 

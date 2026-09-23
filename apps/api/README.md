@@ -1,6 +1,6 @@
 # @innlab/api — Backend
 
-The IRL Diagnostic System backend. **NestJS 10+** running on **Fastify**, persisting to **PostgreSQL** via **TypeORM**, authenticating against the **INNLAB Amazon Cognito** User Pool, and consuming the **INNLAB Core API** for user context.
+The IRL Diagnostic System backend. **NestJS 11** running on **Fastify**, persisting to **PostgreSQL** via **TypeORM**, authenticating against the **INNLAB Amazon Cognito** User Pool, and consuming the **INNLAB Core API** for user context.
 
 This README is for backend developers. For the system overview, see the [root README](../../README.md).
 
@@ -8,15 +8,15 @@ This README is for backend developers. For the system overview, see the [root RE
 
 | Concern        | Choice                                                                                                         |
 | -------------- | -------------------------------------------------------------------------------------------------------------- |
-| HTTP framework | NestJS 10 with Fastify adapter                                                                                 |
+| HTTP framework | NestJS 11 with Fastify adapter                                                                                 |
 | ORM            | TypeORM (mandated by the anteproyecto)                                                                         |
 | Database       | PostgreSQL 16                                                                                                  |
 | Authentication | Amazon Cognito (RS256 JWT, JWKS) — via `passport-jwt` + `jwks-rsa`                                            |
-| Validation     | `class-validator` at HTTP boundary, `zod` at cross-tier contract boundary                                      |
+| Validation     | `class-validator` request DTOs at the HTTP boundary (422), `zod` contracts shared with the frontend            |
+| API docs       | `@nestjs/swagger` document served by `@fastify/swagger` + `@fastify/swagger-ui` at `/api/docs`                 |
+| Events         | `@nestjs/event-emitter`, behind the `EVENT_PUBLISHER` port                                                     |
 | Logging        | Pino via `nestjs-pino`                                                                                         |
-| Mail           | `nodemailer` behind a `MailerPort`                                                                             |
-| Caching        | In-memory via `@nestjs/cache-manager`                                                                          |
-| Testing        | Jest (unit), Testcontainers (integration), Supertest (e2e), fast-check (property-based for the IRL calculator) |
+| Testing        | Jest; Testcontainers Postgres (integration); Supertest + nock (e2e); fast-check (property tests)                |
 
 ## First-time setup
 
@@ -44,7 +44,7 @@ pnpm --filter @innlab/api start        # one-shot
 pnpm --filter @innlab/api start:prod   # production mode (after build)
 ```
 
-The API listens on `APP_PORT` (default 3000). Endpoints are prefixed `/api/v1/`. Swagger UI is at `/api/v1/docs` in non-production environments.
+The API listens on `APP_PORT` (default 3000). Endpoints are prefixed `/api/v1/`. Swagger UI is at `/api/docs` (JSON at `/api/docs/json`); it is mounted in every environment.
 
 ## Folder structure
 
@@ -61,12 +61,14 @@ apps/api/
 │   ├── shared/
 │   │   ├── kernel/              # generic primitives, no bounded context
 │   │   │   ├── domain/          # Uuid, LikertValue, IrlLevel, DomainError hierarchy, Result<T, E>
-│   │   │   ├── application/     # unwrapResult()
+│   │   │   ├── application/     # unwrapResult(), EVENT_PUBLISHER port
 │   │   │   ├── events/          # domain events that cross module boundaries
 │   │   │   ├── infrastructure/
 │   │   │   │   ├── database/    # data-source.ts, migrations/, seeds/
+│   │   │   │   ├── events/      # EventEmitter-backed publisher (global EventsModule)
+│   │   │   │   ├── nest/        # applicationProvider(): wires framework-free use cases
 │   │   │   │   └── http/        # configureApp(), exception filters, problem-details
-│   │   │   └── presentation/controllers/   # health probe
+│   │   │   └── presentation/    # health probe, shared DTOs (DiagnosticIdParam), ApiErrors()
 │   │   ├── irl-taxonomy/        # read-only IRL framework catalog (dimensions, pairs, conversion)
 │   │   └── identity/            # Cognito guard + INNLAB Core client (anticorruption layer)
 │   │
@@ -74,13 +76,12 @@ apps/api/
 │       ├── diagnosis/           # questionnaire + maturity profile + diagnostic state machine
 │       ├── initiative/          # initiative profile + privacy consent
 │       ├── routing/             # portfolio recommendation engine
-│       ├── roadmap/             # scaling roadmap
-│       └── audit/ notifications/ report/   # ORM entity only — not built yet
+│       └── roadmap/             # scaling roadmap
 │
 ├── test/
 │   ├── unit/                    # mirrors src/, no DB
-│   ├── integration/             # Testcontainers + Postgres
-│   └── e2e/                     # supertest against the real AppModule
+│   ├── integration/             # repositories and seeds against a Testcontainers Postgres
+│   └── e2e/                     # supertest against the real AppModule and the local database
 │
 ├── .env.example
 ├── eslint.config.mjs
@@ -100,30 +101,32 @@ modules/<name>/
 │   ├── repositories/            # ports (Symbol token + interface)
 │   └── events/                  # only events no other module listens to
 ├── application/
-│   ├── use-cases/               # one class, one public method `execute()`
+│   ├── use-cases/               # one class, one public method `execute()`; no framework imports
+│   ├── ports/                   # what the module needs from another module
 │   └── dtos/
 ├── infrastructure/
 │   ├── database/{orm-entities,repositories}/
-│   └── messaging/               # @OnEvent listeners
-├── presentation/controllers/
-├── <name>.module.ts
-└── README.md                    # scope, rules, exposed API, tests (convenciones §4.4)
+│   ├── messaging/               # @OnEvent listeners
+│   └── *.adapter.ts             # adapters of application ports over another module's exported queries
+├── presentation/controllers/     # controllers + dto/ (class-validator requests, Swagger responses)
+├── <name>.module.ts               # use cases wired with applicationProvider(UseCase, [tokens])
+└── README.md                    # scope, rules, exposed API, tests
 ```
 
-Modules communicate through ports and domain events, never by importing each other's entities. Cross-module events live in `shared/kernel/events/`.
+Modules communicate through exported read queries and domain events, never by importing each other's entities. Cross-module events live in `shared/kernel/events/`. The decisions behind this layout are the ADRs in [`docs/architecture/decisions/`](../../docs/architecture/README.md).
 
 ## Architecture in one paragraph
 
-Modular monolith with DDD-lite. One NestJS module per bounded context. Modules never call each other's processes directly: `diagnosis/` owns the diagnostic and publishes domain events (`DeepAnalysisRequestedEvent`), and `routing/` and `roadmap/` react independently; `initiative/` publishes `ConsentRecordedEvent` and `diagnosis/` reacts. Synchronous calls between modules are limited to read-only queries through a port. The domain layer imports zero framework code. Repositories implement domain ports; HTTP clients (INNLAB Core) implement domain ports. The IRL calculator is a pure function over the conversion table, exhaustively property-tested.
+Modular monolith with DDD-lite. One NestJS module per bounded context. Modules never call each other's processes directly: `diagnosis/` owns the diagnostic and publishes domain events (`DeepAnalysisRequestedEvent`), and `routing/` and `roadmap/` react independently; `initiative/` publishes `ConsentRecordedEvent` and `InitiativeRegisteredEvent` and `diagnosis/` reacts. Synchronous calls between modules are limited to read-only queries that a module exports and the consumer reaches through a port of its own. Neither the domain nor the application layer imports framework code: use cases are plain classes that Nest builds through `applicationProvider`, and they publish events through the `EVENT_PUBLISHER` port. Repositories implement domain ports; HTTP clients (INNLAB Core) implement domain ports. The IRL calculator is a pure function over the conversion table, exhaustively property-tested.
 
 ## Database
 
 Single PostgreSQL database, **two schemas**:
 
-- `irl_catalog` — read-only at runtime. Holds dimensions, statements, conversion ranges, dimension pairs, sectors, roadmap texts, portfolio services, routing rules. Populated by seeds; the app DB role has `SELECT` only.
-- `irl_diagnostic` — transactional. Holds `diagnostic`, `initiative`, `consent`, `answer`, `dimension_result`, `imbalance_analysis`, `portfolio_recommendation`, `recommendation_alternative`, `layer_trace` (owned by the four business modules) plus the still-unbuilt `notificacion`, `descarga_reporte`, `evento_auditoria`.
+- `irl_catalog` — read-only at runtime. Holds dimensions, statements, conversion ranges, dimension pairs and dependencies, sectors, initiative stages, roadmap texts, portfolio services and the routing configuration. Populated by seeds only.
+- `irl_diagnostic` — transactional. Holds `diagnostic`, `initiative`, `consent`, `answer`, `dimension_result`, `imbalance_analysis`, `portfolio_recommendation`, `recommendation_alternative`, `layer_trace`, `scaling_roadmap` (owned by the four business modules). The migration also creates `notification`, `report_download` and `audit_event`, reserved for a future reporting context; no code uses them yet.
 
-The split is enforced at the database level via role grants — defense in depth beyond application code.
+The read-only rule on `irl_catalog` is enforced by the code (no catalog writer outside the seeds); there are no per-schema database roles.
 
 **Never** enable `synchronize: true`. Schema changes go through migrations.
 
@@ -177,31 +180,30 @@ RS256 tokens against a mocked JWKS.
 
 ## API design
 
-REST, versioned at `/api/v1/`, resource-oriented around aggregate roots. English nouns in URLs (`/diagnostics`, `/initiative`, `/consent`, `/catalog`), like every identifier (see `docs/conventions/CODE-STYLE.md`), camelCase in JSON bodies, **RFC 7807 Problem Details** for errors with a project-specific `code` field.
+REST, versioned at `/api/v1/`, resource-oriented around aggregate roots. English nouns in URLs (`/diagnostics`, `/initiative`, `/consent`, `/catalog`), like every identifier (see `docs/conventions/CODE-STYLE.md`), camelCase in JSON bodies, **RFC 7807 Problem Details** for errors with a project-specific `code` field. A malformed request body or path parameter answers **422** from its class-validator DTO; business outcomes map from `Result` errors (404, 403, 409, 422). Every endpoint is documented in Swagger with `@ApiOperation`, its typed response and its error statuses (`ApiErrors(...)`).
 
-Full conventions: [`docs/conventions/api-design.md`](../../docs/conventions/api-design.md).
-Error code catalog: [`docs/error-codes.md`](./docs/error-codes.md).
+Full conventions: [`docs/conventions/API-CONVENTIONS.md`](../../docs/conventions/API-CONVENTIONS.md).
 
 ## Environment variables
 
-Every variable is documented with a comment in [`.env.example`](./.env.example). Joi validates all variables at boot — missing or malformed values fail fast. Cross-reference: [`docs/environments/env-variables.md`](../../docs/environments/env-variables.md).
+Every variable is documented with a comment in [`.env.example`](./.env.example). Joi validates all variables at boot (`src/config/env.validation.ts`) — missing or malformed values fail fast.
 
-## Suggested scripts
+## Scripts
 
 All scripts run from the repo root via `pnpm --filter @innlab/api <script>`, or from this directory with `pnpm <script>`.
 
 ```bash
 # development
 dev                     # nest start --watch
-build                   # nest build
+build                   # contracts build + nest build
 start                   # node dist/main.js
 start:prod              # NODE_ENV=production node dist/main.js
 
 # testing
 test                    # all projects (unit + integration + e2e)
 test:unit               # fast: domain + application, no DB
-test:integration        # Testcontainers spins up Postgres
-test:e2e                # supertest against compiled app, self-signed JWT + mocked JWKS
+test:integration        # Testcontainers spins up Postgres (needs Docker)
+test:e2e                # supertest against AppModule and the local database (pnpm db:up + migration + seed), self-signed JWT + mocked JWKS
 test:cov                # coverage report
 test:watch              # watch mode
 
@@ -212,9 +214,7 @@ typecheck               # tsc --noEmit
 format                  # prettier --write
 
 # database
-db:migration:generate -- src/shared/kernel/infrastructure/database/migrations/<Name>
-db:migration:create   -- src/shared/kernel/infrastructure/database/migrations/<Name>
-db:migration:run
+db:migration:run        # the single migration (see Database)
 db:migration:revert
 db:seed                 # idempotent: ON CONFLICT DO UPDATE
 ```
@@ -226,15 +226,17 @@ Three tiers, three speed budgets:
 | Tier        | Where               | What it tests                                                   | Budget          |
 | ----------- | ------------------- | --------------------------------------------------------------- | --------------- |
 | Unit        | `test/unit/`        | Domain + application, no IO                                     | < 5s full suite |
-| Integration | `test/integration/` | Repositories, use cases with DB (Testcontainers)                | < 60s           |
+| Integration | `test/integration/` | Repositories and seeds against a Testcontainers Postgres        | < 60s           |
 | E2E         | `test/e2e/`         | One spec per user story, full HTTP, self-signed JWT + mocked JWKS | < 3min          |
+
+The browser end-to-end test of the whole flow lives in the frontend (`apps/web/tests/e2e/`, Playwright).
 
 Coverage thresholds are scoped, not repo-wide (see `coverageThreshold` in `jest.config.js`): the `domain/` folders of `diagnosis`, `routing` and `roadmap` carry explicit minimums. Everything else is best-effort. The IRL calculator is property-tested with `fast-check` over the full Likert input space.
 
-Conventions and recipes: [`docs/conventions/testing.md`](../../docs/conventions/testing.md) and [`docs/testing-recipes.md`](./docs/testing-recipes.md).
+Conventions: [`docs/conventions/TESTING-CONVENTIONS.md`](../../docs/conventions/TESTING-CONVENTIONS.md).
 
 ## Linting and formatting
 
-- **ESLint** with `typescript-eslint` for type-aware rules and `eslint-plugin-boundaries` to enforce layer boundaries (domain ↛ infrastructure, etc.). Boundary violations are compile-time errors.
+- **ESLint** with `typescript-eslint` for type-aware rules and `eslint-plugin-boundaries` to enforce layer boundaries (domain ↛ infrastructure, presentation → application only, no framework or IO package in `domain/` or `application/`). Boundary violations are lint errors.
 - **Prettier** for formatting, configured at the repo root. Don't fight it.
-- Both run automatically via Husky pre-commit on staged files.
+- The Husky hooks are configured but inactive (`.npmrc` sets `ignore-scripts`, so `prepare` never installs them): run `pnpm lint` and `pnpm typecheck` before committing.
