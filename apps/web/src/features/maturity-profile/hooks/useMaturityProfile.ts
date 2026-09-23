@@ -1,14 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { getMaturityProfile } from '../api/maturity-profile.api';
 import { queryKeys } from '@/shared/api/query-keys';
+import { STALE_TIME } from '@/shared/api/query-client';
+import { useDiagnosticQuery } from '@/shared/hooks/useDiagnosticQuery';
+import { getMaturityProfile } from '../api/maturity-profile.api';
 
 export function useMaturityProfile(diagnosticId: string | undefined) {
-  return useQuery({
-    queryKey: diagnosticId
-      ? queryKeys.diagnostic.profile(diagnosticId)
-      : ['diagnostic', 'profile', 'idle'],
-    queryFn: () => getMaturityProfile(diagnosticId!),
-    enabled: Boolean(diagnosticId),
-    staleTime: 5 * 60 * 1000,
+  return useDiagnosticQuery(diagnosticId, queryKeys.diagnostic.profile, getMaturityProfile, {
+    staleTime: STALE_TIME.savedResult,
   });
 }

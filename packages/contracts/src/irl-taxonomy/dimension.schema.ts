@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { uuidSchema } from '../common/uuid.schema.js';
 
 /**
  * Canonical codes of the 6 dimensions of the KTH Innovation Readiness
@@ -35,20 +34,3 @@ export const dimensionRefSchema = z
   .describe('Reference to an IRL dimension with its names');
 
 export type DimensionRef = z.infer<typeof dimensionRefSchema>;
-
-/**
- * Metadata of an IRL dimension — code, name, description and display
- * order. Used to render the tabs of the questionnaire (HU-07) and the
- * profile grid (HU-13/HU-14).
- */
-export const dimensionMetadataSchema = z
-  .object({
-    id: uuidSchema,
-    code: dimensionCodeSchema,
-    name: z.string().min(1).describe('Full name of the dimension, in Spanish'),
-    description: z.string().describe('Short description of what the dimension assesses'),
-    sequence: z.number().int().min(1).max(6).describe('Display order: 1–6'),
-  })
-  .describe('Metadata of an IRL dimension');
-
-export type DimensionMetadata = z.infer<typeof dimensionMetadataSchema>;

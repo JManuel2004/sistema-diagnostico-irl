@@ -5,6 +5,7 @@ import { Badge } from '@/shared/ui/badge';
 import { Card, CardContent } from '@/shared/ui/card';
 import { GlossaryTerm } from '@/shared/ui/glossary-term';
 import { LevelBar } from '@/shared/ui/level-bar';
+import { formatOneDecimal } from '@/shared/lib/format';
 
 /**
  * Header of the results: the profile belongs to **an initiative**, so the
@@ -29,13 +30,6 @@ interface Props {
   readonly bottleneck: Bottleneck;
   /** Below the description: e.g. «Resultado guardado el …». */
   readonly children?: ReactNode;
-}
-
-/** «3,5»: one decimal with a comma; an exact integer goes without decimals. */
-export function formatGlobalAverage(value: number): string {
-  return Number.isInteger(value)
-    ? String(value)
-    : value.toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
 export function ProfileHero({
@@ -85,7 +79,7 @@ export function ProfileHero({
           </p>
           <p className="mt-2 flex items-baseline gap-2">
             <span className="text-azul-icesi text-6xl font-extrabold tabular-nums leading-none tracking-[-0.04em] sm:text-[4.75rem]">
-              {formatGlobalAverage(globalAverage)}
+              {formatOneDecimal(globalAverage)}
             </span>
             <span className="text-muted-foreground text-xl font-semibold">de 9</span>
           </p>

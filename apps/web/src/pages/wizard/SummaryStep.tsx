@@ -1,6 +1,5 @@
 import type { JSX } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link, Navigate } from 'react-router-dom';
 import {
   AnswersSummary,
   selectAnswers,
@@ -13,8 +12,8 @@ import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
 import { Button, buttonVariants } from '@/shared/ui/button';
 import { LoadingState } from '@/shared/ui/loading-state';
-import { queryKeys } from '@/shared/api/query-keys';
-import { finalizeInitialDiagnostic } from '@/shared/api/diagnostic.api';
+import { useFinalizeDiagnostic } from '@/shared/hooks/useFinalizeDiagnostic';
+import { RETRY_LATER } from '@/shared/lib/copy';
 import { wizardPath } from './wizard-steps';
 
 interface Props {
@@ -32,34 +31,12 @@ interface Props {
  * questionnaire: this step cannot be reached with missing answers.
  */
 export function SummaryStep({ diagnosticId }: Props): JSX.Element {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const answers = useQuestionnaireDraftStore(selectAnswers);
   const justifications = useQuestionnaireDraftStore(selectJustifications);
   const { catalog, isComplete } = useQuestionnaireCompletion();
   const initiative = useInitiative(diagnosticId);
 
-  const process = useMutation({
-    mutationFn: () =>
-      finalizeInitialDiagnostic(
-        diagnosticId,
-        Object.entries(answers).map(([statementId, value]) => ({
-          statementId,
-          value,
-          justification: (justifications[statementId] ?? '').trim(),
-        })),
-      ),
-    onSuccess: async (profile) => {
-      queryClient.setQueryData(queryKeys.diagnostic.profile(diagnosticId), profile);
-      // Waits for the refetch: the results screen decides from `completed`,
-      // and with the old datum it would send the user back here.
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.diagnostic.detail(diagnosticId) }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.diagnostic.list }),
-      ]);
-      void navigate(`/diagnosticos/${diagnosticId}/resultados`, { replace: true });
-    },
-  });
+  const process = useFinalizeDiagnostic(diagnosticId);
 
   if (!catalog) return <LoadingState label="Cargando tus respuestas…" />;
   if (!isComplete) return <Navigate to={wizardPath(diagnosticId, 'cuestionario')} replace />;
@@ -109,7 +86,7 @@ export function SummaryStep({ diagnosticId }: Props): JSX.Element {
         <Alert
           tone="critical"
           className="mt-6"
-          title="No fue posible generar el diagnóstico. Intenta de nuevo en unos minutos."
+          title={`No fue posible generar el diagnóstico. ${RETRY_LATER}`}
         />
       )}
 
@@ -122,7 +99,13 @@ export function SummaryStep({ diagnosticId }: Props): JSX.Element {
         </Link>
         <Button
           onClick={() => {
-            process.mutate();
+            process.mutate(
+              Object.entries(answers).map(([statementId, value]) => ({
+                statementId,
+                value,
+                justification: (justifications[statementId] ?? '').trim(),
+              })),
+            );
           }}
           disabled={process.isPending}
         >

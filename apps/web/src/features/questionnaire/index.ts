@@ -9,6 +9,5 @@ export {
   selectJustifications,
   useQuestionnaireDraftStore,
 } from './store/questionnaire-draft.store';
-export { useAnswerForStatement } from './hooks/useAnswerForStatement';
 export { useQuestionnaireCompletion } from './hooks/useQuestionnaireCompletion';
 export { useQuestionnaireStructure } from './hooks/useQuestionnaireStructure';

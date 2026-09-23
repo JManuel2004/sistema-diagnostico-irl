@@ -75,5 +75,3 @@ export function LikertScale({ id, value, onChange }: Props) {
     </RadioGroup>
   );
 }
-
-export default LikertScale;

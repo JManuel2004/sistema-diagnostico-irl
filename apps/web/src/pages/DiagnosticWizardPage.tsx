@@ -19,6 +19,8 @@ import { WizardStepper } from '@/shared/ui/wizard-stepper';
 import { Alert } from '@/shared/ui/alert';
 import { LoadingState } from '@/shared/ui/loading-state';
 import { useDiagnostic } from '@/shared/hooks/useDiagnostics';
+import { paths } from '@/shared/lib/paths';
+import { RETRY_LATER } from '@/shared/lib/copy';
 import { InitiativeStep } from './wizard/InitiativeStep';
 import { ConsentStep } from './wizard/ConsentStep';
 import { QuestionnaireStep } from './wizard/QuestionnaireStep';
@@ -70,7 +72,7 @@ export default function DiagnosticWizardPage(): JSX.Element {
     if (typeof window.scrollTo === 'function') window.scrollTo({ top: 0 });
   }, [step]);
 
-  if (!diagnosticId) return <Navigate to="/" replace />;
+  if (!diagnosticId) return <Navigate to={paths.landing} replace />;
 
   const pending = diagnostic.isPending || consent.isPending || initiative.isPending;
   const failed = diagnostic.isError || consent.isError || initiative.isError;
@@ -78,7 +80,7 @@ export default function DiagnosticWizardPage(): JSX.Element {
     initiativeDraftOwner === diagnosticId && questionnaireDraftOwner === diagnosticId;
 
   if (diagnostic.data?.completed) {
-    return <Navigate to={`/diagnosticos/${diagnosticId}/resultados`} replace />;
+    return <Navigate to={paths.results(diagnosticId)} replace />;
   }
 
   if (!pending && !failed && diagnostic.data && draftsReady) {
@@ -137,7 +139,7 @@ export default function DiagnosticWizardPage(): JSX.Element {
     <PageShell width="reading" showAttribution headerActions={<LogoutButton />}>
       {failed ? (
         <Alert tone="critical" title="No fue posible abrir tu diagnóstico">
-          Intenta de nuevo en unos minutos.
+          {RETRY_LATER}
         </Alert>
       ) : (
         <LoadingState label="Cargando tu diagnóstico…" />

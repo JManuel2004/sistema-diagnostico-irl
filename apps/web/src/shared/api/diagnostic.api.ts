@@ -1,4 +1,4 @@
-import { http } from '@/shared/api/http';
+import { getParsed, postParsed } from '@/shared/api/http';
 import {
   acceptDeepAnalysisResponseSchema,
   diagnosticSchema,
@@ -14,32 +14,29 @@ import {
  * HU-04 — the user starts a diagnostic of their own. The backend returns
  * the user's unfinished one if there is one, or creates a new one.
  */
-export async function startDiagnostic(): Promise<Diagnostic> {
-  const { data } = await http.post<unknown>('/diagnostics');
-  return diagnosticSchema.parse(data);
+export function startDiagnostic(): Promise<Diagnostic> {
+  return postParsed('/diagnostics', undefined, diagnosticSchema);
 }
 
 /** One diagnostic of the user, with its state and whether the deep analysis was accepted. */
-export async function getDiagnostic(diagnosticId: string): Promise<Diagnostic> {
-  const { data } = await http.get<unknown>(`/diagnostics/${diagnosticId}`);
-  return diagnosticSchema.parse(data);
+export function getDiagnostic(diagnosticId: string): Promise<Diagnostic> {
+  return getParsed(`/diagnostics/${diagnosticId}`, diagnosticSchema);
 }
 
 /** The user's diagnostics, most recent first. */
-export async function listMyDiagnostics(): Promise<DiagnosticSummary[]> {
-  const { data } = await http.get<unknown>('/diagnostics');
-  return diagnosticSummarySchema.array().parse(data);
+export function listMyDiagnostics(): Promise<DiagnosticSummary[]> {
+  return getParsed('/diagnostics', diagnosticSummarySchema.array());
 }
 
-export async function finalizeInitialDiagnostic(
+export function finalizeInitialDiagnostic(
   diagnosticId: string,
   answers: { statementId: string; value: number; justification: string }[],
 ): Promise<MaturityProfileResponse> {
-  const { data } = await http.post<unknown>(
+  return postParsed(
     `/diagnostics/${diagnosticId}/finalize-initial`,
     { answers },
+    maturityProfileResponseSchema,
   );
-  return maturityProfileResponseSchema.parse(data);
 }
 
 /**
@@ -48,11 +45,10 @@ export async function finalizeInitialDiagnostic(
  * their part before this request answers. Idempotent in the state:
  * repeating it breaks nothing and retries a calculation that failed.
  */
-export async function acceptDeepAnalysis(
-  diagnosticId: string,
-): Promise<AcceptDeepAnalysisResponse> {
-  const { data } = await http.post<unknown>(
+export function acceptDeepAnalysis(diagnosticId: string): Promise<AcceptDeepAnalysisResponse> {
+  return postParsed(
     `/diagnostics/${diagnosticId}/deep-analysis`,
+    undefined,
+    acceptDeepAnalysisResponseSchema,
   );
-  return acceptDeepAnalysisResponseSchema.parse(data);
 }

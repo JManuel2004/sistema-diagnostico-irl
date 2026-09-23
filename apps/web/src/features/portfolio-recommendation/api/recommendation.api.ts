@@ -1,25 +1,15 @@
 import {
-  recommendationResponseSchema,
   layerTraceResponseSchema,
-  type RecommendationResponse,
+  recommendationResponseSchema,
   type LayerTraceResponse,
+  type RecommendationResponse,
 } from '@innlab/contracts';
-import { http } from '@/shared/api/http';
+import { getParsed } from '@/shared/api/http';
 
-export async function getRecommendation(
-  diagnosticId: string,
-): Promise<RecommendationResponse> {
-  const { data } = await http.get<unknown>(
-    `/diagnostics/${diagnosticId}/recommendation`,
-  );
-  return recommendationResponseSchema.parse(data);
+export function getRecommendation(diagnosticId: string): Promise<RecommendationResponse> {
+  return getParsed(`/diagnostics/${diagnosticId}/recommendation`, recommendationResponseSchema);
 }
 
-export async function getRecommendationTrace(
-  diagnosticId: string,
-): Promise<LayerTraceResponse> {
-  const { data } = await http.get<unknown>(
-    `/diagnostics/${diagnosticId}/recommendation/trace`,
-  );
-  return layerTraceResponseSchema.parse(data);
+export function getRecommendationTrace(diagnosticId: string): Promise<LayerTraceResponse> {
+  return getParsed(`/diagnostics/${diagnosticId}/recommendation/trace`, layerTraceResponseSchema);
 }

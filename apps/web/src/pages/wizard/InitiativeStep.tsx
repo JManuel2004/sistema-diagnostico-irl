@@ -2,20 +2,17 @@ import type { JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Initiative, RegisterInitiativeCommand } from '@innlab/contracts';
 import {
-  InitiativeForm,
+  InitiativeEditor,
   commandToFormValues,
   initiativeToFormValues,
   selectDraftClear,
   selectDraftSave,
   useInitiativeDraftStore,
   useRegisterInitiative,
-  useSectors,
-  useStages,
 } from '@features/initiative';
 import { PageHeader } from '@/shared/ui/page-header';
-import { Alert } from '@/shared/ui/alert';
-import { LoadingState } from '@/shared/ui/loading-state';
 import { wizardPath } from './wizard-steps';
+import { RETRY_LATER } from '@/shared/lib/copy';
 
 interface Props {
   readonly diagnosticId: string;
@@ -42,14 +39,10 @@ export function InitiativeStep({
   consentRecorded,
 }: Props): JSX.Element {
   const navigate = useNavigate();
-  const sectors = useSectors();
-  const stages = useStages();
   const register = useRegisterInitiative(diagnosticId);
   const saveDraft = useInitiativeDraftStore(selectDraftSave);
   const clearDraft = useInitiativeDraftStore(selectDraftClear);
 
-  const loading = sectors.isPending || stages.isPending;
-  const failed = sectors.isError || stages.isError;
   const next = wizardPath(diagnosticId, 'consentimiento');
 
   const initial = registered
@@ -79,30 +72,16 @@ export function InitiativeStep({
         description="Estos datos contextualizan tus resultados y ayudan a INNLAB a recomendarte el servicio adecuado. Todos los campos son obligatorios."
       />
 
-      {loading && <LoadingState label="Cargando…" />}
-
-      {failed && (
-        <Alert tone="critical" title="No fue posible cargar el formulario">
-          Intenta de nuevo en unos minutos.
-        </Alert>
-      )}
-
-      {!loading && !failed && sectors.data && stages.data && (
-        <InitiativeForm
-          key={registered?.id ?? 'draft'}
-          sectors={sectors.data}
-          stages={stages.data}
-          initial={initial}
-          isSubmitting={register.isPending}
-          submitLabel="Continuar"
-          submitError={
-            register.isError
-              ? 'No fue posible guardar la iniciativa. Intenta de nuevo en unos minutos.'
-              : undefined
-          }
-          onSubmit={handleSubmit}
-        />
-      )}
+      <InitiativeEditor
+        formKey={registered?.id ?? 'draft'}
+        initial={initial}
+        isSubmitting={register.isPending}
+        submitLabel="Continuar"
+        submitError={
+          register.isError ? `No fue posible guardar la iniciativa. ${RETRY_LATER}` : undefined
+        }
+        onSubmit={handleSubmit}
+      />
     </>
   );
 }

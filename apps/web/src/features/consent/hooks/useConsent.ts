@@ -1,15 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/shared/api/query-keys';
+import { STALE_TIME } from '@/shared/api/query-client';
+import { invalidateDiagnostic } from '@/shared/api/invalidate-diagnostic';
+import { useDiagnosticQuery } from '@/shared/hooks/useDiagnosticQuery';
 import { getConsent, recordConsent } from '../api/consent.api';
 import { CONSENT_TERMS_VERSION } from '../lib/consent-terms';
 
 /** `null` while the diagnostic has no accepted consent. */
 export function useConsent(diagnosticId: string | undefined) {
-  return useQuery({
-    queryKey: diagnosticId ? queryKeys.diagnostic.consent(diagnosticId) : ['diagnostic', 'consent', 'idle'],
-    queryFn: () => getConsent(diagnosticId!),
-    enabled: Boolean(diagnosticId),
-    staleTime: 60 * 1000,
+  return useDiagnosticQuery(diagnosticId, queryKeys.diagnostic.consent, getConsent, {
+    staleTime: STALE_TIME.diagnosticInput,
   });
 }
 
@@ -22,14 +22,11 @@ export function useConsent(diagnosticId: string | undefined) {
 export function useRecordConsent(diagnosticId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => recordConsent(diagnosticId!, CONSENT_TERMS_VERSION),
+    mutationFn: () => recordConsent(diagnosticId ?? '', CONSENT_TERMS_VERSION),
     onSuccess: async (record) => {
       if (!diagnosticId) return;
       queryClient.setQueryData(queryKeys.diagnostic.consent(diagnosticId), record);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.diagnostic.detail(diagnosticId) }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.diagnostic.list }),
-      ]);
+      await invalidateDiagnostic(queryClient, diagnosticId);
     },
   });
 }

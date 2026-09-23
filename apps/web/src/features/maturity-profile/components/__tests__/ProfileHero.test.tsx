@@ -3,7 +3,8 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { DimensionCode } from '@innlab/contracts';
 import { dimensionResultFixture } from '@/test/fixtures/dimensions';
-import { formatGlobalAverage, ProfileHero } from '../ProfileHero';
+import { formatOneDecimal } from '@/shared/lib/format';
+import { ProfileHero } from '../ProfileHero';
 
 const CODES: DimensionCode[] = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'];
 // AgroConecta: TRL 6, CRL 4, BRL 3, IPRL 1, TmRL 5, FRL 2 → global average 3.5.
@@ -112,7 +113,7 @@ describe('ProfileHero — el perfil es de una iniciativa', () => {
   });
 });
 
-describe('formatGlobalAverage', () => {
+describe('formatOneDecimal', () => {
   it.each([
     [3.5, '3,5'],
     [4, '4'],
@@ -120,6 +121,6 @@ describe('formatGlobalAverage', () => {
     [8.8, '8,8'],
     [9, '9'],
   ])('%s se muestra como %s', (value, expected) => {
-    expect(formatGlobalAverage(value)).toBe(expected);
+    expect(formatOneDecimal(value)).toBe(expected);
   });
 });

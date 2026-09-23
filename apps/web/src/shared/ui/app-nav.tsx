@@ -1,4 +1,5 @@
 import type { JSX } from 'react';
+import { paths } from '@/shared/lib/paths';
 import { NavLink } from 'react-router-dom';
 import { useActiveDiagnosticId } from '@/shared/hooks/useDiagnostics';
 import { cn } from '@/shared/lib/utils';
@@ -36,11 +37,11 @@ export function AppNav({ className }: AppNavProps): JSX.Element {
       aria-label="Principal"
       className={cn('grid grid-cols-2 items-stretch md:flex md:gap-2', className)}
     >
-      <NavLink to="/panel" className={LINK}>
+      <NavLink to={paths.panel} className={LINK}>
         Panel
       </NavLink>
       {diagnosticId ? (
-        <NavLink to={`/diagnosticos/${diagnosticId}/resultados`} className={LINK}>
+        <NavLink to={paths.results(diagnosticId)} className={LINK}>
           Resultados
         </NavLink>
       ) : (

@@ -3,6 +3,7 @@ import { Compass, Sparkles } from 'lucide-react';
 import type { RecommendationResponse } from '@innlab/contracts';
 import { Badge } from '@/shared/ui/badge';
 import { Card, CardContent } from '@/shared/ui/card';
+import { FALLBACK_SUBJECT } from '@/shared/lib/copy';
 
 interface Props {
   readonly recommendation: RecommendationResponse;
@@ -20,7 +21,7 @@ interface Props {
  */
 export function RecommendationSummary({
   recommendation,
-  subject = 'tu iniciativa',
+  subject = FALLBACK_SUBJECT,
 }: Props): JSX.Element {
   if (recommendation.resultType === 'NO_RECOMMENDATION') {
     return (

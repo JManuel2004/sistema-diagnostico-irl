@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { queryKeys } from '@/shared/api/query-keys';
 import { startDiagnostic } from '@/shared/api/diagnostic.api';
+import { paths } from '@/shared/lib/paths';
 
 /**
  * Starts a diagnostic (HU-04) and opens the wizard. If the user already has
@@ -19,7 +20,7 @@ export function useStartDiagnostic() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.diagnostic.list });
       // `replace`: the start screen must not stay in the history, or
       // "back" from the wizard would start another attempt.
-      void navigate(`/diagnosticos/${diagnostic.id}/asistente`, { replace: true });
+      void navigate(paths.wizard(diagnostic.id), { replace: true });
     },
   });
 }

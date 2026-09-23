@@ -12,6 +12,7 @@ import { GlossaryTerm } from '@/shared/ui/glossary-term';
 import { LevelBar } from '@/shared/ui/level-bar';
 import type { HighlightHandler } from './MaturityProfileSummary';
 import { PairCard } from './PairCard';
+import { FALLBACK_SUBJECT } from '@/shared/lib/copy';
 
 /**
  * What the profile shows only with the deep analysis accepted: the
@@ -52,7 +53,7 @@ export function ImbalanceInsights({
   onHighlight,
   descriptions,
   plan,
-  subject = 'tu iniciativa',
+  subject = FALLBACK_SUBJECT,
 }: Props): JSX.Element {
   const names = new Map(profile.dimensionResults.map((r) => [r.dimensionCode, r.shortName]));
   const levels = new Map(profile.dimensionResults.map((r) => [r.dimensionCode, r.irlLevel]));

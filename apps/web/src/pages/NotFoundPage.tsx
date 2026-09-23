@@ -1,4 +1,5 @@
 import type { JSX } from 'react';
+import { paths } from '@/shared/lib/paths';
 import { Link } from 'react-router-dom';
 import { buttonVariants } from '@/shared/ui/button';
 import { PageShell } from '@/shared/ui/page-shell';
@@ -23,7 +24,7 @@ export default function NotFoundPage(): JSX.Element {
           desactualizado o que la ruta haya cambiado.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link to="/" className={buttonVariants({ size: 'default' })}>
+          <Link to={paths.landing} className={buttonVariants({ size: 'default' })}>
             Volver al inicio
           </Link>
         </div>

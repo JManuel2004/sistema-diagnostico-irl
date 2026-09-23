@@ -4,6 +4,7 @@ import { Alert } from '@/shared/ui/alert';
 import { Button } from '@/shared/ui/button';
 import { LoadingState } from '@/shared/ui/loading-state';
 import { useStartDiagnostic } from '@/shared/hooks/useStartDiagnostic';
+import { RETRY_LATER } from '@/shared/lib/copy';
 
 /**
  * `/diagnosticos/nuevo` — the entry point of «Iniciar diagnóstico».
@@ -47,7 +48,7 @@ export default function StartDiagnosticPage(): JSX.Element {
             </Button>
           }
         >
-          Intenta de nuevo en unos minutos.
+          {RETRY_LATER}
         </Alert>
       ) : (
         <LoadingState label="Preparando tu diagnóstico…" />

@@ -47,7 +47,6 @@ function asRadarPoints(results: readonly DimensionResult[]): readonly RadarPoint
     dimension: r.shortName,
     code: r.dimensionCode,
     level: r.irlLevel,
-    averageLikert: r.averageLikert,
   }));
 }
 

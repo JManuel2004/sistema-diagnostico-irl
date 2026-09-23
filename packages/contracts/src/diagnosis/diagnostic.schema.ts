@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { uuidSchema } from '../common/uuid.schema.js';
-import { answerItemSchema } from './answer.schema.js';
 
 /**
  * States of the diagnostic process — the state machine that governs the
@@ -80,32 +79,6 @@ export const diagnosticSummarySchema = diagnosticSchema.describe(
 );
 
 export type DiagnosticSummary = z.infer<typeof diagnosticSummarySchema>;
-
-/**
- * Response of the endpoint that starts a diagnostic (HU-04).
- *
- * `POST /api/v1/diagnostics` takes no body (the identity comes from the
- * JWT). It returns the user's unfinished diagnostic if there is one, or a
- * new one in `STARTED`.
- */
-export const startDiagnosticResponseSchema = diagnosticSchema.describe(
-  'Response to starting a diagnostic (HU-04)',
-);
-
-export type StartDiagnosticResponse = z.infer<typeof startDiagnosticResponseSchema>;
-
-export const finalizeInitialDiagnosticRequestSchema = z
-  .object({
-    answers: z
-      .array(answerItemSchema)
-      .length(48)
-      .describe('Exactly 48 answers, one per statement'),
-  })
-  .describe('Command that finalizes the initial diagnostic (submission + calculation)');
-
-export type FinalizeInitialDiagnosticRequest = z.infer<
-  typeof finalizeInitialDiagnosticRequestSchema
->;
 
 /**
  * Response to accepting the deep analysis (RF-11).

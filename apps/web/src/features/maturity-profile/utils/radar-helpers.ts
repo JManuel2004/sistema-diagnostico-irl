@@ -4,7 +4,6 @@ export interface RadarPoint {
   dimension: string;
   code: string;
   level: number;
-  averageLikert: number;
 }
 
 export function buildImbalancedVertices(

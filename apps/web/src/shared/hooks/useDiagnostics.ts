@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { queryKeys } from '@/shared/api/query-keys';
+import { STALE_TIME } from '@/shared/api/query-client';
+import { useDiagnosticQuery } from './useDiagnosticQuery';
 import { getDiagnostic, listMyDiagnostics } from '@/shared/api/diagnostic.api';
 
 /**
@@ -9,13 +11,8 @@ import { getDiagnostic, listMyDiagnostics } from '@/shared/api/diagnostic.api';
  * that flag and infers nothing from the state.
  */
 export function useDiagnostic(diagnosticId: string | undefined) {
-  return useQuery({
-    queryKey: diagnosticId
-      ? queryKeys.diagnostic.detail(diagnosticId)
-      : ['diagnostic', 'detail', 'idle'],
-    queryFn: () => getDiagnostic(diagnosticId!),
-    enabled: Boolean(diagnosticId),
-    staleTime: 30 * 1000,
+  return useDiagnosticQuery(diagnosticId, queryKeys.diagnostic.detail, getDiagnostic, {
+    staleTime: STALE_TIME.diagnostic,
   });
 }
 
@@ -25,7 +22,7 @@ export function useMyDiagnostics(enabled = true) {
     queryKey: queryKeys.diagnostic.list,
     queryFn: listMyDiagnostics,
     enabled,
-    staleTime: 30 * 1000,
+    staleTime: STALE_TIME.diagnostic,
   });
 }
 

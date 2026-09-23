@@ -1,4 +1,5 @@
 import type { JSX, ReactNode } from 'react';
+import { paths } from '@/shared/lib/paths';
 import { AppNav } from './app-nav';
 import { BrandDescriptor } from './brand-descriptor';
 import { cn } from '@/shared/lib/utils';
@@ -62,7 +63,7 @@ export function PageShell({
           )}
         >
           <div className="flex h-16 items-center md:h-full">
-            <BrandDescriptor to={showNavigation ? '/panel' : '/'} />
+            <BrandDescriptor to={showNavigation ? paths.panel : paths.landing} />
           </div>
           {showNavigation ? (
             <AppNav className="border-border order-last -mx-4 basis-[calc(100%+2rem)] border-t px-4 sm:-mx-8 sm:basis-[calc(100%+4rem)] sm:px-8 md:order-none md:mx-0 md:mr-auto md:basis-auto md:self-stretch md:border-t-0 md:px-0" />

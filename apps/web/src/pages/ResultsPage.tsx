@@ -9,6 +9,7 @@ import {
   ProfileOverview,
   useMaturityProfile,
   useRadarHighlight,
+  type RadarHighlight,
 } from '@features/maturity-profile';
 import { useInitiative } from '@features/initiative';
 import { useQuestionnaireStructure } from '@features/questionnaire';
@@ -35,9 +36,10 @@ import {
   AcceptDeepAnalysisCard,
   RetryDeepAnalysisCard,
 } from '@/shared/ui/accept-deep-analysis-card';
-import { ApiError } from '@/shared/api/http';
+import { isApiErrorWithCode, isApiErrorWithStatus } from '@/shared/api/http';
 import { useDiagnostic } from '@/shared/hooks/useDiagnostics';
-import { wizardPath } from './wizard/wizard-steps';
+import { paths } from '@/shared/lib/paths';
+import { FALLBACK_SUBJECT, RETRY_LATER, RETRY_LATER_OR_CONTACT } from '@/shared/lib/copy';
 
 /**
  * `/diagnosticos/:id/resultados` — the results of a diagnostic in a single
@@ -88,13 +90,13 @@ export default function ResultsPage(): JSX.Element {
   const accept = useAcceptDeepAnalysis(diagnosticId);
 
   if (!diagnosticId) {
-    return <Navigate to="/panel" replace />;
+    return <Navigate to={paths.panel} replace />;
   }
 
   // With cached data being revalidated (the questionnaire was just
   // processed) nothing is decided yet: the old datum would say «unfinished».
   if (diagnostic.data && !diagnostic.data.completed && !diagnostic.isFetching) {
-    return <Navigate to={wizardPath(diagnosticId)} replace />;
+    return <Navigate to={paths.wizard(diagnosticId)} replace />;
   }
 
   return (
@@ -124,7 +126,7 @@ export default function ResultsPage(): JSX.Element {
 
       {profile.isError && (
         <Alert tone="critical" title="No fue posible obtener tu perfil de madurez">
-          {profile.error instanceof ApiError && profile.error.status === 409
+          {isApiErrorWithStatus(profile.error, 409)
             ? 'Este diagnóstico aún no tiene un perfil de madurez calculado. Completa primero el cuestionario.'
             : profile.error.message}
         </Alert>
@@ -147,7 +149,7 @@ export default function ResultsPage(): JSX.Element {
 
           {diagnostic.isError && (
             <Alert tone="critical" title="No fue posible saber si aceptaste el análisis profundo">
-              Intenta de nuevo en unos minutos.
+              {RETRY_LATER}
             </Alert>
           )}
 
@@ -226,15 +228,15 @@ function ResultSectionNav(): JSX.Element {
 }
 
 function acceptErrorMessage(error: Error | null): string {
-  return error instanceof ApiError && error.status === 409
+  return isApiErrorWithStatus(error, 409)
     ? 'Este diagnóstico aún no puede pasar al análisis profundo: falta su perfil de madurez.'
-    : 'No fue posible aceptar el análisis profundo. Intenta de nuevo en unos minutos o contacta al equipo de INNLAB.';
+    : `No fue posible aceptar el análisis profundo. ${RETRY_LATER_OR_CONTACT}`;
 }
 
 interface DeepAnalysisProps {
   readonly diagnosticId: string;
   readonly profile: NonNullable<ReturnType<typeof useMaturityProfile>['data']>;
-  readonly highlight: ReturnType<typeof useRadarHighlight>;
+  readonly highlight: RadarHighlight;
   readonly descriptions: Partial<Record<DimensionCode, string>>;
   /** Name of the initiative; without it the sections talk about «tu iniciativa». */
   readonly subject: string | undefined;
@@ -268,13 +270,13 @@ function DeepAnalysis({
   const recommendation = useRecommendation(diagnosticId);
   const trace = useRecommendationTrace(diagnosticId, traceRequested);
 
-  const roadmapMissing =
-    roadmap.error instanceof ApiError && roadmap.error.code === 'ROADMAP_NOT_GENERATED';
-  const recommendationMissing =
-    recommendation.error instanceof ApiError &&
-    recommendation.error.code === 'ROUTING_RECOMMENDATION_NOT_GENERATED';
+  const roadmapMissing = isApiErrorWithCode(roadmap.error, 'ROADMAP_NOT_GENERATED');
+  const recommendationMissing = isApiErrorWithCode(
+    recommendation.error,
+    'ROUTING_RECOMMENDATION_NOT_GENERATED',
+  );
 
-  const who = subject ?? 'tu iniciativa';
+  const who = subject ?? FALLBACK_SUBJECT;
   const dimensionNames = Object.fromEntries(
     profile.dimensionResults.map((r) => [r.dimensionCode, r.shortName]),
   );
@@ -323,9 +325,9 @@ function DeepAnalysis({
         )}
         {roadmap.isError && !roadmapMissing && (
           <Alert tone="critical" title="No fue posible construir el roadmap">
-            {roadmap.error instanceof ApiError && roadmap.error.code === 'ROADMAP_GRAPH_HAS_CYCLE'
+            {isApiErrorWithCode(roadmap.error, 'ROADMAP_GRAPH_HAS_CYCLE')
               ? 'El grafo de dependencias entre dimensiones está mal configurado. Contacta al equipo de INNLAB.'
-              : 'Intenta de nuevo en unos minutos.'}
+              : RETRY_LATER}
           </Alert>
         )}
         {roadmap.data && (
@@ -352,8 +354,7 @@ function DeepAnalysis({
         )}
         {recommendation.isError && !recommendationMissing && (
           <Alert tone="critical" title="No fue posible obtener la recomendación">
-            {recommendation.error instanceof ApiError &&
-            recommendation.error.code === 'ROUTING_NO_ACTIVE_CONFIGURATION'
+            {isApiErrorWithCode(recommendation.error, 'ROUTING_NO_ACTIVE_CONFIGURATION')
               ? 'No hay una configuración de enrutamiento activa. Contacta al equipo de INNLAB.'
               : recommendation.error.message}
           </Alert>
@@ -390,7 +391,7 @@ function MissingResult({
       <Alert
         tone="critical"
         className="mb-4"
-        title={`No fue posible generar ${what}. Intenta de nuevo en unos minutos o contacta al equipo de INNLAB.`}
+        title={`No fue posible generar ${what}. ${RETRY_LATER_OR_CONTACT}`}
       />
       <RetryDeepAnalysisCard onRetry={onRetry} />
     </>

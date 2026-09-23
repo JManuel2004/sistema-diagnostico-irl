@@ -11,7 +11,8 @@ import { Card, CardContent } from '@/shared/ui/card';
 import { LoadingState } from '@/shared/ui/loading-state';
 import { useMyDiagnostics } from '@/shared/hooks/useDiagnostics';
 import { useStartDiagnostic } from '@/shared/hooks/useStartDiagnostic';
-import { wizardPath } from './wizard/wizard-steps';
+import { paths } from '@/shared/lib/paths';
+import { RETRY_LATER } from '@/shared/lib/copy';
 
 /**
  * `/panel` — the initiative panel.
@@ -49,7 +50,7 @@ export default function DashboardPage(): JSX.Element {
 
         {diagnostics.isError && (
           <Alert tone="critical" title="No fue posible cargar tu panel">
-            Intenta de nuevo en unos minutos.
+            {RETRY_LATER}
           </Alert>
         )}
 
@@ -76,7 +77,7 @@ export default function DashboardPage(): JSX.Element {
                   className="mt-4"
                   title="No fue posible iniciar el diagnóstico"
                 >
-                  Intenta de nuevo en unos minutos.
+                  {RETRY_LATER}
                 </Alert>
               )}
             </CardContent>
@@ -100,7 +101,7 @@ export default function DashboardPage(): JSX.Element {
               </p>
             </div>
             <Link
-              to={wizardPath(inProgress.id)}
+              to={paths.wizard(inProgress.id)}
               className={`${buttonVariants({ size: 'lg' })} w-full shrink-0 sm:w-auto`}
             >
               Continuar diagnóstico
@@ -113,7 +114,7 @@ export default function DashboardPage(): JSX.Element {
 
         {completed && initiative.isError && (
           <Alert tone="critical" title="No fue posible cargar tu iniciativa">
-            Intenta de nuevo en unos minutos.
+            {RETRY_LATER}
           </Alert>
         )}
 
@@ -130,13 +131,13 @@ export default function DashboardPage(): JSX.Element {
               className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:gap-3"
             >
               <Link
-                to={`/diagnosticos/${completed.id}/iniciativa`}
+                to={paths.initiative(completed.id)}
                 className={`${buttonVariants({ variant: 'ghost' })} w-full sm:w-auto`}
               >
                 Editar iniciativa
               </Link>
               <Link
-                to={`/diagnosticos/${completed.id}/resultados`}
+                to={paths.results(completed.id)}
                 className={`${buttonVariants({ variant: inProgress ? 'secondary' : 'default' })} w-full sm:order-first sm:w-auto`}
               >
                 Ver resultados

@@ -37,5 +37,3 @@ export function useAnswerForStatement(statementId: string) {
 
   return { value, setAnswer: onChange, justification, setJustification: onJustify } as const;
 }
-
-export default useAnswerForStatement;

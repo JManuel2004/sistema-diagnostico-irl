@@ -1,7 +1,6 @@
 import { questionnaireStructureSchema, type QuestionnaireStructure } from '@innlab/contracts';
-import { http } from '@/shared/api/http';
+import { getParsed } from '@/shared/api/http';
 
-export async function getQuestionnaireStructure(): Promise<QuestionnaireStructure> {
-  const { data } = await http.get<unknown>('/catalog/questionnaire');
-  return questionnaireStructureSchema.parse(data);
+export function getQuestionnaireStructure(): Promise<QuestionnaireStructure> {
+  return getParsed('/catalog/questionnaire', questionnaireStructureSchema);
 }

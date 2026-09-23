@@ -37,7 +37,7 @@ const EMPTY: Values = {
   currentFunding: '',
 };
 
-interface Props {
+export interface InitiativeFormProps {
   readonly sectors: readonly Sector[];
   readonly stages: readonly InitiativeStage[];
   /** Values of an already registered initiative, to edit it. */
@@ -63,7 +63,7 @@ export function InitiativeForm({
   isSubmitting,
   submitError,
   submitLabel = 'Guardar y continuar',
-}: Props): JSX.Element {
+}: InitiativeFormProps): JSX.Element {
   const [values, setValues] = useState<Values>(initial ?? EMPTY);
   const [errors, setErrors] = useState<Errors>({});
 

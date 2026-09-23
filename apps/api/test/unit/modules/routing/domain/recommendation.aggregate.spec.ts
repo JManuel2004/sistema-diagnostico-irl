@@ -11,7 +11,6 @@ import {
   PredicateCompilationError,
   ProfileNotComputedError,
   RecommendationNotGeneratedError,
-  RoutingConfigurationError,
 } from '../../../../../src/modules/routing/domain/exceptions/routing.errors.js';
 import { ACTIVE_CONFIGURATION_REPOSITORY } from '../../../../../src/modules/routing/domain/repositories/active-configuration.repository.port.js';
 import { RECOMMENDATION_REPOSITORY } from '../../../../../src/modules/routing/domain/repositories/recommendation.repository.port.js';
@@ -183,9 +182,6 @@ describe('errores del módulo de enrutamiento', () => {
     );
     expect(new CalibrationNotMonotonicError('x').code).toBe(
       'ROUTING_CALIBRATION_NOT_MONOTONIC',
-    );
-    expect(new RoutingConfigurationError('x').code).toBe(
-      'ROUTING_CONFIGURATION_INVALID',
     );
   });
 

@@ -1,4 +1,5 @@
 import type { JSX } from 'react';
+import { paths } from '@/shared/lib/paths';
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 import LandingPage from '@pages/LandingPage';
 import StartDiagnosticPage from '@pages/StartDiagnosticPage';
@@ -18,7 +19,7 @@ import { ProtectedRoute } from './ProtectedRoute';
  */
 function RedirectToResults(): JSX.Element {
   const { id } = useParams<{ id: string }>();
-  return <Navigate to={`/diagnosticos/${id ?? ''}/resultados`} replace />;
+  return <Navigate to={paths.results(id ?? '')} replace />;
 }
 
 /**

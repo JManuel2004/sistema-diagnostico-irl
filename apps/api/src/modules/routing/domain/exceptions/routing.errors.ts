@@ -72,15 +72,3 @@ export class CalibrationNotMonotonicError extends DomainError {
     super(message);
   }
 }
-
-/** The configuration is inconsistent at evaluation time. */
-export class RoutingConfigurationError extends DomainError {
-  override readonly code = 'ROUTING_CONFIGURATION_INVALID';
-
-  constructor(
-    message: string,
-    public readonly details?: Record<string, unknown>,
-  ) {
-    super(message);
-  }
-}

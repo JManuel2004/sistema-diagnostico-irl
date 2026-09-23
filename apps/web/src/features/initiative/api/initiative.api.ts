@@ -7,33 +7,24 @@ import {
   type RegisterInitiativeCommand,
   type Sector,
 } from '@innlab/contracts';
-import { ApiError, http } from '@/shared/api/http';
+import { getParsed, getParsedOrNull, postParsed } from '@/shared/api/http';
 
-export async function getSectors(): Promise<Sector[]> {
-  const { data } = await http.get<unknown>('/initiative-catalog/sectors');
-  return sectorSchema.array().parse(data);
+export function getSectors(): Promise<Sector[]> {
+  return getParsed('/initiative-catalog/sectors', sectorSchema.array());
 }
 
-export async function getStages(): Promise<InitiativeStage[]> {
-  const { data } = await http.get<unknown>('/initiative-catalog/stages');
-  return initiativeStageSchema.array().parse(data);
+export function getStages(): Promise<InitiativeStage[]> {
+  return getParsed('/initiative-catalog/stages', initiativeStageSchema.array());
 }
 
 /** The diagnostic's initiative, or `null` if it has not been registered yet (404). */
-export async function getInitiative(diagnosticId: string): Promise<Initiative | null> {
-  try {
-    const { data } = await http.get<unknown>(`/diagnostics/${diagnosticId}/initiative`);
-    return initiativeSchema.parse(data);
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return null;
-    throw error;
-  }
+export function getInitiative(diagnosticId: string): Promise<Initiative | null> {
+  return getParsedOrNull(`/diagnostics/${diagnosticId}/initiative`, initiativeSchema);
 }
 
-export async function registerInitiative(
+export function registerInitiative(
   diagnosticId: string,
   command: RegisterInitiativeCommand,
 ): Promise<Initiative> {
-  const { data } = await http.post<unknown>(`/diagnostics/${diagnosticId}/initiative`, command);
-  return initiativeSchema.parse(data);
+  return postParsed(`/diagnostics/${diagnosticId}/initiative`, command, initiativeSchema);
 }

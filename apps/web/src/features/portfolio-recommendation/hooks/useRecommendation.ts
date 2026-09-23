@@ -1,20 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/shared/api/query-keys';
+import { STALE_TIME } from '@/shared/api/query-client';
+import { invalidateDiagnostic } from '@/shared/api/invalidate-diagnostic';
 import { acceptDeepAnalysis } from '@/shared/api/diagnostic.api';
+import { useDiagnosticQuery } from '@/shared/hooks/useDiagnosticQuery';
 import { getRecommendation, getRecommendationTrace } from '../api/recommendation.api';
 
 /**
  * The recommendation is an immutable snapshot once generated, like the
- * maturity profile, so it shares its 5-minute `staleTime`.
+ * maturity profile.
  */
 export function useRecommendation(diagnosticId: string | undefined) {
-  return useQuery({
-    queryKey: diagnosticId
-      ? queryKeys.diagnostic.recommendation(diagnosticId)
-      : ['diagnostic', 'recommendation', 'idle'],
-    queryFn: () => getRecommendation(diagnosticId!),
-    enabled: Boolean(diagnosticId),
-    staleTime: 5 * 60 * 1000,
+  return useDiagnosticQuery(diagnosticId, queryKeys.diagnostic.recommendation, getRecommendation, {
+    staleTime: STALE_TIME.savedResult,
   });
 }
 
@@ -23,18 +21,13 @@ export function useRecommendation(diagnosticId: string | undefined) {
  * audience is the INNLAB team, not the initiative leader, and it is much
  * heavier than the recommendation.
  */
-export function useRecommendationTrace(
-  diagnosticId: string | undefined,
-  enabled: boolean,
-) {
-  return useQuery({
-    queryKey: diagnosticId
-      ? queryKeys.diagnostic.recommendationTrace(diagnosticId)
-      : ['diagnostic', 'recommendation-trace', 'idle'],
-    queryFn: () => getRecommendationTrace(diagnosticId!),
-    enabled: Boolean(diagnosticId) && enabled,
-    staleTime: 5 * 60 * 1000,
-  });
+export function useRecommendationTrace(diagnosticId: string | undefined, enabled: boolean) {
+  return useDiagnosticQuery(
+    diagnosticId,
+    queryKeys.diagnostic.recommendationTrace,
+    getRecommendationTrace,
+    { staleTime: STALE_TIME.savedResult, enabled },
+  );
 }
 
 /**
@@ -51,7 +44,7 @@ export function useRecommendationTrace(
 export function useAcceptDeepAnalysis(diagnosticId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => acceptDeepAnalysis(diagnosticId!),
+    mutationFn: () => acceptDeepAnalysis(diagnosticId ?? ''),
     onSuccess: async () => {
       if (!diagnosticId) return;
       await Promise.all([
@@ -68,10 +61,7 @@ export function useAcceptDeepAnalysis(diagnosticId: string | undefined) {
         }),
         // The results page decides what to show from `deepAnalysisAccepted`,
         // which changes on acceptance.
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.diagnostic.detail(diagnosticId),
-        }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.diagnostic.list }),
+        invalidateDiagnostic(queryClient, diagnosticId),
       ]);
     },
   });

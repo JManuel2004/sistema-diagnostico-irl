@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { nanoid } from 'nanoid';
+import type { ZodType, ZodTypeDef } from 'zod';
 import { problemDetailsSchema, type ProblemDetails } from '@innlab/contracts';
 import { clearSession, getAccessToken, redirectToSso } from '@/shared/auth/session';
 
@@ -51,6 +52,11 @@ export function isApiErrorWithCode(error: unknown, code: string): boolean {
   return error instanceof ApiError && error.code === code;
 }
 
+/** True if the error is an API answer with that HTTP status. */
+export function isApiErrorWithStatus(error: unknown, status: number): boolean {
+  return error instanceof ApiError && error.status === status;
+}
+
 http.interceptors.response.use(
   (response) => response,
   (error: AxiosError<unknown>) => {
@@ -86,3 +92,42 @@ http.interceptors.response.use(
     return Promise.reject(new ApiError(error.message, undefined, status));
   },
 );
+
+/**
+ * GET a resource of our backend and validate it against its contract.
+ * Every read goes through here, so a response that breaks the contract
+ * fails at the edge instead of reaching a component.
+ */
+export async function getParsed<T>(
+  url: string,
+  schema: ZodType<T, ZodTypeDef, unknown>,
+): Promise<T> {
+  const { data } = await http.get<unknown>(url);
+  return schema.parse(data);
+}
+
+/**
+ * Like `getParsed`, for a resource that may not exist yet: a 404 is the
+ * normal "not registered yet" answer and comes back as `null`.
+ */
+export async function getParsedOrNull<T>(
+  url: string,
+  schema: ZodType<T, ZodTypeDef, unknown>,
+): Promise<T | null> {
+  try {
+    return await getParsed(url, schema);
+  } catch (error) {
+    if (isApiErrorWithStatus(error, 404)) return null;
+    throw error;
+  }
+}
+
+/** POST to our backend and validate the response against its contract. */
+export async function postParsed<T>(
+  url: string,
+  body: unknown,
+  schema: ZodType<T, ZodTypeDef, unknown>,
+): Promise<T> {
+  const { data } = await http.post<unknown>(url, body);
+  return schema.parse(data);
+}

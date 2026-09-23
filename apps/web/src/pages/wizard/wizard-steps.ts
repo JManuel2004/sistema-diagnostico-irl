@@ -8,6 +8,8 @@
  * consent is accepted (RF-03, RNF-06); until then the form is a browser
  * draft.
  */
+import { paths } from '@/shared/lib/paths';
+
 export const WIZARD_STEP_KEYS = ['iniciativa', 'consentimiento', 'cuestionario', 'resumen'] as const;
 
 export type WizardStepKey = (typeof WIZARD_STEP_KEYS)[number];
@@ -24,8 +26,7 @@ export function isWizardStep(value: string | undefined): value is WizardStepKey 
 }
 
 export function wizardPath(diagnosticId: string, step?: WizardStepKey): string {
-  const base = `/diagnosticos/${diagnosticId}/asistente`;
-  return step === undefined ? base : `${base}/${step}`;
+  return paths.wizard(diagnosticId, step);
 }
 
 export interface WizardProgress {

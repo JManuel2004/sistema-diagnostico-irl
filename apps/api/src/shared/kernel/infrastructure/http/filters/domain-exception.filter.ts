@@ -98,11 +98,9 @@ const STATUS_BY_CODE: Readonly<Record<string, number>> = {
   ROUTING_NO_ACTIVE_CONFIGURATION: HttpStatus.CONFLICT,
   ROUTING_PROFILE_NOT_COMPUTED: HttpStatus.CONFLICT,
   ROUTING_RECOMMENDATION_NOT_GENERATED: HttpStatus.CONFLICT,
-  ROUTING_DRAFT_HAS_BLOCKING_FINDINGS: HttpStatus.CONFLICT,
   // Malformed configuration: the input does not satisfy the contract.
   ROUTING_PREDICATE_COMPILATION_FAILED: HttpStatus.UNPROCESSABLE_ENTITY,
   ROUTING_CALIBRATION_NOT_MONOTONIC: HttpStatus.UNPROCESSABLE_ENTITY,
-  ROUTING_CONFIGURATION_INVALID: HttpStatus.UNPROCESSABLE_ENTITY,
   // Scaling roadmap: a graph with a cycle or incomplete minimums are
   // configuration defects of the system, not of the request. A 4xx would
   // tell the user the mistake was theirs.

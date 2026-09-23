@@ -10,7 +10,9 @@ import {
 import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
 import { Button, buttonVariants } from '@/shared/ui/button';
-import { ApiError } from '@/shared/api/http';
+import { isApiErrorWithStatus } from '@/shared/api/http';
+import { formatDateTime } from '@/shared/lib/format';
+import { RETRY_LATER } from '@/shared/lib/copy';
 import { wizardPath } from './wizard-steps';
 
 interface Props {
@@ -26,9 +28,8 @@ type Failure = 'consent-stale' | 'consent' | 'initiative' | null;
 const MESSAGES: Record<Exclude<Failure, null>, string> = {
   'consent-stale':
     'El texto del consentimiento cambió mientras lo leías. Recarga la página para ver la versión vigente.',
-  consent: 'No fue posible registrar tu aceptación. Intenta de nuevo en unos minutos.',
-  initiative:
-    'Tu aceptación quedó registrada, pero no fue posible guardar la iniciativa. Intenta de nuevo en unos minutos.',
+  consent: `No fue posible registrar tu aceptación. ${RETRY_LATER}`,
+  initiative: `Tu aceptación quedó registrada, pero no fue posible guardar la iniciativa. ${RETRY_LATER}`,
 };
 
 /**
@@ -59,7 +60,7 @@ export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props)
       try {
         await recordConsent.mutateAsync();
       } catch (error) {
-        setFailure(error instanceof ApiError && error.status === 409 ? 'consent-stale' : 'consent');
+        setFailure(isApiErrorWithStatus(error, 409) ? 'consent-stale' : 'consent');
         return;
       }
     }
@@ -102,12 +103,7 @@ export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props)
 
         {alreadyAccepted ? (
           <Alert tone="acceptable" title="Ya aceptaste este texto">
-            Quedó registrado el{' '}
-            {new Date(consent.acceptedAt).toLocaleString('es-CO', {
-              dateStyle: 'long',
-              timeStyle: 'short',
-            })}
-            .
+            Quedó registrado el {formatDateTime(consent.acceptedAt)}.
           </Alert>
         ) : (
           <label className="flex cursor-pointer items-start gap-3">

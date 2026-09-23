@@ -1,4 +1,5 @@
 import type { JSX } from 'react';
+import { paths } from '@/shared/lib/paths';
 import { Link } from 'react-router-dom';
 import {
   CalendarClock,
@@ -13,6 +14,7 @@ import {
 import { Badge } from './badge';
 import { Button, buttonVariants } from './button';
 import { Card, CardContent } from './card';
+import { FALLBACK_SUBJECT } from '@/shared/lib/copy';
 
 /**
  * Invitation to accept the deep analysis (RF-11).
@@ -51,7 +53,7 @@ const INCLUDES: readonly { text: string; icon: LucideIcon }[] = [
 export function AcceptDeepAnalysisCard({
   onAccept,
   failed,
-  subject = 'tu iniciativa',
+  subject = FALLBACK_SUBJECT,
 }: AcceptDeepAnalysisCardProps): JSX.Element {
   return (
     <section aria-labelledby="deep-analysis-offer" className="flex flex-col gap-5">
@@ -123,7 +125,7 @@ export function AcceptDeepAnalysisCard({
               quieras a pedir el análisis profundo.
             </p>
             <Link
-              to="/panel"
+              to={paths.panel}
               className={`${buttonVariants({ variant: 'secondary', size: 'lg' })} mt-auto`}
             >
               Ir a mi panel

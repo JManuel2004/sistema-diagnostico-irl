@@ -1,4 +1,5 @@
 import type { JSX } from 'react';
+import { paths } from '@/shared/lib/paths';
 import type { DimensionCode } from '@innlab/contracts';
 import { ArrowRight, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -110,7 +111,7 @@ export default function LandingPage(): JSX.Element {
 
           <div className="pt-2">
             <Link
-              to="/diagnosticos/nuevo"
+              to={paths.startDiagnostic}
               className={`${buttonVariants({ size: 'lg' })} w-full sm:w-auto`}
             >
               Iniciar diagnóstico

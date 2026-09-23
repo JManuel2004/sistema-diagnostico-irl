@@ -37,3 +37,16 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+/**
+ * How long each kind of server data stays fresh. Saved results (profile,
+ * recommendation, roadmap) are immutable snapshots; the diagnostic itself
+ * changes as the user moves through the wizard; catalogs almost never
+ * change.
+ */
+export const STALE_TIME = {
+  diagnostic: 30 * 1000,
+  diagnosticInput: 60 * 1000,
+  savedResult: 5 * 60 * 1000,
+  catalog: 60 * 60 * 1000,
+} as const;

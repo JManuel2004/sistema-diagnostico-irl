@@ -18,38 +18,12 @@ import type { GlossaryKey } from '@/shared/lib/glossary';
  * result), not from a frontend map: the frontend keeps no dimension names.
  */
 
-export const TONE_STYLES: Record<
-  ImbalanceClassification | 'neutral',
-  { ring: string; iconColor: string; iconBg: string; chipBg: string; chipText: string }
-> = {
-  critical: {
-    ring: 'border-border bg-card',
-    iconColor: 'text-critical',
-    iconBg: 'border border-border bg-background',
-    chipBg: 'bg-surface-muted',
-    chipText: 'text-critical',
-  },
-  moderate: {
-    ring: 'border-border bg-card',
-    iconColor: 'text-moderate',
-    iconBg: 'border border-border bg-background',
-    chipBg: 'bg-surface-muted',
-    chipText: 'text-moderate',
-  },
-  acceptable: {
-    ring: 'border-border bg-card',
-    iconColor: 'text-acceptable',
-    iconBg: 'border border-border bg-background',
-    chipBg: 'bg-surface-muted',
-    chipText: 'text-acceptable',
-  },
-  neutral: {
-    ring: 'border-border bg-card',
-    iconColor: 'text-azul-icesi',
-    iconBg: 'border border-border bg-background',
-    chipBg: 'bg-surface-muted',
-    chipText: 'text-azul-icesi',
-  },
+/** The color of a card's icon and eyebrow; the card itself is always neutral. */
+const TONE_COLOR: Record<ImbalanceClassification | 'neutral', string> = {
+  critical: 'text-critical',
+  moderate: 'text-moderate',
+  acceptable: 'text-acceptable',
+  neutral: 'text-azul-icesi',
 };
 
 /** What a card does on hover or focus: highlight in the radar. */
@@ -78,7 +52,7 @@ export function SummaryCard({
   onHighlight,
   children,
 }: SummaryCardProps): JSX.Element {
-  const styles = TONE_STYLES[tone];
+  const color = TONE_COLOR[tone];
   const highlight = onHighlight
     ? {
         tabIndex: 0,
@@ -97,15 +71,18 @@ export function SummaryCard({
       }
     : {};
   return (
-    <Card role="group" aria-label={`${eyebrow}: ${title}`} className={styles.ring} {...highlight}>
+    <Card
+      role="group"
+      aria-label={`${eyebrow}: ${title}`}
+      className="border-border bg-card"
+      {...highlight}
+    >
       <CardContent className="flex gap-4 p-4 sm:p-5">
-        <span
-          className={`flex size-11 shrink-0 items-center justify-center rounded-full ${styles.iconBg}`}
-        >
-          <Icon className={`size-6 ${styles.iconColor}`} strokeLinejoin="miter" aria-hidden />
+        <span className="border-border bg-background flex size-11 shrink-0 items-center justify-center rounded-full border">
+          <Icon className={`size-6 ${color}`} strokeLinejoin="miter" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className={`${styles.iconColor} text-sm font-bold`}>
+          <p className={`${color} text-sm font-bold`}>
             {glossary ? <GlossaryTerm term={glossary}>{eyebrow}</GlossaryTerm> : eyebrow}
           </p>
           <p className="text-foreground mt-1 text-base font-semibold leading-snug">{title}</p>
