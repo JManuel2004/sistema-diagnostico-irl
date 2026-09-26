@@ -21,9 +21,7 @@ const CONTEXT = {
     companyId: '679d055d-57f4-405b-bad8-b1fbc1118e3a',
     companyRole: 'owner',
     workspaceId: null,
-    companies: [
-      { id: '679d055d-57f4-405b-bad8-b1fbc1118e3a', name: 'Icesi', role: 'owner' },
-    ],
+    companies: [{ id: '679d055d-57f4-405b-bad8-b1fbc1118e3a', name: 'Icesi', role: 'owner' }],
   },
 };
 

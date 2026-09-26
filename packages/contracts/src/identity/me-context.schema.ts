@@ -2,23 +2,20 @@ import { z } from 'zod';
 import { uuidSchema } from '../common/uuid.schema.js';
 
 /**
- * Contexto de la sesión activa (RF-01 / DIAGIRL-25).
- *
- * Endpoint: `GET /api/v1/diagnosticos/../me/context` — en realidad
+ * Context of the active session (RF-01 / DIAGIRL-25), served by
  * `GET /api/v1/me/context`.
  *
- * Reparte los datos por su dueño, y esa separación es intencional:
+ * The data is split by its owner, on purpose:
  *
- *   - `user` — identidad de la persona. El `id` es el `sub` de Cognito y
- *     es el mismo en todos los productos del ecosistema. Nombre y correo
- *     NO viajan en el access token del pool compartido (solo trae `sub`),
- *     así que los sirve el backend tras pedírselos a INNLAB Core.
- *   - `core` — pertenencia organizacional, propiedad exclusiva de Core.
+ *   - `user` — the person's identity. `id` is the Cognito `sub`, the same
+ *     in every product of the ecosystem. Name and email do NOT travel in
+ *     the shared pool's access token (it only carries `sub`), so the
+ *     backend serves them after asking INNLAB Core.
+ *   - `core` — organizational membership, owned exclusively by Core.
  *
- * `companyId` y `companyRole` llegan `null` mientras el usuario no
- * pertenezca a ninguna empresa, y `workspaceId` llega `null` siempre:
- * los workspaces no están activos del lado de Core. Un `null` ahí es el
- * contrato, no un fallo.
+ * `companyId` and `companyRole` are `null` while the user belongs to no
+ * company, and `workspaceId` is always `null`: workspaces are not active
+ * on Core's side. A `null` there is the contract, not a failure.
  */
 export const companyMembershipSchema = z
   .object({
@@ -32,7 +29,7 @@ export const meContextResponseSchema = z
   .object({
     user: z
       .object({
-        id: uuidSchema.describe('`sub` de Cognito — identificador único del usuario'),
+        id: uuidSchema.describe('Cognito `sub` — the unique identifier of the user'),
         email: z.string().email(),
         firstName: z.string(),
         lastName: z.string(),

@@ -2,15 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { DimensionResult, ImbalancePairResult } from '@innlab/contracts';
 import { MaturityRadarChart } from '../MaturityRadarChart';
-import {
-  buildImbalancedVertices,
-  severityColorForLevel,
-} from '../../utils/radar-helpers';
+import { buildImbalancedVertices } from '../../utils/radar-helpers';
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
 function dr(code: DimensionResult['dimensionCode'], level: number): DimensionResult {
-  return { dimensionCode: code, name: code, averageLikert: level, irlLevel: level };
+  return {
+    dimensionCode: code,
+    name: `Nombre completo ${code}`,
+    shortName: `Corto ${code}`,
+    averageLikert: level,
+    irlLevel: level,
+  };
 }
 
 const ALL_SIX: readonly DimensionResult[] = [
@@ -21,31 +24,6 @@ const ALL_SIX: readonly DimensionResult[] = [
   dr('TmRL', 4),
   dr('FRL', 3),
 ];
-
-// ── severityColorForLevel ─────────────────────────────────────────────────────
-
-describe('severityColorForLevel', () => {
-  it.each([
-    [1, 'var(--color-critical, #A53221)'],
-    [3, 'var(--color-critical, #A53221)'],
-    [4, 'var(--color-moderate, #8C3811)'],
-    [5, 'var(--color-moderate, #8C3811)'],
-    [6, 'var(--color-acceptable, #1F633D)'],
-    [9, 'var(--color-acceptable, #1F633D)'],
-  ])('level %i → %s', (level, expected) => {
-    expect(severityColorForLevel(level)).toBe(expected);
-  });
-
-  it('boundary: level 3 is critical, level 4 is moderate', () => {
-    expect(severityColorForLevel(3)).toBe('var(--color-critical, #A53221)');
-    expect(severityColorForLevel(4)).toBe('var(--color-moderate, #8C3811)');
-  });
-
-  it('boundary: level 5 is moderate, level 6 is acceptable', () => {
-    expect(severityColorForLevel(5)).toBe('var(--color-moderate, #8C3811)');
-    expect(severityColorForLevel(6)).toBe('var(--color-acceptable, #1F633D)');
-  });
-});
 
 // ── buildImbalancedVertices ───────────────────────────────────────────────────
 
@@ -144,8 +122,9 @@ describe('buildImbalancedVertices', () => {
 describe('MaturityRadarChart', () => {
   it('renders the accessible container with the correct role and label', () => {
     render(<MaturityRadarChart dimensionResults={ALL_SIX} />);
+    // A group and not an image: an image role would hide the focusable points.
     expect(
-      screen.getByRole('img', { name: 'Perfil IRL — gráfico radar' }),
+      screen.getByRole('group', { name: 'Perfil IRL — gráfico radar' }),
     ).toBeInTheDocument();
   });
 

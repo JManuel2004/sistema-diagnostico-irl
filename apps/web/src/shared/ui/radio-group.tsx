@@ -4,15 +4,13 @@ import { Circle } from 'lucide-react';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * `RadioGroup` siguiendo el patrón shadcn/ui sobre
+ * `RadioGroup` following the shadcn/ui pattern over
  * `@radix-ui/react-radio-group`.
  *
- * Radix da los roles (`radiogroup`, `radio`) y el manejo de teclado
- * (flechas + Space) gratis. El indicador interno usa el ícono `Circle`
- * de lucide en lugar de pseudo-elementos CSS — es lo que shadcn ship.
- *
- * El componente `LikertScale` del feature `questionnaire` compondrá
- * este primitivo (Stage 2 / HU-08).
+ * Radix provides the roles (`radiogroup`, `radio`) and the keyboard
+ * handling (arrows + Space) for free. The inner indicator uses lucide's
+ * `Circle` icon instead of CSS pseudo-elements — which is what shadcn
+ * ships.
  */
 export const RadioGroup = forwardRef<
   ElementRef<typeof RadioGroupPrimitive.Root>,

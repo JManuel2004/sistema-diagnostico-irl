@@ -1,4 +1,4 @@
-import { defineConfig, mergeConfig } from 'vitest/config';
+import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
 import viteConfig from './vite.config.js';
 
 export default mergeConfig(
@@ -13,6 +13,8 @@ export default mergeConfig(
         },
       },
       setupFiles: ['./src/test/setup.ts'],
+      // Playwright specs run with `pnpm test:e2e`, not with Vitest.
+      exclude: [...configDefaults.exclude, 'tests/e2e/**'],
       css: false,
       coverage: {
         provider: 'v8',

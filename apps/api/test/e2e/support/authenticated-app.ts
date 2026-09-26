@@ -5,23 +5,23 @@ import nock from 'nock';
 import { appConfig } from '../../../src/config/configuration.js';
 
 /**
- * Autenticacion para las suites e2e que arrancan el `AppModule` real.
+ * Authentication for the e2e suites that boot the real `AppModule`.
  *
- * `JwtAuthGuard` se registra como `APP_GUARD` (ver `identity.module.ts`),
- * asi que protege toda la superficie HTTP por defecto. Estas suites
- * ejercitan flujos de negocio contra la base de datos: sin un token, cada
- * peticion responde 401 y la suite nunca llega a lo que pretende probar.
+ * `JwtAuthGuard` is registered as `APP_GUARD` (see `identity.module.ts`),
+ * so it protects the whole HTTP surface by default. These suites exercise
+ * business flows against the database: without a token, every request
+ * answers 401 and the suite never reaches what it means to test.
  *
- * Sustituir el guard no es una opcion: ni `overrideGuard(JwtAuthGuard)` ni
- * `overrideProvider(APP_GUARD)` alcanzan a la instancia que Nest monta en
- * el pipeline global (comprobado — ambos siguen devolviendo 401). Asi que
- * en vez de esquivar la autenticacion, la suite la atraviesa: se acuna un
- * RS256 propio y se sirve la clave publica como JWKS con `nock`, el mismo
- * patron de `modules/identity/cognito-jwt-guard.e2e-spec.ts`.
+ * Replacing the guard is not an option: neither `overrideGuard(JwtAuthGuard)`
+ * nor `overrideProvider(APP_GUARD)` reaches the instance Nest mounts in the
+ * global pipeline (checked — both still return 401). So instead of dodging
+ * authentication, the suite goes through it: it mints its own RS256 token
+ * and serves the public key as JWKS with `nock`, the same pattern as
+ * `shared/identity/cognito-jwt-guard.e2e-spec.ts`.
  *
- * Ninguna cuenta del pool Cognito compartido participa, y el issuer y la
- * URI del JWKS se leen de la config que la app ya cargo — de modo que esto
- * funciona igual con credenciales reales que con los placeholders de
+ * No account of the shared Cognito pool takes part, and the issuer and the
+ * JWKS URI are read from the config the app already loaded — so this works
+ * the same with real credentials as with the placeholders of
  * `.env.example`.
  */
 const KID = 'e2e-key-1';
@@ -34,7 +34,7 @@ function base64url(input: Buffer | string): string {
   return Buffer.from(input).toString('base64url');
 }
 
-/** Claims del usuario que las suites e2e ven como autenticado. */
+/** Claims of the user the e2e suites see as authenticated. */
 export const E2E_USER = {
   sub: 'e1f2a3b4-5c6d-4e7f-8a9b-0c1d2e3f4a5b',
   email: 'e2e@icesi.edu.co',
@@ -44,17 +44,24 @@ export const E2E_USER = {
 };
 
 /**
- * Sirve el JWKS de prueba y devuelve la cabecera `Authorization` lista.
+ * Serves the test JWKS and returns the ready `Authorization` header.
  *
- * Se llama despues de `app.init()`: `jwks-rsa` no pide las claves hasta la
- * primera peticion autenticada, asi que el intercepto llega a tiempo.
+ * Called after `app.init()`: `jwks-rsa` does not ask for the keys until the
+ * first authenticated request, so the intercept arrives in time.
  *
  *   const auth = authenticateAgainst(app);
  *   await request(server).get(url).set('Authorization', auth);
  *
- * Recuerda `nock.cleanAll()` en el `afterAll` de la suite.
+ * `subject` changes the token's `sub`. The suites run in parallel over the
+ * same database and `POST /diagnostics` is idempotent per user, so a suite
+ * that starts diagnostics needs its own user so it never resumes another's.
+ *
+ * Remember `nock.cleanAll()` in the suite's `afterAll`.
  */
-export function authenticateAgainst(app: INestApplication): string {
+export function authenticateAgainst(
+  app: INestApplication,
+  subject: string = E2E_USER.sub,
+): string {
   const config = app.get<ConfigType<typeof appConfig>>(appConfig.KEY);
   const { jwksUri, issuer } = config.cognito;
 
@@ -71,7 +78,7 @@ export function authenticateAgainst(app: INestApplication): string {
   );
   const now = Math.floor(Date.now() / 1000);
   const payload = base64url(
-    JSON.stringify({ iss: issuer, iat: now, exp: now + 3600, ...E2E_USER }),
+    JSON.stringify({ iss: issuer, iat: now, exp: now + 3600, ...E2E_USER, sub: subject }),
   );
   const signature = sign(
     'RSA-SHA256',

@@ -1,16 +1,15 @@
 import { meContextResponseSchema, type MeContextResponse } from '@innlab/contracts';
-import { http } from '@/shared/api/http';
+import { getParsed } from '@/shared/api/http';
 
 /**
- * Contexto de la sesión activa: identidad del usuario y su pertenencia
- * organizacional.
+ * Context of the active session: the user's identity and organizational
+ * membership.
  *
- * Va contra NUESTRO backend, no contra INNLAB Core. El navegador nunca
- * llama a `/internal/*` de Core: esa superficie exige la credencial de
- * servicio y es estrictamente backend-a-backend. Nuestro servidor hace
- * de intermediario y solo expone lo que el frontend necesita.
+ * It goes to this system's backend, not to INNLAB Core. The browser never
+ * calls Core's `/internal/*`: that surface requires the service credential
+ * and is strictly backend-to-backend. The backend mediates and exposes only
+ * what the frontend needs.
  */
-export async function getMeContext(): Promise<MeContextResponse> {
-  const { data } = await http.get<unknown>('/me/context');
-  return meContextResponseSchema.parse(data);
+export function getMeContext(): Promise<MeContextResponse> {
+  return getParsed('/me/context', meContextResponseSchema);
 }

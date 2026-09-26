@@ -1,4 +1,6 @@
 export { useMaturityProfile } from './hooks/useMaturityProfile';
-export { MaturityRadarChart } from './components/MaturityRadarChart';
-export { MaturityProfilePanel } from './components/MaturityProfilePanel';
-export { MaturityProfileSummary } from './components/MaturityProfileSummary';
+export { useRadarHighlight, type RadarHighlight } from './hooks/useRadarHighlight';
+export { ProfileHero } from './components/ProfileHero';
+export { ProfileOverview } from './components/ProfileOverview';
+export { ProfileContext } from './components/ProfileContext';
+export { ImbalanceInsights } from './components/ImbalanceInsights';

@@ -1,27 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
-import type { MeContextResponse } from '@innlab/contracts';
 import { queryKeys } from '@/shared/api/query-keys';
 import { hasStoredSession } from '@/shared/auth/session';
 import { getMeContext } from '../api/me.api';
 
 /**
- * Usuario autenticado y su contexto de empresa (DIAGIRL-25).
+ * The authenticated user and their company context (DIAGIRL-25).
  *
- * Única fuente del perfil en el frontend. El access token del pool
- * compartido solo trae el `sub`, así que nombre y correo no se pueden
- * leer del token: hay que pedirlos.
+ * The only source of the profile in the frontend. The shared pool's access
+ * token carries only the `sub`, so name and email cannot be read from it:
+ * they have to be requested.
  *
- * `enabled` evita disparar la consulta sin sesión guardada, que
- * devolvería 401 y haría que el interceptor de `http` expulsara al
- * usuario al Hub justo mientras `ProtectedRoute` ya lo está redirigiendo.
+ * `enabled` avoids firing the query without a stored session, which would
+ * answer 401 and make the `http` interceptor send the user to the Hub while
+ * `ProtectedRoute` is already redirecting them.
  *
- * Sin reintentos: el contexto depende de que INNLAB Core responda, y
- * ante una caída suya preferimos avisar rápido y ofrecer reintentar a
- * mano (RF-01, escenario de contexto no disponible) antes que dejar la
- * pantalla bloqueada mientras se agotan los reintentos automáticos.
+ * No retries: the context depends on INNLAB Core answering, and when it is
+ * down it is better to say so quickly and offer a manual retry (RF-01,
+ * scenario "user context unavailable") than to keep the screen waiting while
+ * automatic retries run out.
  */
 export function useCurrentUser() {
-  return useQuery<MeContextResponse>({
+  return useQuery({
     queryKey: queryKeys.session.context,
     queryFn: getMeContext,
     enabled: hasStoredSession(),

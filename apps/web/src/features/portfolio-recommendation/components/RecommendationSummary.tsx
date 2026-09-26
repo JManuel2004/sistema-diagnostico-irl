@@ -1,106 +1,104 @@
 import type { JSX } from 'react';
-import { Compass, Info } from 'lucide-react';
-import type { RecomendacionResponse } from '@innlab/contracts';
+import { Compass, Sparkles } from 'lucide-react';
+import type { RecommendationResponse } from '@innlab/contracts';
+import { Badge } from '@/shared/ui/badge';
+import { Card, CardContent } from '@/shared/ui/card';
+import { FALLBACK_SUBJECT } from '@/shared/lib/copy';
 
 interface Props {
-  readonly recomendacion: RecomendacionResponse;
+  readonly recommendation: RecommendationResponse;
+  /** Name of the initiative, to address it. */
+  readonly subject?: string;
 }
 
 /**
- * Resultado para el líder de iniciativa.
+ * Result for the initiative leader.
  *
- * Deliberadamente sin números: ni puntajes ni pesos. El puntaje es un
- * detalle interno de la calibración y mostrarlo invita a discutir el
- * número en vez de la recomendación. Quien quiera el desglose lo tiene en
- * la traza, que es la vista de la otra audiencia.
+ * Deliberately without numbers: neither scores nor weights. The score is an
+ * internal detail of the calibration and showing it invites discussing the
+ * number instead of the recommendation. Whoever wants the breakdown has it
+ * in the explanation of how it was reached.
  */
-export function RecommendationSummary({ recomendacion }: Props): JSX.Element {
-  if (recomendacion.resultadoTipo === 'SIN_RECOMENDACION') {
+export function RecommendationSummary({
+  recommendation,
+  subject = FALLBACK_SUBJECT,
+}: Props): JSX.Element {
+  if (recommendation.resultType === 'NO_RECOMMENDATION') {
     return (
-      <section
-        className="border-border bg-surface-emphasis rounded-lg border p-6"
-        aria-labelledby="sin-recomendacion"
-      >
-        <p className="text-overline text-azul-icesi">Portafolio INNLAB</p>
-        <h2
-          id="sin-recomendacion"
-          className="text-foreground mt-2 text-2xl font-bold tracking-tight"
-        >
-          Sin recomendación por ahora
-        </h2>
-        <p className="text-muted-foreground mt-3 max-w-prose text-base leading-relaxed">
-          {recomendacion.motivoSinRecomendacion}
-        </p>
+      <section aria-labelledby="sin-recommendation">
+        <Card className="bg-surface-muted rounded-2xl border-0">
+          <CardContent className="p-6">
+            <p className="text-azul-icesi text-sm font-bold">Portafolio INNLAB</p>
+            <h2
+              id="sin-recommendation"
+              className="text-foreground mt-2 text-2xl font-bold tracking-tight"
+            >
+              Sin recomendación por ahora
+            </h2>
+            <p className="text-muted-foreground mt-3 max-w-prose text-lg leading-relaxed">
+              {recommendation.noRecommendationReason}
+            </p>
+          </CardContent>
+        </Card>
       </section>
     );
   }
 
-  const principal = recomendacion.principal;
+  const primary = recommendation.primary;
 
   return (
-    <section
-      className="border-border bg-surface-emphasis rounded-lg border p-6 md:p-8"
-      aria-labelledby="servicio-recomendado"
-    >
-      <p className="text-overline text-azul-icesi">Portafolio INNLAB</p>
+    <section aria-labelledby="service-recomendado">
+      <Card className="border-border border-t-primary border-t-[3px]">
+        <CardContent className="p-6 md:p-9">
+          <Badge tone="info">
+            <Sparkles className="size-4" aria-hidden="true" />
+            Recomendado para {subject}
+          </Badge>
 
-      <div className="mt-2 flex items-start gap-3">
-        <Compass className="text-azul-icesi mt-1 size-6 shrink-0" aria-hidden="true" />
-        <div>
-          <h2
-            id="servicio-recomendado"
-            className="text-foreground text-2xl font-bold leading-tight tracking-tight"
-          >
-            {principal?.nombre}
-          </h2>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Servicio recomendado para tu iniciativa
-          </p>
-        </div>
-      </div>
-
-      {recomendacion.justificacion !== null && (
-        <p className="text-foreground mt-5 max-w-prose text-base leading-relaxed">
-          {recomendacion.justificacion}
-        </p>
-      )}
-
-      {recomendacion.alternativas.length > 0 && (
-        <div className="border-border mt-6 border-t pt-5">
-          <h3 className="text-foreground text-sm font-semibold">
-            También podrían encajar
-          </h3>
-          <ul className="mt-3 flex flex-col gap-2">
-            {recomendacion.alternativas.map((alt) => (
-              <li
-                key={alt.idServicio}
-                className="text-muted-foreground flex items-baseline gap-3 text-sm"
+          <div className="mt-4 flex items-start gap-4">
+            <span className="bg-azul-icesi text-primary-foreground flex size-14 shrink-0 items-center justify-center rounded-full">
+              <Compass className="size-7" aria-hidden="true" />
+            </span>
+            <div>
+              <p className="text-muted-foreground text-base">Servicio de INNLAB</p>
+              <h2
+                id="service-recomendado"
+                className="text-foreground text-3xl font-extrabold leading-tight tracking-tight"
               >
-                <span
-                  className="bg-azul-icesi/10 text-azul-icesi inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-                  aria-hidden="true"
-                >
-                  {alt.posicion}
-                </span>
-                <span className="text-foreground">{alt.nombre}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+                {primary?.name}
+              </h2>
+            </div>
+          </div>
 
-      <p className="text-muted-foreground mt-6 flex items-start gap-2 text-xs leading-relaxed">
-        <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-        <span>
-          Generada el{' '}
-          {new Date(recomendacion.generadaEn).toLocaleString('es-CO', {
-            dateStyle: 'long',
-            timeStyle: 'short',
-          })}{' '}
-          con la versión {recomendacion.versionConfiguracion} del criterio de
-          enrutamiento de INNLAB.
-        </span>
-      </p>
+          {recommendation.justification !== null && (
+            <p className="text-foreground mt-5 max-w-prose text-lg leading-relaxed">
+              {recommendation.justification}
+            </p>
+          )}
+
+          {recommendation.alternatives.length > 0 && (
+            <div className="border-border mt-6 border-t pt-5">
+              <h3 className="text-foreground text-lg font-bold">También podrían encajar</h3>
+              <ul className="mt-3 flex flex-wrap gap-3">
+                {recommendation.alternatives.map((alt) => (
+                  <li
+                    key={alt.idService}
+                    className="border-border bg-background text-foreground flex items-center gap-2 rounded-lg border px-4 py-2.5 text-base font-semibold"
+                  >
+                    <span
+                      className="bg-azul-icesi/15 text-azul-icesi inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold"
+                      aria-hidden="true"
+                    >
+                      {alt.position}
+                    </span>
+                    {alt.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </section>
   );
 }

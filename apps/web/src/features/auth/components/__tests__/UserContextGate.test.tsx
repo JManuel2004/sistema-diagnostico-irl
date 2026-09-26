@@ -36,9 +36,7 @@ describe('UserContextGate', () => {
     // Escenario "contexto de usuario no disponible": el diagnóstico se
     // asocia a quien lo inicia, así que no puede arrancarse a ciegas.
     expect(screen.getByRole('alert')).toHaveTextContent(/no está disponible temporalmente/i);
-    expect(
-      screen.queryByRole('button', { name: 'Iniciar diagnóstico' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Iniciar diagnóstico' })).not.toBeInTheDocument();
   });
 
   it('permite reintentar la obtención del contexto', async () => {
@@ -61,9 +59,7 @@ describe('UserContextGate', () => {
 
     renderGate();
 
-    expect(
-      screen.queryByRole('button', { name: 'Iniciar diagnóstico' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Iniciar diagnóstico' })).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(/comprobando tu sesión/i);
   });

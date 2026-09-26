@@ -7,19 +7,18 @@ import boundaries from 'eslint-plugin-boundaries';
 import globals from 'globals';
 
 /**
- * ESLint flat-config del frontend.
+ * ESLint flat config of the frontend.
  *
- * Tres capas, aplicadas en orden:
+ * Three layers, applied in order:
  *
- *   1. Hereda el config raíz (typescript-eslint type-checked + Prettier).
+ *   1. Inherits the root config (typescript-eslint type-checked + Prettier).
  *   2. Recommended React + JSX a11y + react-hooks + react-refresh.
- *   3. `eslint-plugin-boundaries` aplica la dirección de import en
- *      4 capas documentada en CLAUDE.web.md: app → pages → feature ←
- *      shared. Cross-feature imports están prohibidos.
+ *   3. `eslint-plugin-boundaries` enforces the import direction across
+ *      4 layers: app → pages → feature ← shared. Cross-feature imports
+ *      are forbidden.
  *
- * Los tests heredan las mismas reglas de fronteras — no se puede
- * "esconder" una violación dentro de un test. Los configs de build
- * se ignoran explícitamente.
+ * Tests inherit the same boundary rules — a violation cannot be "hidden"
+ * inside a test. Build configs are ignored explicitly.
  */
 export default [
   ...rootConfig,
@@ -27,9 +26,7 @@ export default [
     ignores: [
       'dist/**',
       'coverage/**',
-      'playwright-report/**',
       'vitest.config.js',
-      'playwright.config.ts',
       'postcss.config.js',
       'tailwind.config.ts',
     ],
@@ -49,7 +46,16 @@ export default [
     },
     settings: {
       react: { version: 'detect' },
+      // The imports use the `@/` and `@features/` aliases of the tsconfig;
+      // without a TypeScript-aware resolver the plugin cannot resolve their
+      // target, treats it as unresolved and silently skips the check.
+      'import/resolver': {
+        typescript: { project: './tsconfig.app.json' },
+      },
       'boundaries/elements': [
+        // Listed first: a test file belongs to no layer and may use the
+        // shared test helpers (`src/test/`) next to what it tests.
+        { type: 'spec', pattern: 'src/**/__tests__/**' },
         { type: 'app', pattern: 'src/app/**' },
         { type: 'pages', pattern: 'src/pages/**' },
         { type: 'feature', pattern: 'src/features/*/**', capture: ['feature'] },
@@ -65,32 +71,45 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
-      // Aislamiento por feature — refleja la tabla de
-      // CLAUDE.web.md §"Allowed import paths".
-      'boundaries/element-types': [
+      // Feature isolation.
+      'boundaries/dependencies': [
         'error',
         {
           default: 'disallow',
           rules: [
-            { from: 'app', allow: ['app', 'pages', 'feature', 'shared', 'styles'] },
-            { from: 'pages', allow: ['feature', 'shared'] },
             {
-              from: 'feature',
-              allow: [['feature', { feature: '${from.feature}' }], 'shared'],
+              from: { type: 'app' },
+              allow: { to: { type: ['app', 'pages', 'feature', 'shared', 'styles'] } },
             },
-            { from: 'shared', allow: ['shared'] },
-            { from: 'test', allow: ['app', 'pages', 'feature', 'shared'] },
+            { from: { type: 'pages' }, allow: { to: { type: ['feature', 'shared'] } } },
+            {
+              // A feature reaches only itself and `shared/`, never another feature.
+              from: { type: 'feature' },
+              allow: [
+                { to: { type: 'feature', captured: { feature: '{{ from.captured.feature }}' } } },
+                { to: { type: 'shared' } },
+              ],
+            },
+            { from: { type: 'shared' }, allow: { to: { type: 'shared' } } },
+            {
+              from: { type: 'test' },
+              allow: { to: { type: ['app', 'pages', 'feature', 'shared'] } },
+            },
+            {
+              from: { type: 'spec' },
+              allow: { to: { type: ['app', 'pages', 'feature', 'shared', 'test', 'spec'] } },
+            },
           ],
         },
       ],
     },
   },
   {
-    // Primitivos shadcn/ui — exportan componentes *y* helpers (CVA
-    // variants, re-exports de namespaces Radix). El patrón es
-    // intencional y replica lo que `shadcn add` genera; Fast Refresh
-    // no puede trazar por la indirección, así que la regla aquí no
-    // tiene acción útil.
+    // shadcn/ui primitives — they export components *and* helpers (CVA
+    // variants, re-exports of Radix namespaces). The pattern is
+    // intentional and mirrors what `shadcn add` generates; Fast Refresh
+    // cannot trace through the indirection, so the rule has no useful
+    // action here.
     files: ['src/shared/ui/**/*.tsx'],
     rules: {
       'react-refresh/only-export-components': 'off',

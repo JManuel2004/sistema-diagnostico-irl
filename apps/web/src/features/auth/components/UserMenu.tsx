@@ -11,17 +11,17 @@ import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useLogout } from '../hooks/useLogout';
 
 /**
- * Identidad del usuario en la cabecera (DIAGIRL-25).
+ * The user's identity in the header (DIAGIRL-25).
  *
- * Cumple el reconocimiento visible que pide la historia con un patrón
- * de menú de cuenta (avatar → desplegable con nombre, correo y cierre
- * de sesión), en vez de mostrar el detalle permanentemente en la
- * cabecera.
+ * It gives the visible recognition the story asks for with an account menu
+ * (avatar → dropdown with name, email and logout) instead of showing the
+ * detail permanently in the header. The logout is centralized: Core runs
+ * `GlobalSignOut` in Cognito, so the user leaves every INNLAB product.
  *
- * Nunca bloquea la pantalla. Si el contexto no llega, esta pieza
- * desaparece en silencio: quien informa del fallo y frena el diagnóstico
- * es `UserContextGate`, y duplicar el mensaje de error en la cabecera
- * solo añadiría ruido.
+ * It never blocks the screen. If the context does not arrive, this piece
+ * disappears silently: `UserContextGate` is what reports the failure and
+ * stops the diagnostic, and repeating the error in the header would only
+ * add noise.
  */
 export function UserMenu(): JSX.Element | null {
   const { data, isSuccess } = useCurrentUser();

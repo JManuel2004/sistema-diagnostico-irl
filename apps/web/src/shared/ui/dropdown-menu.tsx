@@ -9,10 +9,10 @@ import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * Familia `DropdownMenu` siguiendo el patrón shadcn/ui sobre
+ * The `DropdownMenu` family, following the shadcn/ui pattern over
  * `@radix-ui/react-dropdown-menu`.
  *
- * Composición típica:
+ * Typical composition:
  *   <DropdownMenu>
  *     <DropdownMenuTrigger asChild><button>...</button></DropdownMenuTrigger>
  *     <DropdownMenuContent>
@@ -22,8 +22,8 @@ import { cn } from '@/shared/lib/utils';
  *     </DropdownMenuContent>
  *   </DropdownMenu>
  *
- * Radix maneja el foco, el cierre en click-outside/Escape y la
- * navegación por teclado; no se reimplementan aquí.
+ * Radix handles focus, closing on outside click or Escape, and keyboard
+ * navigation; none of it is reimplemented here.
  */
 export const DropdownMenu = DropdownMenuPrimitive.Root;
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;

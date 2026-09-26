@@ -1,0 +1,64 @@
+import { DimensionCode } from '../../../../shared/kernel/domain/value-objects/dimension-code.js';
+import { InvariantViolationError } from '../../../../shared/kernel/domain/errors/invariant-violation.error.js';
+
+/**
+ * `Dimension` — domain entity representing one of the six IRL dimensions
+ * (TRL, CRL, BRL, IPRL, TmRL, FRL).
+ *
+ * Read-only at runtime — the constructor is the only way to instantiate
+ * one, and the repository is the only producer. Application code holds
+ * Dimension instances but never mutates them; updates ship through
+ * catalog seeds.
+ *
+ * The persistence model speaks `dimension(code, name_es, short_name_es,
+ * description, sequence)`; this domain class uses English property names per the
+ * project's language convention (see CODE-STYLE). `name_es` holds the
+ * Spanish display name — the language suffix names the data, not the
+ * schema.
+ */
+export interface DimensionPersistence {
+  readonly id: number;
+  readonly code: string;
+  readonly name: string;
+  readonly shortName: string;
+  readonly description: string;
+  readonly sequence: number;
+  readonly minimumExpectedLevel: number;
+  /** Whether the framework lets this dimension be in critical state (RF-13). */
+  readonly isCriticalDimension: boolean;
+}
+
+export class Dimension {
+  private constructor(
+    public readonly id: number,
+    public readonly code: DimensionCode,
+    public readonly name: string,
+    public readonly shortName: string,
+    public readonly description: string,
+    public readonly sequence: number,
+    public readonly minimumExpectedLevel: number,
+    public readonly isCriticalDimension: boolean,
+  ) {}
+
+  static fromPersistence(row: DimensionPersistence): Dimension {
+    if (
+      row.sequence < 1 ||
+      row.sequence > 6 ||
+      !Number.isInteger(row.sequence)
+    ) {
+      throw new InvariantViolationError(
+        `Dimension sequence must be an integer in [1, 6]; received ${String(row.sequence)}`,
+      );
+    }
+    return new Dimension(
+      row.id,
+      DimensionCode.create(row.code),
+      row.name,
+      row.shortName,
+      row.description,
+      row.sequence,
+      row.minimumExpectedLevel,
+      row.isCriticalDimension,
+    );
+  }
+}

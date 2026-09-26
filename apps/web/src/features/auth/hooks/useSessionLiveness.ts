@@ -3,13 +3,13 @@ import { clearSession, getAccessToken, redirectToSso } from '@/shared/auth/sessi
 import { isSessionAlive } from '../api/core-auth.api';
 
 /**
- * Mantiene viva la sesión por sondeo pasivo.
+ * Keeps the session alive by passive polling.
  *
- * INNLAB no emite refresh token, así que no hay nada que renovar: lo único
- * posible es detectar que la sesión murió y rehacer el SSO. La comprobación
- * se hace cuando la pestaña vuelve a primer plano — que es cuando el
- * usuario puede haber estado fuera el tiempo suficiente como para que
- * expirara, y evita sondear en bucle una pestaña de fondo.
+ * INNLAB issues no refresh token, so there is nothing to renew: the only
+ * possibility is detecting that the session died and redoing the SSO. The
+ * check runs when the tab comes back to the foreground — which is when the
+ * user may have been away long enough for it to expire — and avoids
+ * polling a background tab in a loop.
  */
 export function useSessionLiveness(): void {
   useEffect(() => {

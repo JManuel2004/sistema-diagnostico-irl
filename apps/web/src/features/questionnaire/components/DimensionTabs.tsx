@@ -1,41 +1,41 @@
 import { useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import type { DimensionCode, QuestionnaireStructure } from '@innlab/contracts';
+import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { DimensionPanel } from './DimensionPanel';
 import { DimensionNav } from './DimensionNav';
 import { QuestionnaireProgress } from './QuestionnaireProgress';
 import {
   selectActiveTab,
+  isStatementComplete,
   selectAnswers,
+  selectJustifications,
   selectSetActiveTab,
   useQuestionnaireDraftStore,
 } from '../store/questionnaire-draft.store';
 
 /**
- * Tabs de dimensiones IRL.
+ * Tabs of the IRL dimensions.
  *
  * Layout (`DESIGN.md`):
- *  - Desktop: grid de 6 columnas (un trigger por dimensión).
- *  - Mobile: la lista cae a scroll horizontal — Tailwind `overflow-x-auto`
- *    sobre el wrapper conserva la altura y permite `scroll-snap` al
- *    deslizar.
+ *  - Desktop: a 6-column grid (one trigger per dimension).
+ *  - Mobile: the list falls back to horizontal scroll — Tailwind
+ *    `overflow-x-auto` on the wrapper keeps the height and allows
+ *    `scroll-snap` while swiping.
  *
- * Códigos de dimensión (TRL, CRL, BRL, IPRL, TmRL, FRL) siempre en
- * `overline` (uppercase, 8% letter-spacing), nunca traducidos ni
- * abreviados según `DESIGN.md`.
+ * Dimension codes (TRL, CRL, BRL, IPRL, TmRL, FRL) always in `overline`
+ * (uppercase, 8% letter-spacing), never translated or abbreviated, per
+ * `DESIGN.md`.
  *
- * La pestaña activa vive en el store (`activeTab`) en lugar de
- * `useState` o `defaultValue`, de modo que el F5 la conserva
- * (SPEC-STORY3 §5.6).
+ * The active tab lives in the store (`activeTab`) instead of `useState` or
+ * `defaultValue`, so an F5 keeps it.
  *
- * Mejoras heredadas del prototipo cliente:
- *  - Tick de completitud cuando los 8 ítems de la dimensión están
- *    respondidos.
- *  - Auto-scroll al cambiar de pestaña: el usuario entra siempre al
- *    inicio del panel, no a la altura previa del scroll.
- *  - Navegación inferior previa/siguiente (`<DimensionNav>`) para
- *    completar el cuestionario en orden lineal sin obligar al
- *    usuario a volver a la barra de pestañas.
+ * Also:
+ *  - A completion tick when the dimension's 8 statements are complete.
+ *  - Auto-scroll on tab change: the user always lands at the top of the
+ *    panel, not at the previous scroll height.
+ *  - Previous/next navigation at the bottom (`<DimensionNav>`) to complete
+ *    the questionnaire linearly without going back to the tab bar.
  */
 interface Props {
   dimensions: QuestionnaireStructure['dimensions'];
@@ -63,14 +63,25 @@ export function DimensionTabs({ dimensions }: Props) {
   const activeTab = useQuestionnaireDraftStore(selectActiveTab);
   const setActiveTab = useQuestionnaireDraftStore(selectSetActiveTab);
   const answers = useQuestionnaireDraftStore(selectAnswers);
+  const justifications = useQuestionnaireDraftStore(selectJustifications);
 
   const panelTopRef = useRef<HTMLDivElement | null>(null);
+  // Tab that was already in view: the effect only scrolls when the tab
+  // changes from it, not on mount (there the page must load from the top).
+  const shownTab = useRef(activeTab);
 
-  // Auto-scroll: cuando el usuario cambia de dimensión, llevarlo a la
-  // cabecera del panel para que no entre a mitad de scroll. Se usa
-  // typeof-guard porque jsdom (entorno de tests) no implementa
-  // `scrollIntoView`; en un navegador real está siempre disponible.
+  // Auto-scroll: when the user changes dimension, take them to the
+  // panel's header so they do not land mid-scroll. The typeof guard is
+  // there because jsdom (the test environment) does not implement
+  // `scrollIntoView`; a real browser always has it.
+  //
+  // Comparing with `shownTab` (and not a "first render" flag) is what
+  // prevents the scroll on mount also under StrictMode, which runs the
+  // effect twice in development.
   useEffect(() => {
+    if (shownTab.current === activeTab) return;
+    shownTab.current = activeTab;
+
     const node = panelTopRef.current;
     if (node && typeof node.scrollIntoView === 'function') {
       node.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -91,27 +102,35 @@ export function DimensionTabs({ dimensions }: Props) {
     >
       <QuestionnaireProgress dimensions={dimensions} />
 
-      <div ref={panelTopRef} className="overflow-x-auto">
+      <div ref={panelTopRef} className="scroll-mt-36">
         <TabsList
           aria-label="Dimensiones IRL"
-          className="grid h-auto w-full min-w-max grid-cols-6 gap-1 p-1"
+          className="grid h-auto w-full grid-cols-3 gap-2 border-0 bg-transparent p-0 sm:grid-cols-6"
         >
           {dimensions.map((d) => {
-            const answered = d.statements.filter((st) => answers[st.id] !== undefined).length;
+            const answered = d.statements.filter((st) =>
+              isStatementComplete(answers, justifications, st.id),
+            ).length;
             const total = d.statements.length;
             const isComplete = answered === total && total > 0;
+            const visual = getDimensionVisual(d.code);
 
             return (
               <TabsTrigger
                 key={d.code}
                 value={d.code}
-                className="flex h-12 flex-col items-center justify-center gap-0.5 px-3 py-2"
+                className="border-border bg-background data-[state=active]:border-primary data-[state=active]:bg-surface-emphasis flex h-16 flex-col items-start justify-center gap-1 rounded-xl border px-3 py-2 data-[state=active]:border-[1.5px] data-[state=active]:shadow-none"
                 title={d.name}
               >
-                <span className="text-overline">{d.code}</span>
+                <span
+                  className={`${visual.textInk} flex items-center gap-1.5 text-[0.8125rem] font-extrabold tracking-normal`}
+                >
+                  <visual.icon className="size-4 shrink-0" aria-hidden="true" />
+                  {d.code}
+                </span>
                 <span
                   aria-hidden="true"
-                  className="text-muted-foreground inline-flex items-center gap-1 text-[0.6875rem] font-normal tracking-normal"
+                  className="text-muted-foreground inline-flex items-center gap-1 text-[0.8125rem] font-semibold tracking-normal"
                 >
                   {isComplete ? (
                     <span
@@ -124,7 +143,7 @@ export function DimensionTabs({ dimensions }: Props) {
                     </span>
                   ) : (
                     <span>
-                      {answered}/{total}
+                      {answered} de {total}
                     </span>
                   )}
                 </span>

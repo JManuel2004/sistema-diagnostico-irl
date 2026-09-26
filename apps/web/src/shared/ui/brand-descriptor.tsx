@@ -3,31 +3,37 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * Descriptor institucional de INNLAB (lock-up Icesi).
+ * INNLAB institutional descriptor (Icesi lock-up).
  *
- * El manual de marca Icesi (Febrero 2026, sección "Centros y
- * observatorios — Construcción del descriptor") exige:
+ * The Icesi brand manual (February 2026, section "Centros y observatorios —
+ * Construcción del descriptor") requires:
  *
- *   [ Logotipo Icesi ] | INNLAB Centro de Innovación
+ *   [ Icesi logotype ] | INNLAB Centro de Innovación
  *
- * Reglas no negociables:
- *  - Separador: 1px Gris 1 (#88898C), altura ~30% del logotipo.
- *  - Siglas ("INNLAB") en Plus Jakarta Sans Medium, color Azul Icesi.
- *  - Nombre completo a continuación en Plus Jakarta Sans Medium.
- *  - INNLAB no inventa logo propio: hereda la marca institucional.
+ * Non-negotiable rules:
+ *  - Separator: 1px Gris 1 (#88898C), height ~30% of the logotype.
+ *  - Acronym ("INNLAB") in Plus Jakarta Sans Medium, Azul Icesi.
+ *  - Full name right after, in Plus Jakarta Sans Medium.
+ *  - INNLAB does not invent a logo of its own: it inherits the
+ *    institutional brand.
  *
- * El descriptor aparece en el header de cada página y enlaza al
- * inicio del sistema. No se debe estilizar, recolorear el separador
- * ni cambiar la tipografía.
+ * The descriptor appears in the header of every page and links to the
+ * start. Which start depends on the screen (`to`): on the screens with a
+ * session and navigation (results, panel) it is the panel; on the landing
+ * and in the wizard, which carry no navigation, it is the landing. It must
+ * not be restyled, and neither the separator color nor the typography may
+ * change.
  */
 interface BrandDescriptorProps {
   readonly className?: string;
+  /** Target of the link. The landing by default. */
+  readonly to?: string;
 }
 
-export function BrandDescriptor({ className }: BrandDescriptorProps): JSX.Element {
+export function BrandDescriptor({ className, to = '/' }: BrandDescriptorProps): JSX.Element {
   return (
     <Link
-      to="/"
+      to={to}
       aria-label="Inicio · Diagnóstico IRL · INNLAB Centro de Innovación · Universidad Icesi"
       className={cn(
         'focus-visible:ring-ring group inline-flex items-center gap-4 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',

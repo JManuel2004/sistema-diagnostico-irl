@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -12,7 +12,7 @@ const DIMENSION_CODES = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;
 
 function buildFixture(): QuestionnaireStructure {
   return {
-    versionMarco: 'KTH-IRL-1.0',
+    frameworkVersion: 'KTH-IRL-1.0',
     dimensions: DIMENSION_CODES.map((code, dimIdx) => ({
       code,
       name: `${code} — Nombre`,
@@ -36,7 +36,7 @@ afterAll(() => server.close());
 
 function withSuccessHandler(): void {
   server.use(
-    http.get('*/api/v1/catalogo/cuestionario', () =>
+    http.get('*/api/v1/catalog/questionnaire', () =>
       HttpResponse.json(buildFixture()),
     ),
   );
@@ -44,7 +44,7 @@ function withSuccessHandler(): void {
 
 function withErrorHandler(): void {
   server.use(
-    http.get('*/api/v1/catalogo/cuestionario', () =>
+    http.get('*/api/v1/catalog/questionnaire', () =>
       HttpResponse.json({ error: 'Internal server error' }, { status: 500 }),
     ),
   );
@@ -61,9 +61,9 @@ describe('QuestionnaireView', () => {
 
   it('renders the skeleton while the request is in flight', () => {
     server.use(
-      http.get('*/api/v1/catalogo/cuestionario', () => new Promise(() => undefined)),
+      http.get('*/api/v1/catalog/questionnaire', () => new Promise(() => undefined)),
     );
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.getByLabelText('Cargando cuestionario')).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('QuestionnaireView', () => {
 
   it('renders six dimension tabs after a successful fetch', async () => {
     withSuccessHandler();
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
@@ -84,7 +84,7 @@ describe('QuestionnaireView', () => {
 
   it('shows 8 statements for the first dimension by default', async () => {
     withSuccessHandler();
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
@@ -95,7 +95,7 @@ describe('QuestionnaireView', () => {
   it('switches to the clicked dimension and shows its statements', { timeout: 10_000 }, async () => {
     withSuccessHandler();
     const user = userEvent.setup();
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
@@ -106,9 +106,54 @@ describe('QuestionnaireView', () => {
     );
   });
 
+  describe('scroll', () => {
+    const scrollIntoView = vi.fn();
+
+    beforeEach(() => {
+      scrollIntoView.mockClear();
+      // jsdom does not implement `scrollIntoView`: it is defined to observe the calls.
+      Element.prototype.scrollIntoView = scrollIntoView;
+    });
+
+    afterEach(() => {
+      // @ts-expect-error restores jsdom's state, which does not define the method.
+      delete Element.prototype.scrollIntoView;
+    });
+
+    it('does not scroll when the questionnaire mounts', async () => {
+      withSuccessHandler();
+      renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
+
+      await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
+
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('does not scroll when it mounts on a tab restored from the draft', async () => {
+      withSuccessHandler();
+      useQuestionnaireDraftStore.getState().setActiveTab('BRL');
+      renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
+
+      await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
+
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('scrolls back to the top of the panel when the dimension changes', async () => {
+      withSuccessHandler();
+      const user = userEvent.setup();
+      renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
+
+      await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
+      await user.click(screen.getByRole('tab', { name: 'CRL' }));
+
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+    });
+  });
+
   it('renders an error state when the request fails', async () => {
     withErrorHandler();
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('alert'));
 
@@ -119,13 +164,13 @@ describe('QuestionnaireView', () => {
   it('clicking Reintentar triggers a refetch', async () => {
     let callCount = 0;
     server.use(
-      http.get('*/api/v1/catalogo/cuestionario', () => {
+      http.get('*/api/v1/catalog/questionnaire', () => {
         callCount++;
         return HttpResponse.json({ error: 'fail' }, { status: 500 });
       }),
     );
     const user = userEvent.setup();
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('alert'));
 
@@ -138,7 +183,7 @@ describe('QuestionnaireView', () => {
   it('persists answers when switching dimension tabs and after remount', { timeout: 15_000 }, async () => {
     withSuccessHandler();
     const user = userEvent.setup();
-    const utils = renderWithClient(<QuestionnaireView />);
+    const utils = renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
@@ -161,7 +206,7 @@ describe('QuestionnaireView', () => {
 
     // Unmount and remount the view (simulating navigation away and back)
     utils.unmount();
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
     await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
     const remountedRg = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });

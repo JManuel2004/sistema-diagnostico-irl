@@ -1,0 +1,257 @@
+import { jest } from '@jest/globals';
+import type { TaxonomyRepositoryPort } from '../../../../../../src/shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
+import { aDimensionCatalog } from '../../../../support/dimension-catalog.js';
+import { FinalizeInitialDiagnosisUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/finalize-initial-diagnosis.use-case.js';
+import type { DiagnosisRepositoryPort } from '../../../../../../src/modules/diagnosis/domain/repositories/diagnosis.repository.port.js';
+import { Diagnosis } from '../../../../../../src/modules/diagnosis/domain/entities/diagnosis.aggregate.js';
+import type { SubmitQuestionnaireUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/submit-questionnaire.use-case.js';
+import type { ComputeMaturityProfileUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/compute-maturity-profile.use-case.js';
+import type { AnswerSheetRepositoryPort } from '../../../../../../src/modules/diagnosis/domain/repositories/answer-sheet.repository.port.js';
+import { AnswerSheet } from '../../../../../../src/modules/diagnosis/domain/entities/answer-sheet.aggregate.js';
+import { MaturityProfile } from '../../../../../../src/modules/diagnosis/domain/entities/maturity-profile.aggregate.js';
+import { DimensionResult } from '../../../../../../src/modules/diagnosis/domain/value-objects/dimension-result.vo.js';
+import { DimensionCode } from '../../../../../../src/shared/kernel/domain/value-objects/dimension-code.js';
+import { IrlLevel } from '../../../../../../src/shared/kernel/domain/value-objects/irl-level.vo.js';
+import { LikertValue } from '../../../../../../src/shared/kernel/domain/value-objects/likert-value.vo.js';
+import { Uuid } from '../../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
+import { NotFoundError } from '../../../../../../src/shared/kernel/domain/errors/not-found.error.js';
+import { ConflictError } from '../../../../../../src/shared/kernel/domain/errors/conflict.error.js';
+import { InvariantViolationError } from '../../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
+import { Result } from '../../../../../../src/shared/kernel/domain/result.js';
+
+const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+
+const ANSWERS = Array.from({ length: 48 }, (_, i) => ({
+  statementId: String(i + 1),
+  value: 3,
+  justification: 'Justificación de prueba',
+}));
+
+function diagnosisIn(state: string): Diagnosis {
+  return Diagnosis.fromPersistence({
+    id: DIAGNOSTIC_ID,
+    userId: 'usuario-demo',
+    state,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    frameworkVersionId: 1,
+  });
+}
+
+function anAnswerSheet(): AnswerSheet {
+  const sheet = AnswerSheet.create(Uuid.create(DIAGNOSTIC_ID));
+  for (const item of ANSWERS) {
+    sheet.setAnswer(item.statementId, LikertValue.create(item.value), item.justification);
+  }
+  return sheet;
+}
+
+function aProfile(): MaturityProfile {
+  const codes = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;
+  return MaturityProfile.create({
+    diagnosticId: Uuid.create(DIAGNOSTIC_ID),
+    computedAt: new Date('2026-01-01T12:00:00.000Z'),
+    dimensionResults: codes.map((code) =>
+      DimensionResult.create({
+        dimensionCode: DimensionCode.create(code),
+        averageLikert: 3,
+        irlLevel: IrlLevel.create(6),
+      }),
+    ),
+  });
+}
+
+describe('FinalizeInitialDiagnosisUseCase', () => {
+  let useCase: FinalizeInitialDiagnosisUseCase;
+  let diagnostics: jest.Mocked<DiagnosisRepositoryPort>;
+  let answerSheets: jest.Mocked<AnswerSheetRepositoryPort>;
+  let submitQuestionnaire: jest.Mocked<Pick<SubmitQuestionnaireUseCase, 'execute'>>;
+  let computeProfile: jest.Mocked<Pick<ComputeMaturityProfileUseCase, 'execute'>>;
+
+  beforeEach(() => {
+    diagnostics = {
+      findById: jest.fn(),
+      findLatestByUserId: jest.fn(),
+      findAllByUserId: jest.fn(),
+      save: jest.fn(() => Promise.resolve(undefined)),
+      modify: jest.fn(),
+    };
+    answerSheets = {
+      findByDiagnosticId: jest.fn(() => Promise.resolve(anAnswerSheet())),
+      save: jest.fn(() => Promise.resolve(undefined)),
+    };
+    submitQuestionnaire = {
+      execute: jest.fn(() =>
+        Promise.resolve(
+          Result.ok({
+            diagnosticId: DIAGNOSTIC_ID,
+            answersRecorded: 48,
+            state: 'QUESTIONNAIRE_COMPLETE' as const,
+          }),
+        ),
+      ),
+    };
+    computeProfile = {
+      execute: jest.fn(() => Promise.resolve({ profile: aProfile(), imbalances: [] })),
+    };
+
+    useCase = new FinalizeInitialDiagnosisUseCase(
+      diagnostics,
+      answerSheets,
+      submitQuestionnaire as unknown as SubmitQuestionnaireUseCase,
+      computeProfile as unknown as ComputeMaturityProfileUseCase,
+      {
+        findAllDimensions: () => Promise.resolve(aDimensionCatalog()),
+      } as unknown as TaxonomyRepositoryPort,
+    );
+  });
+
+  it('submits answers, computes the profile, and transitions to PROFILE_GENERATED', async () => {
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('QUESTIONNAIRE_IN_PROGRESS'));
+
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'usuario-demo',
+      answers: ANSWERS,
+    });
+
+    expect(submitQuestionnaire.execute).toHaveBeenCalledWith({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'usuario-demo',
+      answers: ANSWERS,
+    });
+    expect(answerSheets.findByDiagnosticId).toHaveBeenCalledWith(DIAGNOSTIC_ID);
+    // The profile is computed from the values; the justification is not an input.
+    expect(computeProfile.execute).toHaveBeenCalledWith({
+      diagnosticId: DIAGNOSTIC_ID,
+      // The diagnostic's framework version: its statements and conversion table.
+      frameworkVersionId: 1,
+      answers: ANSWERS.map(({ statementId, value }) => ({ statementId, value })),
+    });
+    expect(diagnostics.save).toHaveBeenCalledTimes(1);
+    const saved = diagnostics.save.mock.calls[0][0];
+    expect(saved.state.value).toBe('PROFILE_GENERATED');
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.value.diagnosticId).toBe(DIAGNOSTIC_ID);
+    expect(result.value.dimensionResults).toHaveLength(6);
+  });
+
+  // The initiative step is followed directly by the questionnaire, so
+  // a diagnostic in WITH_INITIATIVE is finalized through QUESTIONNAIRE_IN_PROGRESS.
+  it('finalizes a diagnostic that only registered its initiative (WITH_INITIATIVE)', async () => {
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('WITH_INITIATIVE'));
+
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'usuario-demo', answers: ANSWERS });
+
+    expect(result.ok).toBe(true);
+    expect(diagnostics.save.mock.calls[0][0].state.value).toBe('PROFILE_GENERATED');
+  });
+
+  it.each(['STARTED', 'WITH_CONSENT'])(
+    'does not finalize a diagnostic that has no initiative yet (%s)',
+    async (state) => {
+      diagnostics.findById.mockResolvedValueOnce(diagnosisIn(state));
+
+      const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'usuario-demo', answers: ANSWERS });
+
+      expect(result.ok).toBe(false);
+      expect(submitQuestionnaire.execute).not.toHaveBeenCalled();
+      expect(diagnostics.save).not.toHaveBeenCalled();
+    },
+  );
+
+  it('advances from QUESTIONNAIRE_COMPLETE to PROFILE_GENERATED', async () => {
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('QUESTIONNAIRE_COMPLETE'));
+
+    await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'usuario-demo', answers: ANSWERS });
+
+    const saved = diagnostics.save.mock.calls[0][0];
+    expect(saved.state.value).toBe('PROFILE_GENERATED');
+  });
+
+  // The answers are frozen once the profile exists: processing again would
+  // leave the stored recommendation and roadmap computed from other answers.
+  it.each(['PROFILE_GENERATED', 'DEEP_ANALYSIS_IN_PROGRESS', 'DEEP_ANALYSIS_COMPLETE'])(
+    'refuses to process again once the profile exists (%s), changing nothing',
+    async (state) => {
+      diagnostics.findById.mockResolvedValueOnce(diagnosisIn(state));
+
+      const result = await useCase.execute({
+        diagnosticId: DIAGNOSTIC_ID,
+        userId: 'usuario-demo',
+        answers: ANSWERS,
+      });
+
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error('expected err result');
+      expect(result.error).toBeInstanceOf(ConflictError);
+      expect(submitQuestionnaire.execute).not.toHaveBeenCalled();
+      expect(computeProfile.execute).not.toHaveBeenCalled();
+      expect(diagnostics.save).not.toHaveBeenCalled();
+    },
+  );
+
+  it('returns an err result when the diagnostic does not exist', async () => {
+    diagnostics.findById.mockResolvedValueOnce(null);
+
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'usuario-demo',
+      answers: ANSWERS,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected err result');
+    expect(result.error).toBeInstanceOf(NotFoundError);
+    expect(submitQuestionnaire.execute).not.toHaveBeenCalled();
+    expect(computeProfile.execute).not.toHaveBeenCalled();
+  });
+
+  it('returns an err result when finalizing from an earlier state', async () => {
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('STARTED'));
+
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'usuario-demo',
+      answers: ANSWERS,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected err result');
+    expect(result.error).toBeInstanceOf(ConflictError);
+    expect(submitQuestionnaire.execute).not.toHaveBeenCalled();
+  });
+
+  it('propagates the questionnaire submission error without computing a profile', async () => {
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('QUESTIONNAIRE_IN_PROGRESS'));
+    const submissionError = new InvariantViolationError('incomplete submission');
+    submitQuestionnaire.execute.mockResolvedValueOnce(Result.err(submissionError));
+
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'usuario-demo',
+      answers: ANSWERS,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected err result');
+    expect(result.error).toBe(submissionError);
+    expect(computeProfile.execute).not.toHaveBeenCalled();
+    expect(diagnostics.save).not.toHaveBeenCalled();
+  });
+
+  it('does not transition state if computation fails', async () => {
+    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('QUESTIONNAIRE_IN_PROGRESS'));
+    computeProfile.execute.mockRejectedValueOnce(new Error('calc failed'));
+
+    await expect(
+      useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'usuario-demo', answers: ANSWERS }),
+    ).rejects.toThrow('calc failed');
+    expect(diagnostics.save).not.toHaveBeenCalled();
+  });
+
+  it('does not skip the linear state machine', () => {
+    const d = diagnosisIn('QUESTIONNAIRE_IN_PROGRESS');
+    expect(() => d.transitionTo('PROFILE_GENERATED')).toThrow(InvariantViolationError);
+  });
+});

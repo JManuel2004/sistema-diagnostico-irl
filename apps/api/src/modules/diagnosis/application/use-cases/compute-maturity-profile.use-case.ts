@@ -1,0 +1,107 @@
+import { type MaturityProfileRepositoryPort } from '../../domain/repositories/maturity-profile.repository.port.js';
+import { type ImbalanceRepositoryPort } from '../../domain/repositories/imbalance.repository.port.js';
+import { type StatementCatalogPort } from '../../domain/repositories/statement-catalog.port.js';
+import { type TaxonomyRepositoryPort } from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
+import type { IrlCalculatorService } from '../../domain/services/irl-calculator.service.js';
+import type { ImbalanceEvaluatorService } from '../../domain/services/imbalance-evaluator.service.js';
+import { MaturityProfile } from '../../domain/entities/maturity-profile.aggregate.js';
+import { MaturityProfileCalculationError } from '../../domain/exceptions/maturity-profile-calculation.error.js';
+import type { ImbalanceResult } from '../../domain/value-objects/imbalance-result.vo.js';
+import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
+import type { DimensionCode } from '../../../../shared/kernel/domain/value-objects/dimension-code.js';
+import { LikertValue } from '../../../../shared/kernel/domain/value-objects/likert-value.vo.js';
+
+export interface ComputeMaturityProfileCommand {
+  diagnosticId: string;
+  /** The diagnostic's framework version: its statements and conversion table. */
+  frameworkVersionId: number;
+  answers: { statementId: string; value: number }[];
+}
+
+/**
+ * Not converted to `Result<T, E>`: both
+ * its failure paths — a caller passing the wrong answer count, or an
+ * answer referencing a statement the catalog does not have — are system
+ * defects reachable only if an upstream invariant already broke (`Answer
+ * SheetPort` promising 48 complete answers, the catalog and the
+ * questionnaire disagreeing on statement ids), not anticipable business
+ * outcomes of a well-formed request. `MaturityProfileCalculationError`
+ * maps to 500 for exactly that reason. Stays a thrown exception.
+ */
+export class ComputeMaturityProfileUseCase {
+  constructor(
+    private readonly statementCatalog: StatementCatalogPort,
+    private readonly taxonomy: TaxonomyRepositoryPort,
+    private readonly profiles: MaturityProfileRepositoryPort,
+    private readonly imbalanceRepo: ImbalanceRepositoryPort,
+    private readonly calculator: IrlCalculatorService,
+    private readonly imbalanceEvaluator: ImbalanceEvaluatorService,
+  ) {}
+
+  async execute(
+    cmd: ComputeMaturityProfileCommand,
+  ): Promise<{ profile: MaturityProfile; imbalances: ImbalanceResult[] }> {
+    const diagnosticId = Uuid.create(cmd.diagnosticId);
+
+    if (cmd.answers.length !== 48) {
+      throw new MaturityProfileCalculationError(
+        `Cannot compute profile: expected 48 answers, found ${cmd.answers.length}`,
+        {
+          diagnosticId: diagnosticId.value,
+          answeredCount: cmd.answers.length,
+        },
+      );
+    }
+
+    const [statements, conversionTable, pairs] = await Promise.all([
+      this.statementCatalog.findStatements(cmd.frameworkVersionId),
+      this.taxonomy.findConversionRanges(cmd.frameworkVersionId),
+      this.taxonomy.findAllDimensionPairs(),
+    ]);
+
+    const dimensionByStatement = new Map<string, DimensionCode>(
+      statements.map((s) => [s.id, s.dimensionCode] as const),
+    );
+
+    const answersByDimension = new Map<DimensionCode, LikertValue[]>();
+    for (const answer of cmd.answers) {
+      const dimension = dimensionByStatement.get(answer.statementId);
+      if (!dimension) {
+        throw new MaturityProfileCalculationError(
+          `Answer references unknown statement ${answer.statementId}`,
+          { statementId: answer.statementId },
+        );
+      }
+      const existingKey = [...answersByDimension.keys()].find((k) =>
+        k.equals(dimension),
+      );
+      const key = existingKey ?? dimension;
+      const list = answersByDimension.get(key) ?? [];
+      list.push(LikertValue.create(answer.value));
+      answersByDimension.set(key, list);
+    }
+
+    const dimensionResults = this.calculator.calculate(
+      answersByDimension,
+      conversionTable,
+    );
+
+    const profile = MaturityProfile.create({
+      diagnosticId,
+      computedAt: new Date(),
+      dimensionResults,
+    });
+
+    const levelByCode = new Map<string, number>(
+      dimensionResults.map((r) => [r.dimensionCode.value, r.irlLevel.value]),
+    );
+    const imbalances = this.imbalanceEvaluator.evaluate(levelByCode, pairs);
+
+    await Promise.all([
+      this.profiles.save(profile),
+      this.imbalanceRepo.save(diagnosticId.value, imbalances),
+    ]);
+
+    return { profile, imbalances };
+  }
+}

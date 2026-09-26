@@ -1,0 +1,32 @@
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { numericTransformer } from '../../../../../shared/kernel/infrastructure/database/numeric.transformer.js';
+
+@Entity({ schema: 'irl_diagnostic', name: 'dimension_result' })
+export class DimensionResultOrm {
+  @PrimaryGeneratedColumn({ type: 'bigint', name: 'id' })
+  id!: string;
+
+  @Column({ name: 'id_diagnostic', type: 'uuid' })
+  diagnosticId!: string;
+
+  @Column({ name: 'id_dimension', type: 'integer' })
+  idDimension!: number;
+
+  @Column({
+    name: 'likert_average',
+    type: 'numeric',
+    precision: 4,
+    scale: 3,
+    transformer: numericTransformer,
+  })
+  likertAverage!: number;
+
+  @Column({ name: 'irl_level', type: 'integer' })
+  irlLevel!: number;
+
+  @Column({ name: 'in_critical_state', type: 'boolean' })
+  inCriticalState!: boolean;
+
+  @Column({ name: 'computed_at', type: 'timestamptz' })
+  computedAt!: Date;
+}

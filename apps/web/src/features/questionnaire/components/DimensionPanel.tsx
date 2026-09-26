@@ -3,21 +3,17 @@ import { StatementCard } from './StatementCard';
 import { getDimensionVisual } from '@/shared/lib/dimensions';
 
 /**
- * Panel de una dimensión IRL — sidebar sticky con contexto +
- * lista de las 8 afirmaciones.
+ * Panel of an IRL dimension — sticky sidebar with context + the list of
+ * the 8 statements.
  *
- * Adoptado del prototipo cliente para romper la linealidad de la
- * primera versión (DESIGN.md `reading` width): en pantallas grandes
- * el contexto de la dimensión (código, nombre, descripción, tip
- * "Cómo responder") vive en una columna sticky de ~280px a la
- * izquierda, y las 8 tarjetas de afirmación ocupan el resto. En
- * tablet/móvil todo colapsa a una sola columna conservando el
- * orden lógico.
+ * On large screens the dimension's context (code, name, description, the
+ * "Cómo responder" tip) lives in a ~280px sticky column on the left, and
+ * the 8 statement cards take the rest. On tablet/mobile everything
+ * collapses into a single column keeping the logical order.
  *
- * El color de acento de la dimensión se resuelve a través de
- * `getDimensionVisual` (shared/lib/dimensions). Nunca hardcodear el
- * mapeo aquí — esta tabla vive en un solo lugar para que cualquier
- * componente futuro (radar, badges del perfil) lo reutilice.
+ * The dimension's accent color is resolved through `getDimensionVisual`
+ * (shared/lib/dimensions). Never hardcode the mapping here — the table
+ * lives in a single place so every component reuses it.
  */
 interface Props {
   dimension: DimensionWithStatements;
@@ -31,37 +27,35 @@ export function DimensionPanel({ dimension }: Props) {
       aria-labelledby={`dim-${dimension.code}-heading`}
       className="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start"
     >
-      {/* Sidebar — contexto de la dimensión */}
+      {/* Sidebar — context of the dimension */}
       <aside className="lg:sticky lg:top-24">
-        <div className="border-border bg-surface-muted/40 rounded-md border p-5">
-          <div className="flex items-start gap-3">
-            <span
-              aria-hidden="true"
-              className={`mt-1 h-10 w-1 shrink-0 rounded-full ${visual.bg}`}
-            />
-            <div className="flex-1">
-              <p className={`text-overline ${visual.textInk}`}>
-                Dimensión {dimension.sequence} de 6 · {dimension.code}
-              </p>
-              <h2
-                id={`dim-${dimension.code}-heading`}
-                className="text-foreground mt-1.5 text-xl font-bold leading-tight tracking-tight"
-              >
-                {dimension.name}
-              </h2>
-            </div>
-          </div>
+        <div className="bg-surface-muted rounded-2xl p-5 sm:p-6">
+          <span
+            aria-hidden="true"
+            className={`border-border bg-background ${visual.textInk} mb-4 flex size-12 items-center justify-center border`}
+          >
+            <visual.icon className="size-6" />
+          </span>
+          <p className={`text-overline ${visual.textInk}`}>
+            Dimensión {dimension.sequence} de 6 · {dimension.code}
+          </p>
+          <h2
+            id={`dim-${dimension.code}-heading`}
+            className="text-foreground mt-2 text-2xl font-bold leading-tight tracking-tight"
+          >
+            {dimension.name}
+          </h2>
 
-          <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
+          <p className="text-muted-foreground mt-3 text-[0.9375rem] leading-relaxed">
             {dimension.description}
           </p>
 
-          <div className="border-border/70 mt-5 border-t pt-4">
-            <p className="text-overline text-muted-foreground">Cómo responder</p>
-            <ul className="text-muted-foreground mt-2 space-y-1.5 text-xs leading-relaxed">
+          <div className="border-border mt-5 border-t pt-4">
+            <p className="text-foreground text-sm font-bold">Cómo responder</p>
+            <ul className="text-muted-foreground mt-2 space-y-1.5 text-sm leading-relaxed">
               <li>
                 Cada afirmación describe una práctica concreta de tu iniciativa{' '}
-                <span className="text-foreground/80">hoy</span>.
+                <span className="text-foreground font-semibold">hoy</span>.
               </li>
               <li>Indica qué tan de acuerdo estás con que describe la realidad actual.</li>
               <li>Es normal que los niveles más altos sean &quot;En desacuerdo&quot;.</li>
@@ -70,8 +64,8 @@ export function DimensionPanel({ dimension }: Props) {
         </div>
       </aside>
 
-      {/* Lista de afirmaciones */}
-      <ol className="space-y-4">
+      {/* List of statements */}
+      <ol className="space-y-4 sm:space-y-5">
         {dimension.statements.map((statement) => (
           <li key={statement.id}>
             <StatementCard statement={statement} />

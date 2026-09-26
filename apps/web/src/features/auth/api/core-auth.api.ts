@@ -1,16 +1,16 @@
 import axios from 'axios';
-import type { CoreSession } from '@/shared/auth/session';
+import { coreSessionSchema, type CoreSession } from '@innlab/contracts';
 
 /**
- * Cliente hacia la API de INNLAB Core (`innlab-core-api`).
+ * Client for the INNLAB Core API (`innlab-core-api`).
  *
- * Instancia propia y separada de `shared/api/http`: apunta a otro host
- * (Core, no nuestro backend) y no debe arrastrar el interceptor de 401,
- * que dispararía un bucle de redirects justo cuando estamos intentando
- * establecer la sesión.
+ * Its own instance, separate from `shared/api/http`: it points at another
+ * host (Core, not our backend) and must not carry the 401 interceptor,
+ * which would trigger a redirect loop exactly while the session is being
+ * established.
  *
- * El intercambio del código lo hace el FRONTEND directo contra Core.
- * Nuestro backend nunca ve el `code`.
+ * The code exchange is done by the FRONTEND directly against Core. Our
+ * backend never sees the `code`.
  */
 const coreApi = axios.create({
   baseURL: String(import.meta.env.VITE_CORE_API_URL ?? ''),
@@ -18,23 +18,23 @@ const coreApi = axios.create({
 });
 
 /**
- * Canjea el `?code=` del SSO por los tokens de la sesión.
+ * Exchanges the SSO `?code=` for the session tokens.
  *
- * El código es de un solo uso y expira a los 30 segundos: si esta llamada
- * falla no se puede reintentar con el mismo código, hay que rehacer el
- * flujo completo desde el Hub.
+ * The code is single use and expires after 30 seconds: if this call fails
+ * it cannot be retried with the same code; the whole flow has to be redone
+ * from the Hub.
  */
 export async function exchangeSsoCode(code: string): Promise<CoreSession> {
-  let data: CoreSession;
+  let data: unknown;
 
   try {
-    ({ data } = await coreApi.get<CoreSession>('/auth/sso/exchange', {
+    ({ data } = await coreApi.get<unknown>('/auth/sso/exchange', {
       params: { code },
     }));
   } catch (cause) {
-    // El mensaje crudo de axios ("Request failed with status code 404") acaba
-    // impreso en la pantalla que ve el usuario, y no dice nada accionable.
-    // Traducimos los casos que Core distingue de verdad.
+    // axios's raw message ("Request failed with status code 404") ends up
+    // printed on the screen the user sees, and says nothing actionable.
+    // The cases Core really distinguishes are translated.
     if (axios.isAxiosError(cause)) {
       if (cause.response === undefined) {
         throw new Error(
@@ -53,20 +53,24 @@ export async function exchangeSsoCode(code: string): Promise<CoreSession> {
     throw cause;
   }
 
-  if (typeof data.accessToken !== 'string' || data.accessToken === '') {
-    throw new Error('Core devolvió una respuesta de intercambio sin accessToken.');
+  // The response comes from an external service: it is validated against
+  // the contract instead of trusting a TypeScript generic.
+  const session = coreSessionSchema.safeParse(data);
+  if (!session.success) {
+    throw new Error(
+      'Core devolvió una respuesta de intercambio sin accessToken o con un formato inválido.',
+    );
   }
 
-  return { token: data.token, accessToken: data.accessToken };
+  return session.data;
 }
 
 /**
- * Pregunta a Core si el access token sigue vivo.
+ * Asks Core whether the access token is still alive.
  *
- * `false` significa sesión terminada (401), no error de red: un Core
- * inalcanzable no debe expulsar a un usuario cuya sesión sigue siendo
- * válida, así que ese caso se resuelve como `true` y se reintenta en el
- * siguiente foco de la pestaña.
+ * `false` means the session ended (401), not a network error: an
+ * unreachable Core must not kick out a user whose session is still valid,
+ * so that case resolves to `true` and is retried on the next tab focus.
  */
 export async function isSessionAlive(accessToken: string): Promise<boolean> {
   try {
@@ -83,15 +87,11 @@ export async function isSessionAlive(accessToken: string): Promise<boolean> {
 }
 
 /**
- * Cierra la sesión en todo el ecosistema.
+ * Ends the session across the whole ecosystem.
  *
- * Core invalida en Cognito (`GlobalSignOut`) y revoca de su lado, así que
- * esto no es un logout local: afecta a todos los productos INNLAB.
+ * Core invalidates it in Cognito (`GlobalSignOut`) and revokes it on its
+ * side, so this is not a local logout: it affects every INNLAB product.
  */
 export async function logoutFromCore(accessToken: string): Promise<void> {
-  await coreApi.post(
-    '/auth/logout',
-    {},
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-  );
+  await coreApi.post('/auth/logout', {}, { headers: { Authorization: `Bearer ${accessToken}` } });
 }

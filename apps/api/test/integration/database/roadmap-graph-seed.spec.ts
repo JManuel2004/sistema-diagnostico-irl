@@ -1,32 +1,21 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
-import { InitialSchema1747526400001 } from '../../../src/infrastructure/database/migrations/20260518001-InitialSchema.js';
-import { CatalogConversionAndPairs1747526400002 } from '../../../src/infrastructure/database/migrations/20260518002-CatalogConversionAndPairs.js';
-import { RemainingCatalogTables1747526400003 } from '../../../src/infrastructure/database/migrations/20260518003-RemainingCatalogTables.js';
-import { RemainingDiagnosticTables1747526400004 } from '../../../src/infrastructure/database/migrations/20260518004-RemainingDiagnosticTables.js';
-import { RemoveSingleRuleRoutingModel1747526400005 } from '../../../src/infrastructure/database/migrations/20260518005-RemoveSingleRuleRoutingModel.js';
-import { ExtendDiagnosticStateCheck1747526400006 } from '../../../src/infrastructure/database/migrations/20260518006-ExtendDiagnosticStateCheck.js';
-import { RoutingCalibration1747526400007 } from '../../../src/infrastructure/database/migrations/20260518007-RoutingCalibration.js';
-import { RoutingConfigurationVersion1747526400008 } from '../../../src/infrastructure/database/migrations/20260518008-RoutingConfigurationVersion.js';
-import { RoutingConfigurationDraft1747526400009 } from '../../../src/infrastructure/database/migrations/20260518009-RoutingConfigurationDraft.js';
-import { RecommendationResultAndTrace1747526400010 } from '../../../src/infrastructure/database/migrations/20260518010-RecommendationResultAndTrace.js';
-import { InitiativeCharacterization1747526400011 } from '../../../src/infrastructure/database/migrations/20260518011-InitiativeCharacterization.js';
-import { RoadmapDependencyGraph1747526400012 } from '../../../src/infrastructure/database/migrations/20260518012-RoadmapDependencyGraph.js';
-import { DIMENSIONS } from '../../../src/infrastructure/database/seeds/data/dimensions.js';
-import { DIMENSION_DEPENDENCIES } from '../../../src/infrastructure/database/seeds/data/dimension-dependencies.js';
-import { seedRoadmapGraph } from '../../../src/infrastructure/database/seeds/seed-roadmap-graph.js';
+import { InitialSchema1747526400001 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518001-InitialSchema.js';
+import { DIMENSIONS } from '../../../src/shared/kernel/infrastructure/database/seeds/data/dimensions.js';
+import { DIMENSION_DEPENDENCIES } from '../../../src/shared/kernel/infrastructure/database/seeds/data/dimension-dependencies.js';
+import { seedRoadmapGraph } from '../../../src/shared/kernel/infrastructure/database/seeds/seed-roadmap-graph.js';
 
 /**
- * Integración del seed del grafo de dependencias contra Postgres real.
+ * Integration of the dependency graph seed against a real Postgres.
  *
- * Verifica lo que un test unitario no puede: que las FKs se resuelvan
- * por `codigo` (no por id, que es IDENTITY y no estable), que el
- * `ON CONFLICT` sea idempotente de verdad, y que la lista de columnas
- * del `DO UPDATE` incluya efectivamente las mutables — omitir una haría
- * que el seed pareciera idempotente pero nunca actualizara ese valor.
+ * Checks what a unit test cannot: that the FKs resolve by `code` (not by
+ * id, which is IDENTITY and not stable), that the `ON CONFLICT` is really
+ * idempotent, and that the column list of the `DO UPDATE` does include the
+ * mutable ones — leaving one out would make the seed look idempotent while
+ * never updating that value.
  */
-describe('Seed del grafo de dependencias (integration)', () => {
+describe('Seed del graph de dependencies (integration)', () => {
   let container: StartedPostgreSqlContainer;
   let dataSource: DataSource;
 
@@ -40,41 +29,28 @@ describe('Seed del grafo de dependencias (integration)', () => {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
-      migrations: [
-        InitialSchema1747526400001,
-        CatalogConversionAndPairs1747526400002,
-        RemainingCatalogTables1747526400003,
-        RemainingDiagnosticTables1747526400004,
-        RemoveSingleRuleRoutingModel1747526400005,
-        ExtendDiagnosticStateCheck1747526400006,
-        RoutingCalibration1747526400007,
-        RoutingConfigurationVersion1747526400008,
-        RoutingConfigurationDraft1747526400009,
-        RecommendationResultAndTrace1747526400010,
-        InitiativeCharacterization1747526400011,
-        RoadmapDependencyGraph1747526400012,
-      ],
+      migrations: [InitialSchema1747526400001],
       migrationsTableName: 'typeorm_migrations',
     });
 
     await dataSource.initialize();
     await dataSource.runMigrations();
 
-    // Las seis dimensiones, con su nivel mínimo esperado.
+    // The six dimensions, with their expected minimum level.
     for (const d of DIMENSIONS) {
       await dataSource.query(
         `INSERT INTO irl_catalog.dimension
-           (codigo, nombre_es, nombre_en, descripcion, es_dimension_critica,
-            orden, nivel_minimo_esperado)
+           (code, name_es, short_name_es, description,
+            is_critical_dimension, sequence, minimum_expected_level)
          VALUES ($1,$2,$3,$4,$5,$6,$7)`,
         [
-          d.codigo,
-          d.nombreEs,
-          d.nombreEn,
-          d.descripcion,
-          d.esDimensionCritica,
-          d.orden,
-          d.nivelMinimoEsperado,
+          d.code,
+          d.nameEs,
+          d.shortNameEs,
+          d.description,
+          d.isCriticalDimension,
+          d.sequence,
+          d.minimumExpectedLevel,
         ],
       );
     }
@@ -85,109 +61,107 @@ describe('Seed del grafo de dependencias (integration)', () => {
     await container?.stop();
   });
 
-  it('siembra las nueve aristas resolviendo las FKs por código', async () => {
+  it('siembra las nueve edges resolviendo las FKs por código', async () => {
     await dataSource.transaction((m) => seedRoadmapGraph(m));
 
-    const filas = await dataSource.query<
-      { origen: string; destino: string; req: number }[]
+    const rows = await dataSource.query<
+      { source: string; target: string; req: number }[]
     >(
-      `SELECT o.codigo AS origen, d.codigo AS destino,
-              dep.nivel_minimo_requerido AS req
-         FROM irl_catalog.dependencia_dimension dep
-         JOIN irl_catalog.dimension o ON o.id_dimension = dep.id_dimension_origen
-         JOIN irl_catalog.dimension d ON d.id_dimension = dep.id_dimension_destino
-        ORDER BY origen, destino`,
+      `SELECT o.code AS source, d.code AS target,
+              dep.minimum_required_level AS req
+         FROM irl_catalog.dimension_dependency dep
+         JOIN irl_catalog.dimension o ON o.id_dimension = dep.id_dimension_source
+         JOIN irl_catalog.dimension d ON d.id_dimension = dep.id_dimension_target
+        ORDER BY source, target`,
     );
 
-    expect(filas).toHaveLength(9);
-    expect(filas.map((f) => `${f.origen}->${f.destino}:${f.req}`).sort()).toEqual(
+    expect(rows).toHaveLength(9);
+    expect(rows.map((f) => `${f.source}->${f.target}:${f.req}`).sort()).toEqual(
       [...DIMENSION_DEPENDENCIES]
-        .map((a) => `${a.origen}->${a.destino}:${a.nivelMinimoRequerido}`)
+        .map((a) => `${a.source}->${a.target}:${a.minimumRequiredLevel}`)
         .sort(),
     );
   });
 
-  it('las seis dimensiones quedan con nivel mínimo esperado 4', async () => {
-    const filas = await dataSource.query<
-      { codigo: string; nivel: number }[]
-    >(
-      `SELECT codigo, nivel_minimo_esperado AS nivel
-         FROM irl_catalog.dimension ORDER BY orden`,
+  it('las seis dimensions quedan con nivel mínimo esperado 4', async () => {
+    const rows = await dataSource.query<{ code: string; level: number }[]>(
+      `SELECT code, minimum_expected_level AS level
+         FROM irl_catalog.dimension ORDER BY sequence`,
     );
-    expect(filas).toHaveLength(6);
-    expect(filas.every((f) => f.nivel === 4)).toBe(true);
+    expect(rows).toHaveLength(6);
+    expect(rows.every((f) => f.level === 4)).toBe(true);
   });
 
-  it('una segunda ejecución no duplica filas', async () => {
+  it('una segunda ejecución no duplica rows', async () => {
     await dataSource.transaction((m) => seedRoadmapGraph(m));
 
     const [{ count }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.dependencia_dimension`,
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.dimension_dependency`,
     );
     expect(count).toBe('9');
   });
 
   it('el DO UPDATE actualiza de verdad el nivel requerido', async () => {
-    // Si `nivel_minimo_requerido` faltara de la lista de columnas
-    // actualizables, el seed parecería idempotente pero nunca corregiría
-    // el valor tras el primer INSERT.
+    // If `minimum_required_level` were missing from the list of updatable
+    // columns, the seed would look idempotent but would never correct the
+    // value after the first INSERT.
     await dataSource.query(
-      `UPDATE irl_catalog.dependencia_dimension SET nivel_minimo_requerido = 9`,
+      `UPDATE irl_catalog.dimension_dependency SET minimum_required_level = 9`,
     );
     await dataSource.transaction((m) => seedRoadmapGraph(m));
 
     const [{ count }] = await dataSource.query<{ count: string }[]>(
       `SELECT COUNT(*)::text AS count
-         FROM irl_catalog.dependencia_dimension WHERE nivel_minimo_requerido = 9`,
+         FROM irl_catalog.dimension_dependency WHERE minimum_required_level = 9`,
     );
     expect(count).toBe('0');
   });
 
-  it('la base rechaza una arista reflexiva', async () => {
+  it('la base rechaza una edge reflexiva', async () => {
     await expect(
       dataSource.query(
-        `INSERT INTO irl_catalog.dependencia_dimension
-           (id_dimension_origen, id_dimension_destino, nivel_minimo_requerido)
+        `INSERT INTO irl_catalog.dimension_dependency
+           (id_dimension_source, id_dimension_target, minimum_required_level)
          SELECT d.id_dimension, d.id_dimension, 3
-           FROM irl_catalog.dimension d WHERE d.codigo = 'TRL'`,
+           FROM irl_catalog.dimension d WHERE d.code = 'TRL'`,
       ),
-    ).rejects.toThrow(/ck_dependencia_no_reflexiva/);
+    ).rejects.toThrow(/ck_dimension_dependency_not_reflexive/);
   });
 
   it('la base rechaza duplicar el mismo par dirigido', async () => {
     await expect(
       dataSource.query(
-        `INSERT INTO irl_catalog.dependencia_dimension
-           (id_dimension_origen, id_dimension_destino, nivel_minimo_requerido)
+        `INSERT INTO irl_catalog.dimension_dependency
+           (id_dimension_source, id_dimension_target, minimum_required_level)
          SELECT o.id_dimension, d.id_dimension, 3
            FROM irl_catalog.dimension o, irl_catalog.dimension d
-          WHERE o.codigo = 'BRL' AND d.codigo = 'FRL'`,
+          WHERE o.code = 'BRL' AND d.code = 'FRL'`,
       ),
-    ).rejects.toThrow(/uq_dependencia_par/);
+    ).rejects.toThrow(/uq_dimension_dependency_pair/);
   });
 
-  it('la base admite la arista inversa: la aciclicidad no la impone el esquema', async () => {
-    // UNIQUE(origen, destino) no ve que FRL->BRL cierre un lazo con
-    // BRL->FRL. Por eso la aciclicidad se comprueba tres veces en código.
+  it('la base admite la edge inversa: la aciclicidad no la impone el esquema', async () => {
+    // UNIQUE(source, target) does not see that FRL->BRL closes a loop with
+    // BRL->FRL. That is why acyclicity is checked three times in code.
     await dataSource.query(
-      `INSERT INTO irl_catalog.dependencia_dimension
-         (id_dimension_origen, id_dimension_destino, nivel_minimo_requerido)
+      `INSERT INTO irl_catalog.dimension_dependency
+         (id_dimension_source, id_dimension_target, minimum_required_level)
        SELECT o.id_dimension, d.id_dimension, 3
          FROM irl_catalog.dimension o, irl_catalog.dimension d
-        WHERE o.codigo = 'FRL' AND d.codigo = 'BRL'`,
+        WHERE o.code = 'FRL' AND d.code = 'BRL'`,
     );
 
     const [{ count }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.dependencia_dimension`,
+      `SELECT COUNT(*)::text AS count FROM irl_catalog.dimension_dependency`,
     );
     expect(count).toBe('10');
 
     await dataSource.query(
-      `DELETE FROM irl_catalog.dependencia_dimension dep
+      `DELETE FROM irl_catalog.dimension_dependency dep
         USING irl_catalog.dimension o, irl_catalog.dimension d
-        WHERE dep.id_dimension_origen = o.id_dimension
-          AND dep.id_dimension_destino = d.id_dimension
-          AND o.codigo = 'FRL' AND d.codigo = 'BRL'`,
+        WHERE dep.id_dimension_source = o.id_dimension
+          AND dep.id_dimension_target = d.id_dimension
+          AND o.code = 'FRL' AND d.code = 'BRL'`,
     );
   });
 });

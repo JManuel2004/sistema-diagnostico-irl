@@ -18,25 +18,33 @@ Three principles guide every test we write:
 | **Integration** | `apps/api/test/integration/` | Jest + Testcontainers (Postgres) | Repositories, use cases with real DB                                    | Full suite < 60s  |
 | **E2E**         | `apps/api/test/e2e/`         | Jest + supertest + nock          | Full HTTP cycle, one spec per user story, self-signed JWT + mocked JWKS | Full suite < 3min |
 
-### Coverage thresholds (enforced in CI)
+### Running the tiers
+
+- **Node ≥ 24.9** is required (`.nvmrc`, `engines`): `jose`/`jwks-rsa` load ESM through `require()`, which Jest supports only from that version. On older Node the identity unit suite and every e2e suite fail to load.
+- **Unit** needs nothing else. **Integration** needs Docker (Testcontainers starts Postgres).
+- **E2E** boots the real `AppModule` against the database in `DATABASE_URL`, which must be migrated and seeded first (`docker compose up -d postgres`, then `pnpm --filter @innlab/api db:migration:run && db:seed`). Each suite creates its own rows with random ids and deletes them afterwards, because suites share the database and run in parallel.
+- Repository adapters that only unit tests exercise with in-memory doubles can hide schema drift (a renamed column mapped under its old name passes every unit test). Persistence adapters need an integration test against a real database.
+
+### Coverage thresholds (enforced by `test:cov`)
 
 ```js
 // jest.config.js
 coverageThreshold: {
-  './src/modules/maturity-profile/domain/': { branches: 95, functions: 95, lines: 95 },
-  './src/modules/questionnaire/domain/':    { branches: 90, functions: 90, lines: 90 },
+  './src/modules/diagnosis/domain/': { branches: 87, functions: 92, lines: 93 },
+  './src/modules/routing/domain/':   { branches: 90, functions: 95, lines: 95, statements: 95 },
+  './src/modules/roadmap/domain/':   { branches: 90, functions: 95, lines: 95, statements: 95 },
 }
 ```
 
-The whole codebase isn't gated. The IRL calculator and questionnaire invariants are gated. The threshold exists where the business risk is.
+(Illustrative; the authoritative values, and why each is set where it is, are in `apps/api/jest.config.js`.) The whole codebase isn't gated. The domains that carry business risk — the IRL calculator and questionnaire invariants in `diagnosis`, the recommendation engine, the roadmap — are gated.
 
 ### Unit tests — what to write
 
 For **domain services and value objects**:
 
 ```ts
-// test/unit/modules/maturity-profile/domain/services/irl-calculator.service.spec.ts
-import { IrlCalculatorService } from '../../../../../src/modules/maturity-profile/domain/services/irl-calculator.service.js';
+// test/unit/modules/diagnosis/domain/services/irl-calculator.service.spec.ts
+import { IrlCalculatorService } from '../../../../../src/modules/diagnosis/domain/services/irl-calculator.service.js';
 import { fc, it as itProp } from 'fast-check-jest';
 
 describe('IrlCalculatorService', () => {
@@ -67,10 +75,10 @@ describe('IrlCalculatorService', () => {
 });
 ```
 
-For **application use cases** with port stubs:
+For **application use cases** with port stubs. A use case is a plain class (no Nest decorators), so the test builds it with `new` and hand-written stubs of its ports — never `Test.createTestingModule`:
 
 ```ts
-// test/unit/modules/questionnaire/application/submit-questionnaire.use-case.spec.ts
+// test/unit/modules/diagnosis/application/submit-questionnaire.use-case.spec.ts
 describe('SubmitQuestionnaireUseCase', () => {
   let repository: AnswerSheetRepositoryPort;
   let useCase: SubmitQuestionnaireUseCase;
@@ -104,7 +112,7 @@ describe('SubmitQuestionnaireUseCase', () => {
 For **repositories** against a real database:
 
 ```ts
-// test/integration/modules/questionnaire/typeorm-answer-sheet.repository.spec.ts
+// test/integration/database/typeorm-answer-sheet.repository.spec.ts
 import { TypeOrmAnswerSheetRepository } from '...';
 import { setupTestDatabase, teardownTestDatabase, truncateAllTables } from '../setup.js';
 
@@ -162,7 +170,7 @@ the app already loaded, so it works with real Cognito credentials and with the
 placeholders in `.env.example` alike.
 
 ```ts
-// test/e2e/modules/questionnaire/submit-questionnaire.e2e-spec.ts
+// test/e2e/modules/diagnosis/submit-questionnaire.e2e-spec.ts
 import { authenticateAgainst } from '../../support/authenticated-app.js';
 
 describe('HU-10: Verify completeness before calculation', () => {
@@ -196,7 +204,7 @@ describe('HU-10: Verify completeness before calculation', () => {
     const diagnostic = await seedDiagnosticReadyForQuestionnaire(app, 'user-1');
 
     const res = await agent
-      .post(`/api/v1/diagnosticos/${diagnostic.id}/cuestionario/envio`)
+      .post(`/api/v1/diagnostics/${diagnostic.id}/questionnaire`)
       .send({ answers: incompleteAnswers() });
 
     expect(res.status).toBe(422);
@@ -205,7 +213,7 @@ describe('HU-10: Verify completeness before calculation', () => {
   });
 ```
 
-The guard itself is not this suite's job — `modules/identity/cognito-jwt-guard.e2e-spec.ts`
+The guard itself is not this suite's job — `shared/identity/cognito-jwt-guard.e2e-spec.ts`
 covers signature, issuer, algorithm, `kid` lookup, `token_use` and `@Public()`
 routes on its own.
 
@@ -215,7 +223,7 @@ routes on its own.
 | -------------------- | ---------------------------------------- | ------------------------------ | ----------------------------------------------------- |
 | **Unit / component** | `apps/web/src/**/*.{spec,test}.{ts,tsx}` | Vitest + Testing Library       | Components in isolation, custom hooks, Zustand stores |
 | **Integration**      | `apps/web/src/**/*.test.tsx` with MSW    | Vitest + Testing Library + MSW | A feature with mocked HTTP                            |
-| **E2E**              | `apps/web/tests/e2e/`                    | Playwright                     | One spec per user story, full SPA with mocked auth    |
+| **E2E**              | `apps/web/tests/e2e/`                    | Playwright (Chromium)          | Whole flows in the built SPA, API faked with `page.route` |
 
 ### Component tests — what to write
 
@@ -265,8 +273,8 @@ import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 
 const server = setupServer(
-  http.get('/api/v1/catalogo/cuestionario', () => HttpResponse.json(mockQuestionnaireStructure())),
-  http.post('/api/v1/diagnosticos/:id/cuestionario/envio', () =>
+  http.get('/api/v1/catalog/questionnaire', () => HttpResponse.json(mockQuestionnaireStructure())),
+  http.post('/api/v1/diagnostics/:id/questionnaire', () =>
     HttpResponse.json(mockMaturityProfile()),
   ),
 );
@@ -284,25 +292,26 @@ MSW intercepts at the network layer; your real HTTP client code runs.
 
 ### Playwright E2E
 
-One spec per user story:
+`apps/web/tests/e2e/` holds the browser tests of whole flows; `diagnostic-flow.spec.ts` goes from the landing through the four wizard steps to the results. `pnpm --filter @innlab/web test:e2e` builds the app, serves it with `vite preview` on port 4173 and runs the specs in Chromium (`playwright.config.ts`).
+
+- **The API is faked in the browser** with `page.route`: a small in-memory backend per spec, so what the app reads back is what it wrote. The payloads come from the same fixtures the component tests use (`src/test/fixtures/`), typed with the `@innlab/contracts` types.
+- **The INNLAB session is seeded** into `localStorage` under `innlab.session.v1` before the page loads. No Hub, no Cognito, no backend.
+- Assert what the user sees (headings, buttons, toasts) and, where it matters, which calls the flow made and in which order (the consent before the initiative).
+- The backend's own HTTP behaviour is covered by its e2e suites, not here.
 
 ```ts
-// tests/e2e/submit-questionnaire.spec.ts
-import { test, expect } from '@playwright/test';
-import { signInAsTestUser } from './fixtures/auth';
+test('from the landing to the results through the four wizard steps', async ({ page }) => {
+  const calls = await fakeBackend(page);
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Iniciar diagnóstico' }).first().click();
+  // ... the initiative, the consent, the 48 answers, the summary
+  await page.getByRole('button', { name: 'Procesar diagnóstico' }).click();
 
-test('HU-10: blocks submission and points to missing items', async ({ page }) => {
-  await signInAsTestUser(page);
-  await page.goto('/diagnosticos/test-diag/cuestionario');
-
-  await page.getByRole('button', { name: /procesar diagnóstico/i }).click();
-
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByText(/faltan/i)).toBeVisible();
+  await expect(page).toHaveURL(`/diagnosticos/${ID}/resultados`);
+  await expect(page.getByText('Diagnóstico procesado.')).toBeVisible();
+  expect(calls).toEqual(['start', 'consent', 'initiative', 'finalize:48']);
 });
 ```
-
-The INNLAB session is stubbed at the fixture level (`signInAsTestUser` writes a session into `localStorage` under `innlab.session.v1`). No real Hub, no real Cognito in E2E.
 
 ## Shared testing rules
 
@@ -372,10 +381,12 @@ This is always a real problem, never a flake. Common causes:
 
 ## CI fan-out
 
+There is no CI pipeline in the repository yet, and the Husky hooks are inactive (`.npmrc` sets `ignore-scripts`). Until there is one, run the gates by hand; this is the intended fan-out:
+
 | Trigger                   | Tests run                                                                 |
 | ------------------------- | ------------------------------------------------------------------------- |
-| PR opened or pushed       | Unit + integration on both apps; component tests on web; lint + typecheck |
-| Merge to `dev`            | All of the above + E2E (backend e2e + Playwright)                         |
+| Before pushing            | Lint + typecheck; unit + integration (api); vitest (web)                  |
+| Before merging to `dev`   | All of the above + backend e2e + Playwright                               |
 | Merge to `main` (release) | Full suite + smoke tests against staging                                  |
 
 If you find yourself wanting to skip a test for CI, talk to the team first. Skipped tests rot.

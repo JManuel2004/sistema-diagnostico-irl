@@ -8,12 +8,12 @@ export interface LogoutController {
 }
 
 /**
- * Cierra sesión en Core y limpia la sesión local.
+ * Logs out of Core and clears the local session.
  *
- * El estado local se limpia aunque la llamada a Core falle: dejar los
- * tokens en `localStorage` porque la red falló mantendría al usuario
- * dentro de una aplicación que él ya dio por cerrada. El logout global de
- * Cognito se perdería en ese caso, pero el token local ya no existe.
+ * The local state is cleared even if the call to Core fails: keeping the
+ * tokens in `localStorage` because the network failed would keep the user
+ * inside an application they already considered closed. Cognito's global
+ * logout would be lost in that case, but the local token no longer exists.
  */
 export function useLogout(): LogoutController {
   const [isLoggingOut, setIsLoggingOut] = useState(false);

@@ -6,7 +6,8 @@ import type { AppConfig } from './configuration.js';
  * Single TypeORM options factory shared by:
  *   - NestJS `TypeOrmModule.forRootAsync` at runtime.
  *   - The CLI `DataSource` exported from
- *     `src/infrastructure/database/data-source.ts` (migrations + seeds).
+ *     `src/shared/kernel/infrastructure/database/data-source.ts`
+ *     (migrations + seeds).
  *
  * Keeping one factory means a future change to connection pooling, SSL,
  * logging policy, or migrations glob lands in a single file and is
@@ -18,12 +19,14 @@ import type { AppConfig } from './configuration.js';
  * (the typical case) work without explicit schema hints in every query.
  */
 
-const MIGRATIONS_GLOB_SRC = 'src/infrastructure/database/migrations/*.ts';
-const MIGRATIONS_GLOB_DIST = 'dist/infrastructure/database/migrations/*.js';
+const MIGRATIONS_GLOB_SRC =
+  'src/shared/kernel/infrastructure/database/migrations/*.ts';
+const MIGRATIONS_GLOB_DIST =
+  'dist/shared/kernel/infrastructure/database/migrations/*.js';
+// ORM entities live under `<context>/infrastructure/` in every bounded
+// context, both business modules (`modules/`) and the two `shared/` contexts.
 const ENTITIES_GLOB_SRC =
-  'src/modules/**/infrastructure/persistence/**/*.orm-entity.ts';
-const ENTITIES_GLOB_DIST =
-  'dist/modules/**/infrastructure/persistence/**/*.orm-entity.js';
+  'src/{modules,shared}/**/infrastructure/**/*.orm-entity.ts';
 
 export function buildOrmModuleOptions(config: AppConfig): TypeOrmModuleOptions {
   return {
@@ -50,7 +53,7 @@ export function buildOrmDataSourceOptions(
     type: 'postgres',
     url: config.database.url,
     synchronize: false,
-    entities: [ENTITIES_GLOB_SRC, ENTITIES_GLOB_DIST],
+    entities: [ENTITIES_GLOB_SRC],
     migrations: [MIGRATIONS_GLOB_SRC],
     migrationsTableName: 'typeorm_migrations',
   };

@@ -2,15 +2,14 @@ import { forwardRef, type HTMLAttributes } from 'react';
 import { cn } from '@/shared/lib/utils';
 
 /**
- * Familia `Card` alineada con `DESIGN.md`.
+ * `Card` family aligned with `DESIGN.md`.
  *
- * El sistema favorece **hairlines Gris 2** (`#CECFD4`) sobre
- * sombras para indicar profundidad — más legible en proyectores
- * de baja DPI usados en talleres de INNLAB (RNF-08).
+ * The system favors **Gris 2 hairlines** (`#CECFD4`) over shadows to
+ * convey depth — more readable on the low-DPI projectors used in INNLAB
+ * workshops (RNF-08).
  *
- * El root es semánticamente neutro (`<div>`). Las páginas que
- * necesiten landmark envuelven la tarjeta en `<section
- * aria-labelledby>` por fuera.
+ * The root is semantically neutral (`<div>`). Pages that need a landmark
+ * wrap the card in a `<section aria-labelledby>` outside.
  */
 export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function Card(
   { className, ...props },
@@ -23,44 +22,6 @@ export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(f
         'border-border bg-card text-card-foreground rounded-md border transition-colors',
         className,
       )}
-      {...props}
-    />
-  );
-});
-
-export const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  function CardHeader({ className, ...props }, ref) {
-    return (
-      <div ref={ref} className={cn('flex flex-col space-y-1.5 p-6 pb-4', className)} {...props} />
-    );
-  },
-);
-
-export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
-  function CardTitle({ className, children, ...props }, ref) {
-    return (
-      <h3
-        ref={ref}
-        className={cn(
-          'text-foreground text-[1.375rem] font-semibold leading-tight tracking-tight',
-          className,
-        )}
-        {...props}
-      >
-        {children}
-      </h3>
-    );
-  },
-);
-
-export const CardDescription = forwardRef<
-  HTMLParagraphElement,
-  HTMLAttributes<HTMLParagraphElement>
->(function CardDescription({ className, ...props }, ref) {
-  return (
-    <p
-      ref={ref}
-      className={cn('text-muted-foreground text-sm leading-relaxed', className)}
       {...props}
     />
   );

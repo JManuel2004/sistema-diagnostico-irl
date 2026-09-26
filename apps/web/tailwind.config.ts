@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss';
 import tailwindcssAnimate from 'tailwindcss-animate';
+import { PALETTE } from './src/shared/lib/palette';
 
 /**
  * Tailwind v3 configuration wired to the Icesi institutional brand
@@ -68,76 +69,35 @@ const config: Config = {
           emphasis: 'hsl(var(--surface-emphasis))',
         },
 
-        // Icesi institutional primary + complementary palette
-        'azul-icesi': '#5454E9',
-        'verde-icesi': '#4CB979',
-        'amarillo-icesi': '#E4EB60',
-        'morado-icesi': '#865CF0',
-        'naranja-icesi': '#E9683B',
-        'gris-1': '#88898C',
-        'gris-2': '#CECFD4',
+        // Icesi institutional palette, semantic and dimension colors: one
+        // source in `src/shared/lib/palette.ts`, shared with the SVG code.
+        'azul-icesi': PALETTE['azul-icesi'],
+        'verde-icesi': PALETTE['verde-icesi'],
+        'amarillo-icesi': PALETTE['amarillo-icesi'],
+        'morado-icesi': PALETTE['morado-icesi'],
+        'naranja-icesi': PALETTE['naranja-icesi'],
+        'gris-1': PALETTE['gris-1'],
+        'gris-2': PALETTE['gris-2'],
 
-        // Semantic — bound to IRL imbalance classifications (RF-10)
-        critical: {
-          DEFAULT: '#A53221',
-          bg: '#FBEDEA',
-          foreground: '#FFFFFF',
-        },
-        moderate: {
-          DEFAULT: '#8C3811',
-          bg: '#FBEDE5',
-          foreground: '#FFFFFF',
-        },
-        acceptable: {
-          DEFAULT: '#1F633D',
-          bg: '#E5F2EB',
-          foreground: '#FFFFFF',
-        },
-        info: {
-          DEFAULT: '#5454E9',
-          bg: '#EFEFFB',
-        },
+        critical: PALETTE.critical,
+        moderate: PALETTE.moderate,
+        acceptable: PALETTE.acceptable,
+        info: PALETTE.info,
 
-        /*
-         * IRL dimension hues — usados en barras de acento, dots,
-         * chips y overlines. Nunca en inputs de respuesta.
-         *
-         * El par `{code}` / `{code}-ink` separa dos roles visuales:
-         *   - `{code}`: tono brillante institucional (Azul, Morado,
-         *     Verde, Naranja, Amarillo Icesi). Va en `bg-*`, dots,
-         *     barras de acento. Anclado a la paleta del manual y a
-         *     los mosaicos de la web de INNLAB.
-         *   - `{code}-ink`: misma familia cromática pero oscurecida
-         *     a ≥4.5:1 sobre blanco. Va en `text-*-ink` para
-         *     overlines y etiquetas legibles sin sacrificar la
-         *     identidad cromática del eje.
-         *
-         * IPRL no tiene contraparte directa en los 5 colores Icesi
-         * brillantes; usa un indigo profundo (`#3D3D8C`) — primo
-         * sobrio de Azul Icesi — que diferencia visualmente del TRL
-         * y conserva la familia cromática institucional.
-         */
-        dimension: {
-          trl: '#5454E9',
-          crl: '#865CF0',
-          brl: '#4CB979',
-          iprl: '#3D3D8C',
-          tmrl: '#E9683B',
-          frl: '#E4EB60',
-
-          'trl-ink': '#3737BD',
-          'crl-ink': '#6037D1',
-          'brl-ink': '#1F8550',
-          'iprl-ink': '#3D3D8C',
-          'tmrl-ink': '#B84F2A',
-          'frl-ink': '#8C7818',
-        },
+        dimension: PALETTE.dimension,
       },
+      // Straight corners everywhere, like innlab.org. `rounded-full` is still
+      // available for circles (Likert scale, steps, dots).
       borderRadius: {
-        sm: '4px',
-        md: '8px',
-        lg: '12px',
-        xl: '16px',
+        none: '0',
+        DEFAULT: '0',
+        sm: '0',
+        md: '0',
+        control: '0',
+        lg: '0',
+        xl: '0',
+        '2xl': '0',
+        '3xl': '0',
       },
       fontFamily: {
         sans: [
@@ -154,8 +114,13 @@ const config: Config = {
       },
       fontSize: {
         // Custom display sizes per DESIGN.md typography scale.
-        display: ['3rem', { lineHeight: '1.1', letterSpacing: '-0.02em', fontWeight: '700' }],
-        overline: ['0.6875rem', { lineHeight: '1.3', letterSpacing: '0.08em', fontWeight: '600' }],
+        display: ['3.5rem', { lineHeight: '1.05', letterSpacing: '-0.03em', fontWeight: '800' }],
+        // One heading scale (h1 40 / h2 28 / h3 20), named so no page writes
+        // the pixel value by hand.
+        h1: ['2.5rem', { lineHeight: '1.15', letterSpacing: '-0.02em', fontWeight: '700' }],
+        h2: ['1.75rem', { lineHeight: '1.25', letterSpacing: '-0.015em', fontWeight: '700' }],
+        h3: ['1.25rem', { lineHeight: '1.35', fontWeight: '600' }],
+        overline: ['0.75rem', { lineHeight: '1.3', letterSpacing: '0.06em', fontWeight: '700' }],
       },
       letterSpacing: {
         tightest: '-0.02em',

@@ -2,52 +2,51 @@
 
 Rules that ESLint and Prettier can't fully enforce. Reviewers cite this document during PR review; new contributors read it before their first PR.
 
-## Bilingual codebase
+## Language policy
 
-This is the most distinctive convention in the project. **Memorize it.**
+**English for everything in code** — no exception by layer or identifier kind. Spanish is reserved for what the end user reads.
 
-| Language    | Used for                                                                                                                                                                  |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Spanish** | Domain entities, business value objects, DB tables and columns, REST URL segments, user-facing strings, business terms                                                    |
-| **English** | Infrastructure code, framework constructs, technical terms, file names of technical files, type-only helpers, commit messages, branch names, code comments, documentation |
+| Language    | Used for                                                                                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **English** | Every identifier: domain entities and value objects, use cases, DB tables and columns, REST URL segments, file names, commit messages, branch names, code comments, documentation |
+| **Spanish** | User-facing strings only: interface copy, error messages shown on screen, questionnaire text, and catalog data values (`name_es`, descriptions)                                |
 
 ### Examples
 
 ```ts
-// ✓ correct: Spanish domain, English infrastructure
-class Diagnostico { /* ... */ }
-class TypeOrmDiagnosticoRepository implements DiagnosticoRepositoryPort { /* ... */ }
-const consentimientoController = new ConsentimientoController();
+// ✓ correct: English everywhere in code
+class Diagnosis { /* ... */ }
+class TypeOrmDiagnosisRepository implements DiagnosisRepositoryPort { /* ... */ }
+class Statement { /* ... */ }
 
-// REST URLs in Spanish
-GET /api/v1/diagnosticos/:id/cuestionario
+// REST URLs in English
+GET /api/v1/diagnostics/:id/questionnaire
 
-// DB columns in Spanish (snake_case)
-CREATE TABLE respuesta (
-  id_respuesta UUID PRIMARY KEY,
-  id_diagnostico UUID NOT NULL,
-  id_afirmacion UUID NOT NULL,
-  valor_likert SMALLINT NOT NULL
+// DB columns in English (snake_case)
+CREATE TABLE answer (
+  id UUID PRIMARY KEY,
+  id_diagnostic UUID NOT NULL,
+  id_statement BIGINT NOT NULL,
+  likert_value SMALLINT NOT NULL
 );
 
-// ✗ wrong: translating loses the meaning
-class Diagnostic { /* ... */ }
-class Statement { /* ... */ } // it's an "afirmación", not a "statement" in IRL terminology
+// ✗ wrong: Spanish identifiers
+class Diagnostico { /* ... */ }
+class Afirmacion { /* ... */ }
 
 // ✗ wrong: mixing inside one identifier
-class DiagnosticoRepositorio { /* ... */ }
-class StatementAfirmacion { /* ... */ }
+class DiagnosticoRepository { /* ... */ }
 ```
 
 ### Borderline cases
 
-- **Domain enums with technical names**: dimension codes (`TRL`, `CRL`, `BRL`, etc.) stay as-is because they're acronyms defined by the KTH framework — they're neither English nor Spanish.
-- **Domain value objects with English names**: `LikertValue` and `IrlLevel` stay in English because they're scale concepts, not Spanish-domain terms. The data they wrap (a number) doesn't translate.
-- **Business errors**: name them in English with a Spanish-aware description. `QuestionnaireIncompleteError` (English class name) returns a problem-details `title: "Cuestionario incompleto"` for users.
+- **Domain enums with technical names**: dimension codes (`TRL`, `CRL`, `BRL`, etc.) stay as-is because they are acronyms defined by the KTH framework.
+- **Business errors**: the class name is English (`QuestionnaireIncompleteError`); the message a user reads on screen is Spanish and comes from the presentation layer, not from the domain identifier.
+- **Frontend routes** (`/diagnosticos/:id/recomendacion`) are user-visible URLs, not API identifiers; they follow the product language (Spanish).
 
 ### When in doubt
 
-Ask: _"would a non-technical INNLAB staff member recognize this term?"_ If yes → Spanish. If it's plumbing they'd never see → English.
+Ask: _"does an end user read this?"_ If yes → Spanish, as copy. If it is an identifier, a file, a table, a column, a route of the API, or a comment → English.
 
 ## TypeScript conventions
 
@@ -117,7 +116,7 @@ import { z } from 'zod';
 
 import { likertValueSchema } from '@innlab/contracts';
 
-import type { AnswerSheetRepositoryPort } from '../../domain/ports/answer-sheet.repository.port.js';
+import type { AnswerSheetRepositoryPort } from '../../domain/repositories/answer-sheet.repository.port.js';
 import { AnswerSheet } from '../../domain/entities/answer-sheet.aggregate.js';
 ```
 
@@ -197,25 +196,28 @@ ESLint's `no-floating-promises` rule catches forgotten awaits. Don't suppress it
 | ---------------- | --------------------------------------------------------------- | ------------------------------- |
 | Use case class   | `<Verb><Noun>UseCase`                                           | `SubmitQuestionnaireUseCase`    |
 | Use case method  | always `execute(command)`                                       | —                               |
-| Repository port  | `<Aggregate>RepositoryPort`                                     | `DiagnosticoRepositoryPort`     |
-| Repository impl  | `TypeOrm<Aggregate>Repository`                                  | `TypeOrmDiagnosticoRepository`  |
-| External port    | `<Service>Port`                                                 | `MailerPort`, `UserContextPort` |
+| Repository port  | `<Aggregate>RepositoryPort`                                     | `DiagnosisRepositoryPort`     |
+| Repository impl  | `TypeOrm<Aggregate>Repository`                                  | `TypeOrmDiagnosisRepository`  |
+| External port    | `<Service>Port`                                                 | `UserContextPort`, `DiagnosticOwnershipPort` |
 | External adapter | `<Technology><Service>Adapter` or `<Technology><Service>Client` | `InnlabCoreHttpClient`          |
-| HTTP DTO input   | `<Verb><Noun>Dto`                                               | `SubmitQuestionnaireDto`        |
-| HTTP DTO output  | `<Noun>Response`                                                | `MaturityProfileResponse`       |
+| Adapter over another module's query | `<Source><Purpose>Adapter`                       | `DiagnosisOwnershipAdapter`     |
+| Exported read query | `<Verb><Noun>Query`                                          | `FindDiagnosisOwnerQuery`       |
+| HTTP request DTO | `<Noun>RequestDto` (class-validator)                            | `AnswersRequestDto`             |
+| HTTP param DTO   | `<Noun>Param`                                                   | `DiagnosticIdParam`             |
+| HTTP response DTO | `<Noun>ResponseDto`, implements the contract type              | `MaturityProfileResponseDto`    |
 | Domain error     | `<Description>Error`                                            | `QuestionnaireIncompleteError`  |
 | Value object     | PascalCase, noun                                                | `LikertValue`, `IrlLevel`       |
-| Aggregate root   | PascalCase, noun                                                | `AnswerSheet`, `Diagnostico`    |
+| Aggregate root   | PascalCase, noun                                                | `AnswerSheet`, `Diagnosis`    |
 
 ### Frontend
 
 | Construct          | Pattern                      | Example                                                      |
 | ------------------ | ---------------------------- | ------------------------------------------------------------ |
 | Component          | PascalCase                   | `StatementCard`, `RadarChart`                                |
-| Page component     | PascalCase, `Page` suffix    | `QuestionnairePage`                                          |
-| Custom hook        | camelCase, `use` prefix      | `useQuestionnaireDraft`                                      |
-| Zustand store hook | camelCase, `use` prefix      | `useQuestionnaireDraft` (same as a regular hook — by design) |
-| API function       | camelCase, verb              | `submitQuestionnaire`, `getProfile`                          |
+| Page component     | PascalCase, `Page` suffix    | `ResultsPage`                                                |
+| Custom hook        | camelCase, `use` prefix      | `useQuestionnaireCompletion`                                 |
+| Zustand store hook | camelCase, `use…Store`       | `useQuestionnaireDraftStore`                                 |
+| API function       | camelCase, verb              | `finalizeDiagnostic`, `getScalingRoadmap`                    |
 | Zod schema         | camelCase, `Schema` suffix   | `answerItemSchema`                                           |
 | Type from schema   | PascalCase, no `Type` suffix | `AnswerItem`                                                 |
 
@@ -223,15 +225,24 @@ ESLint's `no-floating-promises` rule catches forgotten awaits. Don't suppress it
 
 ### Backend modules
 
-Inside each `modules/<name>/` folder:
+Inside each `modules/<name>/` folder (and the two `shared/` contexts, `irl-taxonomy` and `identity`):
 
 ```
-domain/              # framework-free
-application/         # depends on domain
-infrastructure/      # depends on domain + application
-interfaces/          # depends on application
-<name>.module.ts
+domain/              # framework-free: entities, value-objects, services, exceptions, repositories (ports), events
+application/         # depends on domain only, no framework: use-cases, dtos, ports
+infrastructure/      # depends on domain + application: database/{orm-entities,repositories}, messaging, integrations, adapters
+presentation/        # depends on application only: controllers and their dto/
+<name>.module.ts     # wires use cases with applicationProvider(UseCase, [tokens])
+README.md            # scope, rules, completeness, exposed API, dependencies, owned data, tests
 ```
+
+`presentation/` never imports from `domain/` or `infrastructure/`; `eslint-plugin-boundaries` fails the lint if it does. Ports live in `domain/repositories/` (not `domain/ports/`); a port whose result is an application DTO (another module's read model, such as `UserDiagnosesPort`) lives in `application/ports/`.
+
+**The application layer is framework-free** ([ADR 0005](../architecture/decisions/0005-framework-free-application-layer.md)). A use case is a plain class: no `@Injectable`, no `@Inject`, no `@nestjs/*`, `typeorm` or HTTP client import (the lint bans them in `application/` as in `domain/`). Its constructor takes its ports; the module builds it with `applicationProvider(UseCase, [TOKEN_A, TOKEN_B])` (`shared/kernel/infrastructure/nest/application-provider.ts`), listing the tokens in constructor order. A use case publishes events through the `EVENT_PUBLISHER` port, never through `EventEmitter2`.
+
+**Using another module:** import its module and inject one of the read queries it exports, behind a port declared in the consumer and implemented by an adapter in the consumer's `infrastructure/`. Never its repositories, its ORM entities or its write use cases; a reaction to what another module did is a domain event.
+
+**Request validation** happens at the HTTP boundary with class-validator DTOs; invariants stay in the domain ([ADR 0006](../architecture/decisions/0006-validation-at-the-http-boundary.md)). Shared pieces of `presentation/` (the `DiagnosticIdParam` DTO, `ApiErrors(...)`) live in `shared/kernel/presentation/`. Events that cross modules live in `shared/kernel/events/`. The global technical layers (migrations, seeds, HTTP filters) live in `shared/kernel/infrastructure/`, not in a top-level `infrastructure/` folder.
 
 Don't introduce new top-level folders inside a module without discussion. If you find yourself wanting `services/` at the module root, decide whether it's domain or infrastructure and place it there.
 
@@ -240,14 +251,59 @@ Don't introduce new top-level folders inside a module without discussion. If you
 Inside each `features/<name>/` folder:
 
 ```
-api/                 # API functions
+api/                 # API functions, parsed with @innlab/contracts schemas
 components/          # feature-private components
 hooks/               # feature-private hooks
-store/               # zustand store (only if needed)
-schemas/             # zod schemas (re-export from @innlab/contracts when shared)
-utils/               # pure helpers
-index.ts             # public surface — only export what other features/pages need
+store/               # zustand draft (only if needed)
+lib/ or utils/       # pure helpers
+index.ts             # public surface — only export what pages need
 ```
+
+## Documentation
+
+What can be derived from the code is not written by hand: the endpoints are Swagger (`/api/docs`), the folder tree is the repository, the schema is the single migration. What the code cannot say is written once, next to what it explains:
+
+| What | Where |
+| --- | --- |
+| Why a non-obvious design decision was taken | An ADR in [`docs/architecture/decisions/`](../architecture/README.md): context, decision, consequences. Immutable once accepted; a later change is a new ADR that supersedes it |
+| Why a domain invariant is the way it is | A short comment next to the invariant, in `domain/` |
+| Project conventions | One file per kind in `docs/conventions/`, with a correct and a wrong example |
+| A backend module's scope and rules | The `README.md` at the root of the module, with the template below |
+
+Every backend module (`modules/<name>/`, `shared/irl-taxonomy/`, `shared/identity/`) has a `README.md` with exactly these sections, in this order:
+
+```markdown
+# <module>
+
+## Scope
+What business responsibility it covers and, explicitly, what it does not (the boundary with its neighbours).
+
+## Rules that must hold
+The business invariants and architecture constraints specific to this module that a change cannot break without a conscious decision. Not the generic rules of this file.
+
+## Completeness
+What part of the scope is implemented today and what is missing, referring to user stories or known findings — never a loose "stage 1".
+
+## Responsibility (ubiquitous language)
+The capability, in the words someone at INNLAB would use.
+
+## Domain concepts
+The aggregates, entities and value objects this module owns.
+
+## What it exposes
+The exported queries, events and HTTP endpoints others may use. Anything not listed is internal.
+
+## What it depends on
+Other modules' exported queries or ports it consumes — and any violation, so it stays visible.
+
+## Data it owns
+The tables it writes, and the catalogs it owns through seeds.
+
+## Test coverage
+What exists per tier (unit, integration, e2e) and what is explicitly missing.
+```
+
+A change is not done while it leaves documentation stale: a change that alters a module's scope, rules, exposed API or completeness updates its `README.md` in the same commit.
 
 ## Comments
 

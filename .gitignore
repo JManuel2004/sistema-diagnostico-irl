@@ -36,3 +36,6 @@ test-results/
 
 # misc
 *.tsbuildinfo
+
+# Local settings of developer tools
+.claude/

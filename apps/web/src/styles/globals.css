@@ -3,35 +3,37 @@
 @tailwind utilities;
 
 /*
- * Tokens del sistema de diseño — Icesi institutional brand
- * (Manual de identidad de marca Icesi, Febrero 2026).
+ * Design system tokens — Icesi institutional brand (Icesi brand identity
+ * manual, February 2026), aligned with innlab.org: ink #333333, secondary
+ * text #666666, borders #D9D9D9, straight corners and neutral surfaces.
+ * Color is reserved for the data, the main button and the footer.
  *
- * Cada variable es un HSL en formato sin comas (`H S% L%`) — Tailwind las
- * envuelve con `hsl(var(--token))` desde `tailwind.config.ts`.
+ * Each variable is an HSL in comma-less format (`H S% L%`) — Tailwind wraps
+ * them with `hsl(var(--token))` from `tailwind.config.ts`.
  *
  *   --primary    240 77% 62%  =  #5454E9  Azul Icesi
- *   --accent      14 80% 57%  =  #E9683B  Naranja Icesi (paridad con INNLAB)
- *   --border     228  9% 82%  =  #CECFD4  Gris 2
+ *   --accent      14 80% 57%  =  #E9683B  Naranja Icesi (parity with INNLAB)
+ *   --border       0  0% 85%  =  #D9D9D9  border, innlab.org's
  *   --border-strong  225  2% 54%  =  #88898C  Gris 1
  *
- * Modo oscuro intencionalmente omitido en fase 1: el manual mandata
- * fondo blanco (positive logo lockup) y el sistema es flat-ish.
+ * Dark mode intentionally left out: the manual mandates a white background
+ * (positive logo lockup) and the system is flat-ish.
  */
 @layer base {
   :root {
     /* Surfaces — pure white per Icesi positive logo lockup rules */
     --background: 0 0% 100%;
-    --foreground: 240 16% 12%;
+    --foreground: 0 0% 20%;
 
     --surface: 0 0% 100%;
-    --surface-muted: 240 33% 97%;
-    --surface-emphasis: 240 75% 96%;
+    --surface-muted: 240 33% 98%;
+    --surface-emphasis: 240 33% 98%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 16% 12%;
+    --card-foreground: 0 0% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 16% 12%;
+    --popover-foreground: 0 0% 20%;
 
     /* Primary — Azul Icesi #5454E9 (Pantone 2131 C, identity anchor) */
     --primary: 240 77% 62%;
@@ -40,38 +42,35 @@
     --primary-foreground: 0 0% 100%;
 
     /*
-     * Accent — Naranja Icesi #E9683B en su brillo institucional, igual al
-     * que usa INNLAB en sus mosaicos. Contrast ratio del texto blanco sobre
-     * este naranja es 3.74:1 — cumple WCAG AA para UI components (≥3:1) y
-     * para texto large (≥3:1 a 18pt o 14pt bold). Los CTA primarios usan
-     * fuentes de 0.9375rem semibold, así que se pintan con sombra ligera +
-     * estado pressed más oscuro para reforzar la legibilidad.
+     * Accent — Naranja Icesi #E9683B. As on innlab.org, it is an accent block
+     * color, not a button color: the main button is Azul Icesi. With white text
+     * on top it only meets WCAG AA as large text (≥18.66px bold).
      */
     --accent: 14 80% 57%;
-    --accent-hover: 14 80% 50%;
-    --accent-pressed: 14 82% 43%;
+    --accent-hover: 15 69% 52%;
+    --accent-pressed: 15 64% 46%;
     --accent-foreground: 0 0% 100%;
 
     /* Secondary surfaces */
-    --secondary: 240 33% 97%;
-    --secondary-foreground: 240 16% 16%;
+    --secondary: 240 33% 98%;
+    --secondary-foreground: 0 0% 20%;
 
-    --muted: 240 33% 97%;
-    --muted-foreground: 232 9% 35%;
+    --muted: 240 33% 98%;
+    --muted-foreground: 0 0% 40%;
 
-    /* Destructive (system warnings, not used in phase 1) */
-    --destructive: 9 65% 39%;
+    /* Destructive (system warnings) */
+    --destructive: 6 63% 46%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders — Gris 1 (strong) and Gris 2 (default hairline) */
-    --border: 228 9% 82%;
+    --border: 0 0% 85%;
     --border-strong: 225 2% 54%;
     --input: 225 2% 54%;
 
     /* Focus ring — Azul Icesi */
     --ring: 240 77% 62%;
 
-    --radius: 0.5rem;
+    --radius: 0;
   }
 }
 
@@ -100,7 +99,7 @@
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
-    color: hsl(240 16% 12%);
+    color: hsl(var(--foreground));
   }
 
   /* Headings — Plus Jakarta Sans, tighter tracking per scale */
@@ -109,19 +108,21 @@
   h3,
   h4 {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Arial, sans-serif;
-    color: hsl(240 16% 12%);
+    color: hsl(var(--foreground));
   }
 
   /*
    * Icesi institutional iconography: corners angulares, terminaciones
    * rectas, grosor uniforme. Lucide-react uses round joins/caps by
-   * default, which contradicts the manual — override globally.
+   * default, which contradicts the manual — override globally. Caps are
+   * `square`, not `butt`: the dots of «!» and «i» are zero-length strokes
+   * that a butt cap does not draw.
    */
   .lucide,
   [data-lucide],
   svg[stroke] {
     stroke-linejoin: miter;
-    stroke-linecap: butt;
+    stroke-linecap: square;
   }
 
   /* Focus ring — Azul Icesi at 2px offset, visible on every interactive */
@@ -132,25 +133,35 @@
   /* Selection — soft Azul Icesi wash so text stays readable */
   ::selection {
     background-color: hsl(240 75% 92%);
-    color: hsl(240 16% 12%);
+    color: hsl(var(--foreground));
   }
 }
 
 @layer utilities {
   /* Typography helpers — direct mappings to DESIGN.md type scale */
   .text-overline {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     line-height: 1.3;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 
-  .text-display {
-    font-size: 3rem;
-    line-height: 1.1;
+  /* Overline of a screen or section: one per block, always the same. */
+  .text-eyebrow {
+    font-size: 0.8125rem;
+    line-height: 1.3;
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: hsl(var(--primary));
+  }
+
+  .text-display {
+    font-size: 3.5rem;
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.03em;
   }
 
   .text-body-lg {
@@ -161,7 +172,7 @@
 
   /* Subtle wash for institutional surfaces (callouts, hero panels) */
   .bg-azul-wash {
-    background-color: hsl(240 75% 96%);
+    background-color: hsl(var(--surface-muted));
   }
 
   /*
@@ -173,5 +184,69 @@
     width: 1px;
     background-color: #88898c;
     align-self: stretch;
+  }
+}
+
+@layer components {
+  /*
+   * Radar emphasis. The chart is drawn once and is NOT re-rendered when the
+   * cursor moves over a point or a card: the wrapper's `data-highlighted`
+   * (a space-separated list of dimension codes) drives the emphasis from here.
+   * Re-rendering recharts on every hover restarts its animation and remounts
+   * the points, which closes the tooltip under the cursor.
+   */
+  .radar-emphasis [data-dim] {
+    transition: opacity 150ms ease;
+  }
+
+  .radar-emphasis:not([data-highlighted='']) [data-dim] {
+    opacity: 0.4;
+  }
+
+.radar-emphasis[data-highlighted~="TRL"] [data-dim="TRL"],
+.radar-emphasis[data-highlighted~="CRL"] [data-dim="CRL"],
+.radar-emphasis[data-highlighted~="BRL"] [data-dim="BRL"],
+.radar-emphasis[data-highlighted~="IPRL"] [data-dim="IPRL"],
+.radar-emphasis[data-highlighted~="TmRL"] [data-dim="TmRL"],
+.radar-emphasis[data-highlighted~="FRL"] [data-dim="FRL"] {
+    opacity: 1;
+  }
+
+  .radar-emphasis .radar-ring {
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+
+.radar-emphasis[data-highlighted~="TRL"] [data-dim="TRL"] .radar-ring,
+.radar-emphasis[data-highlighted~="CRL"] [data-dim="CRL"] .radar-ring,
+.radar-emphasis[data-highlighted~="BRL"] [data-dim="BRL"] .radar-ring,
+.radar-emphasis[data-highlighted~="IPRL"] [data-dim="IPRL"] .radar-ring,
+.radar-emphasis[data-highlighted~="TmRL"] [data-dim="TmRL"] .radar-ring,
+.radar-emphasis[data-highlighted~="FRL"] [data-dim="FRL"] .radar-ring {
+    opacity: 1;
+  }
+
+  .radar-emphasis .radar-dot {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 150ms ease;
+  }
+
+.radar-emphasis[data-highlighted~="TRL"] [data-dim="TRL"] .radar-dot,
+.radar-emphasis[data-highlighted~="CRL"] [data-dim="CRL"] .radar-dot,
+.radar-emphasis[data-highlighted~="BRL"] [data-dim="BRL"] .radar-dot,
+.radar-emphasis[data-highlighted~="IPRL"] [data-dim="IPRL"] .radar-dot,
+.radar-emphasis[data-highlighted~="TmRL"] [data-dim="TmRL"] .radar-dot,
+.radar-emphasis[data-highlighted~="FRL"] [data-dim="FRL"] .radar-dot {
+    transform: scale(1.5);
+  }
+
+.radar-emphasis[data-highlighted~="TRL"] [data-dim="TRL"] .radar-label-name,
+.radar-emphasis[data-highlighted~="CRL"] [data-dim="CRL"] .radar-label-name,
+.radar-emphasis[data-highlighted~="BRL"] [data-dim="BRL"] .radar-label-name,
+.radar-emphasis[data-highlighted~="IPRL"] [data-dim="IPRL"] .radar-label-name,
+.radar-emphasis[data-highlighted~="TmRL"] [data-dim="TmRL"] .radar-label-name,
+.radar-emphasis[data-highlighted~="FRL"] [data-dim="FRL"] .radar-label-name {
+    font-weight: 800;
   }
 }

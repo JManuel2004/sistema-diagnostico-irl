@@ -1,9 +1,9 @@
-// Superficie pública de la feature. Lo que no se reexporta aquí es
-// interno — regla de aislamiento por feature de `apps/web/CLAUDE.md`.
+// Public surface of the feature. Whatever is not re-exported here is
+// internal — the project's feature isolation rule.
 export { RecommendationSummary } from './components/RecommendationSummary';
 export { LayerTracePanel } from './components/LayerTracePanel';
 export {
   useRecommendation,
   useRecommendationTrace,
-  useGenerateRecommendation,
+  useAcceptDeepAnalysis,
 } from './hooks/useRecommendation';

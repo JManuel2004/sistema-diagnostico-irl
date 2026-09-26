@@ -4,7 +4,7 @@ How to open a PR, what reviewers look for, and how merges land.
 
 ## Before opening a PR
 
-Run these locally first. The CI will check them anyway; doing it locally saves a round trip:
+Run these locally first. There is no CI pipeline yet and the Husky hooks are inactive, so these local runs are the only gate:
 
 ```bash
 pnpm typecheck        # no type errors anywhere
@@ -97,7 +97,7 @@ The linked HU-xx ticket has acceptance criteria (Gherkin scenarios). Every scena
 
 - Domain code imports no framework code.
 - Use cases have one `execute(command)` method.
-- Repositories implement ports declared in `domain/ports/`.
+- Repositories implement ports declared in `domain/repositories/`.
 - Frontend features don't import from other features.
 - The bilingual rule is respected.
 
@@ -131,14 +131,17 @@ Contract drift is the single bug class this rule prevents.
 
 If the PR changes:
 
-| Change                                | Update                                                                       |
-| ------------------------------------- | ---------------------------------------------------------------------------- |
-| An endpoint shape, URL, or error code | `docs/conventions/api-design.md` examples and `apps/api/docs/error-codes.md` |
-| A module's responsibility             | `apps/api/docs/modules.md`                                                   |
-| A feature's surface                   | `apps/web/docs/features.md`                                                  |
-| A state-management decision           | `apps/web/docs/state-management.md`                                          |
-| A workflow step                       | The relevant doc in `docs/workflows/`                                        |
-| A coding rule                         | `docs/conventions/code-style.md`                                             |
+| Change                                | Update                                                                                        |
+| ------------------------------------- | --------------------------------------------------------------------------------------------- |
+| An endpoint shape, URL, or error code | The Swagger decorators of the controller and its DTOs; `API-CONVENTIONS.md` if a rule changes |
+| A module's scope, rules or exposed API| The module's own `README.md` (`apps/api/src/modules/<name>/` or `apps/api/src/shared/<name>/`) |
+| How modules talk to each other        | `apps/api/docs/MODULES.md`                                                                    |
+| A feature's surface or a page         | `apps/web/docs/MODULES.md`                                                                    |
+| A state-management decision           | `apps/web/docs/STATE_MANAGEMENT.md`                                                           |
+| The diagnostic flow                   | `docs/architecture/diagnostic-flow.md`                                                        |
+| A non-obvious design decision         | A new ADR in `docs/architecture/decisions/`                                                   |
+| A workflow step                       | The relevant doc in `docs/workflows/`                                                         |
+| A coding rule                         | `docs/conventions/CODE-STYLE.md`                                                              |
 
 The principle: **fix the doc in the same PR that exposed the gap.** Don't defer.
 
@@ -172,8 +175,8 @@ If you disagree with a request, say so. A good reviewer would rather discuss tha
 
 ### When the PR is approved
 
-- All required CI checks pass (lint, typecheck, unit, integration; E2E on merge).
-- At least one approval from a teammate. For phase-1 phase work, one approval is enough; for changes to the shared kernel or contracts, prefer two.
+- The local gates pass (lint, typecheck, unit, integration; E2E before merging to `dev`).
+- At least one approval from a teammate. For feature work, one approval is enough; for changes to the shared kernel or contracts, prefer two.
 - No unresolved review comments.
 - The branch is up to date with `dev` (use **Update branch** if not).
 
@@ -189,7 +192,7 @@ returns http 422 with the questionnaire_incomplete code and a missing
 array listing the gaps grouped by dimension.
 
 refs: IRL-10
-docs: docs/conventions/api-design.md
+docs: docs/conventions/API-CONVENTIONS.md
 ```
 
 The PR title becomes the subject line; the PR body becomes the commit body. Write both with that in mind.
@@ -218,14 +221,14 @@ For production-affecting bugs:
 - Branch from `main`, not `dev`.
 - Name: `hotfix/<short-summary>`.
 - PR targets `main`. After merge, a second PR back-merges into `dev`.
-- CI requires the full E2E suite to pass.
+- The full E2E suite (backend and Playwright) must pass.
 
 ### Documentation-only
 
 - Use the `doc:` commit prefix.
-- Lint and typecheck still run (markdown linters, link checkers).
+- Check the links you touched still resolve.
 - One reviewer's approval is enough.
-- May skip test runs in CI (the doc-only label triggers a slimmer pipeline).
+- Test runs may be skipped.
 
 ### Dependency bump
 

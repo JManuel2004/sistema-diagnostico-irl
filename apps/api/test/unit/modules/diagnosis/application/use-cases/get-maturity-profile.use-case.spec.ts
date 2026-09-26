@@ -1,0 +1,114 @@
+import { jest } from '@jest/globals';
+import type { TaxonomyRepositoryPort } from '../../../../../../src/shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
+import { aDimensionCatalog } from '../../../../support/dimension-catalog.js';
+import { GetMaturityProfileUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/get-maturity-profile.use-case.js';
+import type { MaturityProfileRepositoryPort } from '../../../../../../src/modules/diagnosis/domain/repositories/maturity-profile.repository.port.js';
+import type { ImbalanceRepositoryPort } from '../../../../../../src/modules/diagnosis/domain/repositories/imbalance.repository.port.js';
+import { MaturityProfile } from '../../../../../../src/modules/diagnosis/domain/entities/maturity-profile.aggregate.js';
+import { DimensionResult } from '../../../../../../src/modules/diagnosis/domain/value-objects/dimension-result.vo.js';
+import { ImbalanceResult } from '../../../../../../src/modules/diagnosis/domain/value-objects/imbalance-result.vo.js';
+import { DimensionCode } from '../../../../../../src/shared/kernel/domain/value-objects/dimension-code.js';
+import { IrlLevel } from '../../../../../../src/shared/kernel/domain/value-objects/irl-level.vo.js';
+import { Uuid } from '../../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
+import { ConflictError } from '../../../../../../src/shared/kernel/domain/errors/conflict.error.js';
+
+const DIAGNOSTIC_ID = '550e8400-e29b-41d4-a716-446655440000';
+const CODES = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'] as const;
+
+function aProfile(): MaturityProfile {
+  return MaturityProfile.create({
+    diagnosticId: Uuid.create(DIAGNOSTIC_ID),
+    computedAt: new Date('2026-01-01T12:00:00.000Z'),
+    dimensionResults: CODES.map((code) =>
+      DimensionResult.create({
+        dimensionCode: DimensionCode.create(code),
+        averageLikert: 3,
+        irlLevel: IrlLevel.create(6),
+      }),
+    ),
+  });
+}
+
+const STORED_PAIRS: ImbalanceResult[] = [
+  new ImbalanceResult(1, DimensionCode.create('TRL'), DimensionCode.create('CRL'), 2, 'MODERATE'),
+  new ImbalanceResult(2, DimensionCode.create('TRL'), DimensionCode.create('BRL'), 0, 'ACCEPTABLE'),
+  new ImbalanceResult(3, DimensionCode.create('CRL'), DimensionCode.create('BRL'), 0, 'ACCEPTABLE'),
+  new ImbalanceResult(
+    4,
+    DimensionCode.create('TmRL'),
+    DimensionCode.create('FRL'),
+    1,
+    'ACCEPTABLE',
+  ),
+  new ImbalanceResult(
+    5,
+    DimensionCode.create('BRL'),
+    DimensionCode.create('IPRL'),
+    1,
+    'ACCEPTABLE',
+  ),
+  new ImbalanceResult(6, DimensionCode.create('TRL'), DimensionCode.create('IPRL'), 4, 'CRITICAL'),
+];
+
+describe('GetMaturityProfileUseCase', () => {
+  let profiles: jest.Mocked<MaturityProfileRepositoryPort>;
+  let imbalances: jest.Mocked<ImbalanceRepositoryPort>;
+  let useCase: GetMaturityProfileUseCase;
+
+  beforeEach(() => {
+    profiles = {
+      findByDiagnosticId: jest.fn(),
+      save: jest.fn(() => Promise.resolve(undefined)),
+    };
+    imbalances = {
+      findByDiagnosticId: jest.fn(() => Promise.resolve([])),
+      save: jest.fn(() => Promise.resolve(undefined)),
+    };
+    useCase = new GetMaturityProfileUseCase(profiles, imbalances, {
+      findAllDimensions: () => Promise.resolve(aDimensionCatalog()),
+    } as unknown as TaxonomyRepositoryPort);
+  });
+
+  it('returns the persisted profile and stored imbalances without recomputing', async () => {
+    profiles.findByDiagnosticId.mockResolvedValueOnce(aProfile());
+    imbalances.findByDiagnosticId.mockResolvedValueOnce(STORED_PAIRS);
+
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+
+    expect(imbalances.findByDiagnosticId).toHaveBeenCalledWith(DIAGNOSTIC_ID);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected ok result');
+    const dto = result.value;
+    expect(dto.imbalances).toHaveLength(6);
+    expect(dto.imbalances?.find((p) => p.left === 'TRL' && p.right === 'IPRL')).toEqual({
+      left: 'TRL',
+      right: 'IPRL',
+      difference: 4,
+      classification: 'critical',
+    });
+    expect(dto.strength.level).toBe(6);
+    expect(dto.asymmetry.difference).toBe(0);
+  });
+
+  it('does not invent imbalances when none were persisted', async () => {
+    profiles.findByDiagnosticId.mockResolvedValueOnce(aProfile());
+    imbalances.findByDiagnosticId.mockResolvedValueOnce([]);
+
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.value.imbalances).toBeUndefined();
+  });
+
+  it('returns an err result when the profile has not been computed', async () => {
+    profiles.findByDiagnosticId.mockResolvedValueOnce(null);
+
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected err result');
+    expect(result.error).toBeInstanceOf(ConflictError);
+    expect(imbalances.findByDiagnosticId).not.toHaveBeenCalled();
+  });
+});

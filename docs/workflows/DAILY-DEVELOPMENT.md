@@ -2,7 +2,7 @@
 
 The end-to-end flow from "I picked up a ticket" to "my code is in `dev`." Internalize this; it's the heartbeat of the project.
 
-This document doesn't repeat the _rules_ — those live in [`BRANCH-NOTATION.md`](../conventions/BRANCH-NOTATION.md), [`STANDARD-COMMIT.md`](../conventions/STANDARD-COMMIT.md), and [`pull-requests.md`](../conventions/pull-requests.md). It describes the _flow_ that ties them together.
+This document doesn't repeat the _rules_ — those live in [`BRANCH-NOTATION.md`](../conventions/BRANCH-NOTATION.md), [`STANDARD-COMMIT.md`](../conventions/STANDARD-COMMIT.md), and [`PULL-REQUESTS-CONVENTIONS.md`](../conventions/PULL-REQUESTS-CONVENTIONS.md). It describes the _flow_ that ties them together.
 
 ## TL;DR
 
@@ -14,7 +14,7 @@ Jira (HU) → Create branch → Pull dev → Develop → Test locally
 
 ## Step 1 — Pick a ticket
 
-Tickets in Jira are tagged with the epic (`E-01` through `E-08`) and a priority. For phase 1 work, the priorities you'll see are `Highest` and `High` from epics E-01 through E-04. Pick one assigned to you. If nothing's assigned, take the highest-priority unassigned one from your area.
+Tickets in Jira are tagged with the epic (`E-01` through `E-08`) and a priority. The priorities you'll see are `Highest` and `High`. Pick one assigned to you. If nothing's assigned, take the highest-priority unassigned one from your area.
 
 Before you start, **read the Gherkin scenarios** in the ticket. They're the acceptance criteria. If a scenario isn't clear, ask before coding — clarification at the start costs less than a rewrite at PR review.
 
@@ -64,21 +64,23 @@ The ticket tells you which epic, the epic maps to one or two modules/features:
 
 | Epic                      | Backend module                                   | Frontend feature                          |
 | ------------------------- | ------------------------------------------------ | ----------------------------------------- |
-| E-01 Access & identity    | `modules/identity`                               | `features/auth`, `features/diagnostic`    |
-| E-02 Consent & initiative | `modules/consent`, `modules/initiative`          | `features/consent`, `features/initiative` |
-| E-03 Questionnaire        | `modules/questionnaire`, `modules/irl-catalog`   | `features/questionnaire`                  |
-| E-04 Initial maturity     | `modules/maturity-profile`, `modules/diagnostic` | `features/maturity-profile`               |
+| E-01 Access & identity    | `shared/identity`                                | `features/auth`                           |
+| E-02 Consent & initiative | `modules/initiative` (consent lives here)        | not built yet                             |
+| E-03 Questionnaire        | `modules/diagnosis`, `shared/irl-taxonomy`       | `features/questionnaire`                  |
+| E-04 Initial maturity     | `modules/diagnosis`                              | `features/maturity-profile`               |
+| E-06 Deep analysis        | `modules/routing`, `modules/roadmap`             | `features/portfolio-recommendation`, `features/scaling-roadmap` |
 
-For the full map: [`apps/api/docs/modules.md`](../../apps/api/docs/modules.md) and [`apps/web/docs/modules.md`](../../apps/web/docs/modules.md).
+For the full map: [`apps/api/docs/MODULES.md`](../../apps/api/docs/MODULES.md) and [`apps/web/docs/MODULES.md`](../../apps/web/docs/MODULES.md); each backend module documents itself in the `README.md` at its root.
 
 ### Architecture rules to keep in mind
 
 These are the most common mistakes the team catches in review:
 
-- **No framework imports in `domain/`.** No `@nestjs/common`, no `typeorm`, no `axios`. Domain code is plain TypeScript. (See [`apps/api/CLAUDE.md`](../../apps/api/CLAUDE.md).)
+- **No framework imports in `domain/`.** No `@nestjs/common`, no `typeorm`, no `axios`. Domain code is plain TypeScript. (See [`CODE-STYLE.md`](../conventions/CODE-STYLE.md).)
 - **One use case per class, one `execute(command)` method.** Don't create helper methods on the use case class.
-- **Features can't import from other features** (frontend). Use `shared/` for cross-feature primitives. (See [`apps/web/CLAUDE.md`](../../apps/web/CLAUDE.md).)
-- **Spanish for domain, English for infrastructure.** `Diagnostico`, `Iniciativa`, `Afirmacion` (Spanish) vs `Repository`, `UseCase`, `Controller` (English).
+- **Features can't import from other features** (frontend). Use `shared/` for cross-feature primitives. (See [`apps/web/docs/MODULES.md`](../../apps/web/docs/MODULES.md).)
+- **English for every identifier.** `Diagnosis`, `Initiative`, `Statement` — domain included. Spanish only for text the end user reads (see `docs/conventions/CODE-STYLE.md`).
+- **`presentation/` imports only from `application/`**, and modules talk through ports and domain events, never each other's entities.
 - **No `synchronize: true` in TypeORM.** Schema changes go through migrations.
 
 ESLint catches most of these at save time. If you see a red squiggle, fix it then — not at PR time.
@@ -105,7 +107,7 @@ Don't defer testing until "after the feature works." Tests force you to define t
 - New React component → component test for the behavior the user sees.
 - Bug fix → a test that reproduces the bug; the test now passes.
 
-See [`docs/conventions/testing.md`](../conventions/testing.md) for what each tier should cover.
+See [`docs/conventions/TESTING-CONVENTIONS.md`](../conventions/TESTING-CONVENTIONS.md) for what each tier should cover.
 
 ### Run tests locally as you go
 
@@ -127,20 +129,20 @@ Commits follow the [standard format](../conventions/STANDARD-COMMIT.md):
 Examples for a typical day's work:
 
 ```bash
-git add src/modules/questionnaire/domain/services/completeness-checker.service.ts
-git commit -m "feat: add + [questionnaire] - [add completeness checker domain service]"
+git add src/modules/diagnosis/domain/services/completeness-checker.service.ts
+git commit -m "feat: add + [diagnosis] - [add completeness checker domain service]"
 
-git add test/unit/modules/questionnaire/completeness-checker.service.spec.ts
+git add test/unit/modules/diagnosis/domain/services/completeness-checker.service.spec.ts
 git commit -m "test: add + [completeness-checker] - [cover incomplete and complete sheets]"
 
-git add src/modules/questionnaire/application/use-cases/submit-questionnaire.use-case.ts
-git commit -m "feat: add + [questionnaire] - [wire submit use case to completeness checker]"
+git add src/modules/diagnosis/application/use-cases/submit-questionnaire.use-case.ts
+git commit -m "feat: add + [diagnosis] - [wire submit use case to completeness checker]"
 
-git add src/modules/questionnaire/interfaces/http/questionnaire.controller.ts
-git commit -m "feat: add + [questionnaire] - [expose post envio endpoint with rfc 7807 errors]"
+git add src/modules/diagnosis/presentation/controllers/questionnaire.controller.ts
+git commit -m "feat: add + [diagnosis] - [expose post questionnaire endpoint with rfc 7807 errors]"
 ```
 
-The pre-commit hook runs ESLint and Prettier on staged files. The commit-msg hook validates the message format. If either rejects you, fix and try again — don't bypass with `--no-verify`.
+The Husky hooks (lint-staged on pre-commit, commitlint on commit-msg) are configured but not installed: `.npmrc` sets `ignore-scripts=true`, so `prepare` never runs. Until that is resolved, run `pnpm lint` and `pnpm typecheck` yourself before committing and check the message against the format above (`npx commitlint --edit` validates the last one).
 
 ### Commit granularity
 
@@ -180,25 +182,22 @@ The PR title should match the commit you intend to land. GitHub pre-fills the sq
 feat: add + [questionnaire] - [verify completeness on submission (RF-06)]
 ```
 
-Detailed PR conventions: [`docs/conventions/pull-requests.md`](../conventions/pull-requests.md).
+Detailed PR conventions: [`docs/conventions/PULL-REQUESTS-CONVENTIONS.md`](../conventions/PULL-REQUESTS-CONVENTIONS.md).
 
-## Step 7 — CI
+## Step 7 — Checks before merging
 
-GitHub Actions runs automatically on every push:
+There is no CI pipeline in the repository yet. Before asking for review, run the gates yourself from the root:
 
 - Lint (`pnpm lint`)
 - Typecheck (`pnpm typecheck`)
-- Unit tests (`pnpm test:unit`)
-- Integration tests (`pnpm test:integration`)
+- Unit and integration tests (`pnpm test:unit`, `pnpm test:integration` — integration needs Docker)
 - Build (`pnpm build`)
 
-If any check fails, fix it on your branch. CI is not a suggestion.
-
-E2E tests run on merge to `dev`, not on every PR push, because they're slow. Make sure you ran E2E locally for the user story you're implementing:
+End-to-end tests are slower; run the ones of the user story you are implementing:
 
 ```bash
-pnpm --filter @innlab/api test:e2e
-pnpm --filter @innlab/web test:e2e
+pnpm --filter @innlab/api test:e2e   # needs the local database migrated and seeded
+pnpm --filter @innlab/web test:e2e   # Playwright; builds the SPA and fakes the API
 ```
 
 ## Step 8 — Review
@@ -293,6 +292,6 @@ Update the Jira ticket so the team knows.
 
 - **Working on `dev` directly.** Pushes to `dev` are rejected by GitHub branch protection. If you've been committing locally to `dev`, branch off from your current HEAD before pushing.
 - **Long-lived feature branches.** A branch that lives more than a week is a smell. Either ship something (a stub, a test-only PR) or split the work.
-- **Skipping the pre-commit hook with `--no-verify`.** Don't. The hook catches what review will catch anyway, just earlier.
+- **Skipping the local gates.** With the hooks inactive nothing stops a commit that fails lint or typecheck; review will catch it anyway, just later.
 - **Bundling unrelated changes.** "While I was there, I also..." — that's a second PR.
 - **Force-pushing after review starts.** Reviewers lose track of what's new. Add fix-up commits and rely on squash-merge to clean up.

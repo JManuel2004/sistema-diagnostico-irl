@@ -6,19 +6,19 @@ import { ToastProvider } from './providers/ToastProvider';
 import { AppRoutes } from './router/routes';
 
 /**
- * Composición del shell de la aplicación.
+ * Composition of the application shell.
  *
- * Orden de los providers (de afuera hacia adentro):
- *  1. `ErrorBoundary` — captura fallos de render en cualquier provider
- *     o página debajo; debe envolver todo para que una excepción al
- *     inicializar QueryClient o el router caiga aquí en vez de dejar
- *     una pantalla en blanco.
- *  2. `QueryProvider` — dueño del `QueryClient` singleton; debe envolver
- *     a cualquier consumidor de `useQuery` / `useMutation`.
- *  3. `ToastProvider` — monta el region de Sonner; las páginas pueden
- *     llamar `toast.success(...)` desde aquí hacia abajo.
- *  4. `BrowserRouter` — mantiene la ruta SPA en `window.location`.
- *  5. `AppRoutes` — la tabla de rutas.
+ * Order of the providers (outside in):
+ *  1. `ErrorBoundary` — catches render failures in any provider or page
+ *     below; it must wrap everything so an exception while initializing
+ *     the QueryClient or the router lands here instead of leaving a blank
+ *     screen.
+ *  2. `QueryProvider` — owner of the singleton `QueryClient`; it must wrap
+ *     every consumer of `useQuery` / `useMutation`.
+ *  3. `ToastProvider` — mounts Sonner's region; pages can call
+ *     `toast.success(...)` from here down.
+ *  4. `BrowserRouter` — keeps the SPA route in `window.location`.
+ *  5. `AppRoutes` — the route table.
  */
 export function App(): JSX.Element {
   return (

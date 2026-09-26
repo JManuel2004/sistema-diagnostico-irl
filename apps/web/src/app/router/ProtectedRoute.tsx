@@ -5,20 +5,20 @@ import { Card, CardContent } from '@/shared/ui/card';
 import { PageShell } from '@/shared/ui/page-shell';
 
 /**
- * Guardia de ruta — sesión del ecosistema INNLAB (HU-01 / RF-00).
+ * Route guard — INNLAB ecosystem session (HU-01 / RF-00).
  *
- * Sin sesión almacenada, saca al usuario del SPA hacia el Hub de Core,
- * recordando la ruta pedida para volver a ella tras el canje del código.
+ * Without a stored session, it sends the user out of the SPA to Core's Hub,
+ * remembering the requested route to return to it after the code exchange.
  *
- * La comprobación es local (¿hay token guardado?), no una validación del
- * token: validarlo aquí añadiría una llamada de red antes de cada pantalla.
- * Un token guardado pero muerto se detecta por dos vías ya montadas —
- * el 401 del interceptor de `shared/api/http` y `useSessionLiveness` al
- * volver el foco a la pestaña — y ambas rehacen el SSO.
+ * The check is local (is there a stored token?), not a validation of the
+ * token: validating it here would add a network call before every screen.
+ * A stored but dead token is detected in two ways already in place — the
+ * 401 of the `shared/api/http` interceptor and `useSessionLiveness` when
+ * the tab regains focus — and both redo the SSO.
  *
- * El redirect va en un efecto y no en el cuerpo del render: mutar
- * `window.location` durante el render es un efecto secundario que React
- * puede ejecutar dos veces bajo StrictMode.
+ * The redirect lives in an effect and not in the render body: mutating
+ * `window.location` during render is a side effect React may run twice
+ * under StrictMode.
  */
 interface ProtectedRouteProps {
   readonly children: ReactNode;

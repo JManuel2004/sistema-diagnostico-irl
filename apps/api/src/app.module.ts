@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService, ConfigType } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { EventsModule } from './shared/kernel/infrastructure/events/events.module.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from 'nestjs-pino';
 import { ClsModule, ClsService } from 'nestjs-cls';
@@ -12,7 +14,7 @@ import {
   type AppConfig,
 } from './config/configuration.js';
 import { buildOrmModuleOptions } from './config/ormconfig.factory.js';
-import { ApiV1Module } from './interfaces/http/api-v1.module.js';
+import { ApiModule } from './api.module.js';
 
 /**
  * Composition root of the application.
@@ -80,7 +82,12 @@ import { ApiV1Module } from './interfaces/http/api-v1.module.js';
         return buildOrmModuleOptions(cfg);
       },
     }),
-    ApiV1Module,
+    // In-process domain events —
+    // no queue infrastructure, `EventEmitter2` dispatch is enough for
+    // the current volume and topology.
+    EventEmitterModule.forRoot(),
+    EventsModule,
+    ApiModule,
   ],
 })
 export class AppModule {}

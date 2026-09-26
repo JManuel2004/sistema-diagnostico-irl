@@ -2,17 +2,15 @@ import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 
 /**
- * Error boundary global de la aplicación.
+ * Global error boundary of the application.
  *
- * React todavía exige un componente de clase para capturar errores de
- * renderizado — esta es la única clase tolerada en el frontend
- * (CLAUDE.web.md §"Stack assumptions"). Una excepción durante el
- * render aterriza aquí en vez de dejar la SPA en blanco.
+ * React still requires a class component to catch render errors — this is
+ * the only class tolerated in the frontend. An exception during render
+ * lands here instead of leaving the SPA blank.
  *
- * Los `feature`-level boundaries son recomendables cuando un widget
- * inestable (un gráfico, un widget de terceros) puede fallar sin
- * tumbar toda la página; se envuelve solo ese subárbol con su propio
- * fallback.
+ * Feature-level boundaries are advisable when an unstable widget (a chart,
+ * a third-party widget) can fail without taking the whole page down; only
+ * that subtree is wrapped, with its own fallback.
  */
 interface ErrorBoundaryProps {
   readonly children: ReactNode;
@@ -32,7 +30,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    // El reporting centralizado (Sentry o similar) se conectará en Stage 2.
+    // Centralized reporting (Sentry or similar) is not wired yet.
     console.error('[ErrorBoundary]', error, info);
   }
 

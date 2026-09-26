@@ -1,18 +1,27 @@
 import type { QuestionnaireStructure } from '@innlab/contracts';
-import { selectAnswers, useQuestionnaireDraftStore } from '../store/questionnaire-draft.store';
+import {
+  isStatementComplete,
+  selectAnswers,
+  selectJustifications,
+  useQuestionnaireDraftStore,
+} from '../store/questionnaire-draft.store';
 
 /**
- * `QuestionnaireProgress` — banda superior con el progreso global del
- * cuestionario y el indicador de guardado automático.
+ * `QuestionnaireProgress` — top band with the questionnaire's overall
+ * progress and the draft indicator.
  *
- * Adoptado del prototipo cliente: la información agregada
- * (`X / 48 afirmaciones`, `% completado`, barra) vive arriba para que
- * el avance no quede oculto dentro de cada dimensión, y el chip
- * "Guardado automático" recuerda visualmente la promesa de HU-09
- * (las respuestas se conservan en sesión sin acción del usuario).
+ * The aggregate (`X / 48 afirmaciones completas`, `% completado`, bar; a
+ * statement is complete with its Likert answer and its justification)
+ * lives at the top so progress is not hidden inside each dimension. The
+ * chip says what really happens to the draft (HU-09): it is kept in this
+ * tab (`sessionStorage`) and does not reach the server until «Procesar
+ * diagnóstico»; it promises no saving across sessions or tabs.
  *
- * El componente es presentacional: deriva todo del store y no muta
- * estado.
+ * On mobile the draft notice is hidden: its `title` stays in the DOM, and
+ * the bar and the percentage are enough in a 358px row.
+ *
+ * The component is presentational: it derives everything from the store
+ * and mutates no state.
  */
 interface Props {
   dimensions: QuestionnaireStructure['dimensions'];
@@ -20,10 +29,12 @@ interface Props {
 
 export function QuestionnaireProgress({ dimensions }: Props) {
   const answers = useQuestionnaireDraftStore(selectAnswers);
+  const justifications = useQuestionnaireDraftStore(selectJustifications);
 
   const total = dimensions.reduce((acc, d) => acc + d.statements.length, 0);
   const answered = dimensions.reduce(
-    (acc, d) => acc + d.statements.filter((s) => answers[s.id] !== undefined).length,
+    (acc, d) =>
+      acc + d.statements.filter((s) => isStatementComplete(answers, justifications, s.id)).length,
     0,
   );
   const pct = total === 0 ? 0 : Math.round((answered / total) * 100);
@@ -31,30 +42,30 @@ export function QuestionnaireProgress({ dimensions }: Props) {
   return (
     <section
       aria-label="Progreso del cuestionario"
-      className="border-border bg-surface-muted mb-6 rounded-md border p-4"
+      className="border-border bg-background mb-6 border px-4 py-3 sm:px-5"
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-baseline gap-3">
-          <p className="text-overline text-azul-icesi">Progreso</p>
-          <p className="text-foreground text-sm font-medium">
-            {answered}
-            <span className="text-muted-foreground"> / {total} afirmaciones</span>
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <p className="text-foreground text-[0.9375rem] font-bold">
+          {answered}
+          <span className="text-muted-foreground font-medium">
+            {' '}
+            / {total} afirmaciones completas
+          </span>
+        </p>
 
         <div className="flex items-center gap-4">
-          <p className="text-muted-foreground text-xs tabular-nums" aria-live="polite">
+          <p className="text-muted-foreground text-sm tabular-nums" aria-live="polite">
             {pct}% completado
           </p>
           <span
-            className="text-muted-foreground inline-flex items-center gap-2 text-xs"
-            title="Tus respuestas se guardan en tu sesión actual"
+            className="text-muted-foreground hidden items-center gap-2 text-sm sm:inline-flex"
+            title="Tu borrador se conserva mientras no cierres esta pestaña. Se envía al procesar el diagnóstico."
           >
             <span
               aria-hidden="true"
-              className="bg-acceptable inline-block h-1.5 w-1.5 rounded-full"
+              className="bg-dimension-brl inline-block size-2 rounded-full"
             />
-            Guardado automático
+            Borrador guardado en esta pestaña
           </span>
         </div>
       </div>
@@ -64,11 +75,11 @@ export function QuestionnaireProgress({ dimensions }: Props) {
         aria-valuenow={pct}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${answered} de ${total} afirmaciones respondidas`}
-        className="bg-border/60 mt-3 h-1.5 w-full overflow-hidden rounded-full"
+        aria-label={`${answered} de ${total} afirmaciones completas`}
+        className="bg-border mt-2.5 h-1.5 w-full overflow-hidden rounded-full"
       >
         <div
-          className="bg-azul-icesi h-full rounded-full transition-[width] duration-300 ease-out"
+          className="bg-primary h-full rounded-full transition-[width] duration-300 ease-out"
           style={{ width: `${pct}%` }}
         />
       </div>

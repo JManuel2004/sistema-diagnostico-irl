@@ -22,12 +22,6 @@ export const envValidationSchema = Joi.object({
   INNLAB_API_TIMEOUT: Joi.number().default(5000),
   CORE_INTERNAL_KEY: Joi.string().required(),
 
-  SMTP_HOST: Joi.string().required(),
-  SMTP_PORT: Joi.number().default(587),
-  SMTP_USER: Joi.string().required(),
-  SMTP_PASS: Joi.string().required(),
-  SMTP_FROM: Joi.string().email().required(),
-
   LOG_LEVEL: Joi.string()
     .valid('trace', 'debug', 'info', 'warn', 'error')
     .default('info'),

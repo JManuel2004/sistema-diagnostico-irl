@@ -1,251 +1,476 @@
-import { useState, type JSX } from 'react';
-import { AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
-import type { TrazaCapasResponse } from '@innlab/contracts';
+import type { JSX, ReactNode } from 'react';
+import {
+  Ban,
+  ChevronDown,
+  CircleCheck,
+  Milestone,
+  Scale,
+  SlidersHorizontal,
+  Target,
+  TrendingDown,
+  TriangleAlert,
+  type LucideIcon,
+} from 'lucide-react';
+import type { AppliedException, LayerTraceResponse, RankingEntry } from '@innlab/contracts';
+import { Alert } from '@/shared/ui/alert';
+import { DisclosurePanel } from '@/shared/ui/disclosure-panel';
+import { LoadingState } from '@/shared/ui/loading-state';
+import { Tooltip } from '@/shared/ui/tooltip';
 
 interface Props {
-  readonly traza: TrazaCapasResponse | undefined;
+  readonly trace: LayerTraceResponse | undefined;
   readonly isLoading: boolean;
   readonly onOpen: () => void;
+  /**
+   * Name of each dimension by its code, taken from the profile. The
+   * explanation talks about «Negocio» and «Tecnología», never their acronyms.
+   */
+  readonly dimensionNames?: Readonly<Record<string, string>>;
 }
 
 /**
- * La vista de auditoría. Audiencia: el equipo de INNLAB.
+ * «Cómo se llegó a esta recomendación»: the calculation told in three
+ * steps, for someone who knows neither the system nor the IRL framework.
  *
- * Colapsado por defecto porque no es lo que el líder de iniciativa
- * necesita ver, pero accesible sin cambiar de pantalla.
+ *  1. Which services do not apply to the initiative.
+ *  2. How the rest were ordered according to its profile.
+ *  3. Whether the center had to adjust anything by hand.
  *
- * Dos decisiones que cargan el peso de este componente:
+ * Four decisions carry the weight of this component:
  *
- *  1. Los aportes se muestran en **vocabulario ordinal** (`principal`,
- *     `secundario`) y no como números. El número es un detalle de la
- *     calibración; exponerlo desplazaría la conversación desde "¿es este
- *     el servicio adecuado?" hacia "¿por qué 1.50 y no 1.60?".
+ *  1. The answer comes first: one sentence says which service came first
+ *     and why. The detail of the calculation is below, for whoever wants to
+ *     check it.
  *
- *  2. Cuando el servicio recomendado NO es el que ganó el cálculo, se dice
- *     explícitamente y arriba del todo. Un sistema que presenta un ajuste
- *     deliberado con la misma cara que un resultado calculado parece
- *     objetivo sin serlo, y esa es exactamente la confusión que la traza
- *     existe para impedir.
+ *  2. Contributions are told in **words** («es un servicio principal para
+ *     Negocio») and not as scores. The number is a detail of the
+ *     calibration; exposing it would move the conversation from "is this
+ *     the right service?" to "why 1.50 and not 1.60?". The ones that group
+ *     several dimensions are summed up in a label with their count
+ *     («3 brechas»), but **which ones can always be known**: the label
+ *     names them in its tooltip and repeats them in a text only screen
+ *     readers read.
+ *
+ *  3. When the recommended service is NOT the one that won the
+ *     calculation, it is said explicitly and at the very top. A system that
+ *     presents a deliberate adjustment with the same face as a calculated
+ *     result looks objective without being so, and that is exactly the
+ *     confusion the trace exists to prevent.
+ *
+ *  4. No internal identifiers: adjustments are described by what they did
+ *     and by the reason the center declared, not by their code.
  */
-export function LayerTracePanel({ traza, isLoading, onOpen }: Props): JSX.Element {
-  const [abierto, setAbierto] = useState(false);
-
-  function alternar(): void {
-    const siguiente = !abierto;
-    setAbierto(siguiente);
-    if (siguiente) onOpen();
-  }
+export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Props): JSX.Element {
+  const nameOf = (code: string): string => dimensionNames?.[code] ?? code;
 
   return (
-    <section className="border-border mt-8 rounded-lg border">
-      <h2>
-        <button
-          type="button"
-          onClick={alternar}
-          aria-expanded={abierto}
-          aria-controls="traza-capas"
-          className="text-foreground flex w-full items-center gap-2 px-5 py-4 text-left text-sm font-semibold"
-        >
-          {abierto ? (
-            <ChevronDown className="size-4 shrink-0" aria-hidden="true" />
-          ) : (
-            <ChevronRight className="size-4 shrink-0" aria-hidden="true" />
+    <DisclosurePanel
+      id="trace-layers"
+      title="Cómo se llegó a esta recomendación"
+      icon={Target}
+      onOpen={onOpen}
+    >
+      {isLoading && <LoadingState label="Cargando el detalle del cálculo…" />}
+
+      {trace && (
+        <div className="flex flex-col gap-6">
+          <p className="bg-surface-muted border-primary text-foreground flex items-start gap-3 border-l-[3px] p-4 text-base leading-relaxed">
+            <CircleCheck className="text-azul-icesi mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <span>{verdict(trace)}</span>
+          </p>
+
+          {trace.adjustedByException && (
+            <Alert
+              tone="moderate"
+              title="Esta recomendación proviene de un ajuste puntual del centro, no del resultado del cálculo."
+            />
           )}
-          Cómo se llegó a esta recomendación
-          <span className="text-muted-foreground ml-auto text-xs font-normal">
-            Equipo INNLAB
-          </span>
-        </button>
-      </h2>
 
-      <div id="traza-capas" hidden={!abierto} className="px-5 pb-6">
-        {isLoading && (
-          <p className="text-muted-foreground text-sm">Cargando la traza…</p>
-        )}
+          {trace.incompleteCharacterization.length > 0 && (
+            <p className="border-border text-muted-foreground border p-4 text-base leading-relaxed">
+              Falta información de tu iniciativa:{' '}
+              {trace.incompleteCharacterization.map(readableField).join(', ')}. El cálculo la trató
+              como ausente, así que la recomendación es menos precisa de lo que podría ser.
+            </p>
+          )}
 
-        {traza && (
-          <div className="flex flex-col gap-6">
-            {traza.ajustadoPorExcepcion && (
-              <p
-                role="status"
-                className="border-moderate/30 bg-moderate/5 text-moderate flex items-start gap-2 rounded-md border p-3 text-sm"
-              >
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                <span>
-                  Esta recomendación proviene de un ajuste puntual del centro, no
-                  del resultado del cálculo.
-                </span>
-              </p>
-            )}
-
-            {traza.caracterizacionIncompleta.length > 0 && (
-              <p className="text-muted-foreground border-border rounded-md border border-dashed p-3 text-xs leading-relaxed">
-                La iniciativa no tiene registrados{' '}
-                {traza.caracterizacionIncompleta.join(', ')}. El cálculo los trató
-                como ausentes, así que la recomendación es menos precisa de lo que
-                podría ser.
-              </p>
-            )}
-
-            <Bloque titulo="1 · Servicios descartados">
-              {traza.excluidosCapa1.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  Ningún servicio quedó excluido.
+          <ol className="flex flex-col">
+            <Step number={1} title="Lo que no aplica">
+              {trace.layer1Excluded.length === 0 ? (
+                <p className="text-muted-foreground text-base">
+                  Ningún servicio quedó descartado: todos podían aplicar a tu iniciativa.
                 </p>
               ) : (
                 <ul className="flex flex-col gap-2">
-                  {traza.excluidosCapa1.map((e) => (
-                    <li key={e.idServicio} className="text-sm">
-                      <span className="text-foreground font-medium">{e.nombre}</span>
-                      <span className="text-muted-foreground">
-                        {' '}
-                        — {e.mensajeExclusion}
-                      </span>
+                  {trace.layer1Excluded.map((e) => (
+                    <li key={e.idService} className="flex items-start gap-2.5 text-base">
+                      <Ban
+                        className="text-muted-foreground mt-1 size-4 shrink-0"
+                        aria-hidden="true"
+                      />
+                      <p className="leading-relaxed">
+                        <span className="text-foreground font-semibold">{e.name}. </span>
+                        <span className="text-muted-foreground">{e.exclusionMessage}</span>
+                      </p>
                     </li>
                   ))}
                 </ul>
               )}
-            </Bloque>
+            </Step>
 
-            <Bloque titulo="2 · Orden según el cálculo">
-              <ol className="flex flex-col gap-3">
-                {traza.rankingPreExcepcion.map((r) => (
-                  <li key={r.idServicio} className="text-sm">
-                    <span className="text-foreground font-medium">
-                      {r.posicion}. {r.nombre}
-                    </span>
-                    {r.aportes && (
-                      <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                        {describirAportes(r.aportes)}
-                      </p>
-                    )}
-                  </li>
-                ))}
-              </ol>
-            </Bloque>
+            <Step number={2} title="El orden según tu perfil">
+              <Ranking ranking={trace.rankingBeforeExceptions} nameOf={nameOf} />
+            </Step>
 
-            <Bloque titulo="3 · Ajustes puntuales">
-              {traza.excepcionesActivadas.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No se aplicó ningún ajuste: el orden es el del cálculo.
+            <Step number={3} title="Ajuste del centro">
+              {trace.appliedExceptions.length === 0 ? (
+                <p className="text-muted-foreground text-base">
+                  No hizo falta ningún ajuste: el orden es el que salió del cálculo.
                 </p>
               ) : (
-                <ul className="flex flex-col gap-4">
-                  {traza.excepcionesActivadas.map((e) => (
-                    <li key={e.codigo} className="text-sm">
-                      <p className="text-foreground font-medium">
-                        {e.codigo} · {e.accion} {e.servicioObjetivo}
+                <ul className="flex flex-col gap-3">
+                  {trace.appliedExceptions.map((e) => (
+                    <li key={e.code} className="flex flex-col gap-1.5">
+                      <p className="flex items-start gap-2.5 text-base leading-relaxed">
+                        <SlidersHorizontal
+                          className="text-moderate mt-1 size-4 shrink-0"
+                          aria-hidden="true"
+                        />
+                        <span>
+                          <span className="text-foreground font-semibold">
+                            {adjustmentTitle(e)}
+                          </span>{' '}
+                          <span className="text-muted-foreground">{adjustmentPlace(e)}</span>
+                        </span>
                       </p>
-                      <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                        {e.motivoDeclarado}
-                      </p>
-                      <p className="text-muted-foreground mt-1 text-xs italic">
-                        {e.efecto}
-                      </p>
+                      <details className="text-base">
+                        <summary className="text-azul-icesi inline-flex cursor-pointer items-center gap-1 font-semibold">
+                          Ver motivo
+                          <ChevronDown className="size-4" aria-hidden="true" />
+                        </summary>
+                        <p className="text-muted-foreground mt-2 leading-relaxed">
+                          {e.declaredReason}
+                        </p>
+                      </details>
                     </li>
                   ))}
                 </ul>
               )}
 
-              {traza.excepcionesDescartadas.length > 0 && (
-                <details className="mt-4">
-                  <summary className="text-muted-foreground cursor-pointer text-xs">
-                    {traza.excepcionesDescartadas.length} ajuste(s) evaluados y no
-                    aplicados
-                  </summary>
-                  <ul className="mt-2 flex flex-col gap-1">
-                    {traza.excepcionesDescartadas.map((e) => (
-                      <li key={e.codigo} className="text-muted-foreground text-xs">
-                        <span className="font-medium">{e.codigo}</span> — {e.razon}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
+              {trace.discardedExceptions.length > 0 && (
+                <p className="text-muted-foreground mt-3 text-base">
+                  {trace.discardedExceptions.length === 1
+                    ? 'Se revisó otro ajuste posible, pero no aplica a tu iniciativa.'
+                    : `Se revisaron otros ${String(trace.discardedExceptions.length)} ajustes posibles, pero no aplican a tu iniciativa.`}
+                </p>
               )}
-            </Bloque>
-
-            <p className="text-muted-foreground border-border border-t pt-4 text-xs">
-              Versión de configuración {traza.versionConfiguracion} · calibración{' '}
-              {traza.snapshotCalibracion} · parámetros {traza.snapshotParametros}.
-              Evaluado el{' '}
-              {new Date(traza.evaluadoEn).toLocaleString('es-CO', {
-                dateStyle: 'long',
-                timeStyle: 'short',
-              })}
-              .
-            </p>
-          </div>
-        )}
-      </div>
-    </section>
+            </Step>
+          </ol>
+        </div>
+      )}
+    </DisclosurePanel>
   );
 }
 
-function Bloque({
-  titulo,
-  children,
+/** The sentence that answers, without reading the detail, why that service is recommended. */
+function verdict(trace: LayerTraceResponse): string {
+  const first = trace.rankingBeforeExceptions[0]?.name;
+  const final = trace.rankingAfterExceptions[0]?.name ?? first;
+  const adjustment = trace.appliedExceptions.find((e) => e.targetService === final);
+
+  if (final === undefined) return 'Todavía no hay un orden de servicios para esta iniciativa.';
+  if (trace.adjustedByException) {
+    return `${final} es la recomendación porque el centro la eligió por encima del resultado del cálculo.`;
+  }
+  if (adjustment) {
+    return `${final} fue la primera en el cálculo y, además, el centro la fija como primera opción.`;
+  }
+  return `${final} fue la primera en el cálculo por su afinidad con tu perfil.`;
+}
+
+/**
+ * The order of the calculation. The first shows its reasons; the rest keep
+ * them behind «Ver motivos», and from the fourth on the whole list folds:
+ * whoever wants to check the full calculation can, without anyone else
+ * reading it.
+ */
+function Ranking({
+  ranking,
+  nameOf,
 }: {
-  readonly titulo: string;
-  readonly children: React.ReactNode;
+  readonly ranking: readonly RankingEntry[];
+  readonly nameOf: (code: string) => string;
 }): JSX.Element {
+  const visible = ranking.slice(0, 3);
+  const rest = ranking.slice(3);
+
   return (
-    <div>
-      <h3 className="text-overline text-azul-icesi mb-2">{titulo}</h3>
-      {children}
+    <div className="flex flex-col gap-2">
+      <ol className="border-border flex flex-col border-t">
+        {visible.map((r, index) => (
+          <ServiceRow key={r.idService} entry={r} nameOf={nameOf} highlighted={index === 0} />
+        ))}
+      </ol>
+
+      {rest.length > 0 && (
+        <details>
+          <summary className="border-border text-foreground inline-flex cursor-pointer items-center gap-1.5 border px-3 py-2 text-base font-semibold">
+            <ChevronDown className="size-4" aria-hidden="true" />
+            {rest.length === 1 ? '1 servicio más' : `${String(rest.length)} servicios más`}
+          </summary>
+          <ol className="border-border mt-2 flex flex-col border-t">
+            {rest.map((r) => (
+              <ServiceRow key={r.idService} entry={r} nameOf={nameOf} highlighted={false} />
+            ))}
+          </ol>
+        </details>
+      )}
     </div>
   );
 }
 
+function ServiceRow({
+  entry,
+  nameOf,
+  highlighted,
+}: {
+  readonly entry: RankingEntry;
+  readonly nameOf: (code: string) => string;
+  readonly highlighted: boolean;
+}): JSX.Element {
+  const reasons = contributionReasons(entry, nameOf);
+
+  return (
+    <li className="border-border flex flex-col gap-2.5 border-b py-3">
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <span className="text-azul-icesi w-6 text-base font-extrabold" aria-hidden="true">
+          {entry.position}
+        </span>
+        <span className="text-foreground text-base font-bold">
+          <span className="sr-only">Puesto {entry.position}: </span>
+          {entry.name}
+        </span>
+        {highlighted && (
+          <span className="bg-azul-icesi text-primary-foreground px-2 py-1 text-sm font-bold uppercase tracking-[0.06em]">
+            Recomendado
+          </span>
+        )}
+      </p>
+
+      {reasons.length === 0 ? (
+        <p className="text-muted-foreground pl-9 text-base">
+          No tiene una afinidad destacada con tu perfil.
+        </p>
+      ) : highlighted ? (
+        <Reasons reasons={reasons} />
+      ) : (
+        <details className="pl-9">
+          <summary className="text-azul-icesi inline-flex cursor-pointer items-center gap-1 text-base font-semibold">
+            Ver motivos
+            <ChevronDown className="size-4" aria-hidden="true" />
+          </summary>
+          <div className="mt-2">
+            <Reasons reasons={reasons} flush />
+          </div>
+        </details>
+      )}
+    </li>
+  );
+}
+
+function Reasons({
+  reasons,
+  flush = false,
+}: {
+  readonly reasons: readonly Reason[];
+  readonly flush?: boolean;
+}): JSX.Element {
+  return (
+    <ul className={`flex flex-wrap gap-2 ${flush ? '' : 'pl-9'}`}>
+      {reasons.map((m) => (
+        <li key={m.label}>
+          <ReasonLabel reason={m} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
- * Traduce el desglose numérico a una frase en vocabulario ordinal.
- *
- * Solo se nombran las dimensiones donde el servicio aporta algo: listar
- * los `no_aplica` alargaría la explicación sin añadir información.
+ * A reason label. When it sums up several dimensions («3 brechas»), saying
+ * which ones is not optional: the tooltip names them on hover or keyboard
+ * focus, and the same text travels in an `sr-only` for whoever uses a
+ * screen reader or has no pointer.
  */
-function describirAportes(
-  aportes: NonNullable<TrazaCapasResponse['rankingPreExcepcion'][number]['aportes']>,
-): string {
-  const partes: string[] = [];
+function ReasonLabel({ reason }: { readonly reason: Reason }): JSX.Element {
+  const Icon = reason.icon;
+  const className = `border-border bg-surface-muted inline-flex items-center gap-2 border px-2.5 py-1.5 text-base font-semibold ${
+    reason.tone === 'moderate' ? 'text-moderate' : 'text-foreground'
+  }`;
 
-  const cuello = aportes.cuelloBotella.detalle.filter(
-    (d) => d.etiquetaOrigen !== 'no_aplica',
+  if (reason.detail === undefined) {
+    return (
+      <span className={className}>
+        <Icon className="text-azul-icesi size-4 shrink-0" aria-hidden="true" />
+        {reason.label}
+      </span>
+    );
+  }
+
+  return (
+    <Tooltip content={reason.detail}>
+      <button type="button" className={`${className} cursor-help text-left`}>
+        <Icon className="text-azul-icesi size-4 shrink-0" aria-hidden="true" />
+        {reason.label}
+        <span className="sr-only">. {reason.detail}</span>
+      </button>
+    </Tooltip>
   );
-  if (cuello.length > 0) {
-    partes.push(
-      `atiende la dimensión más rezagada (${cuello
-        .map((d) => `${d.dimension}: ${d.etiquetaOrigen}`)
-        .join(', ')})`,
-    );
+}
+
+interface Reason {
+  readonly icon: LucideIcon;
+  readonly label: string;
+  /** What is behind the count: the dimensions or the pairs, by name. */
+  readonly detail?: string;
+  readonly tone?: 'moderate';
+}
+
+/** «Negocio, Propiedad Intelectual y Financiación». */
+function joinNames(names: readonly string[]): string {
+  if (names.length <= 1) return names.join('');
+  return `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}`;
+}
+
+/**
+ * The contributions of a service, as labels.
+ *
+ * Only the dimensions where the service contributes something are named:
+ * listing the `not_applicable` and `marginal` ones would lengthen the
+ * explanation without adding information.
+ */
+function contributionReasons(
+  ranking: RankingEntry,
+  nameOf: (code: string) => string,
+): readonly Reason[] {
+  const c = ranking.contributions;
+  if (!c) return [];
+
+  const reasons: Reason[] = [];
+  const isRelevant = (label: string): boolean => label === 'primary' || label === 'secondary';
+  const roleOf = (label: string): string => (label === 'primary' ? 'principal' : 'de apoyo');
+
+  const bottleneck = c.bottleneck.details.filter((d) => isRelevant(d.sourceLabel));
+  for (const d of bottleneck) {
+    reasons.push({
+      icon: Target,
+      label: `Cuello de botella: ${nameOf(d.dimension)}`,
+      detail: `Es un servicio ${roleOf(d.sourceLabel)} para ${nameOf(d.dimension)}, lo que más frena tu avance.`,
+    });
   }
 
-  const brechas = aportes.brechas.detalle.filter(
-    (d) => d.etiquetaOrigen !== 'no_aplica',
+  const gaps = c.gaps.details.filter((d) => isRelevant(d.sourceLabel));
+  if (gaps.length > 0) {
+    const names = gaps.map((d) => nameOf(d.dimension));
+    reasons.push({
+      icon: TrendingDown,
+      label: gaps.length === 1 ? '1 brecha' : `${String(gaps.length)} brechas`,
+      detail: `Ayuda a cerrar las brechas en ${joinNames(names)}.`,
+    });
+  }
+
+  if (c.imbalances.details.length > 0) {
+    const pairs = c.imbalances.details.map((d) => {
+      const [a, b] = d.pair.split('-');
+      return `${nameOf(a)} y ${nameOf(b)}`;
+    });
+    reasons.push({
+      icon: Scale,
+      label:
+        c.imbalances.details.length === 1
+          ? '1 desequilibrio'
+          : `${String(c.imbalances.details.length)} desequilibrios`,
+      detail: `Ayuda con el desequilibrio entre ${joinNames(pairs)}.`,
+    });
+  }
+
+  if (c.stageAffinity.matches) {
+    reasons.push({ icon: Milestone, label: 'Encaja con tu etapa' });
+  }
+
+  if (c.rangePenalty.applied) {
+    reasons.push({
+      icon: TriangleAlert,
+      label: 'Pesa menos por su nivel',
+      detail: 'Suele usarse con iniciativas de otro nivel de madurez, por eso pesa menos.',
+      tone: 'moderate',
+    });
+  }
+
+  return reasons;
+}
+
+function Step({
+  number,
+  title,
+  children,
+}: {
+  readonly number: number;
+  readonly title: string;
+  readonly children: ReactNode;
+}): JSX.Element {
+  return (
+    <li className="border-border grid grid-cols-[2rem_minmax(0,1fr)] gap-4 border-t py-4">
+      <span
+        className="bg-azul-icesi text-primary-foreground flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-extrabold"
+        aria-hidden="true"
+      >
+        {number}
+      </span>
+      <div className="flex min-w-0 flex-col gap-2.5">
+        <h3 className="text-foreground text-base font-bold">
+          <span className="sr-only">Paso {number}: </span>
+          {title}
+        </h3>
+        {children}
+      </div>
+    </li>
   );
-  if (brechas.length > 0) {
-    partes.push(
-      `cubre brechas en ${brechas
-        .map((d) => `${d.dimension} (${d.etiquetaOrigen})`)
-        .join(', ')}`,
-    );
-  }
+}
 
-  if (aportes.desequilibrios.detalle.length > 0) {
-    partes.push(
-      `incide en desequilibrios ${aportes.desequilibrios.detalle
-        .map((d) => d.par)
-        .join(', ')}`,
-    );
-  }
+/**
+ * Readable names of the characterization fields the backend reports as
+ * missing. The code is stable; the text the user sees belongs to this
+ * screen.
+ */
+const READABLE_FIELDS: Readonly<Record<string, string>> = {
+  stage: 'la etapa',
+  sector: 'el sector',
+  teamSize: 'el tamaño del equipo',
+  academicLinkage: 'la vinculación académica',
+};
 
-  if (aportes.afinidadEtapa.coincide) {
-    partes.push('encaja con la etapa de la iniciativa');
-  }
+function readableField(field: string): string {
+  return READABLE_FIELDS[field] ?? field;
+}
 
-  if (aportes.penalizacionRango.aplicada) {
-    partes.push('penalizado por estar fuera de su rango de madurez habitual');
-  }
+const ACTION_TITLE: Record<AppliedException['action'], (service: string) => string> = {
+  FORCE: (s) => `Se dejó ${s} como primera opción`,
+  PROMOTE: (s) => `Se subió ${s} en el orden`,
+  DEMOTE: (s) => `Se bajó ${s} en el orden`,
+  VETO: (s) => `Se retiró ${s} de las opciones`,
+};
 
-  return partes.length > 0
-    ? partes.join('; ') + '.'
-    : 'Sin afinidad destacable con este perfil.';
+function adjustmentTitle(e: AppliedException): string {
+  return ACTION_TITLE[e.action](e.targetService);
+}
+
+/** Where the service was before the adjustment and where it ended up. */
+function adjustmentPlace(e: AppliedException): string {
+  const before = e.rankingBefore.find((r) => r.name === e.targetService)?.position;
+  const after = e.rankingAfter.find((r) => r.name === e.targetService)?.position;
+  if (before === undefined) return '';
+  if (after === undefined) return `Estaba en el lugar ${String(before)}.`;
+  if (before === after) return `Ya estaba en el lugar ${String(before)}.`;
+  return `Pasó del lugar ${String(before)} al lugar ${String(after)}.`;
 }

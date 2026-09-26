@@ -1,482 +1,84 @@
 # Web Features
 
-A walk-through of every feature folder in `apps/web/src/features/`. For each: its responsibility, the user stories it implements, its public surface (what `index.ts` exports), which Zustand stores or React Query keys it owns, which routes consume it, and its phase 1 status.
-
-This is the frontend counterpart of [`apps/api/docs/modules.md`](../../api/docs/modules.md). Where the backend organizes by NestJS module = bounded context, the frontend organizes by **feature folder = bounded UI capability**.
-
-The architectural rule that overrides everything else: **features cannot import from other features**. ESLint enforces this via `eslint-plugin-boundaries`. Cross-feature reuse goes through `shared/`; cross-tier contracts go through `@innlab/contracts`.
-
-Phase 1 covers user stories from epics **E-03 (Cuestionario IRL)** and **E-04 (Diagnóstico inicial de madurez)**. Features supporting earlier epics (auth, consent, initiative) are walking skeletons. Later features (deep analysis, portfolio, report) are deferred.
-
-| Feature                                 | Phase 1 status              | Owns                                                             |
-| --------------------------------------- | --------------------------- | ---------------------------------------------------------------- |
-| [`auth`](#auth)                         | Implemented                 | INNLAB SSO session, protected route guard                        |
-| [`diagnostic`](#diagnostic)             | Walking skeleton            | Diagnostic listing, state machine guard                          |
-| [`consent`](#consent)                   | Walking skeleton            | Ley 1581 consent form                                            |
-| [`initiative`](#initiative)             | Walking skeleton            | Initiative form (nombre, sector, descripción)                    |
-| [`questionnaire`](#questionnaire)       | **Full — phase 1 priority** | 48-statement questionnaire UI, draft management, completeness UX |
-| [`maturity-profile`](#maturity-profile) | **Full — phase 1 priority** | Radar chart, dimension cards, bottleneck and imbalance display   |
-
----
-
-## `auth`
-
-**Responsibility:** hold the INNLAB ecosystem session. Send a visitor without one to the INNLAB Hub, exchange the returned `?code=` for tokens, keep the session alive, and log out. There is no OIDC library: the flow is INNLAB's own SSO handshake against `innlab-core-api`, and Cognito is reached through the Hub, never by this app directly.
-
-**User stories:** HU-01 (RF-00) — first authenticated session. HU-25 (RF-01) — recognize the authenticated user's profile.
-
-### The flow
-
-```
-app without a session
-  → {VITE_CORE_URL}/auth/sso?redirect=<our callback url>
-  → the Hub authenticates against Cognito if needed
-  → back to /auth/callback?code=xxxx        (single use, 30s TTL)
-  → GET {VITE_CORE_API_URL}/auth/sso/exchange?code=xxxx
-  → { token: <id_token>, accessToken: <access_token> }
-```
-
-The frontend exchanges the code **directly against Core**; our backend never sees it. `token` is the id_token and does not authenticate — the backend requires `token_use === 'access'`, so the Bearer is always `accessToken`.
-
-There is **no refresh token**. A session is kept alive by passive polling (`useSessionLiveness`), and a 401 from our API means the session is dead: `shared/api/http.ts` clears it and restarts the SSO flow.
-
-### Folder structure
-
-```
-features/auth/
-├── components/
-│   ├── UserMenu.tsx                # avatar → dropdown with name, email and logout
-│   └── UserContextGate.tsx         # withholds actions that need an identity
-├── hooks/
-│   ├── useSsoExchange.ts           # drives /auth/callback
-│   ├── useSessionLiveness.ts       # re-checks the session on tab focus
-│   ├── useCurrentUser.ts           # the profile behind GET /me/context
-│   └── useLogout.ts
-├── api/
-│   ├── core-auth.api.ts            # its own axios instance, aimed at Core
-│   └── me.api.ts                   # our own backend, not Core
-└── index.ts
-```
-
-Two pieces deliberately live **outside** this feature:
-
-- `shared/auth/session.ts` — token storage and `redirectToSso()`. The interceptor in `shared/api/http.ts` needs the access token, and the boundary rules forbid `shared/` importing from a feature.
-- `app/router/ProtectedRoute.tsx` — the route element that redirects to the Hub when there is no session.
-
-### Where the profile comes from
-
-An access token from the shared pool carries **only** the `sub` — no email, no
-name. So the profile cannot be read from the token: `useCurrentUser` asks our
-backend (`GET /me/context`), which in turn asks INNLAB Core, the owner of that
-data. The response is validated against `meContextResponseSchema` in
-`@innlab/contracts`, and the backend's controller is typed with the same
-contract so drift fails at compile time.
-
-`UserContextGate` withholds any action that needs to know who the user is —
-starting a diagnostic, above all, since a diagnostic belongs to whoever runs
-it. If Core cannot be reached, the gate says the service is temporarily
-unavailable and offers a manual retry instead of leaving the action armed and
-failing later.
-
-`UserMenu` is the header's only account affordance: an avatar (initial of the
-resolved name, falling back to the email's) that opens a dropdown with name,
-email and "Cerrar sesión" — the Google-account-menu pattern, rather than
-spelling the profile out permanently in the header.
-
-### Public surface
-
-```ts
-export { UserMenu } from './components/UserMenu';
-export { UserContextGate } from './components/UserContextGate';
-export { useCurrentUser } from './hooks/useCurrentUser';
-export { useLogout } from './hooks/useLogout';
-export { useSessionLiveness } from './hooks/useSessionLiveness';
-export { useSsoExchange } from './hooks/useSsoExchange';
-export { exchangeSsoCode, isSessionAlive, logoutFromCore } from './api/core-auth.api';
-```
-
-### State
-
-No Zustand store. The session lives in `localStorage` under `innlab.session.v1`, read through `shared/auth/session.ts`.
-
-### Routes consumed by
-
-- `/auth/callback` → `AuthCallbackPage`, the one route deliberately left **outside** `<ProtectedRoute>`: the user arrives there without a session, and guarding it would bounce them back to the Hub in a loop.
-- Every other route is wrapped in `<ProtectedRoute>` at the router level (`app/router/routes.tsx`).
-
-### Phase 1 status
-
-Sign-in, sign-out, session liveness and protected-route enforcement work end-to-end. No role-based UI gating — every authenticated user is a "Líder de Iniciativa"; per-product authorization is Core's call, not a claim we read from the token.
-
----
-
-## `diagnostic`
-
-**Responsibility:** show the user their list of diagnostics, let them start a new one, and enforce the diagnostic state machine at the route level. The state-machine guard reads diagnostic state and either renders the page or redirects to the next required step.
-
-**User stories:** HU-02, HU-03 (RF-02).
-
-### Folder structure
-
-```
-features/diagnostic/
-├── components/
-│   ├── DiagnosticList.tsx          # rendered on HomePage
-│   ├── DiagnosticListItem.tsx
-│   ├── StartDiagnosticButton.tsx
-│   └── DiagnosticGuard.tsx         # route element wrapper
-├── hooks/
-│   ├── useMyDiagnostics.ts         # list query
-│   ├── useDiagnostic.ts            # single diagnostic query
-│   └── useStartDiagnostic.ts       # mutation
-├── api/
-│   └── diagnostic.api.ts
-└── index.ts
-```
-
-### Where the profile comes from
-
-An access token from the shared pool carries **only** the `sub` — no email, no
-name. So the profile cannot be read from the token: `useCurrentUser` asks our
-backend (`GET /me/context`), which in turn asks INNLAB Core, the owner of that
-data. The response is validated against `meContextResponseSchema` in
-`@innlab/contracts`, and the backend's controller is typed with the same
-contract so drift fails at compile time.
-
-`UserContextGate` withholds any action that needs to know who the user is —
-starting a diagnostic, above all, since a diagnostic belongs to whoever runs
-it. If Core cannot be reached, the gate says the service is temporarily
-unavailable and offers a manual retry instead of leaving the action armed and
-failing later.
-
-### Public surface
-
-```ts
-export { DiagnosticList } from './components/DiagnosticList';
-export { StartDiagnosticButton } from './components/StartDiagnosticButton';
-export { DiagnosticGuard } from './components/DiagnosticGuard';
-export { useDiagnostic } from './hooks/useDiagnostic';
-```
-
-### State
-
-Server state only — TanStack Query:
-
-- `queryKeys.diagnostic.list()` — list of user's diagnostics. `staleTime: 30s`.
-- `queryKeys.diagnostic.detail(id)` — single diagnostic. `staleTime: 1min`.
-
-No Zustand store.
-
-### Routes consumed by
-
-- `/` and `/diagnosticos` (HomePage)
-- `/diagnosticos/:id/*` — all child routes wrap in `<DiagnosticGuard>` which fetches the diagnostic and enforces the state machine (you can't reach `/cuestionario` before consent + iniciativa).
-
-### Phase 1 status
-
-Full. The state machine handles states up to `PERFIL_GENERADO`. Later states (deep analysis, portfolio routing) cause `DiagnosticGuard` to redirect to the most advanced reachable step.
-
----
-
-## `consent`
-
-**Responsibility:** present the Ley 1581 de 2012 consent UI and persist the user's acceptance via the API.
-
-**User stories:** HU-04 (RF-03).
-
-### Folder structure
-
-```
-features/consent/
-├── components/
-│   ├── ConsentForm.tsx             # rendered on ConsentPage
-│   └── ConsentTermsModal.tsx       # full terms in a Radix dialog
-├── hooks/
-│   └── useRegisterConsent.ts       # RHF + Zod + mutation
-├── schemas/
-│   └── consent-form.schema.ts      # local Zod for the form
-├── api/
-│   └── consent.api.ts
-└── index.ts
-```
-
-### Where the profile comes from
-
-An access token from the shared pool carries **only** the `sub` — no email, no
-name. So the profile cannot be read from the token: `useCurrentUser` asks our
-backend (`GET /me/context`), which in turn asks INNLAB Core, the owner of that
-data. The response is validated against `meContextResponseSchema` in
-`@innlab/contracts`, and the backend's controller is typed with the same
-contract so drift fails at compile time.
-
-`UserContextGate` withholds any action that needs to know who the user is —
-starting a diagnostic, above all, since a diagnostic belongs to whoever runs
-it. If Core cannot be reached, the gate says the service is temporarily
-unavailable and offers a manual retry instead of leaving the action armed and
-failing later.
-
-### Public surface
-
-```ts
-export { ConsentForm } from './components/ConsentForm';
-```
-
-### State
-
-React Hook Form (one boolean field). No store. Mutation invalidates `queryKeys.diagnostic.detail(id)` on success so `DiagnosticGuard` advances to the next step.
-
-### Routes consumed by
-
-- `/diagnosticos/nuevo` (creates the diagnostic, then renders the form)
-- `/diagnosticos/:id/consentimiento`
-
-### Phase 1 status
-
-Walking skeleton. Single terms version; no withdrawal-of-consent flow.
-
----
-
-## `initiative`
-
-**Responsibility:** capture initiative info (nombre, sector, descripción breve) before the questionnaire opens.
-
-**User stories:** HU-05, HU-06 (RF-04).
-
-### Folder structure
-
-```
-features/initiative/
-├── components/
-│   ├── InitiativeForm.tsx
-│   └── SectorSelect.tsx            # uses the sectors catalog query
-├── hooks/
-│   ├── useSectorsCatalog.ts        # catalog query
-│   └── useRegisterInitiative.ts    # mutation
-├── schemas/
-│   └── initiative-form.schema.ts   # local Zod for the form
-├── api/
-│   └── initiative.api.ts
-└── index.ts
-```
-
-### Where the profile comes from
-
-An access token from the shared pool carries **only** the `sub` — no email, no
-name. So the profile cannot be read from the token: `useCurrentUser` asks our
-backend (`GET /me/context`), which in turn asks INNLAB Core, the owner of that
-data. The response is validated against `meContextResponseSchema` in
-`@innlab/contracts`, and the backend's controller is typed with the same
-contract so drift fails at compile time.
-
-`UserContextGate` withholds any action that needs to know who the user is —
-starting a diagnostic, above all, since a diagnostic belongs to whoever runs
-it. If Core cannot be reached, the gate says the service is temporarily
-unavailable and offers a manual retry instead of leaving the action armed and
-failing later.
-
-### Public surface
-
-```ts
-export { InitiativeForm } from './components/InitiativeForm';
-```
-
-### State
-
-React Hook Form for the three-field form. TanStack Query for the sectors catalog with `staleTime: Infinity` (catalogs don't change at runtime). Mutation invalidates `queryKeys.diagnostic.detail(id)`.
-
-### Routes consumed by
-
-- `/diagnosticos/:id/iniciativa`
-
-### Phase 1 status
-
-Walking skeleton. Single sector taxonomy; no inline taxonomy management.
-
----
-
-## `questionnaire`
-
-**Responsibility:** render the 48-statement questionnaire, manage the answer draft, enforce completeness UX, and submit. This is the largest, most user-facing feature in phase 1.
-
-**User stories:** HU-07, HU-08, HU-09, HU-10 (RF-05, RF-06).
-
-**Phase 1 priority.**
-
-### Folder structure
-
-```
-features/questionnaire/
-├── components/
-│   ├── QuestionnaireForm.tsx       # the orchestrating component
-│   ├── DimensionTabs.tsx           # 6 tabs, one per dimension, with per-tab progress badge
-│   ├── DimensionPanel.tsx          # renders the 8 statements of a dimension
-│   ├── StatementCard.tsx           # one statement + LikertScale
-│   ├── LikertScale.tsx             # built on Radix RadioGroup; 1..5
-│   ├── ProgressIndicator.tsx       # "X de 48 respondidas"
-│   ├── SubmitButton.tsx            # disabled until 48/48
-│   └── IncompleteSubmitDialog.tsx  # dialog shown when API returns QUESTIONNAIRE_INCOMPLETE
-├── hooks/
-│   ├── useQuestionnaireStructure.ts  # catalog query for 6×8 statements
-│   ├── useQuestionnaireDraft.ts      # Zustand store hook (re-export)
-│   ├── useSubmitQuestionnaire.ts     # mutation
-│   └── useResumeDraft.ts             # hydrates the store from server state if any
-├── store/
-│   └── questionnaire-draft.store.ts  # Zustand + persist(sessionStorage)
-├── schemas/
-│   └── (consumed from @innlab/contracts — no local schemas)
-├── utils/
-│   ├── group-by-dimension.ts
-│   └── compute-progress.ts
-├── api/
-│   └── questionnaire.api.ts
-└── index.ts
-```
-
-### Where the profile comes from
-
-An access token from the shared pool carries **only** the `sub` — no email, no
-name. So the profile cannot be read from the token: `useCurrentUser` asks our
-backend (`GET /me/context`), which in turn asks INNLAB Core, the owner of that
-data. The response is validated against `meContextResponseSchema` in
-`@innlab/contracts`, and the backend's controller is typed with the same
-contract so drift fails at compile time.
-
-`UserContextGate` withholds any action that needs to know who the user is —
-starting a diagnostic, above all, since a diagnostic belongs to whoever runs
-it. If Core cannot be reached, the gate says the service is temporarily
-unavailable and offers a manual retry instead of leaving the action armed and
-failing later.
-
-### Public surface
-
-```ts
-export { QuestionnaireForm } from './components/QuestionnaireForm';
-export { useQuestionnaireDraft } from './hooks/useQuestionnaireDraft';
-```
-
-`QuestionnairePage` only renders `<QuestionnaireForm />`. Nothing else from this feature is needed outside.
-
-### State
-
-This is the **only feature in phase 1 that owns a Zustand store**.
-
-- **Zustand store** (`questionnaire-draft.store.ts`) holds the 48 in-progress answers, the currently active dimension tab, and a `dirty` flag. Persisted to `sessionStorage` (not `localStorage`) — see [`state-management.md`](./state-management.md) for the rationale.
-- **TanStack Query** holds the questionnaire structure (catalog, infinite stale time) and handles the submission mutation. On successful submission, the store is reset and the user navigates to `/diagnosticos/:id/perfil`.
-
-The forbidden combination — using RHF for the 48-answer form — is documented in [`apps/web/CLAUDE.md`](../CLAUDE.md). RHF's value lookup fights with the cross-component progress UI; Zustand wins.
-
-### Routes consumed by
-
-- `/diagnosticos/:id/cuestionario`
-
-### Components in detail
-
-| Component                | What it does                                                                                                                                |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `QuestionnaireForm`      | Loads structure, hydrates store, renders `DimensionTabs` + `DimensionPanel` + `ProgressIndicator` + `SubmitButton`. Owns the submit handler |
-| `DimensionTabs`          | Radix `Tabs.Root`. Each trigger shows the dimension code (TRL, CRL, …) and a count badge ("3/8"). Keyboard arrow navigation                 |
-| `DimensionPanel`         | For the active dimension, renders 8 `StatementCard`s in `sequenceInDimension` order                                                         |
-| `StatementCard`          | One statement + `LikertScale`. Reads/writes one entry in the store                                                                          |
-| `LikertScale`            | Radix `RadioGroup` with five options. Arrow keys navigate; space toggles. `aria-label` from statement text                                  |
-| `ProgressIndicator`      | Derived from store: total answered count, percentage. Re-renders cheaply via Zustand selector                                               |
-| `SubmitButton`           | Disabled when `answeredCount < 48`. On submit, calls the mutation. On `QUESTIONNAIRE_INCOMPLETE` error, opens `IncompleteSubmitDialog`      |
-| `IncompleteSubmitDialog` | Shows the `missing` array from the API response. Each item links back to the right dimension tab                                            |
-
-### Phase 1 status
-
-Full. Includes HU-09 (resume within the same session via `sessionStorage`). Cross-device draft persistence (saving to the server every N seconds) is deferred to phase 2 unless the team chooses to add it; see the questionnaire SaveDraftAnswersUseCase note in `apps/api/docs/modules.md`.
-
----
-
-## `maturity-profile`
-
-**Responsibility:** display the computed IRL maturity profile — radar chart, six dimension cards with IRL levels, bottleneck callout, imbalance alerts. Read-only.
-
-**User stories:** HU-11, HU-12, HU-13, HU-14, HU-15 (RF-07, RF-08, RF-09, RF-10, RF-11).
-
-**Phase 1 priority.**
-
-### Folder structure
-
-```
-features/maturity-profile/
-├── components/
-│   ├── MaturityProfileView.tsx     # orchestrator on MaturityProfilePage
-│   ├── RadarChart.tsx              # Recharts RadarChart — six axes
-│   ├── DimensionResultCard.tsx     # one card per dimension with code, name, IRL level
-│   ├── DimensionResultGrid.tsx     # six cards in a responsive grid
-│   ├── BottleneckCallout.tsx       # highlights the bottleneck dimension(s), handles ties
-│   ├── ImbalanceList.tsx           # lists imbalance pairs with classification
-│   ├── ImbalanceItem.tsx           # one pair with icon + text + color
-│   └── KthAttributionFooter.tsx    # CC BY-NC-SA 4.0 attribution (RNF-09)
-├── hooks/
-│   └── useMaturityProfile.ts       # query for the profile
-├── utils/
-│   ├── irl-level-color.ts          # maps 1..9 to a token color (single source of truth)
-│   └── radar-data-shape.ts         # transforms API response → Recharts dataset
-├── api/
-│   └── maturity-profile.api.ts
-└── index.ts
-```
-
-### Where the profile comes from
-
-An access token from the shared pool carries **only** the `sub` — no email, no
-name. So the profile cannot be read from the token: `useCurrentUser` asks our
-backend (`GET /me/context`), which in turn asks INNLAB Core, the owner of that
-data. The response is validated against `meContextResponseSchema` in
-`@innlab/contracts`, and the backend's controller is typed with the same
-contract so drift fails at compile time.
-
-`UserContextGate` withholds any action that needs to know who the user is —
-starting a diagnostic, above all, since a diagnostic belongs to whoever runs
-it. If Core cannot be reached, the gate says the service is temporarily
-unavailable and offers a manual retry instead of leaving the action armed and
-failing later.
-
-### Public surface
-
-```ts
-export { MaturityProfileView } from './components/MaturityProfileView';
-export { useMaturityProfile } from './hooks/useMaturityProfile';
-```
-
-### State
-
-Server state only — TanStack Query. `queryKeys.diagnostic.profile(id)` with `staleTime: 5min`. The profile doesn't change after it's computed (it's a snapshot), so a relatively long stale time is correct.
-
-No Zustand store. No forms.
-
-### Routes consumed by
-
-- `/diagnosticos/:id/perfil`
-
-### Components in detail
-
-| Component              | What it does                                                                                                                                                                                              |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MaturityProfileView`  | Loads the profile, renders all sub-components. Handles loading and error states                                                                                                                           |
-| `RadarChart`           | Recharts `RadarChart` with six axes (one per dimension) on a 1–9 domain. Single shape, single color from tokens. Includes accessible `<title>` and `<desc>` describing each axis value for screen readers |
-| `DimensionResultGrid`  | Six `DimensionResultCard` in CSS grid, responsive (1 column mobile, 2 columns tablet, 3 columns desktop)                                                                                                  |
-| `DimensionResultCard`  | Dimension code (TRL), Spanish name (Madurez Tecnológica), IRL level, the average likert, a small bar showing the level on a 1–9 scale                                                                     |
-| `BottleneckCallout`    | Single bottleneck → "El cuello de botella es: TRL". Multiple tied → "Cuellos de botella (empate): TRL, CRL". RF-08                                                                                        |
-| `ImbalanceList`        | Six pairs, each as an `ImbalanceItem`. Items are sorted: critical first, then moderate, then acceptable. Acceptable items collapse into a count by default                                                |
-| `ImbalanceItem`        | Pair label ("TRL ↔ IPRL"), difference, classification. Color + icon + text — color never the only signal (a11y rule from `apps/web/CLAUDE.md`)                                                            |
-| `KthAttributionFooter` | Footer text and link to the KTH IRL framework with CC BY-NC-SA 4.0 attribution. Always visible on this page per RNF-09                                                                                    |
-
-### Phase 1 status
-
-Full. PDF export of the profile (RF-16) is deferred — that's the `features/report` work in phase 2.
-
----
-
-## Cross-feature rules (recap)
-
-- **Features cannot import from other features.** ESLint blocks it. Move shared concepts to `shared/`.
-- **Features own their API modules.** The shared `http` client from `@shared/api/http` is used by every feature's `api/` module.
-- **Query keys come from `@shared/api/query-keys`.** Never hand-write a key inline.
-- **Server state → React Query. Cross-component UI state → Zustand. Local UI state → `useState`.** Don't mix tools for the same piece of state.
-- **Forms with ≤5 fields → React Hook Form. The 48-answer questionnaire → Zustand.** RHF is the wrong tool for cross-component derived UI at scale.
-- **Components live in their owning feature until a second feature needs them.** Promotion to `shared/ui/` requires a real second consumer, not a hypothetical one.
-
-If a change feels like it requires crossing a feature boundary, you're probably one refactor away from a `shared/` extraction. Stop, talk to the team.
+Deliberately short. What can be derived from the code is not documented by hand: the folder tree is `apps/web/src/features/`, and the routes are in the router. This file states the rule and maps each feature to the backend module it talks to.
+
+This is the frontend counterpart of [`apps/api/docs/MODULES.md`](../../api/docs/MODULES.md). Where the backend organizes by NestJS module = bounded context, the frontend organizes by **feature folder = bounded UI capability**.
+
+The rule that overrides everything else: **features cannot import from other features**. ESLint enforces it via `eslint-plugin-boundaries`. Cross-feature reuse goes through `shared/`; cross-tier contracts go through `@innlab/contracts`.
+
+## Features that exist
+
+| Feature | Talks to (backend) | Page |
+| --- | --- | --- |
+| `auth` | `shared/identity` — INNLAB SSO session and the user's profile (`me/context`): `UserMenu`, `UserContextGate`, `useCurrentUser` | `AuthCallbackPage`; the header of every page; `StartDiagnosticPage`, `DashboardPage` |
+| `questionnaire` | `diagnosis` — questionnaire structure; the draft of the 48 answers and their justifications (Zustand); the summary table | `DiagnosticWizardPage` (steps 3 and 4) |
+| `consent` | `initiative` — the current consent text (served by the backend) and recording a new acceptance of an initiative (Law 1581) | `DiagnosticWizardPage` (step 2) |
+| `initiative` | `initiative` — the user's initiatives (list, create with the first acceptance, `InitiativeChooser`), profile registration and reading, sector and stage catalogs; the browser draft of step 1 | `DiagnosticWizardPage` (step 1), `InitiativePage`, `DashboardPage` |
+| `maturity-profile` | `diagnosis` — profile | `ResultsPage` |
+| `portfolio-recommendation` | `diagnosis` (accepts deep analysis) and `routing` (reads the recommendation and its trace) | `ResultsPage` |
+| `scaling-roadmap` | `roadmap` — reads the saved roadmap | `ResultsPage` |
+
+There is no `diagnostic` feature: starting, reading and processing a diagnostic go through `shared/api/diagnostic.api.ts` and `shared/hooks/`, because several pages and features need them.
+
+## Pages and flow
+
+`/` (landing, public, no navigation, one button) → **Iniciar diagnóstico** → `/diagnosticos/nuevo` (protected: without a session it goes through the INNLAB sign-in and continues here on return; with one it just proceeds) → asks the backend for the user's diagnostic, which **resumes the unfinished one** or creates one → the wizard `/diagnosticos/:id/asistente/:step` (no navigation) → `/diagnosticos/:id/resultados` (the first screen with navigation) → `/panel`.
+
+The wizard has four steps, in this order: `iniciativa` (choose one of the user's initiatives or a new one, and its profile), `consentimiento` (privacy consent of that initiative), `cuestionario` (48 statements, each with its justification) and `resumen` (a table per dimension, in tabs, with **Statement / Score / Justification**; «Procesar diagnóstico» sends the answers and computes the profile). Which step applies is decided by what the server already has (the diagnostic's initiative profile, only registered with a current consent), not by a local flag: resuming lands on the first missing step and a later step cannot be opened by URL. A diagnostic that already has results is not resumed: its results open.
+
+- **The consent belongs to the initiative** ([ADR 0011](../../../docs/architecture/decisions/0011-initiative-identity-and-consent-per-initiative.md)). If the chosen initiative already accepted the current text, step 1 registers the profile right away and goes to the questionnaire.
+- **Nothing about the initiative is stored before the consent** (RF-03, RNF-06). Otherwise the form is a browser draft (`useInitiativeDraftStore`, `sessionStorage`) until step 2, which shows the text served by the backend; accepting creates the new initiative with its acceptance (or records a new acceptance of the existing one) and then registers the profile. The backend also refuses a profile without a current consent (409).
+- **The questionnaire is the diagnostic's framework version**: steps 3 and 4 and the results ask for `catalog/questionnaire?version=<Diagnostic.frameworkVersion>`.
+- The old `/perfil`, `/recomendacion` and `/roadmap` routes redirect to `/resultados`; `/cuestionario` and `/consentimiento` redirect to their wizard step; `/diagnosticos` redirects to `/`.
+- `/panel` shows the initiative of the latest diagnostic **with results**, offers to continue one still in the wizard, and reserves the space for the history of past diagnostics (a future story). `/diagnosticos/:id/iniciativa` is only for correcting an already registered initiative profile, and only while the deep analysis is not accepted (afterwards it says the profile is frozen, and the panel hides «Editar iniciativa»); the first registration is wizard step 1.
+
+### The user's profile (HU-01, HU-25)
+
+- **Where it comes from:** an access token from the shared pool carries only the `sub`, with no email or name. `useCurrentUser` therefore asks this system's backend (`GET /me/context`), which asks INNLAB Core, the owner of that data. The response is validated against `meContextResponseSchema` in `@innlab/contracts`, and the backend controller is typed with the same contract, so a drift fails at compile time.
+- **`UserMenu`** is the header's only account control: an avatar (the initial of the name, or of the email) that opens a dropdown with name, email and «Cerrar sesión». If the profile does not arrive it simply does not render.
+- **`UserContextGate`** withholds what needs to know who the user is. Starting a diagnostic, above all: a diagnostic belongs to whoever starts it. It wraps the request on `/diagnosticos/nuevo` and the panel's «Iniciar diagnóstico». If Core cannot be reached it says the service is temporarily unavailable and offers a manual retry, instead of creating a diagnostic nobody can claim.
+
+## Where things live
+
+- **Server state → React Query; UI/draft state → Zustand**, never both for the same piece of state — see [`STATE_MANAGEMENT.md`](./STATE_MANAGEMENT.md).
+- Each feature owns its API module under `features/<name>/api/`; calls shared by several features live in `shared/api/` (for example `diagnostic.api.ts`).
+- **One results page.** `ResultsPage` shows the maturity profile and, only when the backend says the deep analysis was accepted (`deepAnalysisAccepted` on `GET diagnostics/:id`), also the imbalanced pairs, the critical-state alerts, the roadmap and the recommendation. The accept button (`AcceptDeepAnalysisCard`) lives in that page; nothing is sent by merely opening it. The recommendation and the roadmap are not even requested before acceptance.
+- Pages compose features: `ResultsPage` uses three (`maturity-profile`, `scaling-roadmap`, `portfolio-recommendation`); a feature may not import another, a page may.
+- **The radar, its legend and the summary cards share one highlight** (`useRadarHighlight`, local state of the page, no global store): hovering or focusing a card, a legend item or a pair highlights its dimensions in the radar; a click on a legend item pins it.
+- **Starting a diagnostic** is `POST diagnostics` (`useStartDiagnostic`), idempotent per user while one is unfinished; `StartDiagnosticPage` and the panel use it and open the wizard, which decides the step. `completed` on the diagnostic (derived by the backend) tells a diagnostic with results from one still in the wizard.
+- **The questionnaire does not scroll on mount.** `DimensionTabs` scrolls to the top of its panel only when the dimension changes (compared with the last shown), so the page loads from the top, also under StrictMode; every wizard step opens from the top of the page.
+- **Development autofill.** `src/dev/` holds the AgroConecta case (initiative profile and the 48 answers with their justifications) and two buttons. They exist only when `VITE_DEV_AUTOFILL` is `true` **at build time**, which only `.env.development` sets; a production build does not contain the data or the buttons (`src/dev/__tests__/production-bundle.test.ts` builds and checks). The backend e2e suites use the same 48 scores (`apps/api/test/e2e/support/agroconecta-case.ts`).
+- **Typecheck.** `pnpm typecheck` and `pnpm build` run `tsc -p tsconfig.app.json`; the bare `tsc --noEmit` at the root checked nothing because that tsconfig only has references.
+- **The frontend keeps no dimension names.** `name` and `shortName` come from the responses that name dimensions (profile, roadmap) and from the questionnaire catalog; only the visual metadata (colors, order) lives in `shared/lib/dimensions.ts`. The public landing page keeps its own editorial copy.
+
+## Results page: how it reads
+
+- **The page opens with the initiative** (`ProfileHero`): its name as the page title, a short description (the product type) and its sector and stage as badges, and next to it the global IRL level (RF-09, the simple average of the six levels, computed by the backend as `globalAverage`) with the strongest and the weakest dimension. The sections then address the initiative by name.
+- **No radar legend.** Each point of the radar has the color of its dimension and, on hover or keyboard focus, a tooltip that says what the dimension measures (the description comes from the questionnaire catalog) and its level. The emphasis (a hovered point or card fades the rest) is CSS driven by a `data-highlighted` attribute on the radar wrapper (`globals.css`, «Radar emphasis»), and the chart itself is memoized: re-rendering recharts on every hover restarts its animation and remounts the points, which closes the tooltip under the cursor.
+- **The deep analysis is written for someone who knows neither the system nor the IRL framework:** dimension names instead of codes, sentences instead of arrows or symbols, no internal identifiers (the trace and the roadmap explanation say what an adjustment did and why the center declared it, never its code), and no reading text below `text-sm`. Imbalances are ordered by severity; pairs, alerts, roadmap and service are white cards with hairlines, and only the critical pair and the recommended service carry a coloured top line. Critical dimensions get their own card with the next step from the roadmap. Once the deep analysis is accepted, a sticky section bar reaches its four blocks.
+- **The routing trace answers before it explains** (`LayerTracePanel`): one sentence says which service came first and why, then three steps — what does not apply, the order, the center's adjustment. Only the winner shows its reasons, as labels; the rest fold away. A label that groups several dimensions always says which ones: «3 brechas» names them in its tooltip and repeats them in a `sr-only` text, so the count is checkable without a pointer.
+- **The invitation to the deep analysis** (`AcceptDeepAnalysisCard`) is a proposal with two paths, ask for it or continue later from the panel; it sends nothing until the user asks.
+
+## Design system (`shared/ui`, `shared/lib`)
+
+Brand and visual rules are in `DESIGN.md`, kept next to the repository (not inside it). Two of them decide most of what follows, both measured on <https://innlab.org>: **colour is a budget** (its interior pages keep 90% of the area white or light grey and spend accent colour on 1–5%), so here colour rides on the data (bars, radar, dimension icons), on one brand mosaic per screen, on the primary button and on the footer; and **corners are straight** everywhere except circles. What the code offers so no screen writes its own:
+
+| Piece | Use |
+| --- | --- |
+| `shared/lib/palette.ts` | **Single source of the brand, semantic and dimension colors.** `tailwind.config.ts` imports it to build the utilities and SVG code (the radar) reads the same constants. Surface, text and border tokens are HSL variables in `styles/globals.css` (`hsl(var(--border))` in SVG). Never write `var(--color-…)`: no stylesheet defines it. |
+| `Card` | Content box: straight corners, hairline border, no shadow. |
+| `Alert` | State message (error, notice, info, confirmation) with icon and ARIA role; `critical` is `role="alert"`. Not a `Card`. |
+| `LoadingState` | The one loading treatment. The questionnaire skeleton stays apart because it reproduces the shape of the 48 cards. |
+| `PageHeader` | Overline, `text-h1` title, description, and optional metadata below. |
+| `ResultMeta` | «Resultado guardado el …», under the title of profile, recommendation and roadmap. |
+| `DisclosurePanel` | Collapsible «how we got here» panel (recommendation trace, roadmap explanation). |
+| `AcceptDeepAnalysisCard` | The invitation to accept deep analysis, on the results page and for retrying a calculation that failed. |
+| `SectionHeader` | Title of a section inside a page (`h2`), with its description, its result metadata and, optionally, an icon inside a blue circle. |
+| `Tooltip`, `GlossaryTerm` | One-sentence explanations of the technical terms (`shared/lib/glossary.ts`), reachable by hover and by keyboard (Radix). |
+| `Field`, `Input`, `Textarea`, `Select` | Form controls with label, hint and error wired with `aria-describedby`, from the `DESIGN.md` form input: 48px high, 16px text so mobile browsers do not zoom in, and `Select` is still a native `<select>` with its own chevron. `Textarea` grows with its content: a long answer is read whole, with no scrollbar inside the field. |
+| `AppNav` | Navigation after the institutional descriptor: panel and results of the active diagnostic (the one in the URL, else the latest with results). Only on the screens after the wizard (results, panel, correcting the initiative); opt-in per page (`PageShell showNavigation`). |
+| `BrandDescriptor` | The institutional descriptor; it links to `/panel` where the page has navigation and to `/` (the landing) where it does not (landing, wizard). |
+| `Badge`, `LevelBar`, `DimensionChip` | Small pieces that make a result readable at a glance: a labelled category or severity (`Badge`, an uppercase 14px label over a soft wash of its tone), the 1 to 9 scale as nine segments with an optional goal and gap threshold (`LevelBar`), and a dimension with its icon and color (`DimensionChip`). The icon, `bg`, `chip`, `tint`, `border` and `fill` of each dimension come from `getDimensionVisual` (`shared/lib/dimensions.ts`); `tint` is neutral, so a dimension is told by its icon, its text and its bars. |
+| `WizardStepper` | The steps of the wizard and the current one (number or check, `aria-current="step"`); earlier steps are links, later ones are not. Under `sm` the list becomes «Paso N de M» with a segment bar: four steps do not fit in a 390px row. |
+| `notify` | Toasts for the outcome of an action (`notify.success`, `notify.error`), over Sonner. Errors while loading a screen stay inline, as `Alert`. |
+| `PageShell` | The chrome of every page: institutional descriptor, navigation (opt-in) and the blue footer with the Icesi | INNLAB lockup and the KTH attribution. Under `md` the navigation drops to its own tab row and the side gutter is 16px. |

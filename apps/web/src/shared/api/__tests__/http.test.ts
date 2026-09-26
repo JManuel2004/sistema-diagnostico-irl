@@ -3,10 +3,8 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import { ApiError, http } from '../http';
 
 /**
- * El interceptor de errores es la pieza que permite a la UI distinguir
- * escenarios. Antes rechazaba con el mensaje genérico de axios en cuanto
- * el cuerpo era un objeto —el caso normal—, así que el `code` estable del
- * backend no llegaba nunca al componente.
+ * The error interceptor is the piece that lets the UI tell scenarios
+ * apart: it keeps the backend's stable `code` so it reaches the component.
  */
 function rejectVia(status: number, data: unknown): Promise<unknown> {
   const handler = (
@@ -26,19 +24,19 @@ function rejectVia(status: number, data: unknown): Promise<unknown> {
   return handler(error).catch((e: unknown) => e);
 }
 
-const problema = {
+const problem = {
   type: 'https://errors.innlab.icesi.edu.co/routing_recommendation_not_generated',
   title: 'routing recommendation not generated',
   status: 409,
   detail: 'El diagnóstico X todavía no tiene recomendación de portafolio generada.',
-  instance: '/api/v1/diagnosticos/X/recomendacion',
+  instance: '/api/v1/diagnostics/X/recommendation',
   code: 'ROUTING_RECOMMENDATION_NOT_GENERATED',
   correlationId: 'abc-123',
 };
 
 describe('interceptor de errores HTTP', () => {
   it('conserva el code estable del documento RFC 7807', async () => {
-    const error = (await rejectVia(409, problema)) as ApiError;
+    const error = (await rejectVia(409, problem)) as ApiError;
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error.code).toBe('ROUTING_RECOMMENDATION_NOT_GENERATED');
@@ -47,13 +45,13 @@ describe('interceptor de errores HTTP', () => {
   });
 
   it('usa el detail como mensaje, no el texto genérico de axios', async () => {
-    const error = (await rejectVia(409, problema)) as ApiError;
-    expect(error.message).toBe(problema.detail);
+    const error = (await rejectVia(409, problem)) as ApiError;
+    expect(error.message).toBe(problem.detail);
   });
 
   it('conserva el status aunque el cuerpo no siga el contrato', async () => {
-    // Un proxy o un gateway pueden devolver HTML. Sin `status` la política
-    // de "no reintentar 4xx" de query-client nunca se aplicaría.
+    // A proxy or a gateway may return HTML. Without `status`, query-client's
+    // "do not retry 4xx" policy would never apply.
     const error = (await rejectVia(404, '<html>Not Found</html>')) as ApiError;
     expect(error.status).toBe(404);
     expect(error.code).toBeUndefined();

@@ -6,10 +6,10 @@ import { saveSession } from '@/shared/auth/session';
 import type * as SessionModule from '@/shared/auth/session';
 
 /**
- * `PageShell` (la pantalla de "redirigiendo") contiene un `Link`, asi que
- * el arbol necesita contexto de router. `ProtectedRoute` lee la ruta de
- * `window.location`, no del router, de modo que `pushState` sigue siendo
- * lo que determina el deep link recordado.
+ * `PageShell` (the "redirecting" screen) contains a `Link`, so the tree
+ * needs a router context. `ProtectedRoute` reads the route from
+ * `window.location`, not from the router, so `pushState` is still what
+ * decides the remembered deep link.
  */
 function renderGuarded(): void {
   render(

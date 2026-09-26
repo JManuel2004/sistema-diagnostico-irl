@@ -1,12 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import type { DimensionResult } from '@innlab/contracts';
+import userEvent from '@testing-library/user-event';
+import type { DimensionCode, DimensionResult } from '@innlab/contracts';
+import { dimensionResultFixture } from '@/test/fixtures/dimensions';
 import { MaturityProfileSummary } from '../MaturityProfileSummary';
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
 function dr(code: DimensionResult['dimensionCode'], level: number): DimensionResult {
-  return { dimensionCode: code, name: code, averageLikert: level, irlLevel: level };
+  return dimensionResultFixture(code, level);
 }
 
 // PayFlow levels: TRL 5, CRL 3, BRL 3, IPRL 2, TmRL 4, FRL 3
@@ -80,7 +82,10 @@ describe('MaturityProfileSummary — bottleneck card (RF-08)', () => {
           bottleneck={{ dimensions: ['CRL', 'BRL', 'FRL'], level: 3 }}
         />,
       );
-      expect(screen.getByText('Cliente, Negocio, Financiación')).toBeInTheDocument();
+      // One chip per tied dimension, each with its own name.
+      for (const name of ['Cliente', 'Negocio', 'Financiación']) {
+        expect(screen.getByText(name)).toBeInTheDocument();
+      }
     });
 
     it('does not show a name list inside the bottleneck card when there is only one dimension', () => {
@@ -161,7 +166,8 @@ describe('Strength card', () => {
       />,
     );
     const card = screen.getByRole('group', { name: /Fortaleza clara/i });
-    expect(within(card).getByText(/Tecnología.*Cliente|Cliente.*Tecnología/i)).toBeInTheDocument();
+    expect(within(card).getByText('Tecnología')).toBeInTheDocument();
+    expect(within(card).getByText('Cliente')).toBeInTheDocument();
   });
 });
 
@@ -190,7 +196,7 @@ describe('Asymmetry card', () => {
     expect(within(card).getByText(/0 niveles/i)).toBeInTheDocument();
   });
 
-  it('shows "Perfil balanceado" text for acceptable asymmetry', () => {
+  it('says the profile advances evenly for acceptable asymmetry', () => {
     render(
       <MaturityProfileSummary
         dimensionResults={UNIFORM}
@@ -198,10 +204,10 @@ describe('Asymmetry card', () => {
       />,
     );
     const card = screen.getByRole('group', { name: /Asimetría/i });
-    expect(within(card).getByText(/Perfil balanceado/i)).toBeInTheDocument();
+    expect(within(card).getByText(/avanza de forma pareja/i)).toBeInTheDocument();
   });
 
-  it('shows "Asimetría crítica" text for extreme spread', () => {
+  it('says the gap is very large for a critical asymmetry', () => {
     render(
       <MaturityProfileSummary
         dimensionResults={EXTREME}
@@ -209,10 +215,10 @@ describe('Asymmetry card', () => {
       />,
     );
     const card = screen.getByRole('group', { name: /Asimetría/i });
-    expect(within(card).getByText(/Asimetría crítica/i)).toBeInTheDocument();
+    expect(within(card).getByText(/diferencia muy grande/i)).toBeInTheDocument();
   });
 
-  it('shows "Asimetría moderada" text for moderate spread', () => {
+  it('says the gap is important for a moderate asymmetry', () => {
     render(
       <MaturityProfileSummary
         dimensionResults={PAYFLOW}
@@ -220,7 +226,7 @@ describe('Asymmetry card', () => {
       />,
     );
     const card = screen.getByRole('group', { name: /Asimetría/i });
-    expect(within(card).getByText(/Asimetría moderada/i)).toBeInTheDocument();
+    expect(within(card).getByText(/diferencia importante/i)).toBeInTheDocument();
   });
 
   it('uses singular "nivel" when asymmetry is 1', () => {
@@ -247,7 +253,7 @@ describe('Asymmetry card', () => {
 
 describe('Gap card (server-provided gaps)', () => {
   const PAYFLOW_GAPS = {
-    dimensions: ['CRL', 'BRL', 'IPRL', 'FRL'] as const,
+    dimensions: ['CRL', 'BRL', 'IPRL', 'FRL'] as DimensionCode[],
     threshold: 3,
   };
 
@@ -278,128 +284,133 @@ describe('Gap card (server-provided gaps)', () => {
       <MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />,
     );
     const card = screen.getByRole('group', { name: /Brecha/i });
-    expect(within(card).getByText(/Propiedad Intelectual/i)).toBeInTheDocument();
+    expect(within(card).getByText('Propiedad Intelectual')).toBeInTheDocument();
   });
 
-  it('renders the threshold supplied by the server in the eyebrow', () => {
+  it('states the threshold supplied by the server in words, without symbols', () => {
     render(
       <MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />,
     );
-    expect(screen.getByText('Brecha (nivel ≤ 3)')).toBeInTheDocument();
+    expect(screen.getByText('4 dimensiones en nivel 3 o menos')).toBeInTheDocument();
+    expect(screen.queryByText(/≤/)).not.toBeInTheDocument();
   });
 });
 
 // ── Imbalance pairs card ──────────────────────────────────────────────────────
 
-describe('Imbalance pairs card', () => {
-  const UNIFORM_IMBALANCES = [
-    { left: 'TRL', right: 'CRL', difference: 0, classification: 'acceptable' as const },
-    { left: 'TRL', right: 'BRL', difference: 0, classification: 'acceptable' as const },
-    { left: 'CRL', right: 'BRL', difference: 0, classification: 'acceptable' as const },
-    { left: 'TmRL', right: 'FRL', difference: 0, classification: 'acceptable' as const },
-    { left: 'BRL', right: 'IPRL', difference: 0, classification: 'acceptable' as const },
-    { left: 'TRL', right: 'IPRL', difference: 0, classification: 'acceptable' as const },
-  ];
+// ── Pairs and critical state are not part of the profile ─────────────
 
-  const PAYFLOW_IMBALANCES = [
-    { left: 'TRL', right: 'CRL', difference: 2, classification: 'moderate' as const },
-    { left: 'TRL', right: 'BRL', difference: 2, classification: 'moderate' as const },
-    { left: 'CRL', right: 'BRL', difference: 0, classification: 'acceptable' as const },
-    { left: 'TmRL', right: 'FRL', difference: 1, classification: 'acceptable' as const },
-    { left: 'BRL', right: 'IPRL', difference: 1, classification: 'acceptable' as const },
-    { left: 'TRL', right: 'IPRL', difference: 3, classification: 'moderate' as const },
-  ];
+describe('what the summary no longer shows (deep analysis only)', () => {
+  it('has no imbalance pairs card, whatever the profile', () => {
+    render(<MaturityProfileSummary dimensionResults={EXTREME} gaps={{ dimensions: [], threshold: 3 }} />);
 
-  it('shows "Los 6 pares se mantienen dentro del rango aceptable" when uniform', () => {
-    render(
-      <MaturityProfileSummary dimensionResults={UNIFORM} imbalances={UNIFORM_IMBALANCES} />,
-    );
-    expect(
-      screen.getByText(/6 pares se mantienen dentro del rango aceptable/i),
-    ).toBeInTheDocument();
-  });
-
-  it('does not invent pair cards when the server omits imbalances', () => {
-    render(<MaturityProfileSummary dimensionResults={PAYFLOW} />);
     expect(screen.queryByText(/Pares desequilibrados/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/pares se mantienen dentro del rango aceptable/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/pares/i)).not.toBeInTheDocument();
   });
+});
 
-  it('shows "Pares desequilibrados" card when there are flagged pairs (PayFlow)', () => {
-    render(
-      <MaturityProfileSummary dimensionResults={PAYFLOW} imbalances={PAYFLOW_IMBALANCES} />,
-    );
-    const card = screen.getByRole('group', { name: /Pares desequilibrados/i });
-    expect(card).toBeInTheDocument();
-  });
+// ── Technical terms are explained ──────────────────────────
 
-  it('shows count of out-of-balance pairs', () => {
-    render(
-      <MaturityProfileSummary dimensionResults={PAYFLOW} imbalances={PAYFLOW_IMBALANCES} />,
-    );
-    const card = screen.getByRole('group', { name: /Pares desequilibrados/i });
-    expect(within(card).getByText(/de 6 pares KTH fuera de balance/i)).toBeInTheDocument();
-  });
-
-  it('lists the flagged pair codes as chips', () => {
-    render(
-      <MaturityProfileSummary dimensionResults={PAYFLOW} imbalances={PAYFLOW_IMBALANCES} />,
-    );
-    const card = screen.getByRole('group', { name: /Pares desequilibrados/i });
-    expect(within(card).getAllByText('TRL').length).toBeGreaterThan(0);
-    expect(within(card).getAllByText('CRL').length).toBeGreaterThan(0);
-  });
-
-  it('shows "crítico" label for a pair with difference > 3', () => {
-    const extreme: readonly DimensionResult[] = [
-      dr('TRL', 9),
-      dr('CRL', 9),
-      dr('BRL', 9),
-      dr('IPRL', 9),
-      dr('TmRL', 9),
-      dr('FRL', 1),
-    ];
+describe('glossary tooltips', () => {
+  it.each([
+    ['Cuello de botella', /la dimensión donde tu iniciativa está menos avanzada/i],
+    ['Brecha', /parte más baja de la escala/i],
+    ['Asimetría', /la distancia entre tu dimensión más avanzada y la menos avanzada/i],
+  ])('explains "%s" in one plain sentence on hover', async (term, explanation) => {
+    const user = userEvent.setup();
     render(
       <MaturityProfileSummary
-        dimensionResults={extreme}
-        imbalances={[
-          { left: 'TRL', right: 'CRL', difference: 0, classification: 'acceptable' },
-          { left: 'TRL', right: 'BRL', difference: 0, classification: 'acceptable' },
-          { left: 'CRL', right: 'BRL', difference: 0, classification: 'acceptable' },
-          { left: 'TmRL', right: 'FRL', difference: 8, classification: 'critical' },
-          { left: 'BRL', right: 'IPRL', difference: 0, classification: 'acceptable' },
-          { left: 'TRL', right: 'IPRL', difference: 0, classification: 'acceptable' },
-        ]}
+        dimensionResults={PAYFLOW}
+        bottleneck={{ dimensions: ['IPRL'], level: 2 }}
+        asymmetry={{ difference: 3, classification: 'moderate' }}
+        gaps={{ dimensions: ['CRL', 'IPRL'], threshold: 3 }}
       />,
     );
-    const card = screen.getByRole('group', { name: /Pares desequilibrados/i });
-    expect(within(card).getByText(/crítico/i)).toBeInTheDocument();
+
+    await user.hover(screen.getByRole('button', { name: new RegExp(term, 'i') }));
+
+    expect((await screen.findAllByText(explanation)).length).toBeGreaterThan(0);
   });
 
-  it('shows "moderado" label for pairs with difference of 2 or 3', () => {
-    render(
-      <MaturityProfileSummary dimensionResults={PAYFLOW} imbalances={PAYFLOW_IMBALANCES} />,
-    );
-    const card = screen.getByRole('group', { name: /Pares desequilibrados/i });
-    expect(within(card).getAllByText(/moderado/i).length).toBeGreaterThan(0);
-  });
-
-  it('does not show acceptable message when there are flagged pairs', () => {
+  it('makes the term reachable by keyboard, not only by mouse', async () => {
+    const user = userEvent.setup();
     render(
       <MaturityProfileSummary
-        dimensionResults={EXTREME}
-        imbalances={[
-          { left: 'TRL', right: 'CRL', difference: 8, classification: 'critical' },
-          { left: 'TRL', right: 'BRL', difference: 0, classification: 'acceptable' },
-          { left: 'CRL', right: 'BRL', difference: 8, classification: 'critical' },
-          { left: 'TmRL', right: 'FRL', difference: 8, classification: 'critical' },
-          { left: 'BRL', right: 'IPRL', difference: 8, classification: 'critical' },
-          { left: 'TRL', right: 'IPRL', difference: 8, classification: 'critical' },
-        ]}
+        dimensionResults={PAYFLOW}
+        bottleneck={{ dimensions: ['IPRL'], level: 2 }}
       />,
     );
-    expect(
-      screen.queryByText(/6 pares se mantienen dentro del rango aceptable/i),
-    ).not.toBeInTheDocument();
+
+    // Without a highlight handler the card is not a tab stop: the first one is the term.
+    await user.tab();
+
+    expect(screen.getByRole('button', { name: /Cuello de botella/i })).toHaveFocus();
+    expect((await screen.findAllByText(/menos avanzada/i)).length).toBeGreaterThan(0);
+  });
+});
+
+// ── Cards link to the radar ────────────────────────────────
+
+describe('cards highlight their dimensions in the radar', () => {
+  it('reports the bottleneck dimensions on hover and clears them on leave', async () => {
+    const user = userEvent.setup();
+    const onHighlight = vi.fn();
+    render(
+      <MaturityProfileSummary
+        dimensionResults={PAYFLOW}
+        bottleneck={{ dimensions: ['IPRL'], level: 2 }}
+        onHighlight={onHighlight}
+      />,
+    );
+    const card = screen.getByRole('group', { name: /Cuello de botella/i });
+
+    await user.hover(card);
+    expect(onHighlight).toHaveBeenLastCalledWith(['IPRL']);
+
+    await user.unhover(card);
+    expect(onHighlight).toHaveBeenLastCalledWith([]);
+  });
+
+  it('reports every gap dimension for the gap card', async () => {
+    const user = userEvent.setup();
+    const onHighlight = vi.fn();
+    render(
+      <MaturityProfileSummary
+        dimensionResults={PAYFLOW}
+        gaps={{ dimensions: ['CRL', 'BRL', 'IPRL', 'FRL'], threshold: 3 }}
+        onHighlight={onHighlight}
+      />,
+    );
+
+    await user.hover(screen.getByRole('group', { name: /Brecha/i }));
+
+    expect(onHighlight).toHaveBeenLastCalledWith(['CRL', 'BRL', 'IPRL', 'FRL']);
+  });
+
+  it('also reacts to keyboard focus, so it does not depend on the mouse', async () => {
+    const user = userEvent.setup();
+    const onHighlight = vi.fn();
+    render(
+      <MaturityProfileSummary
+        dimensionResults={PAYFLOW}
+        strength={{ dimensions: ['TRL'], level: 5 }}
+        onHighlight={onHighlight}
+      />,
+    );
+
+    await user.tab();
+
+    expect(onHighlight).toHaveBeenLastCalledWith(['TRL']);
+  });
+
+  it('is inert without a handler: cards are not tab stops', () => {
+    render(
+      <MaturityProfileSummary
+        dimensionResults={PAYFLOW}
+        strength={{ dimensions: ['TRL'], level: 5 }}
+      />,
+    );
+
+    expect(screen.getByRole('group', { name: /Fortaleza/i })).not.toHaveAttribute('tabindex');
   });
 });

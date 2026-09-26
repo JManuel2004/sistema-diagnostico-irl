@@ -4,10 +4,10 @@ import type { JSX, PropsWithChildren } from 'react';
 import { queryClient } from '@shared/api/query-client';
 
 /**
- * Inyecta el `QueryClient` compartido (`@shared/api/query-client`) en
- * el árbol React. Los Devtools se incluyen siempre — el bundler
- * (Vite) los excluye automáticamente en `production` vía el flag
- * `NODE_ENV !== 'production'` que el paquete consulta internamente.
+ * Injects the shared `QueryClient` (`@shared/api/query-client`) into the
+ * React tree. The Devtools are always included — the bundler (Vite) drops
+ * them in `production` through the `NODE_ENV !== 'production'` flag the
+ * package checks internally.
  */
 export function QueryProvider({ children }: PropsWithChildren): JSX.Element {
   return (
