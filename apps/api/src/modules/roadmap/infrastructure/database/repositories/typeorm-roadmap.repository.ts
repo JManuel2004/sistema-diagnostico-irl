@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { RoadmapRepositoryPort } from '../../../domain/repositories/roadmap.repository.port.js';
-import {
-  ScalingRoadmap,
-  type RoadmapPhase,
-} from '../../../domain/entities/scaling-roadmap.aggregate.js';
+import { ScalingRoadmap } from '../../../domain/entities/scaling-roadmap.aggregate.js';
 import { Uuid } from '../../../../../shared/kernel/domain/value-objects/uuid.vo.js';
 import { ScalingRoadmapOrm } from '../orm-entities/scaling-roadmap.orm-entity.js';
 
@@ -34,7 +31,7 @@ export class TypeOrmRoadmapRepository implements RoadmapRepositoryPort {
       });
       await manager.insert(ScalingRoadmapOrm, {
         idDiagnostic: roadmap.diagnosticId.value,
-        phases: roadmap.phases,
+        phases: [...roadmap.phases],
         generatedAt: roadmap.generatedAt,
       });
     });
@@ -45,7 +42,7 @@ export class TypeOrmRoadmapRepository implements RoadmapRepositoryPort {
     if (!row) return null;
     return ScalingRoadmap.create({
       diagnosticId: Uuid.create(row.idDiagnostic),
-      phases: row.phases as RoadmapPhase[],
+      phases: row.phases,
       generatedAt: row.generatedAt,
     });
   }

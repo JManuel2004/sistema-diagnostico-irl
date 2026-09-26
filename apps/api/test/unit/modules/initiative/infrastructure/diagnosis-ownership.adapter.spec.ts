@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import { DiagnosisOwnershipAdapter } from '../../../../../src/modules/initiative/infrastructure/diagnosis-ownership.adapter.js';
 import type { FindDiagnosisOwnerQuery } from '../../../../../src/modules/diagnosis/application/use-cases/find-diagnosis-owner.query.js';
+import type { GetDiagnosisProgressQuery } from '../../../../../src/modules/diagnosis/application/use-cases/get-diagnosis-progress.query.js';
 import { ForbiddenError } from '../../../../../src/shared/kernel/domain/errors/forbidden.error.js';
 import { NotFoundError } from '../../../../../src/shared/kernel/domain/errors/not-found.error.js';
 
@@ -8,13 +9,26 @@ const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
 describe('DiagnosisOwnershipAdapter', () => {
   let execute: jest.Mock<FindDiagnosisOwnerQuery['execute']>;
+  let progress: jest.Mock<GetDiagnosisProgressQuery['execute']>;
   let adapter: DiagnosisOwnershipAdapter;
 
   beforeEach(() => {
     execute = jest.fn();
-    adapter = new DiagnosisOwnershipAdapter({
-      execute,
-    } as unknown as FindDiagnosisOwnerQuery);
+    progress = jest.fn();
+    adapter = new DiagnosisOwnershipAdapter(
+      { execute } as unknown as FindDiagnosisOwnerQuery,
+      { execute: progress } as unknown as GetDiagnosisProgressQuery,
+    );
+  });
+
+  it.each([
+    [{ deepAnalysisAccepted: true }, true],
+    [{ deepAnalysisAccepted: false }, false],
+    [null, false],
+  ])('reports whether the deep analysis was accepted (%j → %s)', async (answer, expected) => {
+    progress.mockResolvedValueOnce(answer);
+
+    await expect(adapter.deepAnalysisAccepted(DIAGNOSTIC_ID)).resolves.toBe(expected);
   });
 
   it('succeeds when the diagnostic belongs to the user', async () => {

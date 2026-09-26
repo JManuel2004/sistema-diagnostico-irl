@@ -10,31 +10,19 @@ import {
 } from './data/routing.js';
 
 /**
- * Seeds the routing catalog.
+ * Seeds the routing catalog: the services with their ordinal profiles, the
+ * calibration scale, the scoring parameters and the rules.
  *
- * Idempotent in the same sense as the rest of the seeder: it can run n
- * times with the same result. The routing configuration is not versioned:
- * if `scoring_parameters` — the singleton table — already has its row, the
- * configuration is considered seeded and is not touched again.
+ * Every table is written by its natural key (service name, stage code,
+ * label, `(service, dimension)`, rule code, the fixed `id = 1` of the
+ * parameters), so running the seed again **applies** a change of the
+ * configuration instead of skipping it. The configuration is not versioned:
+ * the stored one is always the seed's.
  *
  * It runs inside the runner's transaction, so the configuration ends up
- * complete or not at all. A configuration with profiles but without
- * exception rules would be worse than none: the engine would start and give
- * silently incomplete results.
+ * complete or not at all.
  */
-export async function seedRouting(
-  manager: EntityManager,
-): Promise<{ configurationSeeded: boolean }> {
-  // ── Base catalogs (idempotent by natural key) ──────────────────────
-  for (const s of SERVICES) {
-    await manager.query(
-      `INSERT INTO irl_catalog.portfolio_service (name, description, is_active)
-       VALUES ($1, $2, true)
-       ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description`,
-      [s.name, s.description],
-    );
-  }
-
+export async function seedRouting(manager: EntityManager): Promise<{ services: number }> {
   for (const e of STAGES) {
     await manager.query(
       `INSERT INTO irl_catalog.initiative_stage (code, name, sequence, is_active)
@@ -45,36 +33,33 @@ export async function seedRouting(
     );
   }
 
-  // ── Is the configuration already seeded? ───────────────────────────
-  //
-  // `scoring_parameters` is a singleton (`ux_scoring_parameters_singleton`):
-  // a second insert would violate the index. If it already has its row, the
-  // rest of the routing (profiles, rules) was seeded the previous time too.
-  const [existing] = await manager.query<{ count: string }[]>(
-    `SELECT count(*)::text AS count FROM irl_catalog.scoring_parameters`,
-  );
-  if (existing && existing.count !== '0') {
-    return { configurationSeeded: false };
-  }
-
-  // ── Calibration scale ────────────────────────────────────────────
   for (const p of CALIBRATION_SCALE) {
     await manager.query(
-      `INSERT INTO irl_catalog.calibration_label_value
-         (label, numeric_value, monotonicity_order)
-       VALUES ($1, $2, $3)`,
+      `INSERT INTO irl_catalog.calibration_label_value (label, numeric_value, monotonicity_order)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (label) DO UPDATE
+         SET numeric_value = EXCLUDED.numeric_value,
+             monotonicity_order = EXCLUDED.monotonicity_order`,
       [p.label, p.value, p.order],
     );
   }
 
-  // ── Scoring parameters ─────────────────────────────────────────────
   const P = SCORING_PARAMETERS;
   await manager.query(
     `INSERT INTO irl_catalog.scoring_parameters
-       (bottleneck_weight, gap_weight, moderate_imbalance_weight,
+       (id, bottleneck_weight, gap_weight, moderate_imbalance_weight,
         critical_imbalance_weight, stage_affinity_weight,
         out_of_range_penalty, minimum_threshold, alternatives_count)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+     VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT (id) DO UPDATE
+       SET bottleneck_weight = EXCLUDED.bottleneck_weight,
+           gap_weight = EXCLUDED.gap_weight,
+           moderate_imbalance_weight = EXCLUDED.moderate_imbalance_weight,
+           critical_imbalance_weight = EXCLUDED.critical_imbalance_weight,
+           stage_affinity_weight = EXCLUDED.stage_affinity_weight,
+           out_of_range_penalty = EXCLUDED.out_of_range_penalty,
+           minimum_threshold = EXCLUDED.minimum_threshold,
+           alternatives_count = EXCLUDED.alternatives_count`,
     [
       P.bottleneckWeight,
       P.gapWeight,
@@ -87,61 +72,92 @@ export async function seedRouting(
     ],
   );
 
-  // ── Ordinal profiles + intensities ─────────────────────────────────
-  for (const profile of ORDINAL_PROFILES) {
-    const stages = profile.relevantStages.join(',');
-    const [{ id: idProfile }] = await manager.query<{ id: string }[]>(
-      `INSERT INTO irl_catalog.published_ordinal_profile
-         (id_service, min_level, max_level, relevant_stages)
-       SELECT s.id, $2, $3, $4
-         FROM irl_catalog.portfolio_service s
-        WHERE s.name = $1
+  // ── Services and their ordinal profiles ─────────────────────────────
+  const profileByService = new Map(ORDINAL_PROFILES.map((p) => [p.service, p] as const));
+  for (const s of SERVICES) {
+    const profile = profileByService.get(s.name);
+    if (!profile) {
+      throw new Error(`Service '${s.name}' has no ordinal profile in the seed`);
+    }
+    const [{ id: idService }] = await manager.query<{ id: number }[]>(
+      `INSERT INTO irl_catalog.portfolio_service (name, description, is_active, min_level, max_level)
+       VALUES ($1, $2, true, $3, $4)
+       ON CONFLICT (name) DO UPDATE
+         SET description = EXCLUDED.description,
+             min_level = EXCLUDED.min_level,
+             max_level = EXCLUDED.max_level
        RETURNING id`,
-      [
-        profile.service,
-        profile.minLevel,
-        profile.maxLevel,
-        stages,
-      ],
+      [s.name, s.description, profile.minLevel, profile.maxLevel],
     );
 
-    for (const [dimension, label] of Object.entries(profile.intensities)) {
-      await manager.query(
-        `INSERT INTO irl_catalog.published_ordinal_intensity
-           (id_ordinal_profile, id_dimension, label)
-         SELECT $1, d.id_dimension, $3
-           FROM irl_catalog.dimension d
-          WHERE d.code = $2`,
-        [idProfile, dimension, label],
+    // The stages of the profile are replaced whole: the seed is the list.
+    await manager.query(`DELETE FROM irl_catalog.portfolio_service_stage WHERE id_service = $1`, [
+      idService,
+    ]);
+    for (const stageCode of profile.relevantStages) {
+      const inserted = await manager.query<unknown[]>(
+        `INSERT INTO irl_catalog.portfolio_service_stage (id_service, id_stage)
+         SELECT $1, st.id FROM irl_catalog.initiative_stage st WHERE st.code = $2
+         RETURNING id_service`,
+        [idService, stageCode],
       );
+      if (inserted.length === 0) {
+        throw new Error(`Service '${s.name}' names the unknown stage '${stageCode}'`);
+      }
+    }
+
+    const dimensions = Object.entries(profile.intensities);
+    if (dimensions.length !== 6) {
+      throw new Error(`Service '${s.name}' must have one intensity per dimension (6)`);
+    }
+    for (const [dimension, label] of dimensions) {
+      const inserted = await manager.query<unknown[]>(
+        `INSERT INTO irl_catalog.ordinal_intensity (id_service, id_dimension, id_calibration_label)
+         SELECT $1, d.id_dimension, c.id
+           FROM irl_catalog.dimension d, irl_catalog.calibration_label_value c
+          WHERE d.code = $2 AND c.label = $3
+         ON CONFLICT (id_service, id_dimension) DO UPDATE
+           SET id_calibration_label = EXCLUDED.id_calibration_label
+         RETURNING id`,
+        [idService, dimension, label],
+      );
+      if (inserted.length === 0) {
+        throw new Error(
+          `Service '${s.name}': unknown dimension '${dimension}' or label '${label}'`,
+        );
+      }
     }
   }
 
-  // ── Eligibility rules ───────────────────────────────────────────
+  // ── Rules ───────────────────────────────────────────────────────────
   for (const rule of ELIGIBILITY_RULES) {
     await manager.query(
-      `INSERT INTO irl_catalog.published_eligibility_rule
-         (id_service, predicate, exclusion_message)
-       SELECT s.id, $2::jsonb, $3
+      `INSERT INTO irl_catalog.eligibility_rule (code, id_service, predicate, exclusion_message)
+       SELECT $1, s.id, $3::jsonb, $4
          FROM irl_catalog.portfolio_service s
-        WHERE s.name = $1`,
-      [
-        rule.service,
-        JSON.stringify(rule.predicate),
-        rule.exclusionMessage,
-      ],
+        WHERE s.name = $2
+       ON CONFLICT (code) DO UPDATE
+         SET id_service = EXCLUDED.id_service,
+             predicate = EXCLUDED.predicate,
+             exclusion_message = EXCLUDED.exclusion_message`,
+      [rule.code, rule.service, JSON.stringify(rule.predicate), rule.exclusionMessage],
     );
   }
 
-  // ── Exception rules ──────────────────────────────────────────────
   for (const rule of EXCEPTION_RULES) {
     await manager.query(
-      `INSERT INTO irl_catalog.published_exception_rule
-         (code, predicate, action, id_target_service,
-          positions, declared_reason, priority_order)
+      `INSERT INTO irl_catalog.exception_rule
+         (code, predicate, action, id_target_service, positions, declared_reason, priority_order)
        SELECT $1, $2::jsonb, $3, s.id, $5, $6, $7
          FROM irl_catalog.portfolio_service s
-        WHERE s.name = $4`,
+        WHERE s.name = $4
+       ON CONFLICT (code) DO UPDATE
+         SET predicate = EXCLUDED.predicate,
+             action = EXCLUDED.action,
+             id_target_service = EXCLUDED.id_target_service,
+             positions = EXCLUDED.positions,
+             declared_reason = EXCLUDED.declared_reason,
+             priority_order = EXCLUDED.priority_order`,
       [
         rule.code,
         JSON.stringify(rule.predicate),
@@ -154,5 +170,5 @@ export async function seedRouting(
     );
   }
 
-  return { configurationSeeded: true };
+  return { services: SERVICES.length };
 }

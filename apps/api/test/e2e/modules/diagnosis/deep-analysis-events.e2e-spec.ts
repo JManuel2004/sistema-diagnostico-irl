@@ -22,6 +22,7 @@ import {
   E2E_USER,
   authenticateAgainst,
 } from '../../support/authenticated-app.js';
+import { insertInitiativeWithProfile } from '../../support/initiative-rows.js';
 import { agroconectaAnswers } from '../../support/agroconecta-case.js';
 
 /**
@@ -48,6 +49,7 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
   let agent: ReturnType<typeof request.agent>;
   const diagnosticId = randomUUID();
   const withoutProfile = randomUUID();
+  let initiativeId: string;
 
   const requested = jest.fn();
   const recommendationCalculated = jest.fn();
@@ -90,29 +92,12 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
 
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
-         (id, cognito_user_id, state, irl_framework_version)
-       VALUES ($1, $2, 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0'),
-              ($3, $2, 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
+         (id, cognito_user_id, state, id_framework_version)
+       VALUES ($1, $2, 'QUESTIONNAIRE_IN_PROGRESS', (SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0')),
+              ($3, $2, 'QUESTIONNAIRE_IN_PROGRESS', (SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
       [diagnosticId, E2E_USER.sub, withoutProfile],
     );
-    await dataSource.query(
-      `INSERT INTO irl_catalog.sector (name, is_active)
-       VALUES ('Agroindustria', true)
-       ON CONFLICT (name) DO NOTHING`,
-    );
-    await dataSource.query(
-      `INSERT INTO irl_diagnostic.initiative
-         (id, id_diagnostic, id_sector, name, product_type,
-          id_stage, declared_stage, team_size, team_description,
-          academic_linkage, target_market, current_funding)
-       SELECT $1, $2, s.id, 'AgroConecta',
-              'Plataforma de trazabilidad y comercialización de café',
-              e.id, 'Piloto completado', 3, 'Fundadora, coordinadora y desarrollador externo',
-              false, 'Productores de café del suroccidente', 'Ahorros de la fundadora'
-         FROM irl_catalog.sector s, irl_catalog.initiative_stage e
-        WHERE s.name = 'Agroindustria' AND e.code = 'validacion'`,
-      [randomUUID(), diagnosticId],
-    );
+    initiativeId = await insertInitiativeWithProfile(dataSource, diagnosticId, E2E_USER.sub);
 
     const statements = await dataSource.query<
       { id_statement: string; code: string; sequence: number }[]
@@ -136,6 +121,7 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
         `DELETE FROM irl_diagnostic.diagnostic WHERE id = ANY($1)`,
         [[diagnosticId, withoutProfile]],
       );
+      await dataSource.query(`DELETE FROM irl_diagnostic.initiative WHERE id = $1`, [initiativeId]);
     }
     nock.cleanAll();
     await app?.close();
@@ -178,7 +164,9 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
       diagnosticId,
       state: 'DEEP_ANALYSIS_IN_PROGRESS',
     });
-    expect(await stateOf(diagnosticId)).toBe('DEEP_ANALYSIS_IN_PROGRESS');
+    // Both results were saved while the request was answered, so their
+    // events already completed the deep analysis.
+    expect(await stateOf(diagnosticId)).toBe('DEEP_ANALYSIS_COMPLETE');
 
     const eventPayload = { payload: { diagnosticId } };
     expect(requested).toHaveBeenCalledTimes(1);
@@ -224,7 +212,7 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
     expect(roadmapCalculated.mock.calls.length).toBe(before);
   });
 
-  it('aceptar de nuevo no cambia el estado, vuelve a publicar y no acumula recomendaciones', async () => {
+  it('aceptar de nuevo mantiene el análisis completo, vuelve a publicar y no acumula recomendaciones', async () => {
     const before = {
       requested: requested.mock.calls.length,
       recommendation: recommendationCalculated.mock.calls.length,
@@ -235,7 +223,7 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
       .post(`/api/v1/diagnostics/${diagnosticId}/deep-analysis`)
       .expect(201);
 
-    expect(await stateOf(diagnosticId)).toBe('DEEP_ANALYSIS_IN_PROGRESS');
+    expect(await stateOf(diagnosticId)).toBe('DEEP_ANALYSIS_COMPLETE');
     expect(requested.mock.calls.length).toBe(before.requested + 1);
     expect(recommendationCalculated.mock.calls.length).toBe(
       before.recommendation + 1,

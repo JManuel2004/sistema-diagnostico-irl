@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   INITIATIVE_TEXT_MAX,
   type InitiativeStage,
-  type RegisterInitiativeCommand,
   type Sector,
 } from '@innlab/contracts';
 import { Alert } from '@/shared/ui/alert';
@@ -15,17 +14,23 @@ import {
   EMPTY_INITIATIVE_FORM,
   initiativeFormSchema,
   type InitiativeFormValues,
+  type InitiativeProfileFields,
 } from '../lib/form-values';
 
 type Values = InitiativeFormValues;
-type FormControl = Control<Values, unknown, RegisterInitiativeCommand>;
+
+const ACADEMIC_LINKAGE_OPTIONS = [
+  { id: 'true', name: 'Sí' },
+  { id: 'false', name: 'No' },
+] as const;
+type FormControl = Control<Values, unknown, InitiativeProfileFields>;
 
 export interface InitiativeFormProps {
   readonly sectors: readonly Sector[];
   readonly stages: readonly InitiativeStage[];
   /** Values of an already registered initiative, to edit it. */
   readonly initial?: Values;
-  readonly onSubmit: (command: RegisterInitiativeCommand) => void;
+  readonly onSubmit: (command: InitiativeProfileFields) => void;
   readonly isSubmitting: boolean;
   readonly submitLabel?: string;
 }
@@ -37,10 +42,10 @@ export interface InitiativeFormProps {
  * `initiativeFormSchema`, which is the contract's `registerInitiativeSchema`
  * — the same one the backend applies — so the message shown is the
  * contract's. The fields hold text and `teamSize` becomes a number on
- * validation; `onSubmit` receives the command ready to send.
+ * validation; `onSubmit` receives the profile fields ready to send.
  *
- * The nine fields are grouped in three blocks (the initiative, the team,
- * market and funding); sector and stage are native `<select>`s.
+ * The ten fields are grouped in three blocks (the initiative, the team,
+ * market and funding); sector, stage and academic linkage are native `<select>`s.
  */
 export function InitiativeForm({
   sectors,
@@ -55,7 +60,7 @@ export function InitiativeForm({
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<Values, unknown, RegisterInitiativeCommand>({
+  } = useForm<Values, unknown, InitiativeProfileFields>({
     resolver: zodResolver(initiativeFormSchema),
     defaultValues: initial ?? EMPTY_INITIATIVE_FORM,
   });
@@ -138,7 +143,7 @@ export function InitiativeForm({
       <FormSection
         id="initiative-group-team"
         title="El equipo"
-        description="Quiénes la impulsan hoy y con qué dedicación."
+        description="Quiénes la impulsan hoy, con qué dedicación y si tiene vínculo con la universidad."
       >
         <div className="grid gap-5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-start">
           <TextField
@@ -157,6 +162,15 @@ export function InitiativeForm({
             multiline
           />
         </div>
+        <SelectField
+          control={control}
+          name="academicLinkage"
+          label="Vinculación académica"
+          hint="¿La iniciativa tiene un vínculo confirmado con la universidad?"
+          error={errors.academicLinkage?.message}
+          placeholder="Selecciona una opción"
+          options={ACADEMIC_LINKAGE_OPTIONS}
+        />
       </FormSection>
 
       <FormSection
@@ -224,7 +238,7 @@ function TextField({
   return (
     <Field label={label} hint={hint} error={error}>
       {(c) => (
-        <Controller<Values, FieldPath<Values>, RegisterInitiativeCommand>
+        <Controller<Values, FieldPath<Values>, InitiativeProfileFields>
           control={control}
           name={name}
           render={({ field }) =>
@@ -257,7 +271,7 @@ function SelectField({
   return (
     <Field label={label} hint={hint} error={error}>
       {(c) => (
-        <Controller<Values, FieldPath<Values>, RegisterInitiativeCommand>
+        <Controller<Values, FieldPath<Values>, InitiativeProfileFields>
           control={control}
           name={name}
           render={({ field }) => (
@@ -279,7 +293,7 @@ function SelectField({
 /**
  * A block of the form with its title. On desktop the title and its
  * description sit in a column to the left of the fields; on mobile, above.
- * It groups the nine fields so they do not read as a single list.
+ * It groups the ten fields so they do not read as a single list.
  */
 function FormSection({
   id,

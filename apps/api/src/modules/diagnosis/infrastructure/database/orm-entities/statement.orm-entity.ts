@@ -12,6 +12,10 @@ export class StatementOrm {
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'id_statement' })
   idStatement!: string;
 
+  /** The framework version the statement belongs to. */
+  @Column({ name: 'id_framework_version', type: 'smallint' })
+  idFrameworkVersion!: number;
+
   @Column({ name: 'id_dimension', type: 'integer' })
   idDimension!: number;
 

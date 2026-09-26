@@ -6,12 +6,20 @@ import {
 } from '@innlab/contracts';
 
 /**
- * The form's validation: the contract's `registerInitiativeSchema`, with
- * the two differences the form needs — the fields hold text, so the team
- * size is read from a string, and an empty selection gets a message of its
- * own instead of the contract's generic one.
+ * The profile fields of `RegisterInitiativeCommand`: everything but the
+ * initiative it belongs to, which is chosen outside the form (step 1's
+ * chooser, or the profile being corrected).
  */
-export const initiativeFormSchema = registerInitiativeSchema.extend({
+export type InitiativeProfileFields = Omit<RegisterInitiativeCommand, 'initiativeId'>;
+
+/**
+ * The form's validation: the contract's `registerInitiativeSchema` without
+ * `initiativeId`, with the differences the form needs — the fields hold text, so the team size
+ * and the academic linkage (a «Sí»/«No» select) are read from a string, and
+ * an empty selection gets a message of its own instead of the contract's
+ * generic one.
+ */
+export const initiativeFormSchema = registerInitiativeSchema.omit({ initiativeId: true }).extend({
   sectorId: z.string().min(1, 'Elige un sector'),
   stageId: z.string().min(1, 'Elige una etapa'),
   teamSize: z
@@ -19,6 +27,12 @@ export const initiativeFormSchema = registerInitiativeSchema.extend({
     .trim()
     .min(1, 'El tamaño del equipo es obligatorio')
     .pipe(z.coerce.number().pipe(registerInitiativeSchema.shape.teamSize)),
+  academicLinkage: z
+    .string()
+    .refine((value) => value === 'true' || value === 'false', {
+      message: 'Indica si la iniciativa tiene vinculación académica',
+    })
+    .transform((value) => value === 'true'),
 });
 
 /** The values of the initiative form: all of them are text, as in the fields. */
@@ -30,6 +44,8 @@ export interface InitiativeFormValues {
   readonly declaredStage: string;
   readonly teamSize: string;
   readonly teamDescription: string;
+  /** `''` until the user picks «Sí» (`'true'`) or «No» (`'false'`). */
+  readonly academicLinkage: string;
   readonly targetMarket: string;
   readonly currentFunding: string;
 }
@@ -43,6 +59,7 @@ export const EMPTY_INITIATIVE_FORM: InitiativeFormValues = {
   declaredStage: '',
   teamSize: '',
   teamDescription: '',
+  academicLinkage: '',
   targetMarket: '',
   currentFunding: '',
 };
@@ -56,13 +73,14 @@ export function initiativeToFormValues(initiative: Initiative): InitiativeFormVa
     declaredStage: initiative.declaredStage,
     teamSize: String(initiative.teamSize),
     teamDescription: initiative.teamDescription,
+    academicLinkage: initiative.academicLinkage ? 'true' : 'false',
     targetMarket: initiative.targetMarket,
     currentFunding: initiative.currentFunding,
   };
 }
 
 /** The draft stored in the browser, to fill the form again. */
-export function commandToFormValues(command: RegisterInitiativeCommand): InitiativeFormValues {
+export function commandToFormValues(command: InitiativeProfileFields): InitiativeFormValues {
   return {
     name: command.name,
     sectorId: command.sectorId,
@@ -71,6 +89,7 @@ export function commandToFormValues(command: RegisterInitiativeCommand): Initiat
     declaredStage: command.declaredStage,
     teamSize: String(command.teamSize),
     teamDescription: command.teamDescription,
+    academicLinkage: command.academicLinkage ? 'true' : 'false',
     targetMarket: command.targetMarket,
     currentFunding: command.currentFunding,
   };

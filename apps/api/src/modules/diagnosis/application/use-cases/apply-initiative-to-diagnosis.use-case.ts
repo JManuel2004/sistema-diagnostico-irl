@@ -7,9 +7,12 @@ export interface ApplyInitiativeToDiagnosisCommand {
 }
 
 /**
- * Reaction to `InitiativeRegisteredEvent` (RF-04): moves the diagnostic from
- * `WITH_CONSENT` to `WITH_INITIATIVE`. Registering the initiative again
- * (editing it) leaves a diagnostic that is already further along untouched.
+ * Reaction to `InitiativeRegisteredEvent` (RF-04): the diagnostic has the
+ * profile of an initiative whose consent is accepted, so it moves on to
+ * `WITH_INITIATIVE`, through `WITH_CONSENT` when it is still `STARTED`
+ * (the consent belongs to the initiative and may predate the diagnostic).
+ * Registering the profile again leaves a diagnostic that is already
+ * further along untouched.
  */
 export class ApplyInitiativeToDiagnosisUseCase {
   constructor(private readonly diagnostics: DiagnosisRepositoryPort) {}
@@ -22,7 +25,9 @@ export class ApplyInitiativeToDiagnosisUseCase {
       return Result.err(new NotFoundError('Diagnosis', cmd.diagnosticId));
     }
 
-    if (diagnosis.state.value === 'WITH_CONSENT') {
+    const state = diagnosis.state.value;
+    if (state === 'STARTED' || state === 'WITH_CONSENT') {
+      if (state === 'STARTED') diagnosis.transitionTo('WITH_CONSENT');
       diagnosis.transitionTo('WITH_INITIATIVE');
       await this.diagnostics.save(diagnosis);
     }

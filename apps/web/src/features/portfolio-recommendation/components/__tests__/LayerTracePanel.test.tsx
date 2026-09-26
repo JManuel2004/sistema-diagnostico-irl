@@ -55,6 +55,7 @@ function trace(over: Partial<LayerTraceResponse> = {}): LayerTraceResponse {
       {
         idService: 6,
         name: 'Proyectos de Grado',
+        ruleCode: 'ELG-01',
         exclusionMessage: 'Requieren vinculación académica confirmada.',
       },
     ],

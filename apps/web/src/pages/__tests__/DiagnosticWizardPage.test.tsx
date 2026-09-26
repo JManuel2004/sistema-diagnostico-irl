@@ -6,9 +6,16 @@ import { http as mswHttp, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
-import type { ConsentRecord, Initiative } from '@innlab/contracts';
+import type { Initiative, InitiativeSummary } from '@innlab/contracts';
 import { createTestQueryClient } from '@/test/render-with-client';
-import { SECTORS, STAGES, initiativeFixture } from '@/test/fixtures/initiative';
+import {
+  CONSENT_TERMS,
+  INITIATIVE_ID,
+  SECTORS,
+  STAGES,
+  initiativeFixture,
+  initiativeSummaryFixture,
+} from '@/test/fixtures/initiative';
 import { questionnaireFixture } from '@/test/fixtures/questionnaire';
 import { useInitiativeDraftStore } from '@features/initiative';
 import { useQuestionnaireDraftStore } from '@features/questionnaire';
@@ -22,15 +29,26 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-const CONSENT: ConsentRecord = {
-  diagnosticId: ID,
-  version: 'v1',
-  acceptedAt: '2026-03-01T15:30:00.000Z',
+const NEW_INITIATIVE_ID = 'd3eebc99-9c0b-4ef8-bb6d-6bb9bd380a44';
+
+const COMMAND = {
+  name: 'AgroConecta',
+  sectorId: '1',
+  productType: 'App web',
+  stageId: '2',
+  declaredStage: 'Piloto completado',
+  teamSize: 3,
+  teamDescription: 'Fundadora y equipo',
+  academicLinkage: false,
+  targetMarket: 'Productores de café',
+  currentFunding: 'Ahorros',
 };
 
 interface Backend {
-  consent: ConsentRecord | null;
-  initiative: Initiative | null;
+  /** The user's initiatives, as `GET /initiatives` lists them. */
+  initiatives: InitiativeSummary[];
+  /** The profile registered for the diagnostic. */
+  profile: Initiative | null;
   completed: boolean;
   /** What reached the server, in order. */
   readonly calls: string[];
@@ -41,8 +59,8 @@ interface Backend {
 /** A small in-memory backend: what the wizard reads back is what it wrote. */
 function backend(start: Partial<Backend> = {}): Backend {
   const state: Backend = {
-    consent: null,
-    initiative: null,
+    initiatives: [],
+    profile: null,
     completed: false,
     calls: [],
     failInitiative: false,
@@ -54,16 +72,45 @@ function backend(start: Partial<Backend> = {}): Backend {
       { type: 'x', title: 'nf', status: 404, detail: 'nf', code: 'NOT_FOUND' },
       { status: 404 },
     );
+  const consentFailure = () =>
+    HttpResponse.json(
+      { type: 'x', title: 'c', status: state.consentStatus, detail: 'c', code: 'CONFLICT' },
+      { status: state.consentStatus },
+    );
+  const acceptance = (initiativeId: string) => ({
+    initiativeId,
+    version: 'v1',
+    acceptedAt: '2026-09-21T15:30:00.000Z',
+  });
 
   server.use(
     mswHttp.get('*/initiative-catalog/sectors', () => HttpResponse.json(SECTORS)),
     mswHttp.get('*/initiative-catalog/stages', () => HttpResponse.json(STAGES)),
     mswHttp.get('*/api/v1/catalog/questionnaire', () => HttpResponse.json(questionnaireFixture())),
-    mswHttp.get('*/diagnostics/:id/consent', () =>
-      state.consent ? HttpResponse.json(state.consent) : notFound(),
-    ),
+    mswHttp.get('*/consent-terms/current', () => HttpResponse.json(CONSENT_TERMS)),
+    mswHttp.get('*/initiatives', () => HttpResponse.json(state.initiatives)),
+    mswHttp.post('*/initiatives', () => {
+      state.calls.push('create');
+      if (state.consentStatus !== 201) return consentFailure();
+      const created = initiativeSummaryFixture({
+        id: NEW_INITIATIVE_ID,
+        consent: acceptance(NEW_INITIATIVE_ID),
+        latestProfile: null,
+      });
+      state.initiatives = [created, ...state.initiatives];
+      return HttpResponse.json(created, { status: 201 });
+    }),
+    mswHttp.post('*/initiatives/:id/consent', ({ params }) => {
+      state.calls.push('consent');
+      if (state.consentStatus !== 201) return consentFailure();
+      const record = acceptance(String(params.id));
+      state.initiatives = state.initiatives.map((i) =>
+        i.id === params.id ? { ...i, consent: record, consentCurrent: true } : i,
+      );
+      return HttpResponse.json(record, { status: 201 });
+    }),
     mswHttp.get('*/diagnostics/:id/initiative', () =>
-      state.initiative ? HttpResponse.json(state.initiative) : notFound(),
+      state.profile ? HttpResponse.json(state.profile) : notFound(),
     ),
     mswHttp.get('*/diagnostics/:id', ({ params }) =>
       HttpResponse.json({
@@ -72,28 +119,20 @@ function backend(start: Partial<Backend> = {}): Backend {
         state: state.completed ? 'PROFILE_GENERATED' : 'STARTED',
         completed: state.completed,
         deepAnalysisAccepted: false,
+        frameworkVersion: 'KTH-IRL-1.0',
         createdAt: '2026-03-01T00:00:00.000Z',
-        updatedAt: '2026-03-01T00:00:00.000Z',
       }),
     ),
     mswHttp.get('*/diagnostics', () => HttpResponse.json([])),
-    mswHttp.post('*/diagnostics/:id/consent', () => {
-      state.calls.push('consent');
-      if (state.consentStatus !== 201) {
-        return HttpResponse.json(
-          { type: 'x', title: 'c', status: state.consentStatus, detail: 'c', code: 'CONFLICT' },
-          { status: state.consentStatus },
-        );
-      }
-      state.consent = CONSENT;
-      return HttpResponse.json(CONSENT, { status: 201 });
-    }),
     mswHttp.post('*/diagnostics/:id/initiative', async ({ request }) => {
       state.calls.push('initiative');
       if (state.failInitiative) return HttpResponse.json({ message: 'boom' }, { status: 500 });
       const body = (await request.json()) as Record<string, unknown>;
-      state.initiative = initiativeFixture({ name: String(body.name) });
-      return HttpResponse.json(state.initiative, { status: 201 });
+      state.profile = initiativeFixture({
+        name: String(body.name),
+        initiativeId: String(body.initiativeId),
+      });
+      return HttpResponse.json(state.profile, { status: 201 });
     }),
   );
   return state;
@@ -125,6 +164,7 @@ async function fillInitiative(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Etapa declarada'), 'Piloto completado');
   await user.type(screen.getByLabelText('Personas en el equipo'), '3');
   await user.type(screen.getByLabelText('Equipo'), 'Fundadora y equipo');
+  await user.selectOptions(screen.getByLabelText('Vinculación académica'), 'false');
   await user.type(screen.getByLabelText('Mercado objetivo'), 'Productores de café');
   await user.type(screen.getByLabelText('Financiamiento actual'), 'Ahorros');
 }
@@ -308,15 +348,8 @@ describe('DiagnosticWizardPage — el asistente', () => {
       backend();
       useInitiativeDraftStore.getState().initialize(OTHER_ID);
       useInitiativeDraftStore.getState().save({
-        name: 'Ajena',
-        sectorId: '1',
-        productType: 'x',
-        stageId: '1',
-        declaredStage: 'x',
-        teamSize: 1,
-        teamDescription: 'x',
-        targetMarket: 'x',
-        currentFunding: 'x',
+        initiativeId: null,
+        command: { ...COMMAND, name: 'Ajena' },
       });
 
       renderWizard(step('consentimiento'));
@@ -341,7 +374,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await toConsent(user);
 
       expect(screen.getByText('Responsable del tratamiento')).toBeInTheDocument();
-      expect(screen.getByText('Tus derechos como titular')).toBeInTheDocument();
+      expect(screen.getByText(CONSENT_TERMS.checkboxLabel)).toBeInTheDocument();
       const accept = screen.getByRole('button', { name: 'Aceptar y continuar' });
       expect(accept).toBeDisabled();
       expect(api.calls).toEqual([]);
@@ -350,7 +383,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
       expect(accept).toBeEnabled();
     });
 
-    it('al aceptar registra primero el consentimiento y luego la iniciativa, y abre el cuestionario', async () => {
+    it('al aceptar crea la iniciativa con su consentimiento, luego registra su información y abre el cuestionario', async () => {
       const api = backend();
       const user = userEvent.setup();
 
@@ -362,8 +395,9 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await waitFor(() => {
         expect(where()).toBe(step('cuestionario'));
       });
-      expect(api.calls).toEqual(['consent', 'initiative']);
-      expect(api.initiative?.name).toBe('AgroConecta');
+      expect(api.calls).toEqual(['create', 'initiative']);
+      expect(api.profile?.name).toBe('AgroConecta');
+      expect(api.profile?.initiativeId).toBe(NEW_INITIATIVE_ID);
       expect(toast.success).toHaveBeenCalledWith('Consentimiento registrado.');
       expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Cuestionario IRL');
     });
@@ -380,10 +414,10 @@ describe('DiagnosticWizardPage — el asistente', () => {
         expect(where()).toBe(step('cuestionario'));
       });
 
-      expect(useInitiativeDraftStore.getState().command).toBeNull();
+      expect(useInitiativeDraftStore.getState().draft).toBeNull();
     });
 
-    it('si la iniciativa falla tras aceptar, avisa y el reintento no repite el consentimiento', async () => {
+    it('si la información falla tras aceptar, avisa y el reintento no crea otra iniciativa', async () => {
       const api = backend({ failInitiative: true });
       const user = userEvent.setup();
 
@@ -405,7 +439,8 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await waitFor(() => {
         expect(where()).toBe(step('cuestionario'));
       });
-      expect(api.calls).toEqual(['consent', 'initiative', 'initiative']);
+      expect(api.calls).toEqual(['create', 'initiative', 'initiative']);
+      expect(api.initiatives).toHaveLength(1);
       // The consent was accepted on the first try: only that success is announced.
       expect(toast.success).not.toHaveBeenCalled();
     });
@@ -424,7 +459,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
           expect.stringContaining('El texto del consentimiento cambió'),
         );
       });
-      expect(api.calls).toEqual(['consent']);
+      expect(api.calls).toEqual(['create']);
       expect(where()).toBe(step('consentimiento'));
     });
 
@@ -442,13 +477,73 @@ describe('DiagnosticWizardPage — el asistente', () => {
           expect.stringContaining('No fue posible registrar tu aceptación'),
         );
       });
-      expect(api.calls).toEqual(['consent']);
+      expect(api.calls).toEqual(['create']);
+    });
+  });
+
+  // The consent belongs to the initiative: an initiative that accepted the current text needs no second one.
+  describe('elegir una iniciativa existente', () => {
+    it('ofrece las iniciativas del usuario y precarga la información de la más reciente', async () => {
+      backend({ initiatives: [initiativeSummaryFixture()] });
+
+      renderWizard();
+
+      expect(
+        await screen.findByRole('radiogroup', { name: '¿Sobre qué iniciativa es este diagnóstico?' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /AgroConecta/ })).toBeChecked();
+      expect(await screen.findByLabelText('Nombre de la iniciativa')).toHaveValue('AgroConecta');
+    });
+
+    it('elegir «Nueva iniciativa» deja el formulario vacío', async () => {
+      backend({ initiatives: [initiativeSummaryFixture()] });
+      const user = userEvent.setup();
+
+      renderWizard();
+      await user.click(await screen.findByRole('radio', { name: 'Nueva iniciativa' }));
+
+      expect(await screen.findByLabelText('Nombre de la iniciativa')).toHaveValue('');
+    });
+
+    it('con el consentimiento vigente registra la información en el acto y abre el cuestionario', async () => {
+      const api = backend({ initiatives: [initiativeSummaryFixture()] });
+      const user = userEvent.setup();
+
+      renderWizard();
+      await screen.findByDisplayValue('AgroConecta');
+      await user.click(screen.getByRole('button', { name: 'Continuar' }));
+
+      await waitFor(() => {
+        expect(where()).toBe(step('cuestionario'));
+      });
+      expect(api.calls).toEqual(['initiative']);
+      expect(api.profile?.initiativeId).toBe(INITIATIVE_ID);
+    });
+
+    it('con un consentimiento de un texto anterior pide aceptar el vigente para esa iniciativa', async () => {
+      const api = backend({ initiatives: [initiativeSummaryFixture({ consentCurrent: false })] });
+      const user = userEvent.setup();
+
+      renderWizard();
+      await screen.findByDisplayValue('AgroConecta');
+      await user.click(screen.getByRole('button', { name: 'Continuar' }));
+      await screen.findByText('Autorización para el tratamiento de datos personales');
+      expect(api.calls).toEqual([]);
+
+      await user.click(screen.getByRole('checkbox'));
+      await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
+
+      await waitFor(() => {
+        expect(where()).toBe(step('cuestionario'));
+      });
+      expect(api.calls).toEqual(['consent', 'initiative']);
+      expect(api.profile?.initiativeId).toBe(INITIATIVE_ID);
     });
   });
 
   describe('reanudar un diagnóstico', () => {
-    it('con la iniciativa y el consentimiento ya registrados va al cuestionario', async () => {
-      backend({ consent: CONSENT, initiative: initiativeFixture() });
+    it('con la información de la iniciativa ya registrada va al cuestionario', async () => {
+      backend({ initiatives: [initiativeSummaryFixture()], profile: initiativeFixture() });
 
       renderWizard();
 
@@ -456,48 +551,15 @@ describe('DiagnosticWizardPage — el asistente', () => {
       expect(where()).toBe(step('cuestionario'));
     });
 
-    it('con el consentimiento pero sin iniciativa vuelve a pedir la iniciativa y la registra en el acto', async () => {
-      const api = backend({ consent: CONSENT });
-      const user = userEvent.setup();
-
-      renderWizard();
-      await fillInitiative(user);
-      expect(where()).toBe(step('iniciativa'));
-      await user.click(screen.getByRole('button', { name: 'Continuar' }));
-
-      // The consent was already given: no second consent, and the initiative is saved right away.
-      await waitFor(() => {
-        expect(where()).toBe(step('consentimiento'));
-      });
-      expect(api.calls).toEqual(['initiative']);
-      expect(await screen.findByText('Ya aceptaste este texto')).toBeInTheDocument();
-
-      await user.click(screen.getByRole('button', { name: 'Continuar' }));
-      await waitFor(() => {
-        expect(where()).toBe(step('cuestionario'));
-      });
-      expect(api.calls).toEqual(['initiative']);
-    });
-
-    it('con el borrador del paso 1 y el consentimiento, pero sin iniciativa, ofrece guardarla', async () => {
-      const api = backend({ consent: CONSENT });
+    it('con el borrador de una iniciativa que ya aceptó el texto vigente, ofrece guardarla', async () => {
+      const api = backend({ initiatives: [initiativeSummaryFixture()] });
       useInitiativeDraftStore.getState().initialize(ID);
-      useInitiativeDraftStore.getState().save({
-        name: 'AgroConecta',
-        sectorId: '1',
-        productType: 'App web',
-        stageId: '2',
-        declaredStage: 'Piloto completado',
-        teamSize: 3,
-        teamDescription: 'Fundadora y equipo',
-        targetMarket: 'Productores de café',
-        currentFunding: 'Ahorros',
-      });
+      useInitiativeDraftStore.getState().save({ initiativeId: INITIATIVE_ID, command: COMMAND });
       const user = userEvent.setup();
 
       renderWizard();
 
-      expect(await screen.findByText('Ya aceptaste este texto')).toBeInTheDocument();
+      expect(await screen.findByText(/Ya aceptaste este texto/)).toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Guardar iniciativa y continuar' }));
       await waitFor(() => {
         expect(where()).toBe(step('cuestionario'));
@@ -505,8 +567,11 @@ describe('DiagnosticWizardPage — el asistente', () => {
       expect(api.calls).toEqual(['initiative']);
     });
 
-    it('permite volver a corregir la iniciativa ya registrada y guarda el cambio en el acto', async () => {
-      const api = backend({ consent: CONSENT, initiative: initiativeFixture() });
+    it('permite volver a corregir la información ya registrada y la guarda en el acto', async () => {
+      const api = backend({
+        initiatives: [initiativeSummaryFixture()],
+        profile: initiativeFixture(),
+      });
       const user = userEvent.setup();
 
       renderWizard(step('iniciativa'));
@@ -514,21 +579,23 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await waitFor(() => {
         expect(name).toHaveValue('AgroConecta');
       });
+      // The initiative of a registered profile is fixed: nothing to choose.
+      expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
       await user.clear(name);
       await user.type(name, 'AgroConecta v2');
       await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
       await waitFor(() => {
-        expect(where()).toBe(step('consentimiento'));
+        expect(where()).toBe(step('cuestionario'));
       });
       expect(api.calls).toEqual(['initiative']);
-      expect(api.initiative?.name).toBe('AgroConecta v2');
+      expect(api.profile?.name).toBe('AgroConecta v2');
     });
   });
 
   describe('navegación entre pasos', () => {
     it('los pasos anteriores son enlaces; el actual y los siguientes no', async () => {
-      backend({ consent: CONSENT, initiative: initiativeFixture() });
+      backend({ initiatives: [initiativeSummaryFixture()], profile: initiativeFixture() });
 
       renderWizard();
 
@@ -547,7 +614,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
     });
 
     it('el enlace de un paso anterior vuelve a él', async () => {
-      backend({ consent: CONSENT, initiative: initiativeFixture() });
+      backend({ initiatives: [initiativeSummaryFixture()], profile: initiativeFixture() });
       const user = userEvent.setup();
 
       renderWizard();
@@ -558,7 +625,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
         }),
       );
 
-      expect(await screen.findByText('Ya aceptaste este texto')).toBeInTheDocument();
+      expect(await screen.findByText(/Ya aceptaste este texto/)).toBeInTheDocument();
     });
   });
 
@@ -577,7 +644,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
     });
 
     it('carga desde arriba: no salta a las pestañas de dimensión', async () => {
-      backend({ consent: CONSENT, initiative: initiativeFixture() });
+      backend({ initiatives: [initiativeSummaryFixture()], profile: initiativeFixture() });
 
       renderWizard();
 
@@ -588,7 +655,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
     });
 
     it('sigue volviendo hacia arriba al cambiar de dimensión', async () => {
-      backend({ consent: CONSENT, initiative: initiativeFixture() });
+      backend({ initiatives: [initiativeSummaryFixture()], profile: initiativeFixture() });
       const user = userEvent.setup();
 
       renderWizard();
@@ -604,7 +671,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
   describe('carga y errores', () => {
     it('muestra un estado de carga mientras consulta el diagnóstico', () => {
       server.use(mswHttp.get('*/diagnostics/:id', () => new Promise(() => undefined)));
-      server.use(mswHttp.get('*/diagnostics/:id/consent', () => new Promise(() => undefined)));
+      server.use(mswHttp.get('*/initiatives', () => new Promise(() => undefined)));
       server.use(mswHttp.get('*/diagnostics/:id/initiative', () => new Promise(() => undefined)));
 
       renderWizard();

@@ -74,7 +74,7 @@ function diagnostic(accepted: boolean, completed = true) {
     completed,
     deepAnalysisAccepted: accepted,
     createdAt: '2026-03-01T00:00:00.000Z',
-    updatedAt: '2026-03-01T00:00:00.000Z',
+    frameworkVersion: 'KTH-IRL-1.0',
   };
 }
 
@@ -542,7 +542,12 @@ describe('ResultsPage — el análisis profundo se entiende sin conocer el siste
   const TRACE = {
     diagnosticId: ID,
     layer1Excluded: [
-      { idService: 6, name: 'Proyectos de Grado', exclusionMessage: 'Requieren vinculación académica.' },
+      {
+        idService: 6,
+        name: 'Proyectos de Grado',
+        ruleCode: 'ELG-01',
+        exclusionMessage: 'Requieren vinculación académica.',
+      },
     ],
     rankingBeforeExceptions: [
       {

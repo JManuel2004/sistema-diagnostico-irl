@@ -73,7 +73,7 @@ export default function ResultsPage(): JSX.Element {
   const diagnostic = useDiagnostic(diagnosticId);
   const profile = useMaturityProfile(diagnosticId);
   const initiative = useInitiative(diagnosticId);
-  const catalog = useQuestionnaireStructure();
+  const catalog = useQuestionnaireStructure(diagnostic.data?.frameworkVersion);
   const accepted = diagnostic.data?.deepAnalysisAccepted === true;
 
   // What each dimension measures, for the radar tooltips and the alerts. It comes
@@ -361,8 +361,8 @@ function DeepAnalysis({
         )}
         {recommendation.isError && !recommendationMissing && (
           <Alert tone="critical" title="No fue posible obtener la recomendación">
-            {isApiErrorWithCode(recommendation.error, 'ROUTING_NO_ACTIVE_CONFIGURATION')
-              ? 'No hay una configuración de enrutamiento activa. Contacta al equipo de INNLAB.'
+            {isApiErrorWithCode(recommendation.error, 'ROUTING_CONFIGURATION_MISSING')
+              ? 'El motor de recomendación no tiene su configuración cargada. Contacta al equipo de INNLAB.'
               : recommendation.error.message}
           </Alert>
         )}

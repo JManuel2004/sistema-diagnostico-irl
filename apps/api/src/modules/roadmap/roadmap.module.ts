@@ -17,6 +17,8 @@ import { GetScalingRoadmapUseCase } from './application/use-cases/get-scaling-ro
 import { RoadmapController } from './presentation/controllers/roadmap.controller.js';
 import { DeepAnalysisRequestedListener } from './infrastructure/messaging/deep-analysis-requested.listener.js';
 import { DiagnosisModule } from '../diagnosis/diagnosis.module.js';
+import { DIAGNOSTIC_OWNERSHIP } from './domain/repositories/diagnostic-ownership.port.js';
+import { DiagnosisOwnershipAdapter } from './infrastructure/diagnosis-ownership.adapter.js';
 import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module.js';
 
 /**
@@ -59,7 +61,9 @@ import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module
     applicationProvider(GetScalingRoadmapUseCase, [
       ROADMAP_REPOSITORY,
       TAXONOMY_REPOSITORY,
+      DIAGNOSTIC_OWNERSHIP,
     ]),
+    { provide: DIAGNOSTIC_OWNERSHIP, useClass: DiagnosisOwnershipAdapter },
     DeepAnalysisRequestedListener,
     { provide: ROADMAP_REPOSITORY, useClass: TypeOrmRoadmapRepository },
     {

@@ -12,41 +12,34 @@ export class TypeOrmConsentRepository implements ConsentRepositoryPort {
     private readonly orm: Repository<ConsentOrm>,
   ) {}
 
-  async findByDiagnosticId(diagnosticId: string): Promise<Consent | null> {
-    const row = await this.orm.findOne({ where: { idDiagnostic: diagnosticId } });
+  async findLatestByInitiativeId(initiativeId: string): Promise<Consent | null> {
+    const [row] = await this.orm.find({
+      where: { idInitiative: initiativeId },
+      order: { acceptedAt: 'DESC' },
+      take: 1,
+    });
     return row ? this.toDomain(row) : null;
   }
 
-  /**
-   * Upsert keyed by `diagnosticId` (`uq_consent_diagnostic`) — same
-   * pattern as `TypeOrmInitiativeRepository.save`.
-   */
-  async save(consent: Consent): Promise<void> {
-    const snapshot = consent.toPersistence();
-    const existing = await this.orm.findOne({
-      where: { idDiagnostic: snapshot.diagnosticId },
+  /** Insert only: an acceptance never replaces an earlier one. */
+  async add(consent: Consent): Promise<void> {
+    const c = consent.toPersistence();
+    await this.orm.insert({
+      id: c.id,
+      idInitiative: c.initiativeId,
+      cognitoUserId: c.cognitoUserId,
+      termsVersion: c.termsVersion,
+      acceptedAt: c.acceptedAt,
     });
-
-    await this.orm.save(
-      this.orm.create({
-        id: existing?.id ?? snapshot.id,
-        idDiagnostic: snapshot.diagnosticId,
-        cognitoUserId: snapshot.cognitoUserId,
-        accepted: snapshot.accepted,
-        acceptedAt: snapshot.acceptedAt,
-        termsVersion: snapshot.termsVersion,
-      }),
-    );
   }
 
   private toDomain(row: ConsentOrm): Consent {
     return Consent.fromPersistence({
       id: row.id,
-      diagnosticId: row.idDiagnostic,
+      initiativeId: row.idInitiative,
       cognitoUserId: row.cognitoUserId,
-      accepted: row.accepted,
-      acceptedAt: row.acceptedAt,
       termsVersion: row.termsVersion,
+      acceptedAt: row.acceptedAt,
     });
   }
 }

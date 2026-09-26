@@ -1,3 +1,4 @@
+import { Result } from '../../../../../../src/shared/kernel/domain/result.js';
 import { jest } from '@jest/globals';
 import { roadmapResponseSchema } from '@innlab/contracts';
 import { GetScalingRoadmapUseCase } from '../../../../../../src/modules/roadmap/application/use-cases/get-scaling-roadmap.use-case.js';
@@ -67,6 +68,7 @@ describe('GetScalingRoadmapUseCase', () => {
       {
         findAllDimensions: () => Promise.resolve(aDimensionCatalog()),
       } as unknown as TaxonomyRepositoryPort,
+      { verify: () => Promise.resolve(Result.ok(undefined)) },
     );
   });
 
@@ -75,7 +77,7 @@ describe('GetScalingRoadmapUseCase', () => {
   it('names every dimension of the saved roadmap from the catalog', async () => {
     findByDiagnosticId.mockResolvedValueOnce(aRoadmap());
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'user-1' });
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error('expected ok result');
@@ -108,7 +110,7 @@ describe('GetScalingRoadmapUseCase', () => {
   it('explains the inclusion and the target of each dimension', async () => {
     findByDiagnosticId.mockResolvedValueOnce(aRoadmap());
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'user-1' });
 
     if (!result.ok) throw new Error('expected ok result');
     const [brl, iprl] = result.value.phases[0].dimensions;
@@ -130,7 +132,7 @@ describe('GetScalingRoadmapUseCase', () => {
   it('returns ROADMAP_NOT_GENERATED when nothing was saved', async () => {
     findByDiagnosticId.mockResolvedValueOnce(null);
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID });
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'user-1' });
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('expected err result');

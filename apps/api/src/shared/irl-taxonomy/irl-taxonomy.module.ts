@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DimensionOrm } from './infrastructure/database/orm-entities/dimension.orm-entity.js';
 import { ConversionRangeOrm } from './infrastructure/database/orm-entities/conversion-range.orm-entity.js';
 import { DimensionPairOrm } from './infrastructure/database/orm-entities/dimension-pair.orm-entity.js';
+import { FrameworkVersionOrm } from './infrastructure/database/orm-entities/framework-version.orm-entity.js';
 import { TypeOrmTaxonomyRepository } from './infrastructure/database/repositories/typeorm-taxonomy.repository.js';
 import { TAXONOMY_REPOSITORY } from './domain/repositories/taxonomy.repository.port.js';
 
@@ -15,7 +16,12 @@ import { TAXONOMY_REPOSITORY } from './domain/repositories/taxonomy.repository.p
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DimensionOrm, ConversionRangeOrm, DimensionPairOrm]),
+    TypeOrmModule.forFeature([
+      DimensionOrm,
+      ConversionRangeOrm,
+      DimensionPairOrm,
+      FrameworkVersionOrm,
+    ]),
   ],
   providers: [
     { provide: TAXONOMY_REPOSITORY, useClass: TypeOrmTaxonomyRepository },

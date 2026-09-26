@@ -40,13 +40,12 @@ describe('Seed del graph de dependencies (integration)', () => {
     for (const d of DIMENSIONS) {
       await dataSource.query(
         `INSERT INTO irl_catalog.dimension
-           (code, name_es, name_en, short_name_es, description,
+           (code, name_es, short_name_es, description,
             is_critical_dimension, sequence, minimum_expected_level)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
         [
           d.code,
           d.nameEs,
-          d.nameEn,
           d.shortNameEs,
           d.description,
           d.isCriticalDimension,

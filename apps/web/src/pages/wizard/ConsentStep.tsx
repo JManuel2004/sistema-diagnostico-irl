@@ -1,14 +1,18 @@
 import { useState, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type { ConsentRecord, Initiative, RegisterInitiativeCommand } from '@innlab/contracts';
-import { CONSENT_CHECKBOX_LABEL, ConsentTerms, useRecordConsent } from '@features/consent';
+import type { Initiative, InitiativeSummary } from '@innlab/contracts';
+import { ConsentTerms, useConsentTerms, useRecordConsent } from '@features/consent';
 import {
   selectDraftClear,
+  selectDraftSave,
+  useCreateInitiative,
   useInitiativeDraftStore,
   useRegisterInitiative,
+  type InitiativeDraft,
 } from '@features/initiative';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
+import { LoadingState } from '@/shared/ui/loading-state';
 import { notify } from '@/shared/ui/notify';
 import { Button, buttonVariants } from '@/shared/ui/button';
 import { isApiErrorWithStatus } from '@/shared/api/http';
@@ -18,10 +22,11 @@ import { wizardPath } from './wizard-steps';
 
 interface Props {
   readonly diagnosticId: string;
-  readonly consent: ConsentRecord | null;
-  readonly initiative: Initiative | null;
-  /** The form of step 1, still in the browser. */
-  readonly draft: RegisterInitiativeCommand | null;
+  /** The profile already registered for this diagnostic, or `null`. */
+  readonly registered: Initiative | null;
+  /** Step 1's choice and form, still in the browser. */
+  readonly draft: InitiativeDraft | null;
+  readonly initiatives: readonly InitiativeSummary[];
 }
 
 type Failure = 'consent-stale' | 'consent' | 'initiative';
@@ -36,41 +41,65 @@ const MESSAGES: Record<Failure, string> = {
 /**
  * Step 2 — consent to the processing of data (RF-03 / HU-05).
  *
- * Accepting does two things, in this order: it records the consent and,
- * only then, registers the initiative of step 1 (the system stores no data
- * of the initiative before the acceptance). If the second fails, the
+ * The consent belongs to the initiative, and the text is the current one
+ * the backend serves. Accepting does two things, in this order: it records
+ * the acceptance — creating the initiative if step 1 chose a new one — and,
+ * only then, registers the profile of step 1 (the system stores no data of
+ * the initiative before the acceptance). If the second fails, the
  * acceptance is already recorded and the retry only repeats what is
- * missing.
+ * missing: a new initiative's id is kept in the draft so it is not created
+ * twice.
  */
-export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props): JSX.Element {
+export function ConsentStep({ diagnosticId, registered, draft, initiatives }: Props): JSX.Element {
   const navigate = useNavigate();
   const [accepted, setAccepted] = useState(false);
-  const recordConsent = useRecordConsent(diagnosticId);
+  const terms = useConsentTerms();
+  const createInitiative = useCreateInitiative();
+  const recordConsent = useRecordConsent();
   const register = useRegisterInitiative(diagnosticId);
+  const saveDraft = useInitiativeDraftStore(selectDraftSave);
   const clearDraft = useInitiativeDraftStore(selectDraftClear);
 
-  const busy = recordConsent.isPending || register.isPending;
-  const alreadyAccepted = consent !== null;
-  const needsInitiative = initiative === null;
+  const initiativeId = draft ? draft.initiativeId : (registered?.initiativeId ?? null);
+  const initiative = initiatives.find((i) => i.id === initiativeId);
+  const acceptance = initiative?.consentCurrent ? initiative.consent : null;
 
-  async function handleContinue(): Promise<void> {
-    if (!alreadyAccepted) {
-      try {
-        await recordConsent.mutateAsync();
-      } catch (error) {
-        notify.error(MESSAGES[isApiErrorWithStatus(error, 409) ? 'consent-stale' : 'consent']);
-        return;
+  const busy = createInitiative.isPending || recordConsent.isPending || register.isPending;
+
+  /** Records the acceptance; returns the initiative's id, or `null` if it failed. */
+  async function accept(version: string): Promise<string | null> {
+    try {
+      if (initiativeId !== null) {
+        await recordConsent.mutateAsync({ initiativeId, version });
+        return initiativeId;
       }
+      const created = await createInitiative.mutateAsync(version);
+      if (draft) saveDraft({ initiativeId: created.id, command: draft.command });
+      return created.id;
+    } catch (error) {
+      if (isApiErrorWithStatus(error, 409)) {
+        void terms.refetch();
+        notify.error(MESSAGES['consent-stale']);
+      } else {
+        notify.error(MESSAGES.consent);
+      }
+      return null;
+    }
+  }
+
+  async function handleContinue(version: string): Promise<void> {
+    if (!draft && !registered) {
+      // The draft was lost: step 1 asks for it again.
+      void navigate(wizardPath(diagnosticId, 'iniciativa'), { replace: true });
+      return;
     }
 
-    if (needsInitiative) {
-      if (!draft) {
-        // The draft was lost: step 1 asks for it again.
-        void navigate(wizardPath(diagnosticId, 'iniciativa'), { replace: true });
-        return;
-      }
+    const id = acceptance ? initiativeId : await accept(version);
+    if (id === null) return;
+
+    if (draft) {
       try {
-        await register.mutateAsync(draft);
+        await register.mutateAsync({ initiativeId: id, ...draft.command });
       } catch {
         notify.error(MESSAGES.initiative);
         return;
@@ -78,14 +107,14 @@ export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props)
     }
 
     clearDraft();
-    if (!alreadyAccepted) notify.success('Consentimiento registrado.');
+    if (!acceptance) notify.success('Consentimiento registrado.');
     void navigate(wizardPath(diagnosticId, 'cuestionario'));
   }
 
   const label = busy
     ? 'Guardando…'
-    : alreadyAccepted
-      ? needsInitiative
+    : acceptance
+      ? draft
         ? 'Guardar iniciativa y continuar'
         : 'Continuar'
       : 'Aceptar y continuar';
@@ -97,46 +126,56 @@ export function ConsentStep({ diagnosticId, consent, initiative, draft }: Props)
         description="Antes de guardar la información de tu iniciativa y tus respuestas necesitamos tu autorización, conforme a la Ley 1581 de 2012."
       />
 
-      <div className="flex flex-col gap-6">
-        <ConsentTerms />
+      {terms.isPending && <LoadingState label="Cargando el texto del consentimiento…" />}
 
-        {alreadyAccepted ? (
-          <Alert tone="acceptable" title="Ya aceptaste este texto">
-            Quedó registrado el {formatDateTime(consent.acceptedAt)}.
-          </Alert>
-        ) : (
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              checked={accepted}
-              onChange={(event) => {
-                setAccepted(event.target.checked);
+      {terms.isError && (
+        <Alert tone="critical" title="No fue posible cargar el texto del consentimiento">
+          {RETRY_LATER}
+        </Alert>
+      )}
+
+      {terms.data && (
+        <div className="flex flex-col gap-6">
+          <ConsentTerms terms={terms.data} />
+
+          {acceptance ? (
+            <Alert tone="acceptable" title="Ya aceptaste este texto para esta iniciativa">
+              Quedó registrado el {formatDateTime(acceptance.acceptedAt)}.
+            </Alert>
+          ) : (
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={(event) => {
+                  setAccepted(event.target.checked);
+                }}
+                className="mt-0.5 size-4 shrink-0 cursor-pointer"
+              />
+              <span className="text-foreground text-sm leading-relaxed">
+                {terms.data.checkboxLabel}
+              </span>
+            </label>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Link
+              to={wizardPath(diagnosticId, 'iniciativa')}
+              className={buttonVariants({ variant: 'ghost' })}
+            >
+              Atrás
+            </Link>
+            <Button
+              onClick={() => {
+                void handleContinue(terms.data.version);
               }}
-              className="mt-0.5 size-4 shrink-0 cursor-pointer"
-            />
-            <span className="text-foreground text-sm leading-relaxed">
-              {CONSENT_CHECKBOX_LABEL}
-            </span>
-          </label>
-        )}
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            to={wizardPath(diagnosticId, 'iniciativa')}
-            className={buttonVariants({ variant: 'ghost' })}
-          >
-            Atrás
-          </Link>
-          <Button
-            onClick={() => {
-              void handleContinue();
-            }}
-            disabled={busy || (!alreadyAccepted && !accepted)}
-          >
-            {label}
-          </Button>
+              disabled={busy || (!acceptance && !accepted)}
+            >
+              {label}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

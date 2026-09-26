@@ -11,9 +11,9 @@ import type { Statement } from '../entities/statement.js';
 export const STATEMENT_CATALOG_REPOSITORY = Symbol('STATEMENT_CATALOG_REPOSITORY');
 
 export interface StatementCatalogPort {
-  /** All 48 statements in `(dimensionSequence, sequence)` order. */
-  findAllStatements(): Promise<Statement[]>;
-
-  /** Statements that belong to a specific dimension, ordered by sequence. */
-  findStatementsByDimensionCode(code: string): Promise<Statement[]>;
+  /**
+   * The 48 statements of a framework version, in
+   * `(dimensionSequence, sequence)` order.
+   */
+  findStatements(frameworkVersionId: number): Promise<Statement[]>;
 }

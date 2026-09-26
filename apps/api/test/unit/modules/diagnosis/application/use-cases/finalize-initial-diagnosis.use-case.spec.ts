@@ -33,7 +33,7 @@ function diagnosisIn(state: string): Diagnosis {
     userId: 'usuario-demo',
     state,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
-    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    frameworkVersionId: 1,
   });
 }
 
@@ -73,6 +73,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
       findLatestByUserId: jest.fn(),
       findAllByUserId: jest.fn(),
       save: jest.fn(() => Promise.resolve(undefined)),
+      modify: jest.fn(),
     };
     answerSheets = {
       findByDiagnosticId: jest.fn(() => Promise.resolve(anAnswerSheet())),
@@ -109,17 +110,21 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
 
     const result = await useCase.execute({
       diagnosticId: DIAGNOSTIC_ID,
+      userId: 'usuario-demo',
       answers: ANSWERS,
     });
 
     expect(submitQuestionnaire.execute).toHaveBeenCalledWith({
       diagnosticId: DIAGNOSTIC_ID,
+      userId: 'usuario-demo',
       answers: ANSWERS,
     });
     expect(answerSheets.findByDiagnosticId).toHaveBeenCalledWith(DIAGNOSTIC_ID);
     // The profile is computed from the values; the justification is not an input.
     expect(computeProfile.execute).toHaveBeenCalledWith({
       diagnosticId: DIAGNOSTIC_ID,
+      // The diagnostic's framework version: its statements and conversion table.
+      frameworkVersionId: 1,
       answers: ANSWERS.map(({ statementId, value }) => ({ statementId, value })),
     });
     expect(diagnostics.save).toHaveBeenCalledTimes(1);
@@ -136,7 +141,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   it('finalizes a diagnostic that only registered its initiative (WITH_INITIATIVE)', async () => {
     diagnostics.findById.mockResolvedValueOnce(diagnosisIn('WITH_INITIATIVE'));
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
+    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'usuario-demo', answers: ANSWERS });
 
     expect(result.ok).toBe(true);
     expect(diagnostics.save.mock.calls[0][0].state.value).toBe('PROFILE_GENERATED');
@@ -147,7 +152,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
     async (state) => {
       diagnostics.findById.mockResolvedValueOnce(diagnosisIn(state));
 
-      const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
+      const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'usuario-demo', answers: ANSWERS });
 
       expect(result.ok).toBe(false);
       expect(submitQuestionnaire.execute).not.toHaveBeenCalled();
@@ -158,45 +163,40 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   it('advances from QUESTIONNAIRE_COMPLETE to PROFILE_GENERATED', async () => {
     diagnostics.findById.mockResolvedValueOnce(diagnosisIn('QUESTIONNAIRE_COMPLETE'));
 
-    await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
+    await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'usuario-demo', answers: ANSWERS });
 
     const saved = diagnostics.save.mock.calls[0][0];
     expect(saved.state.value).toBe('PROFILE_GENERATED');
   });
 
-  it('loads a phase-2 diagnostic and finalizes without regressing state', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('DEEP_ANALYSIS_IN_PROGRESS'));
+  // The answers are frozen once the profile exists: processing again would
+  // leave the stored recommendation and roadmap computed from other answers.
+  it.each(['PROFILE_GENERATED', 'DEEP_ANALYSIS_IN_PROGRESS', 'DEEP_ANALYSIS_COMPLETE'])(
+    'refuses to process again once the profile exists (%s), changing nothing',
+    async (state) => {
+      diagnostics.findById.mockResolvedValueOnce(diagnosisIn(state));
 
-    const result = await useCase.execute({
-      diagnosticId: DIAGNOSTIC_ID,
-      answers: ANSWERS,
-    });
+      const result = await useCase.execute({
+        diagnosticId: DIAGNOSTIC_ID,
+        userId: 'usuario-demo',
+        answers: ANSWERS,
+      });
 
-    expect(submitQuestionnaire.execute).toHaveBeenCalledTimes(1);
-    expect(computeProfile.execute).toHaveBeenCalledTimes(1);
-    const saved = diagnostics.save.mock.calls[0][0];
-    expect(saved.state.value).toBe('DEEP_ANALYSIS_IN_PROGRESS');
-    expect(result.ok).toBe(true);
-    if (!result.ok) throw new Error('expected ok result');
-    expect(result.value.diagnosticId).toBe(DIAGNOSTIC_ID);
-  });
-
-  it('is idempotent when the diagnostic is already PROFILE_GENERATED', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('PROFILE_GENERATED'));
-
-    await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS });
-
-    expect(submitQuestionnaire.execute).toHaveBeenCalledTimes(1);
-    expect(computeProfile.execute).toHaveBeenCalledTimes(1);
-    const saved = diagnostics.save.mock.calls[0][0];
-    expect(saved.state.value).toBe('PROFILE_GENERATED');
-  });
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error('expected err result');
+      expect(result.error).toBeInstanceOf(ConflictError);
+      expect(submitQuestionnaire.execute).not.toHaveBeenCalled();
+      expect(computeProfile.execute).not.toHaveBeenCalled();
+      expect(diagnostics.save).not.toHaveBeenCalled();
+    },
+  );
 
   it('returns an err result when the diagnostic does not exist', async () => {
     diagnostics.findById.mockResolvedValueOnce(null);
 
     const result = await useCase.execute({
       diagnosticId: DIAGNOSTIC_ID,
+      userId: 'usuario-demo',
       answers: ANSWERS,
     });
 
@@ -212,6 +212,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
 
     const result = await useCase.execute({
       diagnosticId: DIAGNOSTIC_ID,
+      userId: 'usuario-demo',
       answers: ANSWERS,
     });
 
@@ -228,6 +229,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
 
     const result = await useCase.execute({
       diagnosticId: DIAGNOSTIC_ID,
+      userId: 'usuario-demo',
       answers: ANSWERS,
     });
 
@@ -243,7 +245,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
     computeProfile.execute.mockRejectedValueOnce(new Error('calc failed'));
 
     await expect(
-      useCase.execute({ diagnosticId: DIAGNOSTIC_ID, answers: ANSWERS }),
+      useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'usuario-demo', answers: ANSWERS }),
     ).rejects.toThrow('calc failed');
     expect(diagnostics.save).not.toHaveBeenCalled();
   });

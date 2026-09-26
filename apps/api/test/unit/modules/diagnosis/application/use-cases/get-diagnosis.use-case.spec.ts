@@ -3,6 +3,7 @@ import { diagnosticSchema } from '@innlab/contracts';
 import { GetDiagnosisUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/get-diagnosis.use-case.js';
 import type { DiagnosisRepositoryPort } from '../../../../../../src/modules/diagnosis/domain/repositories/diagnosis.repository.port.js';
 import { Diagnosis } from '../../../../../../src/modules/diagnosis/domain/entities/diagnosis.aggregate.js';
+import { frameworkTaxonomy } from '../../support/framework-taxonomy.js';
 import { NotFoundError } from '../../../../../../src/shared/kernel/domain/errors/not-found.error.js';
 
 const ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
@@ -13,7 +14,7 @@ function diagnosisIn(state: string, userId = 'user-1'): Diagnosis {
     userId,
     state,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
-    updatedAt: new Date('2026-01-02T00:00:00.000Z'),
+    frameworkVersionId: 1,
   });
 }
 
@@ -23,7 +24,10 @@ describe('GetDiagnosisUseCase', () => {
 
   beforeEach(() => {
     findById = jest.fn();
-    useCase = new GetDiagnosisUseCase({ findById } as unknown as DiagnosisRepositoryPort);
+    useCase = new GetDiagnosisUseCase(
+      { findById } as unknown as DiagnosisRepositoryPort,
+      frameworkTaxonomy(),
+    );
   });
 
   it("returns the caller's diagnostic as the contract describes it", async () => {

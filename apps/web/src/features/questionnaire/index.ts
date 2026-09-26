@@ -4,6 +4,7 @@ export { QuestionnaireView } from './components/QuestionnaireView';
 export { AnswersSummary } from './components/AnswersSummary';
 export {
   selectAnswers,
+  selectClearDraft,
   selectDraftDiagnosticId,
   selectInitialize,
   selectJustifications,

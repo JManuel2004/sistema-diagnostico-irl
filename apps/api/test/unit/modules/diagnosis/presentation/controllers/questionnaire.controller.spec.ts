@@ -38,10 +38,12 @@ describe('QuestionnaireController', () => {
       const result = await controller.submitQuestionnaire(
         { id: DIAGNOSTIC_ID },
         body,
+        { id: 'user-1' },
       );
 
       expect(mockUseCase.execute).toHaveBeenCalledWith({
         diagnosticId: DIAGNOSTIC_ID,
+        userId: 'user-1',
         answers: body.answers,
       });
       expect(result).toBe(expected);
@@ -52,14 +54,14 @@ describe('QuestionnaireController', () => {
       mockUseCase.execute.mockResolvedValueOnce(Result.err(error));
 
       await expect(
-        controller.submitQuestionnaire({ id: DIAGNOSTIC_ID }, { answers: [] }),
+        controller.submitQuestionnaire({ id: DIAGNOSTIC_ID }, { answers: [] }, { id: 'user-1' }),
       ).rejects.toThrow(error);
     });
 
     it('propagates use case errors', async () => {
       mockUseCase.execute.mockRejectedValueOnce(new Error('domain error'));
       await expect(
-        controller.submitQuestionnaire({ id: DIAGNOSTIC_ID }, { answers: [] }),
+        controller.submitQuestionnaire({ id: DIAGNOSTIC_ID }, { answers: [] }, { id: 'user-1' }),
       ).rejects.toThrow('domain error');
     });
   });

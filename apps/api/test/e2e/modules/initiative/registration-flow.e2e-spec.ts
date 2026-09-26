@@ -40,6 +40,7 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
   let agent: ReturnType<typeof request.agent>;
   let sectorId: string;
   let stageId: string;
+  let initiativeId: string;
   const created: string[] = [];
 
   /** A fresh diagnostic of this suite's user, in `STARTED`. */
@@ -51,15 +52,9 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
     return diagnosticSchema.parse(res.body).id;
   }
 
-  async function consent(id: string): Promise<void> {
-    await agent.post(`/api/v1/diagnostics/${id}/consent`).send({ version: 'v1' }).expect(201);
-  }
-
-  /** A diagnostic with the consent recorded, ready for the initiative. */
-  async function startWithConsent(): Promise<string> {
-    const id = await start();
-    await consent(id);
-    return id;
+  /** The initiative profile of the case, for this suite's initiative. */
+  function body(over: Record<string, unknown> = {}) {
+    return { initiativeId, ...agroconectaInitiative({ sectorId, stageId }), ...over };
   }
 
   async function stateOf(id: string): Promise<string> {
@@ -101,11 +96,19 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
     stageId = (stages.body as { id: string; code: string }[]).find(
       (s) => s.code === 'validacion',
     )!.id;
+
+    // The initiative is created once, accepting its consent; each diagnostic
+    // below registers a snapshot of its profile.
+    const initiative = await agent.post('/api/v1/initiatives').send({ version: 'v1' }).expect(201);
+    initiativeId = (initiative.body as { id: string }).id;
   }, 60_000);
 
   afterAll(async () => {
     if (dataSource?.isInitialized) {
       await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE cognito_user_id = $1`, [
+        userId,
+      ]);
+      await dataSource.query(`DELETE FROM irl_diagnostic.initiative WHERE cognito_user_id = $1`, [
         userId,
       ]);
       if (created.length > 0) {
@@ -132,38 +135,31 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
   });
 
   describe('consentimiento previo a la iniciativa (RF-03 / RNF-06)', () => {
-    it('no guarda la iniciativa de un diagnóstico sin consentimiento y responde 409', async () => {
+    it('no guarda el perfil de una iniciativa sin consentimiento y responde 409', async () => {
       const id = await start();
+      const unconsented = randomUUID();
+      await dataSource.query(
+        `INSERT INTO irl_diagnostic.initiative (id, cognito_user_id) VALUES ($1, $2)`,
+        [unconsented, userId],
+      );
 
       await agent
         .post(`/api/v1/diagnostics/${id}/initiative`)
-        .send(agroconectaInitiative({ sectorId, stageId }))
+        .send(body({ initiativeId: unconsented }))
         .expect(409);
 
       await agent.get(`/api/v1/diagnostics/${id}/initiative`).expect(404);
       expect(await stateOf(id)).toBe('STARTED');
     });
-
-    it('el consentimiento mueve el diagnóstico a WITH_CONSENT y lo deja listo para la iniciativa', async () => {
-      const id = await start();
-
-      await consent(id);
-
-      expect(await stateOf(id)).toBe('WITH_CONSENT');
-      await agent
-        .post(`/api/v1/diagnostics/${id}/initiative`)
-        .send(agroconectaInitiative({ sectorId, stageId }))
-        .expect(201);
-    });
   });
 
   describe('registro de la iniciativa', () => {
     it('guarda el perfil completo y lo devuelve con el sector y la etapa nombrados', async () => {
-      const id = await startWithConsent();
+      const id = await start();
 
       const res = await agent
         .post(`/api/v1/diagnostics/${id}/initiative`)
-        .send(agroconectaInitiative({ sectorId, stageId }))
+        .send(body())
         .expect(201);
 
       const initiative = initiativeSchema.parse(res.body);
@@ -174,10 +170,10 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
     });
 
     it('lo que se guardó es lo que se lee de vuelta', async () => {
-      const id = await startWithConsent();
+      const id = await start();
       await agent
         .post(`/api/v1/diagnostics/${id}/initiative`)
-        .send(agroconectaInitiative({ sectorId, stageId }))
+        .send(body())
         .expect(201);
 
       const read = await agent.get(`/api/v1/diagnostics/${id}/initiative`).expect(200);
@@ -187,26 +183,25 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
       expect(initiative.targetMarket).toContain('Cauca y Valle del Cauca');
     });
 
-    it('avanza el diagnóstico de WITH_CONSENT a WITH_INITIATIVE', async () => {
-      const id = await startWithConsent();
-      expect(await stateOf(id)).toBe('WITH_CONSENT');
+    it('avanza el diagnóstico de STARTED a WITH_INITIATIVE: el consentimiento es de la iniciativa', async () => {
+      const id = await start();
+      expect(await stateOf(id)).toBe('STARTED');
 
       await agent
         .post(`/api/v1/diagnostics/${id}/initiative`)
-        .send(agroconectaInitiative({ sectorId, stageId }))
+        .send(body())
         .expect(201);
 
       expect(await stateOf(id)).toBe('WITH_INITIATIVE');
     });
 
     it('volver a registrarla la actualiza y no retrocede el diagnóstico', async () => {
-      const id = await startWithConsent();
-      const body = agroconectaInitiative({ sectorId, stageId });
-      await agent.post(`/api/v1/diagnostics/${id}/initiative`).send(body).expect(201);
+      const id = await start();
+      await agent.post(`/api/v1/diagnostics/${id}/initiative`).send(body()).expect(201);
 
       await agent
         .post(`/api/v1/diagnostics/${id}/initiative`)
-        .send({ ...body, currentFunding: 'Otro financiamiento' })
+        .send(body({ currentFunding: 'Otro financiamiento' }))
         .expect(201);
 
       const read = await agent.get(`/api/v1/diagnostics/${id}/initiative`).expect(200);
@@ -217,34 +212,34 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
     it.each(['productType', 'declaredStage', 'teamDescription', 'targetMarket', 'currentFunding'])(
       'rechaza con 422 un perfil sin %s y no lo guarda',
       async (field) => {
-        const id = await startWithConsent();
+        const id = await start();
 
         await agent
           .post(`/api/v1/diagnostics/${id}/initiative`)
-          .send({ ...agroconectaInitiative({ sectorId, stageId }), [field]: '  ' })
+          .send(body({ [field]: '  ' }))
           .expect(422);
 
         await agent.get(`/api/v1/diagnostics/${id}/initiative`).expect(404);
-        expect(await stateOf(id)).toBe('WITH_CONSENT');
+        expect(await stateOf(id)).toBe('STARTED');
       },
     );
 
     it('rechaza con 404 una etapa que no existe', async () => {
-      const id = await startWithConsent();
+      const id = await start();
 
       await agent
         .post(`/api/v1/diagnostics/${id}/initiative`)
-        .send(agroconectaInitiative({ sectorId, stageId: '999999' }))
+        .send(body({ stageId: '999999' }))
         .expect(404);
     });
   });
 
   describe('cuestionario con justificaciones', () => {
     async function withInitiative(): Promise<string> {
-      const id = await startWithConsent();
+      const id = await start();
       await agent
         .post(`/api/v1/diagnostics/${id}/initiative`)
-        .send(agroconectaInitiative({ sectorId, stageId }))
+        .send(body())
         .expect(201);
       return id;
     }
@@ -319,10 +314,10 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
 
   describe('resultados: qué se muestra depende del análisis profundo', () => {
     async function withProfile(): Promise<string> {
-      const id = await startWithConsent();
+      const id = await start();
       await agent
         .post(`/api/v1/diagnostics/${id}/initiative`)
-        .send(agroconectaInitiative({ sectorId, stageId }))
+        .send(body())
         .expect(201);
       await agent
         .post(`/api/v1/diagnostics/${id}/finalize-initial`)
@@ -330,6 +325,16 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
         .expect(201);
       return id;
     }
+
+    it('congela las respuestas: procesar de nuevo un diagnóstico con perfil responde 409', async () => {
+      const id = await withProfile();
+
+      await agent
+        .post(`/api/v1/diagnostics/${id}/finalize-initial`)
+        .send({ answers: agroconectaAnswers(await statements()) })
+        .expect(409);
+      expect(await stateOf(id)).toBe('PROFILE_GENERATED');
+    });
 
     it('el perfil trae el estado crítico calculado por el backend: solo BRL', async () => {
       const id = await withProfile();
@@ -372,8 +377,8 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
     it('un diagnóstico ajeno se responde como inexistente', async () => {
       const other = randomUUID();
       await dataSource.query(
-        `INSERT INTO irl_diagnostic.diagnostic (id, cognito_user_id, state, irl_framework_version)
-         VALUES ($1, 'otro-usuario', 'PROFILE_GENERATED', 'KTH-IRL-1.0')`,
+        `INSERT INTO irl_diagnostic.diagnostic (id, cognito_user_id, state, id_framework_version)
+         VALUES ($1, 'otro-usuario', 'PROFILE_GENERATED', (SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
         [other],
       );
       created.push(other);

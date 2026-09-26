@@ -1,0 +1,59 @@
+import type { ConsentTermsSection } from '@innlab/contracts';
+
+/**
+ * Text of the consent to the processing of personal data (RF-03 / HU-05,
+ * Law 1581 of 2012).
+ *
+ * Each consent row points to the version it accepted, so a published text
+ * is never rewritten: to change it, add a new entry with a new `version`
+ * and a later `publishedAt`; the latest one is the current text and the
+ * frontend reads it from the API. The seed refuses to rewrite a version
+ * that has acceptances.
+ *
+ * **Provisional text, pending legal review**: it does not include
+ * institutional data the repository does not hold, such as the NIT or the
+ * habeas data contact channel.
+ */
+export interface ConsentTermsSeed {
+  readonly version: string;
+  readonly title: string;
+  readonly sections: readonly ConsentTermsSection[];
+  readonly checkboxLabel: string;
+  readonly publishedAt: string;
+}
+
+export const CONSENT_TERMS: readonly ConsentTermsSeed[] = [
+  {
+    version: 'v1',
+    title: 'Autorización para el tratamiento de datos personales',
+    publishedAt: '2026-09-20T00:00:00.000Z',
+    checkboxLabel:
+      'He leído y acepto el tratamiento de mis datos personales según este texto.',
+    sections: [
+      {
+        heading: 'Responsable del tratamiento',
+        body: 'La Universidad Icesi, a través de INNLAB Centro de Innovación, es la responsable del tratamiento de los datos que se recogen en este diagnóstico, conforme a la Ley 1581 de 2012.',
+      },
+      {
+        heading: 'Datos que se tratan',
+        body: 'Los datos de tu cuenta INNLAB, la información de tu iniciativa que registres (nombre, sector, etapa, equipo, mercado objetivo y financiamiento), tus respuestas a las 48 afirmaciones con sus justificaciones y los resultados que el sistema calcula a partir de ellas.',
+      },
+      {
+        heading: 'Finalidad',
+        body: 'Calcular el perfil de madurez IRL de tu iniciativa, generar el análisis, la recomendación de portafolio y la ruta de escalamiento, y orientar los servicios de INNLAB que mejor se ajusten a tu iniciativa.',
+      },
+      {
+        heading: 'Tus derechos como titular',
+        body: 'Puedes conocer, actualizar y rectificar tus datos, solicitar prueba de esta autorización, ser informado del uso que se les da, revocar la autorización y solicitar la supresión de tus datos, y presentar quejas ante la Superintendencia de Industria y Comercio. Para ejercerlos, comunícate con INNLAB por sus canales institucionales.',
+      },
+      {
+        heading: 'Carácter voluntario',
+        body: 'Aceptar es voluntario. Sin tu autorización no es posible registrar datos ni continuar con el diagnóstico.',
+      },
+      {
+        heading: 'Registro de la aceptación',
+        body: 'Al aceptar, el sistema registra la aceptación con la fecha y la hora exactas y la versión de este texto.',
+      },
+    ],
+  },
+];

@@ -57,8 +57,8 @@ describe('Answers with justification — persistence (integration)', () => {
   beforeEach(async () => {
     diagnosticId = randomUUID();
     await dataSource.query(
-      `INSERT INTO irl_diagnostic.diagnostic (id, cognito_user_id, state, irl_framework_version)
-       VALUES ($1, 'u', 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
+      `INSERT INTO irl_diagnostic.diagnostic (id, cognito_user_id, state, id_framework_version)
+       VALUES ($1, 'u', 'QUESTIONNAIRE_IN_PROGRESS', (SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
       [diagnosticId],
     );
   });

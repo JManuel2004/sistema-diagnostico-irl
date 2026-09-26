@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { DiagnosisRepositoryPort } from '../../../domain/repositories/diagnosis.repository.port.js';
-import { Diagnosis } from '../../../domain/entities/diagnosis.aggregate.js';
+import {
+  Diagnosis,
+  type DiagnosisPersistence,
+} from '../../../domain/entities/diagnosis.aggregate.js';
 import { DiagnosisOrm } from '../orm-entities/diagnosis.orm-entity.js';
 
 /**
@@ -47,10 +50,7 @@ export class TypeOrmDiagnosisRepository implements DiagnosisRepositoryPort {
     });
 
     if (existing) {
-      existing.state = snapshot.state;
-      if (snapshot.state === 'PROFILE_GENERATED' && existing.completedAt === null) {
-        existing.completedAt = snapshot.updatedAt;
-      }
+      this.apply(existing, snapshot);
       await this.orm.save(existing);
       return;
     }
@@ -59,10 +59,38 @@ export class TypeOrmDiagnosisRepository implements DiagnosisRepositoryPort {
       this.orm.create({
         id: snapshot.id,
         cognitoUserId: snapshot.userId,
+        idFrameworkVersion: snapshot.frameworkVersionId,
         state: snapshot.state,
         startedAt: snapshot.createdAt,
       }),
     );
+  }
+
+  async modify(
+    id: string,
+    change: (diagnosis: Diagnosis) => void,
+  ): Promise<Diagnosis | null> {
+    return this.orm.manager.transaction(async (manager) => {
+      const row = await manager.findOne(DiagnosisOrm, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!row) return null;
+      const diagnosis = this.toDomain(row);
+      change(diagnosis);
+      this.apply(row, diagnosis.toPersistence());
+      await manager.save(row);
+      return diagnosis;
+    });
+  }
+
+  private apply(row: DiagnosisOrm, snapshot: DiagnosisPersistence): void {
+    row.state = snapshot.state;
+    if (snapshot.state === 'PROFILE_GENERATED' && row.completedAt === null) {
+      row.completedAt = new Date();
+    }
+    row.recommendationCalculatedAt = snapshot.recommendationCalculatedAt ?? null;
+    row.roadmapCalculatedAt = snapshot.roadmapCalculatedAt ?? null;
   }
 
   private toDomain(row: DiagnosisOrm): Diagnosis {
@@ -70,8 +98,10 @@ export class TypeOrmDiagnosisRepository implements DiagnosisRepositoryPort {
       id: row.id,
       userId: row.cognitoUserId,
       state: row.state,
+      frameworkVersionId: row.idFrameworkVersion,
       createdAt: row.startedAt,
-      updatedAt: row.startedAt,
+      recommendationCalculatedAt: row.recommendationCalculatedAt,
+      roadmapCalculatedAt: row.roadmapCalculatedAt,
     });
   }
 }

@@ -7,6 +7,8 @@ import {
 } from '@nestjs/swagger';
 import type { RoadmapResponse } from '@innlab/contracts';
 import { GetScalingRoadmapUseCase } from '../../application/use-cases/get-scaling-roadmap.use-case.js';
+import type { AuthenticatedUser } from '../../../../shared/identity/application/dtos/authenticated-user.js';
+import { CurrentUser } from '../../../../shared/identity/presentation/decorators/current-user.decorator.js';
 import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
 import { DiagnosticIdParam } from '../../../../shared/kernel/presentation/dto/diagnostic-id.param.js';
 import { ApiErrors } from '../../../../shared/kernel/presentation/api-errors.decorator.js';
@@ -39,8 +41,13 @@ export class RoadmapController {
       'empty `phases` means the initiative meets the expected minimum in all six dimensions.',
   })
   @ApiOkResponse({ type: RoadmapResponseDto })
-  @ApiErrors(409, 422)
-  async get(@Param() { id }: DiagnosticIdParam): Promise<RoadmapResponse> {
-    return unwrapResult(await this.roadmap.execute({ diagnosticId: id }));
+  @ApiErrors(404, 409, 422)
+  async get(
+    @Param() { id }: DiagnosticIdParam,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<RoadmapResponse> {
+    return unwrapResult(
+      await this.roadmap.execute({ diagnosticId: id, userId: user.id }),
+    );
   }
 }

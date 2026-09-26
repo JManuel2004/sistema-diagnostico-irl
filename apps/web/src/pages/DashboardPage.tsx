@@ -126,12 +126,15 @@ export default function DashboardPage(): JSX.Element {
               aria-label="Accesos del diagnóstico"
               className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:gap-3"
             >
-              <Link
-                to={paths.initiative(completed.id)}
-                className={`${buttonVariants({ variant: 'ghost' })} w-full sm:w-auto`}
-              >
-                Editar iniciativa
-              </Link>
+              {/* Once the deep analysis is accepted the profile is frozen (409). */}
+              {!completed.deepAnalysisAccepted && (
+                <Link
+                  to={paths.initiative(completed.id)}
+                  className={`${buttonVariants({ variant: 'ghost' })} w-full sm:w-auto`}
+                >
+                  Editar iniciativa
+                </Link>
+              )}
               <Link
                 to={paths.results(completed.id)}
                 className={`${buttonVariants({ variant: inProgress ? 'secondary' : 'default' })} w-full sm:order-first sm:w-auto`}

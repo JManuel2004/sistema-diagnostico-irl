@@ -2,26 +2,15 @@ import { Consent } from '../../../../../../src/modules/initiative/domain/entitie
 import { Uuid } from '../../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
 import { InvariantViolationError } from '../../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 
-const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+const INITIATIVE_ID = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13';
 
 describe('Consent', () => {
   describe('accept', () => {
-    it('is always accepted=true — there is no decline path to model', () => {
-      const consent = Consent.accept({
-        id: Uuid.generate(),
-        diagnosticId: Uuid.create(DIAGNOSTIC_ID),
-        cognitoUserId: 'user-1',
-        termsVersion: 'v1',
-      });
-
-      expect(consent.accepted).toBe(true);
-    });
-
     it('defaults acceptedAt to now when not given', () => {
       const before = Date.now();
       const consent = Consent.accept({
         id: Uuid.generate(),
-        diagnosticId: Uuid.create(DIAGNOSTIC_ID),
+        initiativeId: Uuid.create(INITIATIVE_ID),
         cognitoUserId: 'user-1',
         termsVersion: 'v1',
       });
@@ -37,7 +26,7 @@ describe('Consent', () => {
         expect(() =>
           Consent.accept({
             id: Uuid.generate(),
-            diagnosticId: Uuid.create(DIAGNOSTIC_ID),
+            initiativeId: Uuid.create(INITIATIVE_ID),
             cognitoUserId: 'user-1',
             termsVersion,
           }),
@@ -51,7 +40,7 @@ describe('Consent', () => {
         expect(() =>
           Consent.accept({
             id: Uuid.generate(),
-            diagnosticId: Uuid.create(DIAGNOSTIC_ID),
+            initiativeId: Uuid.create(INITIATIVE_ID),
             cognitoUserId: 'user-1',
             termsVersion,
           }),
@@ -65,9 +54,8 @@ describe('Consent', () => {
       const acceptedAt = new Date('2026-01-01T00:00:00.000Z');
       const row = {
         id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',
-        diagnosticId: DIAGNOSTIC_ID,
+        initiativeId: INITIATIVE_ID,
         cognitoUserId: 'user-1',
-        accepted: true,
         acceptedAt,
         termsVersion: 'v1',
       };

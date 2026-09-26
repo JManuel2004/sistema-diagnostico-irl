@@ -8,6 +8,8 @@ import { DimensionPair } from '../../../domain/entities/dimension-pair.js';
 import { DimensionOrm } from '../orm-entities/dimension.orm-entity.js';
 import { ConversionRangeOrm } from '../orm-entities/conversion-range.orm-entity.js';
 import { DimensionPairOrm } from '../orm-entities/dimension-pair.orm-entity.js';
+import { FrameworkVersionOrm } from '../orm-entities/framework-version.orm-entity.js';
+import { FrameworkVersion } from '../../../domain/entities/framework-version.js';
 
 /**
  * TypeORM-backed adapter for the taxonomy port.
@@ -26,6 +28,8 @@ export class TypeOrmTaxonomyRepository implements TaxonomyRepositoryPort {
     private readonly ranges: Repository<ConversionRangeOrm>,
     @InjectRepository(DimensionPairOrm)
     private readonly pairs: Repository<DimensionPairOrm>,
+    @InjectRepository(FrameworkVersionOrm)
+    private readonly versions: Repository<FrameworkVersionOrm>,
   ) {}
 
   async findAllDimensions(): Promise<Dimension[]> {
@@ -44,8 +48,26 @@ export class TypeOrmTaxonomyRepository implements TaxonomyRepositoryPort {
     );
   }
 
-  async findAllConversionRanges(): Promise<ConversionRange[]> {
-    const rows = await this.ranges.find({ order: { irlLevel: 'ASC' } });
+  async findCurrentFrameworkVersion(): Promise<FrameworkVersion | null> {
+    const [row] = await this.versions.find({ order: { publishedAt: 'DESC' }, take: 1 });
+    return row ? FrameworkVersion.fromPersistence(row) : null;
+  }
+
+  async findFrameworkVersionById(id: number): Promise<FrameworkVersion | null> {
+    const row = await this.versions.findOne({ where: { id } });
+    return row ? FrameworkVersion.fromPersistence(row) : null;
+  }
+
+  async findFrameworkVersionByCode(code: string): Promise<FrameworkVersion | null> {
+    const row = await this.versions.findOne({ where: { code } });
+    return row ? FrameworkVersion.fromPersistence(row) : null;
+  }
+
+  async findConversionRanges(frameworkVersionId: number): Promise<ConversionRange[]> {
+    const rows = await this.ranges.find({
+      where: { idFrameworkVersion: frameworkVersionId },
+      order: { irlLevel: 'ASC' },
+    });
     return rows.map((r) =>
       ConversionRange.fromPersistence({
         avgMin: r.avgMin,

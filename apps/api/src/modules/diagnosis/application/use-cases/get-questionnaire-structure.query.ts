@@ -1,10 +1,8 @@
 import type { TaxonomyRepositoryPort } from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
 import type { StatementCatalogPort } from '../../domain/repositories/statement-catalog.port.js';
 import type { QuestionnaireStructure } from '@innlab/contracts';
-
-// RF-05 — KTH Innovation Readiness Level framework version; anchors the
-// client-side cache key so a framework update can be detected client-side.
-const FRAMEWORK_VERSION = 'KTH-IRL-1.0';
+import { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
+import { Result } from '../../../../shared/kernel/domain/result.js';
 
 /**
  * `GetQuestionnaireStructureQuery` — read-only query that assembles the
@@ -34,10 +32,23 @@ export class GetQuestionnaireStructureQuery {
     private readonly statementCatalog: StatementCatalogPort,
   ) {}
 
-  async execute(): Promise<QuestionnaireStructure> {
+  /**
+   * The questionnaire of a framework version — the diagnostic's, so its
+   * answers match its statements — or of the current one when no version
+   * is given.
+   */
+  async execute(
+    versionCode?: string,
+  ): Promise<Result<QuestionnaireStructure, NotFoundError>> {
+    const version = versionCode
+      ? await this.taxonomy.findFrameworkVersionByCode(versionCode)
+      : await this.taxonomy.findCurrentFrameworkVersion();
+    if (!version) {
+      return Result.err(new NotFoundError('Framework version', versionCode ?? 'current'));
+    }
     const [dimensions, statements] = await Promise.all([
       this.taxonomy.findAllDimensions(),
-      this.statementCatalog.findAllStatements(),
+      this.statementCatalog.findStatements(version.id),
     ]);
 
     // Index statements by dimension code for O(1) lookup during map.
@@ -49,8 +60,8 @@ export class GetQuestionnaireStructureQuery {
       byCode.set(code, bucket);
     }
 
-    return {
-      frameworkVersion: FRAMEWORK_VERSION,
+    return Result.ok({
+      frameworkVersion: version.code,
       dimensions: dimensions.map((dim) => ({
         code: dim.code.value,
         name: dim.name,
@@ -63,6 +74,6 @@ export class GetQuestionnaireStructureQuery {
           text: s.text,
         })),
       })),
-    };
+    });
   }
 }

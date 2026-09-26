@@ -46,6 +46,7 @@ export function toLayerTraceResponse(
   return {
     diagnosticId: recommendation.diagnosticId.value,
     layer1Excluded: t.layer1Excluded.map((e) => ({
+      ruleCode: e.ruleCode,
       idService: e.idService,
       name: e.name,
       exclusionMessage: e.exclusionMessage,

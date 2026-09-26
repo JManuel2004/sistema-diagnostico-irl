@@ -14,7 +14,7 @@ import {
 } from '@innlab/contracts';
 import { AppModule } from '../../../../src/app.module.js';
 import { configureApp } from '../../../../src/shared/kernel/infrastructure/http/configure-app.js';
-import { authenticateAgainst } from '../../support/authenticated-app.js';
+import { authenticateAgainst, E2E_USER } from '../../support/authenticated-app.js';
 import { agroconectaAnswers } from '../../support/agroconecta-case.js';
 
 /**
@@ -69,9 +69,9 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
 
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
-         (id, cognito_user_id, state, irl_framework_version)
-       VALUES ($1, 'usuario-e2e-roadmap', 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
-      [diagnosticId],
+         (id, cognito_user_id, state, id_framework_version)
+       VALUES ($1, $2, 'QUESTIONNAIRE_IN_PROGRESS', (SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
+      [diagnosticId, E2E_USER.sub],
     );
 
     const statements = await dataSource.query<
@@ -299,13 +299,30 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
     });
   });
 
+  it("answers another user's diagnostic as missing (404), not revealing it exists", async () => {
+    const other = randomUUID();
+    await dataSource.query(
+      `INSERT INTO irl_diagnostic.diagnostic
+         (id, cognito_user_id, state, id_framework_version)
+       VALUES ($1, 'another-user', 'QUESTIONNAIRE_IN_PROGRESS', (SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
+      [other],
+    );
+
+    try {
+      const res = await agent.get(`/api/v1/diagnostics/${other}/roadmap`).expect(404);
+      expect((res.body as { code: string }).code).toBe('NOT_FOUND');
+    } finally {
+      await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`, [other]);
+    }
+  });
+
   it('un diagnóstico sin perfil calculado devuelve 409, no 404', async () => {
     const other = randomUUID();
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
-         (id, cognito_user_id, state, irl_framework_version)
-       VALUES ($1, 'usuario-e2e-roadmap', 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
-      [other],
+         (id, cognito_user_id, state, id_framework_version)
+       VALUES ($1, $2, 'QUESTIONNAIRE_IN_PROGRESS', (SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
+      [other, E2E_USER.sub],
     );
 
     try {

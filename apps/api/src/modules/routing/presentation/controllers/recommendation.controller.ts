@@ -11,6 +11,8 @@ import type {
 } from '@innlab/contracts';
 import { GetRecommendationUseCase } from '../../application/use-cases/get-recommendation.use-case.js';
 import { GetRecommendationTraceUseCase } from '../../application/use-cases/get-recommendation-trace.use-case.js';
+import type { AuthenticatedUser } from '../../../../shared/identity/application/dtos/authenticated-user.js';
+import { CurrentUser } from '../../../../shared/identity/presentation/decorators/current-user.decorator.js';
 import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
 import { DiagnosticIdParam } from '../../../../shared/kernel/presentation/dto/diagnostic-id.param.js';
 import { ApiErrors } from '../../../../shared/kernel/presentation/api-errors.decorator.js';
@@ -48,12 +50,13 @@ export class RecommendationController {
       'The recommendation saved when the deep analysis was accepted (RF-15); 409 before that.',
   })
   @ApiOkResponse({ type: RecommendationResponseDto })
-  @ApiErrors(409, 422)
+  @ApiErrors(404, 409, 422)
   async get(
     @Param() { id }: DiagnosticIdParam,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<RecommendationResponse> {
     return unwrapResult(
-      await this.getRecommendation.execute({ diagnosticId: id }),
+      await this.getRecommendation.execute({ diagnosticId: id, userId: user.id }),
     );
   }
 
@@ -64,12 +67,13 @@ export class RecommendationController {
       'What each layer of the engine did and why. Audience: the INNLAB team.',
   })
   @ApiOkResponse({ type: LayerTraceResponseDto })
-  @ApiErrors(409, 422)
+  @ApiErrors(404, 409, 422)
   async getTrace(
     @Param() { id }: DiagnosticIdParam,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<LayerTraceResponse> {
     return unwrapResult(
-      await this.getRecommendationTrace.execute({ diagnosticId: id }),
+      await this.getRecommendationTrace.execute({ diagnosticId: id, userId: user.id }),
     );
   }
 }

@@ -9,8 +9,8 @@ import {
 import type { Initiative } from '@innlab/contracts';
 import { CurrentUser } from '../../../../shared/identity/presentation/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../../../shared/identity/application/dtos/authenticated-user.js';
-import { RegisterInitiativeUseCase } from '../../application/use-cases/register-initiative.use-case.js';
-import { GetInitiativeUseCase } from '../../application/use-cases/get-initiative.use-case.js';
+import { RegisterInitiativeProfileUseCase } from '../../application/use-cases/register-initiative-profile.use-case.js';
+import { GetInitiativeProfileUseCase } from '../../application/use-cases/get-initiative-profile.use-case.js';
 import { unwrapResult } from '../../../../shared/kernel/application/unwrap-result.js';
 import { DiagnosticIdParam } from '../../../../shared/kernel/presentation/dto/diagnostic-id.param.js';
 import { ApiErrors } from '../../../../shared/kernel/presentation/api-errors.decorator.js';
@@ -22,19 +22,21 @@ import { InitiativeResponseDto } from './dto/initiative.response.dto.js';
 @Controller('diagnostics/:id/initiative')
 export class InitiativeController {
   constructor(
-    private readonly register: RegisterInitiativeUseCase,
-    private readonly get: GetInitiativeUseCase,
+    private readonly register: RegisterInitiativeProfileUseCase,
+    private readonly get: GetInitiativeProfileUseCase,
   ) {}
 
   @Post()
   @ApiOperation({
-    summary: 'Register (or update) the initiative profile',
+    summary: 'Register (or correct) the initiative profile of the diagnostic',
     description:
-      'Requires the consent (409 without it). Registering it moves the diagnostic to ' +
-      '`WITH_INITIATIVE` through `InitiativeRegisteredEvent` (HU-06, RF-04).',
+      'The snapshot of the profile of one of the caller\'s initiatives for this diagnostic. ' +
+      '409 when the initiative\'s consent is not accepted at the current version, or once the ' +
+      'deep analysis is accepted (the profile is frozen). Registering it moves the diagnostic ' +
+      'to `WITH_INITIATIVE` through `InitiativeRegisteredEvent` (HU-06, RF-04).',
   })
   @ApiCreatedResponse({ type: InitiativeResponseDto })
-  @ApiErrors(404, 409, 422)
+  @ApiErrors(403, 404, 409, 422)
   async registerInitiative(
     @Param() { id }: DiagnosticIdParam,
     @Body() body: RegisterInitiativeRequestDto,
@@ -44,6 +46,7 @@ export class InitiativeController {
       await this.register.execute({
         diagnosticId: id,
         userId: user.id,
+        initiativeId: body.initiativeId,
         sectorId: body.sectorId,
         name: body.name,
         productType: body.productType,
@@ -51,6 +54,7 @@ export class InitiativeController {
         declaredStage: body.declaredStage,
         teamSize: body.teamSize,
         teamDescription: body.teamDescription,
+        academicLinkage: body.academicLinkage,
         targetMarket: body.targetMarket,
         currentFunding: body.currentFunding,
       }),
@@ -63,8 +67,11 @@ export class InitiativeController {
     description: '404 while the diagnostic has no registered initiative.',
   })
   @ApiOkResponse({ type: InitiativeResponseDto })
-  @ApiErrors(404, 422)
-  async getInitiative(@Param() { id }: DiagnosticIdParam): Promise<Initiative> {
-    return unwrapResult(await this.get.execute(id));
+  @ApiErrors(403, 404, 422)
+  async getInitiative(
+    @Param() { id }: DiagnosticIdParam,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<Initiative> {
+    return unwrapResult(await this.get.execute(id, user.id));
   }
 }

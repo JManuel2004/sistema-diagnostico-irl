@@ -22,10 +22,11 @@ export interface QuestionnaireCompletion {
 /**
  * What the questionnaire draft is missing. A statement is complete only
  * with its answer and its justification (RF-06); the rule lives in the
- * store, here it is only grouped by dimension.
+ * store, here it is only grouped by dimension, over the statements of the
+ * diagnostic's framework version.
  */
-export function useQuestionnaireCompletion(): QuestionnaireCompletion {
-  const { data: catalog } = useQuestionnaireStructure();
+export function useQuestionnaireCompletion(frameworkVersion: string): QuestionnaireCompletion {
+  const { data: catalog } = useQuestionnaireStructure(frameworkVersion);
   const answers = useQuestionnaireDraftStore(selectAnswers);
   const justifications = useQuestionnaireDraftStore(selectJustifications);
 

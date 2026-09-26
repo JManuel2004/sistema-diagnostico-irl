@@ -32,6 +32,8 @@ export const AGROCONECTA_INITIATIVE = {
   teamSize: 3,
   teamDescription:
     '3 personas — 1 fundadora agrónoma (tiempo completo), 1 coordinadora de operaciones (medio tiempo), 1 desarrollador externo contratado por proyecto',
+  /** The case has no confirmed link with the university. */
+  academicLinkage: false,
   targetMarket:
     'Productores de café de pequeña escala y compradores exportadores en el suroccidente colombiano (Cauca y Valle del Cauca)',
   currentFunding: 'Ahorros de la fundadora + un incentivo regional de innovación de COP 25M',

@@ -18,4 +18,10 @@ export interface InitiativeCharacterizationPort {
    * when no initiative is registered for the diagnostic.
    */
   findByDiagnosticId(diagnosticId: string): Promise<Characterization>;
+
+  /**
+   * The code of each initiative stage by its id — the stages a service fits
+   * are stored by id, the characterization speaks codes.
+   */
+  findStageCodes(): Promise<ReadonlyMap<string, string>>;
 }

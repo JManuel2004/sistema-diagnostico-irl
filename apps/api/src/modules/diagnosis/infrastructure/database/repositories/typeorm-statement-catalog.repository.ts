@@ -22,26 +22,17 @@ export class TypeOrmStatementCatalogRepository implements StatementCatalogPort {
     private readonly taxonomy: TaxonomyRepositoryPort,
   ) {}
 
-  async findAllStatements(): Promise<Statement[]> {
+  async findStatements(frameworkVersionId: number): Promise<Statement[]> {
     const dimensions = await this.taxonomy.findAllDimensions();
-    const rows = await this.statements.find({ order: { sequence: 'ASC' } });
+    const rows = await this.statements.find({
+      where: { idFrameworkVersion: frameworkVersionId },
+      order: { sequence: 'ASC' },
+    });
     return dimensions.flatMap((dimension) =>
       rows
         .filter((row) => row.idDimension === dimension.id)
         .map((row) => toStatement(row, dimension.code.value)),
     );
-  }
-
-  async findStatementsByDimensionCode(code: string): Promise<Statement[]> {
-    const dimension = (await this.taxonomy.findAllDimensions()).find(
-      (d) => d.code.value === code,
-    );
-    if (!dimension) return [];
-    const rows = await this.statements.find({
-      where: { idDimension: dimension.id },
-      order: { sequence: 'ASC' },
-    });
-    return rows.map((row) => toStatement(row, code));
   }
 }
 

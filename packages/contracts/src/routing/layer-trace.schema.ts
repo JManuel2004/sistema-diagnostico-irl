@@ -67,6 +67,7 @@ export const rankingEntrySchema = z.object({
 });
 
 export const layer1ExclusionSchema = z.object({
+  ruleCode: z.string().min(1).describe('Code of the eligibility rule that excluded the service'),
   idService: z.number().int().positive(),
   name: z.string(),
   exclusionMessage: z.string(),
@@ -77,7 +78,7 @@ export const layer1ExclusionSchema = z.object({
  * truth for the extension point: the domain derives its `ExceptionAction`
  * type from this list, the engine keeps one strategy per entry (the compiler
  * fails until it has one), and only the database `CHECK` constraint
- * (`ck_published_exception_rule_action`) has to be widened by a migration.
+ * (`ck_exception_rule_action`) has to be widened by a migration.
  */
 export const EXCEPTION_ACTIONS = ['FORCE', 'VETO', 'PROMOTE', 'DEMOTE'] as const;
 

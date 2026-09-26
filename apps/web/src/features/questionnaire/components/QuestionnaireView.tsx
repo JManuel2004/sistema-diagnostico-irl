@@ -14,8 +14,13 @@ import { QuestionnaireSkeleton } from './QuestionnaireSkeleton';
  *  - Success: tabs of the 6 dimensions with their 48 statements.
  */
 
-export function QuestionnaireView() {
-  const { data, isLoading, isError, refetch } = useQuestionnaireStructure();
+interface Props {
+  /** The IRL framework version the diagnostic is answered with. */
+  readonly frameworkVersion: string;
+}
+
+export function QuestionnaireView({ frameworkVersion }: Props) {
+  const { data, isLoading, isError, refetch } = useQuestionnaireStructure(frameworkVersion);
 
   if (isLoading) return <QuestionnaireSkeleton />;
 

@@ -63,7 +63,7 @@ describe('QuestionnaireView', () => {
     server.use(
       http.get('*/api/v1/catalog/questionnaire', () => new Promise(() => undefined)),
     );
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.getByLabelText('Cargando cuestionario')).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('QuestionnaireView', () => {
 
   it('renders six dimension tabs after a successful fetch', async () => {
     withSuccessHandler();
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
@@ -84,7 +84,7 @@ describe('QuestionnaireView', () => {
 
   it('shows 8 statements for the first dimension by default', async () => {
     withSuccessHandler();
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
@@ -95,7 +95,7 @@ describe('QuestionnaireView', () => {
   it('switches to the clicked dimension and shows its statements', { timeout: 10_000 }, async () => {
     withSuccessHandler();
     const user = userEvent.setup();
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
@@ -122,7 +122,7 @@ describe('QuestionnaireView', () => {
 
     it('does not scroll when the questionnaire mounts', async () => {
       withSuccessHandler();
-      renderWithClient(<QuestionnaireView />);
+      renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
       await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
@@ -132,7 +132,7 @@ describe('QuestionnaireView', () => {
     it('does not scroll when it mounts on a tab restored from the draft', async () => {
       withSuccessHandler();
       useQuestionnaireDraftStore.getState().setActiveTab('BRL');
-      renderWithClient(<QuestionnaireView />);
+      renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
       await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
@@ -142,7 +142,7 @@ describe('QuestionnaireView', () => {
     it('scrolls back to the top of the panel when the dimension changes', async () => {
       withSuccessHandler();
       const user = userEvent.setup();
-      renderWithClient(<QuestionnaireView />);
+      renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
       await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
       await user.click(screen.getByRole('tab', { name: 'CRL' }));
@@ -153,7 +153,7 @@ describe('QuestionnaireView', () => {
 
   it('renders an error state when the request fails', async () => {
     withErrorHandler();
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('alert'));
 
@@ -170,7 +170,7 @@ describe('QuestionnaireView', () => {
       }),
     );
     const user = userEvent.setup();
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('alert'));
 
@@ -183,7 +183,7 @@ describe('QuestionnaireView', () => {
   it('persists answers when switching dimension tabs and after remount', { timeout: 15_000 }, async () => {
     withSuccessHandler();
     const user = userEvent.setup();
-    const utils = renderWithClient(<QuestionnaireView />);
+    const utils = renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
@@ -206,7 +206,7 @@ describe('QuestionnaireView', () => {
 
     // Unmount and remount the view (simulating navigation away and back)
     utils.unmount();
-    renderWithClient(<QuestionnaireView />);
+    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
     await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
     const remountedRg = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });

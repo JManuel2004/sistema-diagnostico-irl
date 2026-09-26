@@ -4,6 +4,7 @@ import type { TaxonomyRepositoryPort } from '../../../../../../src/shared/irl-ta
 import type { StatementCatalogPort } from '../../../../../../src/modules/diagnosis/domain/repositories/statement-catalog.port.js';
 import { Dimension } from '../../../../../../src/shared/irl-taxonomy/domain/entities/dimension.js';
 import { Statement } from '../../../../../../src/modules/diagnosis/domain/entities/statement.js';
+import { FRAMEWORK_VERSION } from '../../support/framework-taxonomy.js';
 
 function makeDimension(code: string, sequence: number): Dimension {
   return Dimension.fromPersistence({
@@ -50,6 +51,11 @@ function buildFullCatalog(): {
   return { dimensions, statements };
 }
 
+function unwrap<T>(result: { ok: true; value: T } | { ok: false; error: unknown }): T {
+  if (!result.ok) throw new Error('expected ok result');
+  return result.value;
+}
+
 describe('GetQuestionnaireStructureQuery', () => {
   let query: GetQuestionnaireStructureQuery;
   let taxonomy: jest.Mocked<TaxonomyRepositoryPort>;
@@ -58,23 +64,44 @@ describe('GetQuestionnaireStructureQuery', () => {
   beforeEach(() => {
     taxonomy = {
       findAllDimensions: jest.fn(),
-      findAllConversionRanges: jest.fn(),
+      findCurrentFrameworkVersion: jest.fn(() => Promise.resolve(FRAMEWORK_VERSION)),
+      findFrameworkVersionById: jest.fn(),
+      findFrameworkVersionByCode: jest.fn((code: string) =>
+        Promise.resolve(code === FRAMEWORK_VERSION.code ? FRAMEWORK_VERSION : null),
+      ),
+      findConversionRanges: jest.fn(),
       findAllDimensionPairs: jest.fn(),
     };
     statementCatalog = {
-      findAllStatements: jest.fn(),
-      findStatementsByDimensionCode: jest.fn(),
+      findStatements: jest.fn(),
     };
 
     query = new GetQuestionnaireStructureQuery(taxonomy, statementCatalog);
   });
 
-  it('returns KTH-IRL-1.0 as frameworkVersion', async () => {
+  it('reads the statements of the requested framework version', async () => {
     const { dimensions, statements } = buildFullCatalog();
     taxonomy.findAllDimensions.mockResolvedValue(dimensions);
-    statementCatalog.findAllStatements.mockResolvedValue(statements);
+    statementCatalog.findStatements.mockResolvedValue(statements);
 
-    const result = await query.execute();
+    const result = unwrap(await query.execute('KTH-IRL-1.0'));
+
+    expect(result.frameworkVersion).toBe('KTH-IRL-1.0');
+    expect(statementCatalog.findStatements).toHaveBeenCalledWith(FRAMEWORK_VERSION.id);
+  });
+
+  it('answers NotFoundError for an unknown framework version', async () => {
+    const result = await query.execute('KTH-IRL-9.9');
+
+    expect(result.ok).toBe(false);
+  });
+
+  it('returns the current version when none is requested', async () => {
+    const { dimensions, statements } = buildFullCatalog();
+    taxonomy.findAllDimensions.mockResolvedValue(dimensions);
+    statementCatalog.findStatements.mockResolvedValue(statements);
+
+    const result = unwrap(await query.execute());
 
     expect(result.frameworkVersion).toBe('KTH-IRL-1.0');
   });
@@ -82,9 +109,9 @@ describe('GetQuestionnaireStructureQuery', () => {
   it('returns exactly 6 dimensions', async () => {
     const { dimensions, statements } = buildFullCatalog();
     taxonomy.findAllDimensions.mockResolvedValue(dimensions);
-    statementCatalog.findAllStatements.mockResolvedValue(statements);
+    statementCatalog.findStatements.mockResolvedValue(statements);
 
-    const result = await query.execute();
+    const result = unwrap(await query.execute());
 
     expect(result.dimensions).toHaveLength(6);
   });
@@ -92,9 +119,9 @@ describe('GetQuestionnaireStructureQuery', () => {
   it('each dimension has exactly 8 statements', async () => {
     const { dimensions, statements } = buildFullCatalog();
     taxonomy.findAllDimensions.mockResolvedValue(dimensions);
-    statementCatalog.findAllStatements.mockResolvedValue(statements);
+    statementCatalog.findStatements.mockResolvedValue(statements);
 
-    const result = await query.execute();
+    const result = unwrap(await query.execute());
 
     for (const dim of result.dimensions) {
       expect(dim.statements).toHaveLength(8);
@@ -104,9 +131,9 @@ describe('GetQuestionnaireStructureQuery', () => {
   it('groups statements under their correct dimension', async () => {
     const { dimensions, statements } = buildFullCatalog();
     taxonomy.findAllDimensions.mockResolvedValue(dimensions);
-    statementCatalog.findAllStatements.mockResolvedValue(statements);
+    statementCatalog.findStatements.mockResolvedValue(statements);
 
-    const result = await query.execute();
+    const result = unwrap(await query.execute());
 
     for (const dim of result.dimensions) {
       for (const s of dim.statements) {
@@ -118,20 +145,20 @@ describe('GetQuestionnaireStructureQuery', () => {
   it('fetches dimensions and statements in parallel (both called once)', async () => {
     const { dimensions, statements } = buildFullCatalog();
     taxonomy.findAllDimensions.mockResolvedValue(dimensions);
-    statementCatalog.findAllStatements.mockResolvedValue(statements);
+    statementCatalog.findStatements.mockResolvedValue(statements);
 
     await query.execute();
 
     expect(taxonomy.findAllDimensions.mock.calls).toHaveLength(1);
-    expect(statementCatalog.findAllStatements.mock.calls).toHaveLength(1);
+    expect(statementCatalog.findStatements.mock.calls).toHaveLength(1);
   });
 
   it('maps dimension fields correctly', async () => {
     const { dimensions, statements } = buildFullCatalog();
     taxonomy.findAllDimensions.mockResolvedValue(dimensions);
-    statementCatalog.findAllStatements.mockResolvedValue(statements);
+    statementCatalog.findStatements.mockResolvedValue(statements);
 
-    const result = await query.execute();
+    const result = unwrap(await query.execute());
     const trl = result.dimensions.find((d) => d.code === 'TRL');
 
     expect(trl).toBeDefined();
@@ -143,9 +170,9 @@ describe('GetQuestionnaireStructureQuery', () => {
   it('maps statement fields correctly', async () => {
     const { dimensions, statements } = buildFullCatalog();
     taxonomy.findAllDimensions.mockResolvedValue(dimensions);
-    statementCatalog.findAllStatements.mockResolvedValue(statements);
+    statementCatalog.findStatements.mockResolvedValue(statements);
 
-    const result = await query.execute();
+    const result = unwrap(await query.execute());
     const firstTrlStatement = result.dimensions.find((d) => d.code === 'TRL')!.statements[0];
 
     expect(firstTrlStatement).toMatchObject({

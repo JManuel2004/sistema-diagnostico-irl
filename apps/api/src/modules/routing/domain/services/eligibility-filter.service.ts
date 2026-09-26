@@ -17,13 +17,16 @@ import { evaluateExpression } from './predicate-compiler.service.js';
  * Pure service, no IO and no decorators.
  */
 export interface CompiledEligibilityRule {
-  readonly ruleId: string;
+  /** Stable code of the rule (`ELG-01`), recorded in the trace. */
+  readonly code: string;
   readonly idService: number;
   readonly expression: ExpressionTree;
   readonly exclusionMessage: string;
 }
 
 export interface ExcludedService {
+  /** The rule that excluded the service. */
+  readonly ruleCode: string;
   readonly idService: number;
   readonly name: string;
   readonly exclusionMessage: string;
@@ -53,6 +56,7 @@ export class EligibilityFilterService {
 
       if (fired) {
         excluded.push({
+          ruleCode: fired.code,
           idService: profile.idService,
           name: profile.serviceName,
           exclusionMessage: fired.exclusionMessage,

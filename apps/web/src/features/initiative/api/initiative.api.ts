@@ -1,9 +1,11 @@
 import {
   initiativeSchema,
   initiativeStageSchema,
+  initiativeSummarySchema,
   sectorSchema,
   type Initiative,
   type InitiativeStage,
+  type InitiativeSummary,
   type RegisterInitiativeCommand,
   type Sector,
 } from '@innlab/contracts';
@@ -17,7 +19,15 @@ export function getStages(): Promise<InitiativeStage[]> {
   return getParsed('/initiative-catalog/stages', initiativeStageSchema.array());
 }
 
-/** The diagnostic's initiative, or `null` if it has not been registered yet (404). */
+export function listMyInitiatives(): Promise<InitiativeSummary[]> {
+  return getParsed('/initiatives', initiativeSummarySchema.array());
+}
+
+/** Creates an initiative together with its first consent, to `version` of the text. */
+export function createInitiative(version: string): Promise<InitiativeSummary> {
+  return postParsed('/initiatives', { version }, initiativeSummarySchema);
+}
+
 export function getInitiative(diagnosticId: string): Promise<Initiative | null> {
   return getParsedOrNull(`/diagnostics/${diagnosticId}/initiative`, initiativeSchema);
 }

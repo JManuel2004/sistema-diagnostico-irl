@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import {
   AnswersSummary,
   selectAnswers,
+  selectClearDraft,
   selectJustifications,
   useQuestionnaireCompletion,
   useQuestionnaireDraftStore,
@@ -19,6 +20,8 @@ import { wizardPath } from './wizard-steps';
 
 interface Props {
   readonly diagnosticId: string;
+  /** The IRL framework version the diagnostic is answered with. */
+  readonly frameworkVersion: string;
 }
 
 /**
@@ -28,18 +31,23 @@ interface Props {
  *
  * «Procesar diagnóstico» is what sends the questionnaire to the server
  * (with each answer's justification) and computes the profile; when done
- * the results open. If the draft is not complete the user goes back to the
- * questionnaire: this step cannot be reached with missing answers.
+ * the results open and the browser draft is emptied. If the draft is not
+ * complete the user goes back to the questionnaire: this step cannot be
+ * reached with missing answers.
  */
-export function SummaryStep({ diagnosticId }: Props): JSX.Element {
+export function SummaryStep({ diagnosticId, frameworkVersion }: Props): JSX.Element {
   const answers = useQuestionnaireDraftStore(selectAnswers);
   const justifications = useQuestionnaireDraftStore(selectJustifications);
-  const { catalog, isComplete } = useQuestionnaireCompletion();
+  const clearDraft = useQuestionnaireDraftStore(selectClearDraft);
+  const { catalog, isComplete } = useQuestionnaireCompletion(frameworkVersion);
   const initiative = useInitiative(diagnosticId);
 
   const process = useFinalizeDiagnostic(diagnosticId);
 
   if (!catalog) return <LoadingState label="Cargando tus respuestas…" />;
+  // Once processed, the draft is emptied while the results open: that empty
+  // draft must not send the user back to the questionnaire.
+  if (process.isSuccess) return <LoadingState label="Abriendo tus resultados…" />;
   if (!isComplete) return <Navigate to={wizardPath(diagnosticId, 'cuestionario')} replace />;
 
   return (
@@ -100,6 +108,9 @@ export function SummaryStep({ diagnosticId }: Props): JSX.Element {
               })),
               {
                 onSuccess: () => {
+                  // The answers are saved on the server: the browser copy is
+                  // no longer needed (the results are already open).
+                  clearDraft();
                   notify.success('Diagnóstico procesado.');
                 },
                 onError: () => {

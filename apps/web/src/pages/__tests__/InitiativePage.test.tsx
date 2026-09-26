@@ -7,7 +7,7 @@ import { http as mswHttp, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import InitiativePage from '../InitiativePage';
 import { renderWithClient } from '@/test/render-with-client';
-import { SECTORS, STAGES, initiativeFixture } from '@/test/fixtures/initiative';
+import { INITIATIVE_ID, SECTORS, STAGES, initiativeFixture } from '@/test/fixtures/initiative';
 
 const ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
@@ -29,9 +29,27 @@ function notFound() {
   );
 }
 
-function backend(existing: ReturnType<typeof initiativeFixture> | null = null) {
+function diagnostic(deepAnalysisAccepted = false) {
+  return mswHttp.get('*/diagnostics/:id', ({ params }) =>
+    HttpResponse.json({
+      id: params.id,
+      userId: 'user-1',
+      state: deepAnalysisAccepted ? 'DEEP_ANALYSIS_COMPLETE' : 'PROFILE_GENERATED',
+      completed: true,
+      deepAnalysisAccepted,
+      frameworkVersion: 'KTH-IRL-1.0',
+      createdAt: '2026-03-01T00:00:00.000Z',
+    }),
+  );
+}
+
+function backend(
+  existing: ReturnType<typeof initiativeFixture> | null = null,
+  deepAnalysisAccepted = false,
+) {
   const posted: unknown[] = [];
   server.use(
+    diagnostic(deepAnalysisAccepted),
     mswHttp.get('*/initiative-catalog/sectors', () => HttpResponse.json(SECTORS)),
     mswHttp.get('*/initiative-catalog/stages', () => HttpResponse.json(STAGES)),
     mswHttp.get('*/diagnostics/:id/initiative', () =>
@@ -89,7 +107,25 @@ describe('InitiativePage — corregir la iniciativa ya registrada (HU-06)', () =
 
     expect(await screen.findByText('PANEL_STUB')).toBeInTheDocument();
     expect(posted).toHaveLength(1);
-    expect(posted[0]).toMatchObject({ name: 'AgroConecta v2', sectorId: '1', stageId: '2', teamSize: 3 });
+    expect(posted[0]).toMatchObject({
+      initiativeId: INITIATIVE_ID,
+      name: 'AgroConecta v2',
+      sectorId: '1',
+      stageId: '2',
+      teamSize: 3,
+    });
+  });
+
+  // Once the deep analysis is accepted the backend refuses the change (409): the form is not offered.
+  it('con el análisis profundo aceptado no ofrece corregirla', async () => {
+    backend(initiativeFixture(), true);
+
+    renderPage();
+
+    expect(
+      await screen.findByText('La información de esta iniciativa ya no se puede corregir'),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText('Nombre de la iniciativa')).not.toBeInTheDocument();
   });
 
   it('el primer registro es el paso 1 del asistente: sin iniciativa se manda allí', async () => {
@@ -144,6 +180,7 @@ describe('InitiativePage — corregir la iniciativa ya registrada (HU-06)', () =
 
   it('avisa si no se pudo cargar el formulario', async () => {
     server.use(
+      diagnostic(),
       mswHttp.get('*/initiative-catalog/sectors', () =>
         HttpResponse.json({ message: 'x' }, { status: 500 }),
       ),

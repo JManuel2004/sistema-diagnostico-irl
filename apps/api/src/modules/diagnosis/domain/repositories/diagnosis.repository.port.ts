@@ -3,15 +3,12 @@ import type { Diagnosis } from '../entities/diagnosis.aggregate.js';
 /**
  * Repository port for the `Diagnosis` aggregate.
  *
- * `save(diagnostico)` is an upsert keyed by `id_diagnostico`. The
+ * `save(diagnosis)` is an upsert keyed by `id`. The
  * adapter uses TypeORM's `save` (insert-or-update by primary key) so
  * the same call handles both first-write and state transitions.
  *
- * Querying by user (for HU-03 "consultar diagnóstico previo") is
- * exposed via `findLatestByUserId` rather than a generic list method
- * — the orchestrator never paginates from inside this module; if a
- * future feature needs a list, it asks via a use case that crafts the
- * query.
+ * Querying by user is exposed via `findLatestByUserId` (resuming an
+ * unfinished diagnostic) and `findAllByUserId` (the user's list, HU-03).
  */
 export const DIAGNOSIS_REPOSITORY = Symbol('DIAGNOSIS_REPOSITORY');
 
@@ -20,4 +17,11 @@ export interface DiagnosisRepositoryPort {
   findLatestByUserId(userId: string): Promise<Diagnosis | null>;
   findAllByUserId(userId: string): Promise<Diagnosis[]>;
   save(diagnosis: Diagnosis): Promise<void>;
+  /**
+   * Loads the diagnostic, applies `change` and saves it as one step that
+   * no concurrent `modify` of the same diagnostic can interleave with. It
+   * is for changes two event listeners may make at the same time. Resolves
+   * `null`, without calling `change`, when the diagnostic does not exist.
+   */
+  modify(id: string, change: (diagnosis: Diagnosis) => void): Promise<Diagnosis | null>;
 }

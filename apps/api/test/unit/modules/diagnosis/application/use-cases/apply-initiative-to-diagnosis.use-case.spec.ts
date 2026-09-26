@@ -12,7 +12,7 @@ function diagnosisIn(state: string): Diagnosis {
     userId: 'user-1',
     state,
     createdAt: new Date(),
-    updatedAt: new Date(),
+    frameworkVersionId: 1,
   });
 }
 
@@ -37,6 +37,17 @@ describe('ApplyInitiativeToDiagnosisUseCase', () => {
 
     expect(result.ok).toBe(true);
     expect(save).toHaveBeenCalledTimes(1);
+    expect(save.mock.calls[0][0].state.value).toBe('WITH_INITIATIVE');
+  });
+
+  // The consent belongs to the initiative and may predate the diagnostic: a
+  // profile registered on a STARTED diagnostic takes it through WITH_CONSENT.
+  it('moves a STARTED diagnostic through WITH_CONSENT to WITH_INITIATIVE', async () => {
+    findById.mockResolvedValueOnce(diagnosisIn('STARTED'));
+
+    const result = await useCase.execute({ diagnosticId: ID });
+
+    expect(result.ok).toBe(true);
     expect(save.mock.calls[0][0].state.value).toBe('WITH_INITIATIVE');
   });
 

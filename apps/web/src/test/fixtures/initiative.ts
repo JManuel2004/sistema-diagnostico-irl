@@ -1,4 +1,4 @@
-import type { Initiative } from '@innlab/contracts';
+import type { Initiative, InitiativeSummary } from '@innlab/contracts';
 
 export const SECTORS = [
   { id: '1', name: 'Agroindustria / AgriTech' },
@@ -11,9 +11,12 @@ export const STAGES = [
   { id: '3', code: 'crecimiento', name: 'Crecimiento' },
 ];
 
+export const INITIATIVE_ID = 'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a13';
+
 export function initiativeFixture(over: Partial<Initiative> = {}): Initiative {
   return {
     id: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',
+    initiativeId: INITIATIVE_ID,
     diagnosticId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'AgroConecta',
     sector: SECTORS[0],
@@ -22,8 +25,36 @@ export function initiativeFixture(over: Partial<Initiative> = {}): Initiative {
     declaredStage: 'Piloto completado',
     teamSize: 3,
     teamDescription: 'Fundadora, coordinadora y desarrollador externo',
+    academicLinkage: false,
     targetMarket: 'Productores de café del suroccidente',
     currentFunding: 'Ahorros de la fundadora',
+    recordedAt: '2026-05-10T15:00:00.000Z',
     ...over,
   };
 }
+
+/** An initiative of the user as `GET /initiatives` lists it. */
+export function initiativeSummaryFixture(over: Partial<InitiativeSummary> = {}): InitiativeSummary {
+  return {
+    id: INITIATIVE_ID,
+    createdAt: '2026-05-10T14:00:00.000Z',
+    consent: { initiativeId: INITIATIVE_ID, version: 'v1', acceptedAt: '2026-05-10T14:00:00.000Z' },
+    consentCurrent: true,
+    latestProfile: initiativeFixture(),
+    ...over,
+  };
+}
+
+/** The consent text as `GET /consent-terms/current` serves it. */
+export const CONSENT_TERMS = {
+  version: 'v1',
+  title: 'Autorización para el tratamiento de datos personales',
+  sections: [
+    {
+      heading: 'Responsable del tratamiento',
+      body: 'La Universidad Icesi, a través de INNLAB Centro de Innovación, es la responsable del tratamiento.',
+    },
+  ],
+  checkboxLabel: 'He leído y acepto el tratamiento de mis datos personales según este texto.',
+  publishedAt: '2026-09-20T00:00:00.000Z',
+};

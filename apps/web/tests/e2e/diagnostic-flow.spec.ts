@@ -1,7 +1,14 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import type { MaturityProfileResponse } from '@innlab/contracts';
 import { questionnaireFixture } from '../../src/test/fixtures/questionnaire';
-import { SECTORS, STAGES, initiativeFixture } from '../../src/test/fixtures/initiative';
+import {
+  CONSENT_TERMS,
+  INITIATIVE_ID,
+  SECTORS,
+  STAGES,
+  initiativeFixture,
+  initiativeSummaryFixture,
+} from '../../src/test/fixtures/initiative';
 import { dimensionResultFixture } from '../../src/test/fixtures/dimensions';
 
 /**
@@ -34,7 +41,7 @@ const PROFILE: MaturityProfileResponse = {
 /** An in-memory backend: what the app reads back is what it wrote. */
 async function fakeBackend(page: Page): Promise<string[]> {
   const calls: string[] = [];
-  let consent = false;
+  let created = false;
   let initiative = false;
   let completed = false;
 
@@ -58,9 +65,12 @@ async function fakeBackend(page: Page): Promise<string[]> {
     state: completed ? 'PROFILE_GENERATED' : 'STARTED',
     completed,
     deepAnalysisAccepted: false,
+    frameworkVersion: 'KTH-IRL-1.0',
     createdAt: '2026-09-22T14:00:00.000Z',
-    updatedAt: '2026-09-22T14:00:00.000Z',
   });
+  const profile = () => initiativeFixture({ diagnosticId: ID });
+  const summary = () =>
+    initiativeSummaryFixture({ latestProfile: initiative ? profile() : null });
 
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request();
@@ -80,24 +90,22 @@ async function fakeBackend(page: Page): Promise<string[]> {
         return json(route, STAGES);
       case 'GET /catalog/questionnaire':
         return json(route, questionnaireFixture());
-      case 'GET /diagnostics/:id/consent':
-        return consent
-          ? json(route, { diagnosticId: ID, version: 'v1', acceptedAt: '2026-09-22T14:05:00.000Z' })
-          : notFound(route);
-      case 'POST /diagnostics/:id/consent':
-        calls.push('consent');
-        consent = true;
-        return json(
-          route,
-          { diagnosticId: ID, version: 'v1', acceptedAt: '2026-09-22T14:05:00.000Z' },
-          201,
-        );
+      case 'GET /consent-terms/current':
+        return json(route, CONSENT_TERMS);
+      case 'GET /initiatives':
+        return json(route, created ? [summary()] : []);
+      case 'POST /initiatives':
+        calls.push('create');
+        created = true;
+        return json(route, summary(), 201);
       case 'GET /diagnostics/:id/initiative':
-        return initiative ? json(route, initiativeFixture({ diagnosticId: ID })) : notFound(route);
-      case 'POST /diagnostics/:id/initiative':
-        calls.push('initiative');
+        return initiative ? json(route, profile()) : notFound(route);
+      case 'POST /diagnostics/:id/initiative': {
+        const body = request.postDataJSON() as { initiativeId: string };
+        calls.push(`initiative:${body.initiativeId === INITIATIVE_ID ? 'created' : 'other'}`);
         initiative = true;
-        return json(route, initiativeFixture({ diagnosticId: ID }), 201);
+        return json(route, profile(), 201);
+      }
       case 'POST /diagnostics/:id/finalize-initial': {
         const body = request.postDataJSON() as { answers: unknown[] };
         calls.push(`finalize:${String(body.answers.length)}`);
@@ -140,12 +148,13 @@ test('from the landing to the results through the four wizard steps', async ({ p
   await page.getByLabel('Etapa declarada').fill('Piloto con tres productores');
   await page.getByLabel('Personas en el equipo').fill('3');
   await page.getByLabel('Equipo', { exact: true }).fill('Fundadora y dos ingenieros');
+  await page.getByLabel('Vinculación académica').selectOption('false');
   await page.getByLabel('Mercado objetivo').fill('Productores de café');
   await page.getByLabel('Financiamiento actual').fill('Ahorros propios');
   await page.getByRole('button', { name: 'Continuar' }).click();
   expect(calls).toEqual(['start']);
 
-  // Step 2 — the consent: accepting records it, then the initiative.
+  // Step 2 — the consent: accepting creates the initiative with it, then records its profile.
   await expect(
     page.getByRole('heading', { level: 1, name: 'Consentimiento para el tratamiento de datos' }),
   ).toBeVisible();
@@ -178,5 +187,5 @@ test('from the landing to the results through the four wizard steps', async ({ p
   await expect(page).toHaveURL(`/diagnosticos/${ID}/resultados`);
   await expect(page.getByText('Diagnóstico procesado.')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Principal' })).toBeVisible();
-  expect(calls).toEqual(['start', 'consent', 'initiative', 'finalize:48']);
+  expect(calls).toEqual(['start', 'create', 'initiative:created', 'finalize:48']);
 });

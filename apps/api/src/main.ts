@@ -26,7 +26,8 @@ async function bootstrap(): Promise<void> {
   app.useLogger(app.get(Logger));
 
   // CSP disabled: this is a pure API; the only HTML served is the Swagger
-  // documentation, whose UI needs inline scripts that CSP would block.
+  // documentation (outside production), whose UI needs inline scripts that
+  // CSP would block.
   await app.register(helmet, { contentSecurityPolicy: false });
 
   // Single source of truth: the typed `AppConfig` published by
@@ -45,30 +46,34 @@ async function bootstrap(): Promise<void> {
   // suite so the two cannot drift apart.
   configureApp(app);
 
-  const swaggerDocument = SwaggerModule.createDocument(
-    app,
-    new DocumentBuilder()
-      .setTitle('IRL Diagnostic — API')
-      .setDescription(
-        'IRL maturity diagnostic system · INNLAB · Universidad Icesi',
-      )
-      .setVersion('1.0')
-      .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
-      .build(),
-  );
-  // Nest builds the OpenAPI document from the controllers and their DTOs;
-  // `@fastify/swagger` publishes it as is (`static` mode) and
-  // `@fastify/swagger-ui` serves the UI at `/api/docs` (JSON at
-  // `/api/docs/json`).
-  await app.register(fastifySwagger, {
-    mode: 'static',
-    // Nest's `OpenAPIObject` and `openapi-types` describe the same OpenAPI 3
-    // document with slightly different typings.
-    specification: {
-      document: swaggerDocument as unknown as StaticDocumentSpec['document'],
-    },
-  });
-  await app.register(fastifySwaggerUi, { routePrefix: '/api/docs' });
+  // The API documentation is served outside production only: in production
+  // it would publish the whole surface of the API to anyone.
+  if (!cfg.isProduction) {
+    const swaggerDocument = SwaggerModule.createDocument(
+      app,
+      new DocumentBuilder()
+        .setTitle('IRL Diagnostic — API')
+        .setDescription(
+          'IRL maturity diagnostic system · INNLAB · Universidad Icesi',
+        )
+        .setVersion('1.0')
+        .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
+        .build(),
+    );
+    // Nest builds the OpenAPI document from the controllers and their DTOs;
+    // `@fastify/swagger` publishes it as is (`static` mode) and
+    // `@fastify/swagger-ui` serves the UI at `/api/docs` (JSON at
+    // `/api/docs/json`).
+    await app.register(fastifySwagger, {
+      mode: 'static',
+      // Nest's `OpenAPIObject` and `openapi-types` describe the same OpenAPI 3
+      // document with slightly different typings.
+      specification: {
+        document: swaggerDocument as unknown as StaticDocumentSpec['document'],
+      },
+    });
+    await app.register(fastifySwaggerUi, { routePrefix: '/api/docs' });
+  }
 
   await app.listen(cfg.appPort, '0.0.0.0');
 }

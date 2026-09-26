@@ -1,15 +1,16 @@
 import { jest } from '@jest/globals';
 import { Test } from '@nestjs/testing';
 import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
-import { ConsentRecordedEvent } from '../../../../../src/shared/kernel/events/consent-recorded.event.js';
-import { ConsentRecordedListener } from '../../../../../src/modules/diagnosis/infrastructure/messaging/consent-recorded.listener.js';
-import { ApplyConsentToDiagnosisUseCase } from '../../../../../src/modules/diagnosis/application/use-cases/apply-consent-to-diagnosis.use-case.js';
+import { DeepAnalysisResultListener } from '../../../../../src/modules/diagnosis/infrastructure/messaging/deep-analysis-result.listener.js';
+import { RecordDeepAnalysisResultUseCase } from '../../../../../src/modules/diagnosis/application/use-cases/record-deep-analysis-result.use-case.js';
+import { PortfolioRecommendationCalculatedEvent } from '../../../../../src/shared/kernel/events/portfolio-recommendation-calculated.event.js';
+import { ScalingRoadmapCalculatedEvent } from '../../../../../src/shared/kernel/events/scaling-roadmap-calculated.event.js';
 import { DeepAnalysisRequestedEvent } from '../../../../../src/shared/kernel/events/deep-analysis-requested.event.js';
 import { DeepAnalysisRequestedListener as RoutingListener } from '../../../../../src/modules/routing/infrastructure/messaging/deep-analysis-requested.listener.js';
 import { DeepAnalysisRequestedListener as RoadmapListener } from '../../../../../src/modules/roadmap/infrastructure/messaging/deep-analysis-requested.listener.js';
 import { GenerateRecommendationUseCase } from '../../../../../src/modules/routing/application/use-cases/generate-recommendation.use-case.js';
 import { GenerateScalingRoadmapUseCase } from '../../../../../src/modules/roadmap/application/use-cases/generate-scaling-roadmap.use-case.js';
-import { NoActiveConfigurationError } from '../../../../../src/modules/routing/domain/exceptions/routing.errors.js';
+import { RoutingConfigurationMissingError } from '../../../../../src/modules/routing/domain/exceptions/routing.errors.js';
 import { Result } from '../../../../../src/shared/kernel/domain/result.js';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
@@ -23,7 +24,7 @@ const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 describe('DeepAnalysisRequestedEvent wiring', () => {
   it('reaches routing/ and roadmap/ independently, even when routing/ fails', async () => {
     const generateRecommendation = jest.fn(() =>
-      Promise.resolve(Result.err(new NoActiveConfigurationError())),
+      Promise.resolve(Result.err(new RoutingConfigurationMissingError())),
     );
     const generateRoadmap = jest.fn(() => Promise.resolve(Result.ok({})));
 
@@ -59,29 +60,30 @@ describe('DeepAnalysisRequestedEvent wiring', () => {
     await moduleRef.close();
   });
 
-  it('ConsentRecordedEvent published by initiative/ reaches the diagnosis/ listener', async () => {
-    const applyConsent = jest.fn(() => Promise.resolve(Result.ok(undefined)));
+  it('the two "calculated" events reach diagnosis/, which records each result', async () => {
+    const record = jest.fn(() => Promise.resolve(Result.ok(undefined)));
 
     const moduleRef = await Test.createTestingModule({
       imports: [EventEmitterModule.forRoot()],
       providers: [
-        ConsentRecordedListener,
-        {
-          provide: ApplyConsentToDiagnosisUseCase,
-          useValue: { execute: applyConsent },
-        },
+        DeepAnalysisResultListener,
+        { provide: RecordDeepAnalysisResultUseCase, useValue: { execute: record } },
       ],
     }).compile();
     await moduleRef.init();
 
-    await moduleRef
-      .get(EventEmitter2)
-      .emitAsync(
-        ConsentRecordedEvent.eventName,
-        new ConsentRecordedEvent({ diagnosticId: DIAGNOSTIC_ID }),
-      );
+    const emitter = moduleRef.get(EventEmitter2);
+    await emitter.emitAsync(
+      PortfolioRecommendationCalculatedEvent.eventName,
+      new PortfolioRecommendationCalculatedEvent({ diagnosticId: DIAGNOSTIC_ID }),
+    );
+    await emitter.emitAsync(
+      ScalingRoadmapCalculatedEvent.eventName,
+      new ScalingRoadmapCalculatedEvent({ diagnosticId: DIAGNOSTIC_ID }),
+    );
 
-    expect(applyConsent).toHaveBeenCalledWith({ diagnosticId: DIAGNOSTIC_ID });
+    expect(record).toHaveBeenCalledWith({ diagnosticId: DIAGNOSTIC_ID, result: 'recommendation' });
+    expect(record).toHaveBeenCalledWith({ diagnosticId: DIAGNOSTIC_ID, result: 'roadmap' });
 
     await moduleRef.close();
   });

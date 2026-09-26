@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { FindDiagnosisOwnerQuery } from '../../diagnosis/application/use-cases/find-diagnosis-owner.query.js';
+import { GetDiagnosisProgressQuery } from '../../diagnosis/application/use-cases/get-diagnosis-progress.query.js';
 import type { DiagnosticOwnershipPort } from '../domain/repositories/diagnostic-ownership.port.js';
 import { NotFoundError } from '../../../shared/kernel/domain/errors/not-found.error.js';
 import { ForbiddenError } from '../../../shared/kernel/domain/errors/forbidden.error.js';
@@ -14,7 +15,10 @@ import { Uuid } from '../../../shared/kernel/domain/value-objects/uuid.vo.js';
  */
 @Injectable()
 export class DiagnosisOwnershipAdapter implements DiagnosticOwnershipPort {
-  constructor(private readonly findOwner: FindDiagnosisOwnerQuery) {}
+  constructor(
+    private readonly findOwner: FindDiagnosisOwnerQuery,
+    private readonly progress: GetDiagnosisProgressQuery,
+  ) {}
 
   async verify(
     diagnosticId: string,
@@ -33,5 +37,10 @@ export class DiagnosisOwnershipAdapter implements DiagnosticOwnershipPort {
       );
     }
     return Result.ok(undefined);
+  }
+
+  async deepAnalysisAccepted(diagnosticId: string): Promise<boolean> {
+    const progress = await this.progress.execute(diagnosticId);
+    return progress?.deepAnalysisAccepted ?? false;
   }
 }

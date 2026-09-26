@@ -10,56 +10,33 @@ loadEnv({ path: '.env' });
  *
  * Run with: `pnpm --filter @innlab/api db:seed`
  *
- * Idempotency strategy: UPSERT using `ON CONFLICT` on the natural unique
- * keys declared in the migration:
- *   - `dimension`: UNIQUE (code)
- *   - `statement`: UNIQUE (id_dimension, sequence)
- *   - `conversion_range`: PRIMARY KEY (irl_level)
- *
- * `dimension` and `statement` use GENERATED ALWAYS AS IDENTITY PKs —
- * never include their PKs in INSERT statements. `conversion_range` has
- * `irl_level` as the natural PK and IS included explicitly per row.
- *
- * Statements are linked to dimensions by a subquery on code so the
- * seed is order-independent and does not hard-code integer FKs.
+ * Every write is an upsert on a natural key (see `seed-catalog.ts`), so it
+ * can run any number of times; content already in use by transactional
+ * rows (a framework version, a consent text) is never rewritten.
  */
 async function run(): Promise<void> {
   await dataSource.initialize();
-  let routing = { configurationSeeded: false };
+  let routing = { services: 0 };
   let roadmap = { edges: 0 };
   try {
     await dataSource.transaction(async (manager) => {
       ({ routing, roadmap } = await seedCatalog(manager));
     });
 
-    const [{ count: dimCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.dimension`,
-    );
-    const [{ count: afCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.statement`,
-    );
-    const [{ count: rcCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.conversion_range`,
-    );
-    const [{ count: pairCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.dimension_pair`,
-    );
-
-    const [{ count: svcCount }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.portfolio_service`,
-    );
-    const [{ count: profileCount }] = await dataSource.query<
-      { count: string }[]
-    >(
-      `SELECT COUNT(*)::text AS count FROM irl_catalog.published_ordinal_profile`,
-    );
+    const count = async (table: string): Promise<string> => {
+      const [{ count: n }] = await dataSource.query<{ count: string }[]>(
+        `SELECT COUNT(*)::text AS count FROM irl_catalog.${table}`,
+      );
+      return n;
+    };
 
     // eslint-disable-next-line no-console
     console.log(
-      `Seed complete — ${dimCount} dimensions, ${afCount} statements, ${rcCount} conversion ranges, ` +
-        `${pairCount} dimension pairs, ${svcCount} portfolio services, ${profileCount} ordinal profiles, ` +
-        `${roadmap.edges} roadmap dependency edges in irl_catalog. Routing configuration: ` +
-        `${routing.configurationSeeded ? 'seeded' : 'already present, left untouched'}.`,
+      `Seed complete — ${await count('framework_version')} framework versions, ` +
+        `${await count('dimension')} dimensions, ${await count('statement')} statements, ` +
+        `${await count('conversion_range')} conversion ranges, ${await count('dimension_pair')} ` +
+        `dimension pairs, ${await count('consent_terms')} consent texts, ${String(routing.services)} ` +
+        `portfolio services, ${String(roadmap.edges)} roadmap dependency edges in irl_catalog.`,
     );
   } finally {
     await dataSource.destroy();

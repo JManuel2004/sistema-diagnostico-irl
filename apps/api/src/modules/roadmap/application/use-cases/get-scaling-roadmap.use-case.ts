@@ -4,9 +4,13 @@ import { type RoadmapRepositoryPort } from '../../domain/repositories/roadmap.re
 import { RoadmapNotGeneratedError } from '../../domain/exceptions/roadmap.errors.js';
 import { toRoadmapResponse } from '../dtos/map-roadmap-response.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
+import type { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
+import { type DiagnosticOwnershipPort } from '../../domain/repositories/diagnostic-ownership.port.js';
 
 export interface GetScalingRoadmapQuery {
   diagnosticId: string;
+  /** The caller: someone else's diagnostic is answered as missing. */
+  userId: string;
 }
 
 /**
@@ -22,11 +26,15 @@ export class GetScalingRoadmapUseCase {
   constructor(
     private readonly roadmaps: RoadmapRepositoryPort,
     private readonly taxonomy: TaxonomyRepositoryPort,
+    private readonly ownership: DiagnosticOwnershipPort,
   ) {}
 
   async execute(
     query: GetScalingRoadmapQuery,
-  ): Promise<Result<RoadmapResponse, RoadmapNotGeneratedError>> {
+  ): Promise<Result<RoadmapResponse, NotFoundError | RoadmapNotGeneratedError>> {
+    const owned = await this.ownership.verify(query.diagnosticId, query.userId);
+    if (!owned.ok) return owned;
+
     const roadmap = await this.roadmaps.findByDiagnosticId(query.diagnosticId);
     if (!roadmap) {
       return Result.err(new RoadmapNotGeneratedError(query.diagnosticId));

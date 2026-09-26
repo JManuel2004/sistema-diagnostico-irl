@@ -1,29 +1,21 @@
 import type { MaturityProfileResponse } from '@innlab/contracts';
 import { type DiagnosisRepositoryPort } from '../../domain/repositories/diagnosis.repository.port.js';
-import type { DiagnosisStateName } from '../../domain/value-objects/diagnosis-state.vo.js';
 import type { SubmitQuestionnaireUseCase } from './submit-questionnaire.use-case.js';
 import { type AnswerSheetRepositoryPort } from '../../domain/repositories/answer-sheet.repository.port.js';
 import type { ComputeMaturityProfileUseCase } from './compute-maturity-profile.use-case.js';
 import { type TaxonomyRepositoryPort } from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
 import { toMaturityProfileResponse } from '../dtos/map-maturity-profile-response.js';
-import { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
+import type { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
 import { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
 import type { InvariantViolationError } from '../../../../shared/kernel/domain/errors/invariant-violation.error.js';
 import { MaturityProfileCalculationError } from '../../domain/exceptions/maturity-profile-calculation.error.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
-
-const FINALIZABLE_STATES: readonly DiagnosisStateName[] = [
-  'WITH_INITIATIVE',
-  'QUESTIONNAIRE_IN_PROGRESS',
-  'QUESTIONNAIRE_COMPLETE',
-  'PROFILE_GENERATED',
-  'DEEP_ANALYSIS_DECLINED',
-  'DEEP_ANALYSIS_IN_PROGRESS',
-  'DEEP_ANALYSIS_COMPLETE',
-];
+import { findOwnDiagnosis } from './find-own-diagnosis.js';
 
 export interface FinalizeInitialDiagnosticCommand {
   diagnosticId: string;
+  /** The caller: someone else's diagnostic is answered as missing. */
+  userId: string;
   answers: { statementId: string; value: number; justification: string }[];
 }
 
@@ -54,13 +46,14 @@ export class FinalizeInitialDiagnosisUseCase {
       NotFoundError | ConflictError | InvariantViolationError
     >
   > {
-    const diagnosis = await this.diagnostics.findById(cmd.diagnosticId);
-    if (!diagnosis) {
-      return Result.err(new NotFoundError('Diagnosis', cmd.diagnosticId));
-    }
+    const own = await findOwnDiagnosis(this.diagnostics, cmd.diagnosticId, cmd.userId);
+    if (!own.ok) return own;
+    const diagnosis = own.value;
 
+    // Once the profile exists the answers are frozen: processing again would
+    // leave the stored recommendation and roadmap computed from other answers.
     const current = diagnosis.state.value;
-    if (!FINALIZABLE_STATES.includes(current)) {
+    if (!diagnosis.acceptsAnswers) {
       return Result.err(
         new ConflictError(
           `Diagnosis cannot be finalized from state ${current}`,
@@ -74,6 +67,7 @@ export class FinalizeInitialDiagnosisUseCase {
 
     const submission = await this.submitQuestionnaire.execute({
       diagnosticId: cmd.diagnosticId,
+      userId: cmd.userId,
       answers: cmd.answers,
     });
     if (!submission.ok) {
@@ -90,6 +84,7 @@ export class FinalizeInitialDiagnosisUseCase {
 
     const { profile, imbalances } = await this.computeProfile.execute({
       diagnosticId: cmd.diagnosticId,
+      frameworkVersionId: diagnosis.frameworkVersionId,
       answers: sheet.answers().map((a) => ({
         statementId: a.statementId,
         value: a.value.value,

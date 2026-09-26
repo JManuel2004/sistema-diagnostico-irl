@@ -119,6 +119,7 @@ export const selectAnswers = (s: DraftStore) => s.answers;
 export const selectJustifications = (s: DraftStore) => s.justifications;
 export const selectSetJustification = (s: DraftStore) => s.setJustification;
 export const selectFill = (s: DraftStore) => s.fill;
+export const selectClearDraft = (s: DraftStore) => s.clear;
 export const selectJustificationById = (id: string) => (s: DraftStore) => s.justifications[id] ?? '';
 
 /**

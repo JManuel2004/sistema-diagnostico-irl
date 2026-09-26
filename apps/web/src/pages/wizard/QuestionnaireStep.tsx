@@ -9,6 +9,8 @@ import { wizardPath } from './wizard-steps';
 
 interface Props {
   readonly diagnosticId: string;
+  /** The IRL framework version the diagnostic is answered with. */
+  readonly frameworkVersion: string;
 }
 
 /**
@@ -21,9 +23,9 @@ interface Props {
  * sent to the server here: the draft lives in the browser until «Procesar
  * diagnóstico» (step 4).
  */
-export function QuestionnaireStep({ diagnosticId }: Props): JSX.Element {
+export function QuestionnaireStep({ diagnosticId, frameworkVersion }: Props): JSX.Element {
   const navigate = useNavigate();
-  const { catalog, incompleteDimensions, completedIn, isComplete } = useQuestionnaireCompletion();
+  const { catalog, incompleteDimensions, completedIn, isComplete } = useQuestionnaireCompletion(frameworkVersion);
 
   /**
    * The warning appears once the user tries to move on with missing
@@ -54,7 +56,7 @@ export function QuestionnaireStep({ diagnosticId }: Props): JSX.Element {
         </Suspense>
       )}
 
-      <QuestionnaireView />
+      <QuestionnaireView frameworkVersion={frameworkVersion} />
 
       {/* RF-06: completeness validation section */}
       <div className="border-border mt-8 border-t pt-6">

@@ -1,6 +1,7 @@
 import type { Dimension } from '../entities/dimension.js';
 import type { ConversionRange } from '../entities/conversion-range.js';
 import type { DimensionPair } from '../entities/dimension-pair.js';
+import type { FrameworkVersion } from '../entities/framework-version.js';
 
 /**
  * Read-only port for the IRL taxonomy: the six dimensions, the SA-06
@@ -23,8 +24,17 @@ export interface TaxonomyRepositoryPort {
   /** All six dimensions in display order (`sequence` ascending). */
   findAllDimensions(): Promise<Dimension[]>;
 
-  /** The SA-06 conversion table — 9 rows. */
-  findAllConversionRanges(): Promise<ConversionRange[]>;
+  /** The latest published framework version, or `null` before any seed. */
+  findCurrentFrameworkVersion(): Promise<FrameworkVersion | null>;
+
+  /** A framework version by its id, or `null` if it does not exist. */
+  findFrameworkVersionById(id: number): Promise<FrameworkVersion | null>;
+
+  /** A framework version by its code, or `null` if it does not exist. */
+  findFrameworkVersionByCode(code: string): Promise<FrameworkVersion | null>;
+
+  /** The SA-06 conversion table of a framework version — 9 rows. */
+  findConversionRanges(frameworkVersionId: number): Promise<ConversionRange[]>;
 
   /** The six dimension pairs (RF-10). */
   findAllDimensionPairs(): Promise<DimensionPair[]>;

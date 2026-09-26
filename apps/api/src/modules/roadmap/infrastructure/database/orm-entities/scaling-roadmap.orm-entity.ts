@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import type { RoadmapPhase } from '../../../domain/entities/scaling-roadmap.aggregate.js';
 
 /**
  * The saved roadmap of a diagnostic: one row, `phases` as a snapshot of the
@@ -14,7 +15,7 @@ export class ScalingRoadmapOrm {
   idDiagnostic!: string;
 
   @Column({ name: 'phases', type: 'jsonb' })
-  phases!: unknown;
+  phases!: RoadmapPhase[];
 
   @Column({ name: 'generated_at', type: 'timestamptz' })
   generatedAt!: Date;

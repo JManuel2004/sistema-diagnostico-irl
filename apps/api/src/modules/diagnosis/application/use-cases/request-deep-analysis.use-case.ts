@@ -1,13 +1,16 @@
 import type { EventPublisher } from '../../../../shared/kernel/application/ports/event-publisher.port.js';
 import type { AcceptDeepAnalysisResponse } from '@innlab/contracts';
 import { type DiagnosisRepositoryPort } from '../../domain/repositories/diagnosis.repository.port.js';
-import { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
+import type { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
 import { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
+import { findOwnDiagnosis } from './find-own-diagnosis.js';
 import { DeepAnalysisRequestedEvent } from '../../../../shared/kernel/events/deep-analysis-requested.event.js';
 
 export interface RequestDeepAnalysisCommand {
   diagnosticId: string;
+  /** The caller: someone else's diagnostic is answered as missing. */
+  userId: string;
 }
 
 const ALREADY_ACCEPTED_STATES = new Set([
@@ -48,10 +51,9 @@ export class RequestDeepAnalysisUseCase {
   ): Promise<
     Result<AcceptDeepAnalysisResponse, NotFoundError | ConflictError>
   > {
-    const diagnosis = await this.diagnostics.findById(cmd.diagnosticId);
-    if (!diagnosis) {
-      return Result.err(new NotFoundError('Diagnosis', cmd.diagnosticId));
-    }
+    const own = await findOwnDiagnosis(this.diagnostics, cmd.diagnosticId, cmd.userId);
+    if (!own.ok) return own;
+    const diagnosis = own.value;
 
     const current = diagnosis.state.value;
     if (!ALREADY_ACCEPTED_STATES.has(current)) {

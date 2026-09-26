@@ -1,95 +1,59 @@
-import { jest } from '@jest/globals';
-import type { EventPublisher } from '../../../../../../src/shared/kernel/application/ports/event-publisher.port.js';
-import {
-  RecordConsentUseCase,
-  CURRENT_TERMS_VERSION,
-} from '../../../../../../src/modules/initiative/application/use-cases/record-consent.use-case.js';
-import type { ConsentRepositoryPort } from '../../../../../../src/modules/initiative/domain/repositories/consent.repository.port.js';
-import type { DiagnosticOwnershipPort } from '../../../../../../src/modules/initiative/domain/repositories/diagnostic-ownership.port.js';
-import { ConsentRecordedEvent } from '../../../../../../src/shared/kernel/events/consent-recorded.event.js';
+import { RecordConsentUseCase } from '../../../../../../src/modules/initiative/application/use-cases/record-consent.use-case.js';
+import { CreateInitiativeUseCase } from '../../../../../../src/modules/initiative/application/use-cases/create-initiative.use-case.js';
 import { ConflictError } from '../../../../../../src/shared/kernel/domain/errors/conflict.error.js';
 import { ForbiddenError } from '../../../../../../src/shared/kernel/domain/errors/forbidden.error.js';
 import { NotFoundError } from '../../../../../../src/shared/kernel/domain/errors/not-found.error.js';
-import { Result } from '../../../../../../src/shared/kernel/domain/result.js';
+import { FakeInitiatives, termsAt } from '../../support/fakes.js';
 
-const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
-const USER_ID = 'user-1';
+async function initiativeOf(store: FakeInitiatives, userId: string): Promise<string> {
+  const created = await new CreateInitiativeUseCase(store, termsAt('v1')).execute({
+    userId,
+    termsVersion: 'v1',
+  });
+  if (!created.ok) throw new Error('expected ok result');
+  return created.value.id;
+}
 
 describe('RecordConsentUseCase', () => {
-  let consents: jest.Mocked<ConsentRepositoryPort>;
-  let verify: jest.Mock<DiagnosticOwnershipPort['verify']>;
-  let publish: jest.Mock<EventPublisher['publish']>;
-  let useCase: RecordConsentUseCase;
+  it('adds an acceptance of a new version and keeps the earlier one', async () => {
+    const store = new FakeInitiatives();
+    const id = await initiativeOf(store, 'user-1');
+    const useCase = new RecordConsentUseCase(store, store, termsAt('v2'));
 
-  const command = {
-    diagnosticId: DIAGNOSTIC_ID,
-    cognitoUserId: USER_ID,
-    version: CURRENT_TERMS_VERSION,
-  };
+    const result = await useCase.execute({ initiativeId: id, userId: 'user-1', version: 'v2' });
 
-  beforeEach(() => {
-    consents = {
-      findByDiagnosticId: jest.fn(),
-      save: jest.fn(() => Promise.resolve(undefined)),
-    };
-    verify = jest.fn(() => Promise.resolve(Result.ok(undefined)));
-    publish = jest.fn(() => Promise.resolve());
-    useCase = new RecordConsentUseCase(consents, { verify }, {
-      publish,
-    });
-  });
-
-  it('saves the consent and publishes ConsentRecordedEvent after saving', async () => {
-    const result = await useCase.execute(command);
-
-    expect(result.ok).toBe(true);
     if (!result.ok) throw new Error('expected ok result');
-    expect(result.value.diagnosticId).toBe(DIAGNOSTIC_ID);
-    expect(result.value.version).toBe(CURRENT_TERMS_VERSION);
-
-    expect(verify).toHaveBeenCalledWith(DIAGNOSTIC_ID, USER_ID);
-    expect(consents.save).toHaveBeenCalledTimes(1);
-
-    const [event] = publish.mock.calls[0] as [ConsentRecordedEvent];
-    expect(event.name).toBe(ConsentRecordedEvent.eventName);
-    expect(event.payload).toEqual({ diagnosticId: DIAGNOSTIC_ID });
-    expect(consents.save.mock.invocationCallOrder[0]).toBeLessThan(
-      publish.mock.invocationCallOrder[0],
-    );
+    expect(result.value).toMatchObject({ initiativeId: id, version: 'v2' });
+    expect(store.consents.map((c) => c.termsVersion)).toEqual(['v1', 'v2']);
   });
 
-  it.each([
-    ['NotFoundError', new NotFoundError('Diagnosis', DIAGNOSTIC_ID)],
-    ['ForbiddenError', new ForbiddenError('not yours')],
-  ])('returns %s and writes nothing when the ownership check fails', async (_label, error) => {
-    verify.mockResolvedValueOnce(Result.err(error));
+  it('refuses a version that is not the current one', async () => {
+    const store = new FakeInitiatives();
+    const id = await initiativeOf(store, 'user-1');
+    const useCase = new RecordConsentUseCase(store, store, termsAt('v2'));
 
-    const result = await useCase.execute(command);
-
-    expect(result.ok).toBe(false);
-    if (result.ok) throw new Error('expected err result');
-    expect(result.error).toBe(error);
-    expect(consents.save).not.toHaveBeenCalled();
-    expect(publish).not.toHaveBeenCalled();
-  });
-
-  it('checks ownership before the terms version', async () => {
-    verify.mockResolvedValueOnce(Result.err(new ForbiddenError('not yours')));
-
-    const result = await useCase.execute({ ...command, version: 'v0-stale' });
-
-    expect(result.ok).toBe(false);
-    if (result.ok) throw new Error('expected err result');
-    expect(result.error).toBeInstanceOf(ForbiddenError);
-  });
-
-  it('rejects a stale terms version with ConflictError, saving and publishing nothing', async () => {
-    const result = await useCase.execute({ ...command, version: 'v0-stale' });
+    const result = await useCase.execute({ initiativeId: id, userId: 'user-1', version: 'v1' });
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('expected err result');
     expect(result.error).toBeInstanceOf(ConflictError);
-    expect(consents.save).not.toHaveBeenCalled();
-    expect(publish).not.toHaveBeenCalled();
+    expect(store.consents).toHaveLength(1);
+  });
+
+  it("answers 404 for a missing initiative and 403 for someone else's, before anything else", async () => {
+    const store = new FakeInitiatives();
+    const id = await initiativeOf(store, 'user-1');
+    const useCase = new RecordConsentUseCase(store, store, termsAt('v1'));
+
+    const missing = await useCase.execute({
+      initiativeId: 'd0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14',
+      userId: 'user-1',
+      version: 'v1',
+    });
+    const foreign = await useCase.execute({ initiativeId: id, userId: 'user-2', version: 'v1' });
+
+    expect(!missing.ok && missing.error).toBeInstanceOf(NotFoundError);
+    expect(!foreign.ok && foreign.error).toBeInstanceOf(ForbiddenError);
+    expect(store.consents).toHaveLength(1);
   });
 });

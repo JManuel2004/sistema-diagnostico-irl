@@ -14,7 +14,8 @@ import {
 } from '@innlab/contracts';
 import { AppModule } from '../../../../src/app.module.js';
 import { configureApp } from '../../../../src/shared/kernel/infrastructure/http/configure-app.js';
-import { authenticateAgainst } from '../../support/authenticated-app.js';
+import { insertInitiativeWithProfile } from '../../support/initiative-rows.js';
+import { authenticateAgainst, E2E_USER } from '../../support/authenticated-app.js';
 import { agroconectaAnswers } from '../../support/agroconecta-case.js';
 
 /**
@@ -38,6 +39,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
   let app: NestFastifyApplication;
   let dataSource: DataSource;
   let diagnosticId: string;
+  let initiativeId: string;
   // Agent with the Authorization header by default: the global guard
   // rejects any request without a token.
   let agent: ReturnType<typeof request.agent>;
@@ -69,30 +71,12 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     // initiative flow, which `initiative/registration-flow` covers.
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
-         (id, cognito_user_id, state, irl_framework_version)
-       VALUES ($1, 'usuario-e2e', 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
-      [diagnosticId],
+         (id, cognito_user_id, state, id_framework_version)
+       VALUES ($1, $2, 'QUESTIONNAIRE_IN_PROGRESS', (SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
+      [diagnosticId, E2E_USER.sub],
     );
 
-    await dataSource.query(
-      `INSERT INTO irl_catalog.sector (name, is_active)
-       VALUES ('Agroindustria', true)
-       ON CONFLICT (name) DO NOTHING`,
-    );
-
-    await dataSource.query(
-      `INSERT INTO irl_diagnostic.initiative
-         (id, id_diagnostic, id_sector, name, product_type,
-          id_stage, declared_stage, team_size, team_description,
-          academic_linkage, target_market, current_funding)
-       SELECT $1, $2, s.id, 'AgroConecta',
-              'Plataforma de trazabilidad y comercialización de café',
-              e.id, 'Piloto completado', 3, 'Fundadora, coordinadora y desarrollador externo',
-              false, 'Productores de café del suroccidente', 'Ahorros de la fundadora'
-         FROM irl_catalog.sector s, irl_catalog.initiative_stage e
-        WHERE s.name = 'Agroindustria' AND e.code = 'validacion'`,
-      [randomUUID(), diagnosticId],
-    );
+    initiativeId = await insertInitiativeWithProfile(dataSource, diagnosticId, E2E_USER.sub);
 
     // ── Questionnaire + maturity profile ──────────────────────────────
     const statements = await dataSource.query<
@@ -118,6 +102,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
         `DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`,
         [diagnosticId],
       );
+      await dataSource.query(`DELETE FROM irl_diagnostic.initiative WHERE id = $1`, [initiativeId]);
     }
     nock.cleanAll();
     await app?.close();
@@ -185,8 +170,9 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     const trace = layerTraceResponseSchema.parse(res.body);
 
     // Layer 1
-    expect(trace.layer1Excluded.map((e) => e.name)).toEqual([
-      'Proyectos de Grado',
+    expect(trace.layer1Excluded.map((e) => [e.ruleCode, e.name])).toEqual([
+      // No confirmed link with the university: ELG-01 excludes it.
+      ['ELG-01', 'Proyectos de Grado'],
     ]);
 
     // Layer 2 — the ranking of the pure calculation, before any adjustment
@@ -236,13 +222,30 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     expect(count).toBe('1');
   });
 
+  it("answers another user's diagnostic as missing (404), not revealing it exists", async () => {
+    const other = randomUUID();
+    await dataSource.query(
+      `INSERT INTO irl_diagnostic.diagnostic
+         (id, cognito_user_id, state, id_framework_version)
+       VALUES ($1, 'another-user', 'QUESTIONNAIRE_IN_PROGRESS', (SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
+      [other],
+    );
+
+    try {
+      const res = await agent.get(`/api/v1/diagnostics/${other}/recommendation`).expect(404);
+      expect((res.body as { code: string }).code).toBe('NOT_FOUND');
+    } finally {
+      await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`, [other]);
+    }
+  });
+
   it('un diagnóstico sin recomendación generada devuelve 409, no 404', async () => {
     const other = randomUUID();
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
-         (id, cognito_user_id, state, irl_framework_version)
-       VALUES ($1, 'usuario-e2e', 'QUESTIONNAIRE_IN_PROGRESS', 'KTH-IRL-1.0')`,
-      [other],
+         (id, cognito_user_id, state, id_framework_version)
+       VALUES ($1, $2, 'QUESTIONNAIRE_IN_PROGRESS', (SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
+      [other, E2E_USER.sub],
     );
 
     try {

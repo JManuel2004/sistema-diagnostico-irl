@@ -73,6 +73,10 @@ describe('Roadmap — persistence (integration)', () => {
     });
     await dataSource.initialize();
     await dataSource.runMigrations();
+    // The diagnostics below point to a framework version.
+    await dataSource.query(
+      `INSERT INTO irl_catalog.framework_version (code, published_at) VALUES ('KTH-IRL-1.0', now())`,
+    );
     repo = new TypeOrmRoadmapRepository(dataSource.getRepository(ScalingRoadmapOrm));
   }, 120_000);
 
@@ -85,8 +89,8 @@ describe('Roadmap — persistence (integration)', () => {
     diagnosticId = randomUUID();
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
-         (id, cognito_user_id, state, irl_framework_version)
-       VALUES ($1,'u','DEEP_ANALYSIS_IN_PROGRESS','KTH-IRL-1.0')`,
+         (id, cognito_user_id, state, id_framework_version)
+       VALUES ($1,'u','DEEP_ANALYSIS_IN_PROGRESS',(SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
       [diagnosticId],
     );
   });

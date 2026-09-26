@@ -18,7 +18,7 @@ describe('FindDiagnosisOwnerQuery', () => {
         userId: 'user-1',
         state: 'STARTED',
         createdAt: new Date('2026-01-01T00:00:00.000Z'),
-        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        frameworkVersionId: 1,
       }),
     );
     await expect(query.execute(ID)).resolves.toBe('user-1');

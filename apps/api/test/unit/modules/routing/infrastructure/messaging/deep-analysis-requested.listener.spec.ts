@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 import { DeepAnalysisRequestedListener } from '../../../../../../src/modules/routing/infrastructure/messaging/deep-analysis-requested.listener.js';
 import type { GenerateRecommendationUseCase } from '../../../../../../src/modules/routing/application/use-cases/generate-recommendation.use-case.js';
 import { DeepAnalysisRequestedEvent } from '../../../../../../src/shared/kernel/events/deep-analysis-requested.event.js';
-import { NoActiveConfigurationError } from '../../../../../../src/modules/routing/domain/exceptions/routing.errors.js';
+import { RoutingConfigurationMissingError } from '../../../../../../src/modules/routing/domain/exceptions/routing.errors.js';
 import { Result } from '../../../../../../src/shared/kernel/domain/result.js';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
@@ -29,7 +29,7 @@ describe('routing DeepAnalysisRequestedListener', () => {
 
   it('swallows a business-outcome Result.err instead of throwing', async () => {
     execute.mockResolvedValueOnce(
-      Result.err(new NoActiveConfigurationError({ diagnosticId: DIAGNOSTIC_ID })),
+      Result.err(new RoutingConfigurationMissingError({ diagnosticId: DIAGNOSTIC_ID })),
     );
 
     await expect(listener.handle(event)).resolves.toBeUndefined();

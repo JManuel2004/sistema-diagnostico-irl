@@ -179,7 +179,7 @@ function moveBy(direction: 'up' | 'down'): ActionStrategy {
  * strategy exists; there is no switch to remember and no fallthrough that
  * silently ignores a new action. To add one: (1) the constant in the
  * contracts, (2) its strategy below, (3) a migration widening the
- * `ck_published_exception_rule_action` (and `_positions`) constraints.
+ * `ck_exception_rule_action` (and `_positions`) constraints.
  */
 const ACTION_STRATEGIES: Record<ExceptionAction, ActionStrategy> = {
   FORCE: ({ list, target, index }) => {

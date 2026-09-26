@@ -81,10 +81,12 @@ export class DiagnosisController {
   async finalize(
     @Param() { id }: DiagnosticIdParam,
     @Body() body: AnswersRequestDto,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<MaturityProfileResponse> {
     return unwrapResult(
       await this.finalizeInitial.execute({
         diagnosticId: id,
+        userId: user.id,
         answers: body.answers,
       }),
     );
@@ -103,9 +105,10 @@ export class DiagnosisController {
   @ApiErrors(404, 409, 422)
   async requestDeepAnalysisFor(
     @Param() { id }: DiagnosticIdParam,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<AcceptDeepAnalysisResponse> {
     return unwrapResult(
-      await this.requestDeepAnalysis.execute({ diagnosticId: id }),
+      await this.requestDeepAnalysis.execute({ diagnosticId: id, userId: user.id }),
     );
   }
 }

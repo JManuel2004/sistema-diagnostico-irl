@@ -4,7 +4,14 @@ import { queryKeys } from '@/shared/api/query-keys';
 import { STALE_TIME } from '@/shared/api/query-client';
 import { invalidateDiagnostic } from '@/shared/api/invalidate-diagnostic';
 import { useDiagnosticQuery } from '@/shared/hooks/useDiagnosticQuery';
-import { getInitiative, getSectors, getStages, registerInitiative } from '../api/initiative.api';
+import {
+  createInitiative,
+  getInitiative,
+  getSectors,
+  getStages,
+  listMyInitiatives,
+  registerInitiative,
+} from '../api/initiative.api';
 
 export function useSectors() {
   return useQuery({
@@ -22,17 +29,31 @@ export function useStages() {
   });
 }
 
-/** `null` while the diagnostic has no registered initiative. */
+/** The user's initiatives, each with its latest consent and profile. */
+export function useMyInitiatives() {
+  return useQuery({
+    queryKey: queryKeys.initiative.mine,
+    queryFn: listMyInitiatives,
+    staleTime: STALE_TIME.diagnosticInput,
+  });
+}
+
+/** Creates an initiative with its first consent; the argument is the accepted text's version. */
+export function useCreateInitiative() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createInitiative,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.initiative.mine }),
+  });
+}
+
+/** The initiative profile registered for a diagnostic, or `null`. */
 export function useInitiative(diagnosticId: string | undefined) {
   return useDiagnosticQuery(diagnosticId, queryKeys.diagnostic.initiative, getInitiative, {
     staleTime: STALE_TIME.diagnosticInput,
   });
 }
 
-/**
- * Registering (or updating) the initiative moves the diagnostic's state in
- * the backend, so the diagnostic and its list are invalidated too.
- */
 export function useRegisterInitiative(diagnosticId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -42,6 +63,7 @@ export function useRegisterInitiative(diagnosticId: string | undefined) {
       if (!diagnosticId) return;
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.diagnostic.initiative(diagnosticId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.initiative.mine }),
         invalidateDiagnostic(queryClient, diagnosticId),
       ]);
     },

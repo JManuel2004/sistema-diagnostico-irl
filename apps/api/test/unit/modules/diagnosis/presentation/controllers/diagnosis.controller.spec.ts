@@ -44,10 +44,12 @@ describe('DiagnosisController', () => {
     const result = await controller.finalize(
       { id: DIAGNOSTIC_ID },
       { answers },
+      { id: 'user-1' },
     );
 
     expect(mockUseCase.execute).toHaveBeenCalledWith({
       diagnosticId: DIAGNOSTIC_ID,
+      userId: 'user-1',
       answers,
     });
     expect(result).toBe(profile);
@@ -58,7 +60,7 @@ describe('DiagnosisController', () => {
     mockUseCase.execute.mockResolvedValueOnce(Result.err(error));
 
     await expect(
-      controller.finalize({ id: DIAGNOSTIC_ID }, { answers: [] }),
+      controller.finalize({ id: DIAGNOSTIC_ID }, { answers: [] }, { id: 'user-1' }),
     ).rejects.toThrow(error);
   });
   it('starts a diagnostic owned by the authenticated user', async () => {
@@ -69,7 +71,7 @@ describe('DiagnosisController', () => {
       completed: false,
       deepAnalysisAccepted: false,
       createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
+      frameworkVersion: 'KTH-IRL-1.0',
     };
     mockStart.execute.mockResolvedValueOnce(created);
 
@@ -87,7 +89,7 @@ describe('DiagnosisController', () => {
       completed: true,
       deepAnalysisAccepted: true,
       createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
+      frameworkVersion: 'KTH-IRL-1.0',
     };
     mockGet.execute.mockResolvedValueOnce(Result.ok(diagnostic));
 
@@ -120,12 +122,14 @@ describe('DiagnosisController', () => {
       };
       mockDeepAnalysis.execute.mockResolvedValueOnce(Result.ok(expected));
 
-      const result = await controller.requestDeepAnalysisFor({
-        id: DIAGNOSTIC_ID,
-      });
+      const result = await controller.requestDeepAnalysisFor(
+        { id: DIAGNOSTIC_ID },
+        { id: 'user-1' },
+      );
 
       expect(mockDeepAnalysis.execute).toHaveBeenCalledWith({
         diagnosticId: DIAGNOSTIC_ID,
+        userId: 'user-1',
       });
       expect(result).toBe(expected);
     });
@@ -135,7 +139,7 @@ describe('DiagnosisController', () => {
       mockDeepAnalysis.execute.mockResolvedValueOnce(Result.err(error));
 
       await expect(
-        controller.requestDeepAnalysisFor({ id: DIAGNOSTIC_ID }),
+        controller.requestDeepAnalysisFor({ id: DIAGNOSTIC_ID }, { id: 'user-1' }),
       ).rejects.toThrow(error);
     });
   });

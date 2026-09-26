@@ -5,8 +5,7 @@ import { InitialSchema1747526400001 } from '../../../src/shared/kernel/infrastru
 import type { Repository } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import { PortfolioRecommendationOrm } from '../../../src/modules/routing/infrastructure/database/orm-entities/portfolio-recommendation.orm-entity.js';
-import { RecommendationAlternativeOrm } from '../../../src/modules/routing/infrastructure/database/orm-entities/recommendation-alternative.orm-entity.js';
-import { LayerTraceOrm } from '../../../src/modules/routing/infrastructure/database/orm-entities/layer-trace.orm-entity.js';
+import { RecommendationRankOrm } from '../../../src/modules/routing/infrastructure/database/orm-entities/recommendation-rank.orm-entity.js';
 import { TypeOrmRecommendationRepository } from '../../../src/modules/routing/infrastructure/database/repositories/typeorm-recommendation.repository.js';
 import { Recommendation } from '../../../src/modules/routing/domain/entities/recommendation.aggregate.js';
 import { Uuid } from '../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
@@ -59,8 +58,7 @@ describe('Recomendación — persistencia (integration)', () => {
       database: container.getDatabase(),
       entities: [
         PortfolioRecommendationOrm,
-        RecommendationAlternativeOrm,
-        LayerTraceOrm,
+        RecommendationRankOrm,
       ],
       migrations: [InitialSchema1747526400001],
       migrationsTableName: 'typeorm_migrations',
@@ -68,18 +66,22 @@ describe('Recomendación — persistencia (integration)', () => {
 
     await dataSource.initialize();
     await dataSource.runMigrations();
+    // The diagnostics below point to a framework version.
+    await dataSource.query(
+      `INSERT INTO irl_catalog.framework_version (code, published_at) VALUES ('KTH-IRL-1.0', now())`,
+    );
 
     ormRepo = dataSource.getRepository(PortfolioRecommendationOrm);
     repo = new TypeOrmRecommendationRepository(ormRepo);
 
     // Minimum configuration to satisfy the foreign keys.
     [{ id: idService }] = await dataSource.query(
-      `INSERT INTO irl_catalog.portfolio_service (name, is_active)
-       VALUES ('Consultoría', true) RETURNING id`,
+      `INSERT INTO irl_catalog.portfolio_service (name, is_active, min_level, max_level)
+       VALUES ('Consultoría', true, 1, 9) RETURNING id`,
     );
     await dataSource.query(
-      `INSERT INTO irl_catalog.portfolio_service (name, is_active)
-       VALUES ('Mentoría', true)`,
+      `INSERT INTO irl_catalog.portfolio_service (name, is_active, min_level, max_level)
+       VALUES ('Mentoría', true, 1, 9)`,
     );
   }, 120_000);
 
@@ -92,8 +94,8 @@ describe('Recomendación — persistencia (integration)', () => {
     diagnosticId = randomUUID();
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic
-         (id, cognito_user_id, state, irl_framework_version)
-       VALUES ($1,'u','PROFILE_GENERATED','KTH-IRL-1.0')`,
+         (id, cognito_user_id, state, id_framework_version)
+       VALUES ($1,'u','PROFILE_GENERATED',(SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
       [diagnosticId],
     );
   });
@@ -131,29 +133,43 @@ describe('Recomendación — persistencia (integration)', () => {
     expect(read?.trace.factsHash).toBe('a'.repeat(64));
   });
 
+  it('guarda el ranking con el servicio recomendado en la posición 1', async () => {
+    await repo.save(recommendation());
+
+    const ranks = await dataSource.query<{ position: number; service_snapshot: string }[]>(
+      `SELECT k.position, k.service_snapshot
+         FROM irl_diagnostic.recommendation_rank k
+         JOIN irl_diagnostic.portfolio_recommendation r ON r.id = k.id_recommendation
+        WHERE r.id_diagnostic = $1
+        ORDER BY k.position`,
+      [diagnosticId],
+    );
+    expect(ranks).toEqual([
+      { position: 1, service_snapshot: 'Consultoría' },
+      { position: 2, service_snapshot: 'Mentoría' },
+    ]);
+  });
+
   it('no deja nada escrito si la transacción falla a mitad de camino', async () => {
-    // The third write (the trace) is broken by forcing a length failure
-    // on `facts_hash` (varchar(64)). If the transaction did not wrap all
-    // three, the recommendation row and its alternative would be orphaned:
-    // a recommendation without a trace cannot be explained, which is exactly
-    // what this module promises to avoid.
-    const primary = candidate(idService, 'Consultoría', 5.55);
-    const alternate = candidate(idService + 1, 'Mentoría', 3.8);
+    // The ranking insert is broken with a service that does not exist
+    // (`fk_recommendation_rank_service`). If the transaction did not wrap
+    // both writes, the recommendation row would stay without its ranking.
+    const primary = candidate(999_999, 'Inexistente', 5.55);
     const broken = Recommendation.create({
       diagnosticId: Uuid.create(diagnosticId),
-      finalRanking: [primary, alternate],
+      finalRanking: [primary],
       minimumThreshold: 2.5,
       alternativesCount: 2,
       justification: 'porque sí',
       noRecommendationReason: null,
       trace: {
         layer1Excluded: [],
-        rankingBeforeExceptions: [primary, alternate],
+        rankingBeforeExceptions: [primary],
         appliedExceptions: [],
         discardedExceptions: [],
-        rankingAfterExceptions: [primary, alternate],
+        rankingAfterExceptions: [primary],
         incompleteCharacterization: [],
-        factsHash: 'a'.repeat(65),
+        factsHash: 'a'.repeat(64),
       },
       generatedAt: new Date(),
     });
@@ -165,28 +181,7 @@ describe('Recomendación — persistencia (integration)', () => {
         WHERE id_diagnostic = $1`,
       [diagnosticId],
     );
-    // Scoped to this diagnostic: the previous cases leave their own rows
-    // and a global count would include them too.
-    const [{ count: alts }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count
-         FROM irl_diagnostic.recommendation_alternative a
-         JOIN irl_diagnostic.portfolio_recommendation r
-           ON r.id = a.id_recommendation
-        WHERE r.id_diagnostic = $1`,
-      [diagnosticId],
-    );
-    const [{ count: traces }] = await dataSource.query<{ count: string }[]>(
-      `SELECT COUNT(*)::text AS count
-         FROM irl_diagnostic.layer_trace t
-         JOIN irl_diagnostic.portfolio_recommendation r
-           ON r.id = t.id_recommendation
-        WHERE r.id_diagnostic = $1`,
-      [diagnosticId],
-    );
-
     expect(recs).toBe('0');
-    expect(alts).toBe('0');
-    expect(traces).toBe('0');
   });
 
   it('regenerar reemplaza por completo en vez de acumular', async () => {
@@ -207,24 +202,25 @@ describe('Recomendación — persistencia (integration)', () => {
     await expect(
       dataSource.query(
         `INSERT INTO irl_diagnostic.portfolio_recommendation
-           (id_diagnostic, result_type,
-            service_snapshot, criterion_justification, generated_at)
-         VALUES ($1, 'NO_RECOMMENDATION', NULL, 'otra', now())`,
+           (id_diagnostic, result_type, criterion_justification, generated_at,
+            layer_1_excluded, ranking_before_exceptions, applied_exceptions,
+            discarded_exceptions, ranking_after_exceptions, incomplete_characterization, facts_hash)
+         VALUES ($1, 'NO_RECOMMENDATION', 'otra', now(), '[]', '[]', '[]', '[]', '[]', '[]', 'h')`,
         [diagnosticId],
       ),
     ).rejects.toThrow(/uq_portfolio_recommendation_diagnostic|duplicate key/);
   });
 
-  it('rechaza una recomendación incoherente: sin service pero de type RECOMENDACION', async () => {
+  it('exige la justificación o el motivo de no recomendar', async () => {
     await expect(
       dataSource.query(
         `INSERT INTO irl_diagnostic.portfolio_recommendation
-           (id_diagnostic, result_type,
-            id_primary_service, primary_score, service_snapshot,
-            criterion_justification, generated_at)
-         VALUES ($1, 'RECOMMENDATION', NULL, NULL, NULL, NULL, now())`,
+           (id_diagnostic, result_type, criterion_justification, generated_at,
+            layer_1_excluded, ranking_before_exceptions, applied_exceptions,
+            discarded_exceptions, ranking_after_exceptions, incomplete_characterization, facts_hash)
+         VALUES ($1, 'RECOMMENDATION', NULL, now(), '[]', '[]', '[]', '[]', '[]', '[]', 'h')`,
         [diagnosticId],
       ),
-    ).rejects.toThrow(/ck_portfolio_recommendation_coherence/);
+    ).rejects.toThrow(/criterion_justification/);
   });
 });

@@ -13,6 +13,8 @@ import { LikertValue } from '../../../../shared/kernel/domain/value-objects/like
 
 export interface ComputeMaturityProfileCommand {
   diagnosticId: string;
+  /** The diagnostic's framework version: its statements and conversion table. */
+  frameworkVersionId: number;
   answers: { statementId: string; value: number }[];
 }
 
@@ -52,8 +54,8 @@ export class ComputeMaturityProfileUseCase {
     }
 
     const [statements, conversionTable, pairs] = await Promise.all([
-      this.statementCatalog.findAllStatements(),
-      this.taxonomy.findAllConversionRanges(),
+      this.statementCatalog.findStatements(cmd.frameworkVersionId),
+      this.taxonomy.findConversionRanges(cmd.frameworkVersionId),
       this.taxonomy.findAllDimensionPairs(),
     ]);
 

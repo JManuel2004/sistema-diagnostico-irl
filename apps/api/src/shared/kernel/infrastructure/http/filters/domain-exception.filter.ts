@@ -95,7 +95,7 @@ export class DomainExceptionFilter implements ExceptionFilter {
 const STATUS_BY_CODE: Readonly<Record<string, number>> = {
   // Portfolio routing: the diagnostic or the configuration is not in the
   // state the operation requires. It is not the request's fault.
-  ROUTING_NO_ACTIVE_CONFIGURATION: HttpStatus.CONFLICT,
+  ROUTING_CONFIGURATION_MISSING: HttpStatus.CONFLICT,
   ROUTING_PROFILE_NOT_COMPUTED: HttpStatus.CONFLICT,
   ROUTING_RECOMMENDATION_NOT_GENERATED: HttpStatus.CONFLICT,
   // Malformed configuration: the input does not satisfy the contract.

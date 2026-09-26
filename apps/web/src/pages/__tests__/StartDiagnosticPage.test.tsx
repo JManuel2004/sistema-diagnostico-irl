@@ -22,7 +22,7 @@ const diagnostic = {
   completed: false,
   deepAnalysisAccepted: false,
   createdAt: '2026-01-01T00:00:00.000Z',
-  updatedAt: '2026-01-01T00:00:00.000Z',
+  frameworkVersion: 'KTH-IRL-1.0',
 };
 
 function renderPage() {

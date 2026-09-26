@@ -41,7 +41,7 @@ function renderStep(): ReturnType<typeof render> {
         <Routes>
           <Route
             path="/diagnosticos/:id/asistente/resumen"
-            element={<SummaryStep diagnosticId={DIAG_ID} />}
+            element={<SummaryStep diagnosticId={DIAG_ID} frameworkVersion="KTH-IRL-1.0" />}
           />
           <Route
             path="/diagnosticos/:id/asistente/cuestionario"
@@ -77,7 +77,7 @@ function withBackend(): void {
         completed: true,
         deepAnalysisAccepted: false,
         createdAt: '2026-01-01T00:00:00.000Z',
-        updatedAt: '2026-01-01T00:00:00.000Z',
+        frameworkVersion: 'KTH-IRL-1.0',
       }),
     ),
     mswHttp.get('*/api/v1/diagnostics', () => HttpResponse.json([])),
@@ -241,6 +241,10 @@ describe('SummaryStep — resumen antes de procesar', () => {
       expect(await screen.findByText('RESULTADOS_STUB')).toBeInTheDocument();
       expect(body?.answers).toHaveLength(48);
       expect(body?.answers.every((a) => a.justification === `Porque sí ${a.statementId}`)).toBe(true);
+      // Saved on the server: the browser draft is emptied.
+      await waitFor(() => {
+        expect(useQuestionnaireDraftStore.getState().answers).toEqual({});
+      });
     });
 
     it('muestra «Procesando…» y bloquea el botón mientras espera', async () => {

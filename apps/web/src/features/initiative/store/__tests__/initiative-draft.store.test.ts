@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { RegisterInitiativeCommand } from '@innlab/contracts';
-import { useInitiativeDraftStore } from '../initiative-draft.store';
+import { useInitiativeDraftStore, type InitiativeDraft } from '../initiative-draft.store';
 
-const COMMAND: RegisterInitiativeCommand = {
+const COMMAND: InitiativeDraft['command'] = {
   name: 'AgroConecta',
   sectorId: '1',
   productType: 'App web',
@@ -10,57 +9,67 @@ const COMMAND: RegisterInitiativeCommand = {
   declaredStage: 'Piloto completado',
   teamSize: 3,
   teamDescription: 'Fundadora y equipo',
+  academicLinkage: false,
   targetMarket: 'Productores de café',
   currentFunding: 'Ahorros',
 };
 
+const DRAFT: InitiativeDraft = { initiativeId: null, command: COMMAND };
+
 describe('initiative draft store', () => {
   beforeEach(() => {
     sessionStorage.clear();
-    useInitiativeDraftStore.setState({ diagnosticId: null, command: null });
+    useInitiativeDraftStore.setState({ diagnosticId: null, draft: null });
   });
 
   it('guarda el formulario del paso 1 mientras el consentimiento no está aceptado', () => {
     useInitiativeDraftStore.getState().initialize('d1');
-    useInitiativeDraftStore.getState().save(COMMAND);
+    useInitiativeDraftStore.getState().save(DRAFT);
 
-    expect(useInitiativeDraftStore.getState().command).toEqual(COMMAND);
+    expect(useInitiativeDraftStore.getState().draft).toEqual(DRAFT);
+  });
+
+  it('conserva la iniciativa elegida, o la que el paso 2 creó, junto al formulario', () => {
+    useInitiativeDraftStore.getState().initialize('d1');
+    useInitiativeDraftStore.getState().save({ initiativeId: 'i1', command: COMMAND });
+
+    expect(useInitiativeDraftStore.getState().draft?.initiativeId).toBe('i1');
   });
 
   it('cambiar de diagnóstico descarta el borrador del anterior', () => {
     useInitiativeDraftStore.getState().initialize('d1');
-    useInitiativeDraftStore.getState().save(COMMAND);
+    useInitiativeDraftStore.getState().save(DRAFT);
 
     useInitiativeDraftStore.getState().initialize('d2');
 
     expect(useInitiativeDraftStore.getState().diagnosticId).toBe('d2');
-    expect(useInitiativeDraftStore.getState().command).toBeNull();
+    expect(useInitiativeDraftStore.getState().draft).toBeNull();
   });
 
   it('inicializar con el mismo diagnóstico conserva el borrador', () => {
     useInitiativeDraftStore.getState().initialize('d1');
-    useInitiativeDraftStore.getState().save(COMMAND);
+    useInitiativeDraftStore.getState().save(DRAFT);
 
     useInitiativeDraftStore.getState().initialize('d1');
 
-    expect(useInitiativeDraftStore.getState().command).toEqual(COMMAND);
+    expect(useInitiativeDraftStore.getState().draft).toEqual(DRAFT);
   });
 
   it('se vacía al registrar la iniciativa, sin perder de qué diagnóstico es', () => {
     useInitiativeDraftStore.getState().initialize('d1');
-    useInitiativeDraftStore.getState().save(COMMAND);
+    useInitiativeDraftStore.getState().save(DRAFT);
 
     useInitiativeDraftStore.getState().clear();
 
-    expect(useInitiativeDraftStore.getState().command).toBeNull();
+    expect(useInitiativeDraftStore.getState().draft).toBeNull();
     expect(useInitiativeDraftStore.getState().diagnosticId).toBe('d1');
   });
 
   it('vive en sessionStorage, no en localStorage: muere con la pestaña', () => {
     useInitiativeDraftStore.getState().initialize('d1');
-    useInitiativeDraftStore.getState().save(COMMAND);
+    useInitiativeDraftStore.getState().save(DRAFT);
 
-    expect(sessionStorage.getItem('innlab.initiative-draft.v1')).toContain('AgroConecta');
-    expect(localStorage.getItem('innlab.initiative-draft.v1')).toBeNull();
+    expect(sessionStorage.getItem('innlab.initiative-draft.v2')).toContain('AgroConecta');
+    expect(localStorage.getItem('innlab.initiative-draft.v2')).toBeNull();
   });
 });

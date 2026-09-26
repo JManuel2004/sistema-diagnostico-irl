@@ -22,4 +22,10 @@ export interface DiagnosticOwnershipPort {
     diagnosticId: string,
     userId: string,
   ): Promise<Result<void, NotFoundError | ForbiddenError>>;
+
+  /**
+   * Whether the diagnostic's deep analysis was accepted: its initiative
+   * profile is then frozen, because the recommendation was computed from it.
+   */
+  deepAnalysisAccepted(diagnosticId: string): Promise<boolean>;
 }

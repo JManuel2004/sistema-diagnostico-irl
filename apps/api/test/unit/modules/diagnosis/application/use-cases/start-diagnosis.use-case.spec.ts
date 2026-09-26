@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import { diagnosticSchema } from '@innlab/contracts';
 import { StartDiagnosisUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/start-diagnosis.use-case.js';
 import type { DiagnosisRepositoryPort } from '../../../../../../src/modules/diagnosis/domain/repositories/diagnosis.repository.port.js';
+import { frameworkTaxonomy } from '../../support/framework-taxonomy.js';
 import { Diagnosis } from '../../../../../../src/modules/diagnosis/domain/entities/diagnosis.aggregate.js';
 
 const EXISTING_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
@@ -12,7 +13,7 @@ function existing(state: string): Diagnosis {
     userId: 'user-1',
     state,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
-    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    frameworkVersionId: 1,
   });
 }
 
@@ -26,10 +27,10 @@ describe('StartDiagnosisUseCase', () => {
     findLatestByUserId = jest
       .fn<DiagnosisRepositoryPort['findLatestByUserId']>()
       .mockResolvedValue(null);
-    useCase = new StartDiagnosisUseCase({
-      save,
-      findLatestByUserId,
-    } as unknown as DiagnosisRepositoryPort);
+    useCase = new StartDiagnosisUseCase(
+      { save, findLatestByUserId } as unknown as DiagnosisRepositoryPort,
+      frameworkTaxonomy(),
+    );
   });
 
   describe('when the user has no diagnostic', () => {
@@ -42,6 +43,8 @@ describe('StartDiagnosisUseCase', () => {
       expect(result.state).toBe('STARTED');
       expect(result.completed).toBe(false);
       expect(result.deepAnalysisAccepted).toBe(false);
+      // Answered with the current framework version.
+      expect(result.frameworkVersion).toBe('KTH-IRL-1.0');
     });
 
     it('saves the diagnostic it returns', async () => {

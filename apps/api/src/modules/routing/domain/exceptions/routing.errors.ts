@@ -9,13 +9,13 @@ import { DomainError } from '../../../../shared/kernel/domain/errors/domain-erro
  */
 
 /** No routing configuration has been seeded. */
-export class NoActiveConfigurationError extends DomainError {
-  override readonly code = 'ROUTING_NO_ACTIVE_CONFIGURATION';
+export class RoutingConfigurationMissingError extends DomainError {
+  override readonly code = 'ROUTING_CONFIGURATION_MISSING';
 
   constructor(details?: Record<string, unknown>) {
     super(
-      'No hay una versión de configuración de enrutamiento vigente. ' +
-        'Publique una versión antes de generar recommendations.',
+      'No hay configuración de enrutamiento cargada. ' +
+        'Ejecute el seed del catálogo antes de generar recomendaciones.',
     );
     this.details = details;
   }

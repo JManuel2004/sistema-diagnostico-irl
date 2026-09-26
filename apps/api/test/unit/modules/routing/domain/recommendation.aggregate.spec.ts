@@ -7,12 +7,12 @@ import type { ScoredCandidate } from '../../../../../src/modules/routing/domain/
 import { Uuid } from '../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
 import {
   CalibrationNotMonotonicError,
-  NoActiveConfigurationError,
+  RoutingConfigurationMissingError,
   PredicateCompilationError,
   ProfileNotComputedError,
   RecommendationNotGeneratedError,
 } from '../../../../../src/modules/routing/domain/exceptions/routing.errors.js';
-import { ACTIVE_CONFIGURATION_REPOSITORY } from '../../../../../src/modules/routing/domain/repositories/active-configuration.repository.port.js';
+import { ROUTING_CONFIGURATION_REPOSITORY } from '../../../../../src/modules/routing/domain/repositories/routing-configuration.repository.port.js';
 import { RECOMMENDATION_REPOSITORY } from '../../../../../src/modules/routing/domain/repositories/recommendation.repository.port.js';
 import { INITIATIVE_CHARACTERIZATION_READER } from '../../../../../src/modules/routing/domain/repositories/initiative-characterization.port.js';
 
@@ -168,8 +168,8 @@ describe('Recommendation (agregado)', () => {
 
 describe('errores del módulo de enrutamiento', () => {
   it('cada error expone un código estable, que es el contrato del cliente', () => {
-    expect(new NoActiveConfigurationError().code).toBe(
-      'ROUTING_NO_ACTIVE_CONFIGURATION',
+    expect(new RoutingConfigurationMissingError().code).toBe(
+      'ROUTING_CONFIGURATION_MISSING',
     );
     expect(new ProfileNotComputedError(DIAG).code).toBe(
       'ROUTING_PROFILE_NOT_COMPUTED',
@@ -193,7 +193,7 @@ describe('errores del módulo de enrutamiento', () => {
   it('los puertos se identifican por símbolo, no por name de clase', () => {
     // It is what lets the application depend on the port and never on
     // the concrete adapter.
-    expect(typeof ACTIVE_CONFIGURATION_REPOSITORY).toBe('symbol');
+    expect(typeof ROUTING_CONFIGURATION_REPOSITORY).toBe('symbol');
     expect(typeof RECOMMENDATION_REPOSITORY).toBe('symbol');
     expect(typeof INITIATIVE_CHARACTERIZATION_READER).toBe('symbol');
   });

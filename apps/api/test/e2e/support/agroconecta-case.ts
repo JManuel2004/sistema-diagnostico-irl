@@ -54,6 +54,7 @@ export function agroconectaInitiative(ids: { sectorId: string; stageId: string }
     teamSize: 3,
     teamDescription:
       '3 personas — 1 fundadora agrónoma (tiempo completo), 1 coordinadora de operaciones (medio tiempo), 1 desarrollador externo contratado por proyecto',
+    academicLinkage: false,
     targetMarket:
       'Productores de café de pequeña escala y compradores exportadores en el suroccidente colombiano (Cauca y Valle del Cauca)',
     currentFunding: 'Ahorros de la fundadora + un incentivo regional de innovación de COP 25M',

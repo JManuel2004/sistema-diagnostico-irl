@@ -5,8 +5,8 @@ import { ApplyInitiativeToDiagnosisUseCase } from '../../application/use-cases/a
 
 /**
  * Translates `InitiativeRegisteredEvent` into the state change `diagnosis/`
- * owns. A `Result.err` is logged and swallowed, the same as
- * `ConsentRecordedListener`: the initiative is already saved.
+ * owns. A `Result.err` is logged and swallowed: the initiative profile is
+ * already saved.
  */
 @Injectable()
 export class InitiativeRegisteredListener {

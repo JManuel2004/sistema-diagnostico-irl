@@ -61,8 +61,11 @@ export const diagnosticSchema = z
       .describe(
         'Whether the user already accepted the deep analysis — derived from the state by the backend',
       ),
+    frameworkVersion: z
+      .string()
+      .min(1)
+      .describe('Code of the IRL framework version the diagnostic is answered with'),
     createdAt: z.string().datetime(),
-    updatedAt: z.string().datetime(),
   })
   .describe('Diagnostic (read DTO)');
 

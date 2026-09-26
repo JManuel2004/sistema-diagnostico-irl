@@ -46,7 +46,16 @@ export default [
     },
     settings: {
       react: { version: 'detect' },
+      // The imports use the `@/` and `@features/` aliases of the tsconfig;
+      // without a TypeScript-aware resolver the plugin cannot resolve their
+      // target, treats it as unresolved and silently skips the check.
+      'import/resolver': {
+        typescript: { project: './tsconfig.app.json' },
+      },
       'boundaries/elements': [
+        // Listed first: a test file belongs to no layer and may use the
+        // shared test helpers (`src/test/`) next to what it tests.
+        { type: 'spec', pattern: 'src/**/__tests__/**' },
         { type: 'app', pattern: 'src/app/**' },
         { type: 'pages', pattern: 'src/pages/**' },
         { type: 'feature', pattern: 'src/features/*/**', capture: ['feature'] },
@@ -63,19 +72,33 @@ export default [
         { allowConstantExport: true },
       ],
       // Feature isolation.
-      'boundaries/element-types': [
+      'boundaries/dependencies': [
         'error',
         {
           default: 'disallow',
           rules: [
-            { from: 'app', allow: ['app', 'pages', 'feature', 'shared', 'styles'] },
-            { from: 'pages', allow: ['feature', 'shared'] },
             {
-              from: 'feature',
-              allow: [['feature', { feature: '${from.feature}' }], 'shared'],
+              from: { type: 'app' },
+              allow: { to: { type: ['app', 'pages', 'feature', 'shared', 'styles'] } },
             },
-            { from: 'shared', allow: ['shared'] },
-            { from: 'test', allow: ['app', 'pages', 'feature', 'shared'] },
+            { from: { type: 'pages' }, allow: { to: { type: ['feature', 'shared'] } } },
+            {
+              // A feature reaches only itself and `shared/`, never another feature.
+              from: { type: 'feature' },
+              allow: [
+                { to: { type: 'feature', captured: { feature: '{{ from.captured.feature }}' } } },
+                { to: { type: 'shared' } },
+              ],
+            },
+            { from: { type: 'shared' }, allow: { to: { type: 'shared' } } },
+            {
+              from: { type: 'test' },
+              allow: { to: { type: ['app', 'pages', 'feature', 'shared'] } },
+            },
+            {
+              from: { type: 'spec' },
+              allow: { to: { type: ['app', 'pages', 'feature', 'shared', 'test', 'spec'] } },
+            },
           ],
         },
       ],

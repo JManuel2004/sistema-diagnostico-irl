@@ -8,27 +8,29 @@ import { DataSource } from 'typeorm';
 import request from 'supertest';
 import nock from 'nock';
 import { randomUUID } from 'node:crypto';
+import { consentTermsSchema, initiativeSummarySchema } from '@innlab/contracts';
 import { AppModule } from '../../../../src/app.module.js';
 import { configureApp } from '../../../../src/shared/kernel/infrastructure/http/configure-app.js';
-import {
-  E2E_USER,
-  authenticateAgainst,
-} from '../../support/authenticated-app.js';
+import { authenticateAgainst } from '../../support/authenticated-app.js';
 import { agroconectaInitiative } from '../../support/agroconecta-case.js';
 
 /**
- * E2E — consent (RF-03) and initiative registration (RF-04) against the
- * real `AppModule`.
+ * E2E — initiatives, their consent (RF-03) and the initiative profile of a
+ * diagnostic (RF-04) against the real `AppModule`.
  *
- * Covers what the unit tests cannot: that the `ConsentRecordedEvent`
- * published by `initiative/` really reaches `diagnosis/`'s listener and
- * moves the diagnostic's state in the database, and that the ownership
- * check rejects foreign or missing diagnostics before writing anything.
+ * Covers what the unit tests cannot: the consent history and its keys in
+ * the database, that registering the profile moves the diagnostic's state
+ * through `InitiativeRegisteredEvent`, and that the ownership checks reject
+ * foreign or missing diagnostics and initiatives before writing anything.
  *
- * Needs the migrated and seeded database. Creates its own data with random
- * identifiers and deletes it when done.
+ * Uses a user of its own: other suites create initiatives for the default
+ * e2e user in parallel. Needs the migrated and seeded database; creates its
+ * own data with random identifiers and deletes it when done.
  */
-describe('Consentimiento e iniciativa (e2e)', () => {
+describe('Initiatives and consent (e2e)', () => {
+  const USER = `e2e-consent-${randomUUID()}`;
+  const OTHER = `e2e-consent-other-${randomUUID()}`;
+
   let app: NestFastifyApplication;
   let dataSource: DataSource;
   let agent: ReturnType<typeof request.agent>;
@@ -36,16 +38,16 @@ describe('Consentimiento e iniciativa (e2e)', () => {
   let stageId: string;
 
   const own = randomUUID();
-  const ownWithoutConsent = randomUUID();
+  const frozen = randomUUID();
   const foreign = randomUUID();
   const missing = randomUUID();
+  const foreignInitiative = randomUUID();
 
-  async function createDiagnostic(id: string, userId: string): Promise<void> {
+  async function createDiagnostic(id: string, userId: string, state = 'STARTED'): Promise<void> {
     await dataSource.query(
-      `INSERT INTO irl_diagnostic.diagnostic
-         (id, cognito_user_id, state, irl_framework_version)
-       VALUES ($1, $2, 'STARTED', 'KTH-IRL-1.0')`,
-      [id, userId],
+      `INSERT INTO irl_diagnostic.diagnostic (id, cognito_user_id, state, id_framework_version)
+       VALUES ($1, $2, $3, (SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
+      [id, userId, state],
     );
   }
 
@@ -57,12 +59,21 @@ describe('Consentimiento e iniciativa (e2e)', () => {
     return row.state;
   }
 
-  async function countDiagnostics(table: string, id: string): Promise<number> {
+  async function profilesOf(diagnosticId: string): Promise<number> {
     const [row] = await dataSource.query<{ n: string }[]>(
-      `SELECT COUNT(*)::text AS n FROM irl_diagnostic.${table} WHERE id_diagnostic = $1`,
-      [id],
+      `SELECT COUNT(*)::text AS n FROM irl_diagnostic.initiative_profile WHERE id_diagnostic = $1`,
+      [diagnosticId],
     );
     return Number(row.n);
+  }
+
+  async function createInitiative(): Promise<string> {
+    const res = await agent.post('/api/v1/initiatives').send({ version: 'v1' }).expect(201);
+    return initiativeSummarySchema.parse(res.body).id;
+  }
+
+  function profileBody(initiativeId: string) {
+    return { initiativeId, ...agroconectaInitiative({ sectorId, stageId }) };
   }
 
   beforeAll(async () => {
@@ -76,14 +87,16 @@ describe('Consentimiento e iniciativa (e2e)', () => {
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 
-    agent = request
-      .agent(app.getHttpServer())
-      .set('Authorization', authenticateAgainst(app));
+    agent = request.agent(app.getHttpServer()).set('Authorization', authenticateAgainst(app, USER));
 
     dataSource = app.get(DataSource);
-    await createDiagnostic(own, E2E_USER.sub);
-    await createDiagnostic(ownWithoutConsent, E2E_USER.sub);
-    await createDiagnostic(foreign, 'otro-usuario');
+    await createDiagnostic(own, USER);
+    await createDiagnostic(frozen, USER, 'DEEP_ANALYSIS_IN_PROGRESS');
+    await createDiagnostic(foreign, OTHER);
+    await dataSource.query(
+      `INSERT INTO irl_diagnostic.initiative (id, cognito_user_id) VALUES ($1, $2)`,
+      [foreignInitiative, OTHER],
+    );
 
     await dataSource.query(
       `INSERT INTO irl_catalog.sector (name, is_active)
@@ -102,116 +115,120 @@ describe('Consentimiento e iniciativa (e2e)', () => {
 
   afterAll(async () => {
     if (dataSource?.isInitialized) {
-      for (const id of [own, ownWithoutConsent, foreign]) {
-        await dataSource.query(
-          `DELETE FROM irl_diagnostic.consent WHERE id_diagnostic = $1`,
-          [id],
-        );
-        await dataSource.query(
-          `DELETE FROM irl_diagnostic.initiative WHERE id_diagnostic = $1`,
-          [id],
-        );
-        await dataSource.query(
-          `DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`,
-          [id],
-        );
-      }
+      await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE id = ANY($1)`, [
+        [own, frozen, foreign],
+      ]);
+      await dataSource.query(
+        `DELETE FROM irl_diagnostic.initiative WHERE cognito_user_id = ANY($1)`,
+        [[USER, OTHER]],
+      );
     }
     nock.cleanAll();
     await app?.close();
   });
 
-  describe('consentimiento', () => {
-    it('registrarlo mueve el diagnóstico de STARTED a WITH_CONSENT', async () => {
-      expect(await stateOf(own)).toBe('STARTED');
+  describe('consent text', () => {
+    it('serves the current text, the one to accept', async () => {
+      const res = await agent.get('/api/v1/consent-terms/current').expect(200);
 
-      const res = await agent
-        .post(`/api/v1/diagnostics/${own}/consent`)
-        .send({ version: 'v1' })
-        .expect(201);
-
-      expect((res.body as { diagnosticId: string }).diagnosticId).toBe(own);
-      expect(await stateOf(own)).toBe('WITH_CONSENT');
-      expect(await countDiagnostics('consent', own)).toBe(1);
-
-      await agent.get(`/api/v1/diagnostics/${own}/consent`).expect(200);
-    });
-
-    it('registrarlo de nuevo es idempotente en el estado', async () => {
-      await agent
-        .post(`/api/v1/diagnostics/${own}/consent`)
-        .send({ version: 'v1' })
-        .expect(201);
-
-      expect(await stateOf(own)).toBe('WITH_CONSENT');
-    });
-
-    it('rechaza con 403 un diagnóstico ajeno y no escribe nada', async () => {
-      await agent
-        .post(`/api/v1/diagnostics/${foreign}/consent`)
-        .send({ version: 'v1' })
-        .expect(403);
-
-      expect(await countDiagnostics('consent', foreign)).toBe(0);
-      expect(await stateOf(foreign)).toBe('STARTED');
-    });
-
-    it('rechaza con 404 un diagnóstico que no existe', async () => {
-      await agent
-        .post(`/api/v1/diagnostics/${missing}/consent`)
-        .send({ version: 'v1' })
-        .expect(404);
-    });
-
-    it('rechaza con 409 una versión de términos desactualizada, sin avanzar el estado', async () => {
-      await agent
-        .post(`/api/v1/diagnostics/${ownWithoutConsent}/consent`)
-        .send({ version: 'v0' })
-        .expect(409);
-
-      expect(await countDiagnostics('consent', ownWithoutConsent)).toBe(0);
-      expect(await stateOf(ownWithoutConsent)).toBe('STARTED');
-    });
-
-    it('rechaza con 422 una versión que no cumple el formato del contrato', async () => {
-      await agent
-        .post(`/api/v1/diagnostics/${ownWithoutConsent}/consent`)
-        .send({ version: 'v0-vieja' })
-        .expect(422);
-
-      expect(await countDiagnostics('consent', ownWithoutConsent)).toBe(0);
+      const terms = consentTermsSchema.parse(res.body);
+      expect(terms.version).toBe('v1');
+      expect(terms.sections.length).toBeGreaterThan(0);
     });
   });
 
-  describe('registro de iniciativa', () => {
-    const initiativeBody = () => agroconectaInitiative({ sectorId, stageId });
+  describe('initiatives', () => {
+    it('creates an initiative with its consent and lists it for its owner only', async () => {
+      const id = await createInitiative();
 
-    it('registra la iniciativa de un diagnóstico propio', async () => {
+      const res = await agent.get('/api/v1/initiatives').expect(200);
+      const listed = initiativeSummarySchema.array().parse(res.body);
+
+      expect(listed.map((i) => i.id)).toContain(id);
+      expect(listed.map((i) => i.id)).not.toContain(foreignInitiative);
+      const created = listed.find((i) => i.id === id);
+      expect(created?.consentCurrent).toBe(true);
+      expect(created?.consent?.version).toBe('v1');
+    });
+
+    it('refuses to create an initiative with an outdated version (409) or a malformed one (422)', async () => {
+      await agent.post('/api/v1/initiatives').send({ version: 'v0' }).expect(409);
+      await agent.post('/api/v1/initiatives').send({ version: 'vieja' }).expect(422);
+    });
+
+    it('accepting the consent again adds to the history instead of replacing it', async () => {
+      const id = await createInitiative();
+
+      await agent.post(`/api/v1/initiatives/${id}/consent`).send({ version: 'v1' }).expect(201);
+
+      const [{ n }] = await dataSource.query<{ n: string }[]>(
+        `SELECT COUNT(*)::text AS n FROM irl_diagnostic.consent WHERE id_initiative = $1`,
+        [id],
+      );
+      expect(Number(n)).toBe(2);
+    });
+
+    it("answers 404 for a missing initiative and 403 for someone else's", async () => {
+      await agent
+        .post(`/api/v1/initiatives/${randomUUID()}/consent`)
+        .send({ version: 'v1' })
+        .expect(404);
+      await agent
+        .post(`/api/v1/initiatives/${foreignInitiative}/consent`)
+        .send({ version: 'v1' })
+        .expect(403);
+    });
+  });
+
+  describe("profile of a diagnostic's initiative", () => {
+    it('registering it moves the diagnostic from STARTED to WITH_INITIATIVE', async () => {
+      const initiativeId = await createInitiative();
+      expect(await stateOf(own)).toBe('STARTED');
+
       const res = await agent
         .post(`/api/v1/diagnostics/${own}/initiative`)
-        .send(initiativeBody())
+        .send(profileBody(initiativeId))
         .expect(201);
 
-      expect((res.body as { diagnosticId: string }).diagnosticId).toBe(own);
-      expect(await countDiagnostics('initiative', own)).toBe(1);
-      // `diagnosis/` reacts to the event and moves the diagnostic on.
+      expect(res.body).toMatchObject({ initiativeId, diagnosticId: own });
       expect(await stateOf(own)).toBe('WITH_INITIATIVE');
+      await agent.get(`/api/v1/diagnostics/${own}/initiative`).expect(200);
     });
 
-    it('rechaza con 403 un diagnóstico ajeno y no escribe nada', async () => {
+    it("refuses someone else's diagnostic (403) and a missing one (404), writing nothing", async () => {
+      const initiativeId = await createInitiative();
+
       await agent
         .post(`/api/v1/diagnostics/${foreign}/initiative`)
-        .send(initiativeBody())
+        .send(profileBody(initiativeId))
         .expect(403);
-
-      expect(await countDiagnostics('initiative', foreign)).toBe(0);
-    });
-
-    it('rechaza con 404 un diagnóstico que no existe', async () => {
       await agent
         .post(`/api/v1/diagnostics/${missing}/initiative`)
-        .send(initiativeBody())
+        .send(profileBody(initiativeId))
         .expect(404);
+
+      expect(await profilesOf(foreign)).toBe(0);
+    });
+
+    it("refuses someone else's initiative (403)", async () => {
+      await agent
+        .post(`/api/v1/diagnostics/${own}/initiative`)
+        .send(profileBody(foreignInitiative))
+        .expect(403);
+    });
+
+    it('is frozen once the deep analysis is accepted (409)', async () => {
+      const initiativeId = await createInitiative();
+
+      await agent
+        .post(`/api/v1/diagnostics/${frozen}/initiative`)
+        .send(profileBody(initiativeId))
+        .expect(409);
+      expect(await profilesOf(frozen)).toBe(0);
+    });
+
+    it("refuses to read someone else's initiative profile with 403", async () => {
+      await agent.get(`/api/v1/diagnostics/${foreign}/initiative`).expect(403);
     });
   });
 });

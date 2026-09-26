@@ -1,13 +1,13 @@
 import { useEffect, type JSX } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { LogoutButton } from '@features/auth';
-import { useConsent } from '@features/consent';
 import {
-  selectDraftCommand,
+  selectDraft,
   selectDraftDiagnosticId,
   selectDraftInitialize,
   useInitiative,
   useInitiativeDraftStore,
+  useMyInitiatives,
 } from '@features/initiative';
 import {
   selectDraftDiagnosticId as selectQuestionnaireDiagnosticId,
@@ -42,7 +42,8 @@ import {
  * only at the end reaches the results, which is where navigation appears.
  *
  * Which step applies is decided by what the server already has (the
- * initiative, the consent) and not by a local flag: resuming a diagnostic
+ * initiative profile of the diagnostic, which is only registered once the
+ * initiative's consent is accepted) and not by a local flag: resuming a diagnostic
  * lands on the first missing step, and a later one cannot be skipped to. If
  * the diagnostic already has results, there is nothing to resume and they
  * open instead.
@@ -51,13 +52,13 @@ export default function DiagnosticWizardPage(): JSX.Element {
   const { id: diagnosticId, step } = useParams<{ id: string; step: string }>();
 
   const diagnostic = useDiagnostic(diagnosticId);
-  const consent = useConsent(diagnosticId);
   const initiative = useInitiative(diagnosticId);
+  const initiatives = useMyInitiatives();
 
   // Browser drafts belong to one diagnostic; another one's does not count.
   const initializeInitiativeDraft = useInitiativeDraftStore(selectDraftInitialize);
   const initiativeDraftOwner = useInitiativeDraftStore(selectDraftDiagnosticId);
-  const initiativeDraft = useInitiativeDraftStore(selectDraftCommand);
+  const initiativeDraft = useInitiativeDraftStore(selectDraft);
   const initializeQuestionnaireDraft = useQuestionnaireDraftStore(selectQuestionnaireInitialize);
   const questionnaireDraftOwner = useQuestionnaireDraftStore(selectQuestionnaireDiagnosticId);
 
@@ -74,8 +75,8 @@ export default function DiagnosticWizardPage(): JSX.Element {
 
   if (!diagnosticId) return <Navigate to={paths.landing} replace />;
 
-  const pending = diagnostic.isPending || consent.isPending || initiative.isPending;
-  const failed = diagnostic.isError || consent.isError || initiative.isError;
+  const pending = diagnostic.isPending || initiative.isPending || initiatives.isPending;
+  const failed = diagnostic.isError || initiative.isError || initiatives.isError;
   const draftsReady =
     initiativeDraftOwner === diagnosticId && questionnaireDraftOwner === diagnosticId;
 
@@ -83,14 +84,14 @@ export default function DiagnosticWizardPage(): JSX.Element {
     return <Navigate to={paths.results(diagnosticId)} replace />;
   }
 
-  if (!pending && !failed && diagnostic.data && draftsReady) {
+  if (!pending && !failed && diagnostic.data && initiatives.data && draftsReady) {
     const draft = initiativeDraft;
     const registered = initiative.data ?? null;
-    const consentRecord = consent.data ?? null;
+    const frameworkVersion = diagnostic.data.frameworkVersion;
 
     const target = firstPendingStep({
       initiativeReady: registered !== null || draft !== null,
-      consentDone: consentRecord !== null && registered !== null,
+      consentDone: registered !== null,
     });
 
     if (!isWizardStep(step) || !isReachable(step, target)) {
@@ -118,19 +119,23 @@ export default function DiagnosticWizardPage(): JSX.Element {
             diagnosticId={diagnosticId}
             registered={registered}
             draft={draft}
-            consentRecorded={consentRecord !== null}
+            initiatives={initiatives.data}
           />
         )}
         {step === 'consentimiento' && (
           <ConsentStep
             diagnosticId={diagnosticId}
-            consent={consentRecord}
-            initiative={registered}
+            registered={registered}
             draft={draft}
+            initiatives={initiatives.data}
           />
         )}
-        {step === 'cuestionario' && <QuestionnaireStep diagnosticId={diagnosticId} />}
-        {step === 'resumen' && <SummaryStep diagnosticId={diagnosticId} />}
+        {step === 'cuestionario' && (
+          <QuestionnaireStep diagnosticId={diagnosticId} frameworkVersion={frameworkVersion} />
+        )}
+        {step === 'resumen' && (
+          <SummaryStep diagnosticId={diagnosticId} frameworkVersion={frameworkVersion} />
+        )}
       </PageShell>
     );
   }

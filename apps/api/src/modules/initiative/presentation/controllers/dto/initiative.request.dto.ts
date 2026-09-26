@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsInt,
+  IsUUID,
   IsNotEmpty,
   IsString,
   Matches,
@@ -14,7 +16,10 @@ import {
   type RegisterInitiativeCommand,
 } from '@innlab/contracts';
 
-/** Body of `POST diagnostics/:id/consent`. */
+/**
+ * Body of `POST initiatives` (create an initiative accepting its consent)
+ * and of `POST initiatives/:id/consent` (accept a new version of the text).
+ */
 export class RecordConsentRequestDto implements RegisterConsentCommand {
   @ApiProperty({
     example: 'v1',
@@ -30,6 +35,10 @@ export class RecordConsentRequestDto implements RegisterConsentCommand {
  * and the use case.
  */
 export class RegisterInitiativeRequestDto implements RegisterInitiativeCommand {
+  @ApiProperty({ format: 'uuid', description: 'The initiative whose profile this is' })
+  @IsUUID()
+  initiativeId!: string;
+
   @ApiProperty({ example: 'AgroConecta', minLength: 3, maxLength: 120 })
   @IsString()
   @MaxLength(120)
@@ -68,6 +77,10 @@ export class RegisterInitiativeRequestDto implements RegisterInitiativeCommand {
   @IsString()
   @MaxLength(INITIATIVE_TEXT_MAX)
   teamDescription!: string;
+
+  @ApiProperty({ description: 'Whether the initiative has a confirmed link with the university' })
+  @IsBoolean()
+  academicLinkage!: boolean;
 
   @ApiProperty({ maxLength: INITIATIVE_TEXT_MAX })
   @IsString()

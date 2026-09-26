@@ -43,10 +43,10 @@ function rule(
   idService: number,
   predicate: unknown,
   message: string,
-  ruleId = 'R',
+  code = 'R',
 ): CompiledEligibilityRule {
   return {
-    ruleId,
+    code,
     idService,
     expression: compiler.compile(predicate, 'BOOLEAN'),
     exclusionMessage: message,
@@ -76,6 +76,7 @@ describe('EligibilityFilterService', () => {
     ]);
     expect(excluded).toEqual([
       {
+        ruleCode: 'R',
         idService: 2,
         name: 'Retos',
         exclusionMessage: 'Retos requiere al menos 2 personas',

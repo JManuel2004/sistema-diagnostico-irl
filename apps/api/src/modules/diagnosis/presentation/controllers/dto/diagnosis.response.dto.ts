@@ -30,8 +30,9 @@ export class DiagnosticResponseDto implements Diagnostic {
   completed!: boolean;
   @ApiProperty({ description: 'The user accepted the deep analysis' })
   deepAnalysisAccepted!: boolean;
+  @ApiProperty({ example: 'KTH-IRL-1.0', description: 'IRL framework version it is answered with' })
+  frameworkVersion!: string;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
-  @ApiProperty({ format: 'date-time' }) updatedAt!: string;
 }
 
 export class AcceptDeepAnalysisResponseDto implements AcceptDeepAnalysisResponse {

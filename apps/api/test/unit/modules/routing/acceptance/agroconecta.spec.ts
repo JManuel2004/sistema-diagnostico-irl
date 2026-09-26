@@ -102,7 +102,7 @@ function buildEngine() {
 
   const eligibilityRules: CompiledEligibilityRule[] =
     ELIGIBILITY_RULES.map((r) => ({
-      ruleId: r.code,
+      code: r.code,
       idService: ID_BY_SERVICE.get(r.service)!,
       expression: compiler.compile(r.predicate, 'BOOLEAN'),
       exclusionMessage: r.exclusionMessage,

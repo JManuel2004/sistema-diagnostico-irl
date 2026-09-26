@@ -5,7 +5,7 @@ import type {
   DiagnosticFacts,
   RecommendationResponse,
 } from '@innlab/contracts';
-import { type ActiveConfigurationRepositoryPort } from '../../domain/repositories/active-configuration.repository.port.js';
+import { type RoutingConfigurationRepositoryPort } from '../../domain/repositories/routing-configuration.repository.port.js';
 import { type RecommendationRepositoryPort } from '../../domain/repositories/recommendation.repository.port.js';
 import { type InitiativeCharacterizationPort } from '../../domain/repositories/initiative-characterization.port.js';
 import type { OrdinalTranslatorService } from '../../domain/services/ordinal-translator.service.js';
@@ -15,7 +15,7 @@ import type { ExceptionEngineService } from '../../domain/services/exception-eng
 import { Recommendation } from '../../domain/entities/recommendation.aggregate.js';
 import { PortfolioRecommendationCalculatedEvent } from '../../../../shared/kernel/events/portfolio-recommendation-calculated.event.js';
 import {
-  NoActiveConfigurationError,
+  RoutingConfigurationMissingError,
   ProfileNotComputedError,
 } from '../../domain/exceptions/routing.errors.js';
 import type { GetMaturityProfileUseCase } from '../../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
@@ -38,7 +38,7 @@ export interface GenerateRecommendationCommand {
  */
 export class GenerateRecommendationUseCase {
   constructor(
-    private readonly configuration: ActiveConfigurationRepositoryPort,
+    private readonly configuration: RoutingConfigurationRepositoryPort,
     private readonly recommendations: RecommendationRepositoryPort,
     private readonly characterizations: InitiativeCharacterizationPort,
     private readonly maturityProfiles: GetMaturityProfileUseCase,
@@ -54,7 +54,7 @@ export class GenerateRecommendationUseCase {
   ): Promise<
     Result<
       RecommendationResponse,
-      NoActiveConfigurationError | ProfileNotComputedError
+      RoutingConfigurationMissingError | ProfileNotComputedError
     >
   > {
     const diagnosticId = Uuid.create(cmd.diagnosticId);
@@ -62,7 +62,7 @@ export class GenerateRecommendationUseCase {
     const config = await this.configuration.load();
     if (!config) {
       return Result.err(
-        new NoActiveConfigurationError({ diagnosticId: diagnosticId.value }),
+        new RoutingConfigurationMissingError({ diagnosticId: diagnosticId.value }),
       );
     }
 

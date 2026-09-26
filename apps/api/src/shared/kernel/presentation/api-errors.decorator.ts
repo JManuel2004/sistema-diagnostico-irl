@@ -1,6 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
 import {
   ApiConflictResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
@@ -15,13 +16,20 @@ const PROBLEM =
  * where listed.
  */
 export function ApiErrors(
-  ...statuses: readonly (404 | 409 | 422)[]
+  ...statuses: readonly (403 | 404 | 409 | 422)[]
 ): MethodDecorator {
   const decorators: MethodDecorator[] = [
     ApiUnauthorizedResponse({
       description: `Missing or invalid access token. ${PROBLEM}`,
     }),
   ];
+  if (statuses.includes(403)) {
+    decorators.push(
+      ApiForbiddenResponse({
+        description: `The diagnostic belongs to another user. ${PROBLEM}`,
+      }),
+    );
+  }
   if (statuses.includes(404)) {
     decorators.push(
       ApiNotFoundResponse({
