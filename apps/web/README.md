@@ -148,7 +148,7 @@ Older routes (`/perfil`, `/recomendacion`, `/roadmap`, `/consentimiento`, `/cues
 | Form                           | Tool                                   | Why                                                                                   |
 | ------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------- |
 | Consent (one checkbox)         | `useState`                             | A single boolean                                                                      |
-| Initiative (nine fields)       | React Hook Form + `zodResolver`        | Validated with the contract's `registerInitiativeSchema`, the same one the API applies |
+| Initiative (ten fields)        | React Hook Form + `zodResolver`        | Validated with the contract's `registerInitiativeSchema`, the same one the API applies |
 | **Questionnaire (48 answers)** | Zustand draft + contract validation    | 48 fields across components, persisted between reloads; the store drives progress    |
 
 The outcome of an action (consent recorded, initiative saved, diagnostic processed, deep analysis ready, and their failures) is announced with a toast through `notify.success` / `notify.error` (`shared/ui/notify.ts`). Errors while loading a screen are shown inline with `Alert`.

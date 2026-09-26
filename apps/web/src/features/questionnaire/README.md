@@ -1,6 +1,6 @@
 # `features/questionnaire`
 
-The IRL questionnaire in the browser: the 48 statements grouped by dimension, the Likert answer and the justification of each one, the progress, and the summary table shown before processing. It talks to `diagnosis` (`GET catalog/questionnaire`); sending the answers is `finalize-initial`, in `shared/` because the wizard's summary step owns it.
+The IRL questionnaire in the browser: the 48 statements grouped by dimension, the Likert answer and the justification of each one, the progress, and the summary table shown before processing. It talks to `diagnosis` (`GET catalog/questionnaire?version=`, the diagnostic's framework version, which every hook and `QuestionnaireView` receive); sending the answers is `finalize-initial`, in `shared/` because the wizard's summary step owns it.
 
 ## What it holds
 

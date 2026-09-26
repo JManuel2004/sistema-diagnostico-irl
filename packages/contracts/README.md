@@ -58,8 +58,8 @@ packages/contracts/
 │   │   └── …                          # maturity profile: dimension-result, bottleneck,
 │   │                                  #   gaps, asymmetry, imbalance, critical-state, profile-response
 │   ├── initiative/                    # modules/initiative
-│   │   ├── initiative.schema.ts
-│   │   └── consent.schema.ts
+│   │   ├── initiative.schema.ts       # initiatives (summary), the profile of a diagnostic
+│   │   └── consent.schema.ts          # consent texts, an acceptance of an initiative
 │   ├── routing/                       # modules/routing
 │   │   └── …                          # predicate, diagnostic-facts,
 │   │                                  #   recommendation-response, layer-trace
@@ -105,4 +105,4 @@ The backend validates request bodies with class-validator DTOs, because Nest's v
 
 - **Responses:** each backend response DTO `implements` the contract type it documents, so a field the contract adds or renames breaks the backend build.
 - **Requests:** the DTO `implements` the contract's command type where it can (consent, initiative) and mirrors the contract schema field by field (lengths and ranges come from the contract's constants, such as `INITIATIVE_TEXT_MAX` and `ANSWER_JUSTIFICATION_MAX`), and the backend e2e suites parse what the API answers with the contract's schemas.
-- **Business invariants** (48 answers, a non-blank justification, a registered consent) are not in either: they live in the backend domain.
+- **Business invariants** (48 answers, a non-blank justification, a current consent of the initiative) are not in either: they live in the backend domain.

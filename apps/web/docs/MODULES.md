@@ -12,8 +12,8 @@ The rule that overrides everything else: **features cannot import from other fea
 | --- | --- | --- |
 | `auth` | `shared/identity` — INNLAB SSO session, `me/context` | `AuthCallbackPage` |
 | `questionnaire` | `diagnosis` — questionnaire structure; the draft of the 48 answers and their justifications (Zustand); the summary table | `DiagnosticWizardPage` (steps 3 and 4) |
-| `consent` | `initiative` — reads and records the privacy consent (Law 1581) and holds its text | `DiagnosticWizardPage` (step 2) |
-| `initiative` | `initiative` — profile registration and reading, sector and stage catalogs; the browser draft of the form | `DiagnosticWizardPage` (step 1), `InitiativePage`, `DashboardPage` |
+| `consent` | `initiative` — the current consent text (served by the backend) and recording a new acceptance of an initiative (Law 1581) | `DiagnosticWizardPage` (step 2) |
+| `initiative` | `initiative` — the user's initiatives (list, create with the first acceptance, `InitiativeChooser`), profile registration and reading, sector and stage catalogs; the browser draft of step 1 | `DiagnosticWizardPage` (step 1), `InitiativePage`, `DashboardPage` |
 | `maturity-profile` | `diagnosis` — profile | `ResultsPage` |
 | `portfolio-recommendation` | `diagnosis` (accepts deep analysis) and `routing` (reads the recommendation and its trace) | `ResultsPage` |
 | `scaling-roadmap` | `roadmap` — reads the saved roadmap | `ResultsPage` |
@@ -24,11 +24,13 @@ There is no `diagnostic` feature: starting, reading and processing a diagnostic 
 
 `/` (landing, public, no navigation, one button) → **Iniciar diagnóstico** → `/diagnosticos/nuevo` (protected: without a session it goes through the INNLAB sign-in and continues here on return; with one it just proceeds) → asks the backend for the user's diagnostic, which **resumes the unfinished one** or creates one → the wizard `/diagnosticos/:id/asistente/:step` (no navigation) → `/diagnosticos/:id/resultados` (the first screen with navigation) → `/panel`.
 
-The wizard has four steps, in this order: `iniciativa` (initiative profile), `consentimiento` (privacy consent), `cuestionario` (48 statements, each with its justification) and `resumen` (a table per dimension, in tabs, with **Statement / Score / Justification**; «Procesar diagnóstico» sends the answers and computes the profile). Which step applies is decided by what the server already has (initiative registered, consent recorded), not by a local flag: resuming lands on the first missing step and a later step cannot be opened by URL. A diagnostic that already has results is not resumed: its results open.
+The wizard has four steps, in this order: `iniciativa` (choose one of the user's initiatives or a new one, and its profile), `consentimiento` (privacy consent of that initiative), `cuestionario` (48 statements, each with its justification) and `resumen` (a table per dimension, in tabs, with **Statement / Score / Justification**; «Procesar diagnóstico» sends the answers and computes the profile). Which step applies is decided by what the server already has (the diagnostic's initiative profile, only registered with a current consent), not by a local flag: resuming lands on the first missing step and a later step cannot be opened by URL. A diagnostic that already has results is not resumed: its results open.
 
-- **Nothing about the initiative is stored before the consent** (RF-03, RNF-06). The form is asked first but, until the consent is accepted, it is a browser draft (`useInitiativeDraftStore`, `sessionStorage`); accepting sends the consent and then the initiative. The backend also refuses the initiative without a consent (409).
+- **The consent belongs to the initiative** ([ADR 0011](../../../docs/architecture/decisions/0011-initiative-identity-and-consent-per-initiative.md)). If the chosen initiative already accepted the current text, step 1 registers the profile right away and goes to the questionnaire.
+- **Nothing about the initiative is stored before the consent** (RF-03, RNF-06). Otherwise the form is a browser draft (`useInitiativeDraftStore`, `sessionStorage`) until step 2, which shows the text served by the backend; accepting creates the new initiative with its acceptance (or records a new acceptance of the existing one) and then registers the profile. The backend also refuses a profile without a current consent (409).
+- **The questionnaire is the diagnostic's framework version**: steps 3 and 4 and the results ask for `catalog/questionnaire?version=<Diagnostic.frameworkVersion>`.
 - The old `/perfil`, `/recomendacion` and `/roadmap` routes redirect to `/resultados`; `/cuestionario` and `/consentimiento` redirect to their wizard step; `/diagnosticos` redirects to `/`.
-- `/panel` shows the initiative of the latest diagnostic **with results**, offers to continue one still in the wizard, and reserves the space for the history of past diagnostics (a future story). `/diagnosticos/:id/iniciativa` is only for correcting an already registered initiative; the first registration is wizard step 1.
+- `/panel` shows the initiative of the latest diagnostic **with results**, offers to continue one still in the wizard, and reserves the space for the history of past diagnostics (a future story). `/diagnosticos/:id/iniciativa` is only for correcting an already registered initiative profile, and only while the deep analysis is not accepted (afterwards it says the profile is frozen, and the panel hides «Editar iniciativa»); the first registration is wizard step 1.
 
 ## Where things live
 

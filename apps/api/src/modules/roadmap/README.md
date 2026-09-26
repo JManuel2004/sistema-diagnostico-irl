@@ -12,7 +12,7 @@ Computes the scaling roadmap: which dimensions to raise, in which order and up t
 - It reacts to `DeepAnalysisRequestedEvent` independently of `routing/`; a `Result.err` is logged and not propagated.
 
 ## Completeness
-Implemented: transitive closure, topological layers, target level per dimension with its explanation, the AgroConecta case, and persistence of the result (`scaling_roadmap`, `jsonb` with the phases as dimension codes; names are read from the catalog). `GenerateScalingRoadmapUseCase` computes and saves; the listener runs it and publishes `ScalingRoadmapCalculatedEvent` only after a successful computation, never on a `GET`. Pending: `GET diagnostics/:id/roadmap` does not verify that the diagnostic belongs to the caller.
+Implemented: transitive closure, topological layers, target level per dimension with its explanation, the AgroConecta case, and persistence of the result (`scaling_roadmap`, `jsonb` typed as `RoadmapPhase[]` with the phases as dimension codes; names are read from the catalog). `GenerateScalingRoadmapUseCase` computes and saves; the listener runs it and publishes `ScalingRoadmapCalculatedEvent` only after a successful computation, never on a `GET`. `GET diagnostics/:id/roadmap` verifies the diagnostic belongs to the caller (`DiagnosticOwnershipPort`) and answers someone else's as missing (404).
 
 ## Responsibility (ubiquitous language)
 "Where to scale from": the ordered path of improvements that suits the initiative given its profile.
@@ -21,17 +21,17 @@ Implemented: transitive closure, topological layers, target level per dimension 
 `ScalingRoadmap` (aggregate), `DependencyGraph`; services `RoadmapClosureService`, `TopologicalLayeringService`, `TargetLevelCalculatorService` (including `demandedBy`, which names the dimension that sets a target).
 
 ## What it exposes
-- **Events it publishes:** `ScalingRoadmapCalculatedEvent` (`shared/kernel/events/`); no module consumes it yet.
+- **Events it publishes:** `ScalingRoadmapCalculatedEvent` (`shared/kernel/events/`); `diagnosis/` hears it to complete the deep analysis.
 - **Events it listens to:** `DeepAnalysisRequestedEvent`.
 - **HTTP:** `GET diagnostics/:id/roadmap` (reads the stored roadmap). Contract in Swagger (`/api/docs`). Each dimension is named with the catalog's `name` and `shortName` (`GetScalingRoadmapUseCase`); the frontend keeps no names of its own.
 
 ## What it depends on
-`diagnosis/` through its exported `GetMaturityProfileUseCase`; `shared/irl-taxonomy` through `TAXONOMY_REPOSITORY`; `shared/kernel` for `EVENT_PUBLISHER`.
+`diagnosis/` through its exported `GetMaturityProfileUseCase` and `FindDiagnosisOwnerQuery` (behind `DiagnosticOwnershipPort`); `shared/irl-taxonomy` through `TAXONOMY_REPOSITORY`; `shared/kernel` for `EVENT_PUBLISHER`.
 
 ## Data it owns
-Writes `irl_diagnostic.scaling_roadmap` (one row per diagnostic). Owns (seed only) `irl_catalog.dimension_dependency` and `roadmap_text`.
+Writes `irl_diagnostic.scaling_roadmap` (one row per diagnostic). Owns (seed only) `irl_catalog.dimension_dependency`. There are no orientation texts per dimension and level: they are an input INNLAB has not delivered.
 
 ## Test coverage
 - **Unit:** domain (graph, closure, layers, levels and `demandedBy`, property tests), AgroConecta acceptance, use cases (compute and save; read the stored one, `ROADMAP_NOT_GENERATED`), listener.
 - **Integration:** `roadmap-graph-seed`, `roadmap-repository` (what is read is what was saved, replacement, cascade delete).
-- **E2E:** `roadmap` (409 before accepting, explanation in the HTTP response, date stable between reads), `deep-analysis-events`.
+- **E2E:** `roadmap` (404 for another user's diagnostic, 409 before accepting, explanation in the HTTP response, date stable between reads), `deep-analysis-events`.

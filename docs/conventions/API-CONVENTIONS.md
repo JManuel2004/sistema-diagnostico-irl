@@ -10,7 +10,7 @@ REST conventions for the `@innlab/api` backend. These rules apply to every endpo
 4. **camelCase for JSON keys.** Frontend convention.
 5. **RFC 7807 Problem Details for all errors.** With a project-specific `code` field for machine consumption.
 6. **Authenticated by default.** Every endpoint requires a valid JWT unless explicitly opted out (`@Public()` decorator).
-7. **Authorize at the resource level.** Use cases verify that the resource exists and belongs to the caller before acting, and answer `NotFoundError` / `ForbiddenError` (see `initiative/`'s `DiagnosticOwnershipPort`).
+7. **Authorize at the resource level.** Use cases verify that the diagnostic exists and belongs to the caller before reading or writing anything of it. Someone else's diagnostic is answered as missing (`NotFoundError`, 404); the consent and initiative endpoints still answer `ForbiddenError` (403) for it (`initiative/`'s `DiagnosticOwnershipPort`).
 
 ## URL conventions
 
@@ -25,18 +25,18 @@ GET    /api/v1/catalog/questionnaire         ✓
 GET    /api/v1/catalogo/cuestionario         ✗ (Spanish)
 ```
 
-A resource that is a singleton under its parent (there is one consent and one initiative per diagnostic) is singular: `diagnostics/:id/consent`, `diagnostics/:id/initiative`.
+A resource that is a singleton under its parent (there is one initiative profile per diagnostic, one current consent text) is singular: `diagnostics/:id/initiative`, `consent-terms/current`. A sub-collection is plural or named for what it records: `initiatives/:id/consent` adds an acceptance to the initiative's history.
 
 ### Hierarchical when the relationship demands it
 
 ```
-POST   /api/v1/diagnostics/:id/consent             ✓
+POST   /api/v1/initiatives/:id/consent             ✓
 POST   /api/v1/diagnostics/:id/initiative          ✓
 POST   /api/v1/diagnostics/:id/questionnaire       ✓
 GET    /api/v1/diagnostics/:id/profile             ✓
 ```
 
-The hierarchy reflects the **aggregate boundary**: consent, initiative, questionnaire submission, and profile all belong to a diagnostic.
+The hierarchy reflects the **aggregate boundary**: the initiative profile, the questionnaire submission and the maturity profile belong to a diagnostic; the consent belongs to the initiative.
 
 ### Action endpoints when REST forces an awkward verb
 
@@ -213,7 +213,7 @@ This is the single most useful feature for production debugging. Don't skip it.
 
 ## OpenAPI / Swagger
 
-The backend generates OpenAPI 3.x from `@nestjs/swagger` decorators on DTOs and controllers. `@fastify/swagger` publishes that document as is and `@fastify/swagger-ui` serves it at `/api/docs` (JSON at `/api/docs/json`). It is mounted in every environment today; hiding it in production is pending.
+The backend generates OpenAPI 3.x from `@nestjs/swagger` decorators on DTOs and controllers. `@fastify/swagger` publishes that document as is and `@fastify/swagger-ui` serves it at `/api/docs` (JSON at `/api/docs/json`). It is mounted outside production only (`NODE_ENV=production` skips it): it would publish the whole API surface.
 
 Conventions:
 

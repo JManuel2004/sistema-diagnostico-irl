@@ -44,7 +44,7 @@ pnpm --filter @innlab/api start        # one-shot
 pnpm --filter @innlab/api start:prod   # production mode (after build)
 ```
 
-The API listens on `APP_PORT` (default 3000). Endpoints are prefixed `/api/v1/`. Swagger UI is at `/api/docs` (JSON at `/api/docs/json`); it is mounted in every environment.
+The API listens on `APP_PORT` (default 3000). Endpoints are prefixed `/api/v1/`. Swagger UI is at `/api/docs` (JSON at `/api/docs/json`) outside production; with `NODE_ENV=production` it is not mounted.
 
 ## Folder structure
 
@@ -117,14 +117,14 @@ Modules communicate through exported read queries and domain events, never by im
 
 ## Architecture in one paragraph
 
-Modular monolith with DDD-lite. One NestJS module per bounded context. Modules never call each other's processes directly: `diagnosis/` owns the diagnostic and publishes domain events (`DeepAnalysisRequestedEvent`), and `routing/` and `roadmap/` react independently; `initiative/` publishes `ConsentRecordedEvent` and `InitiativeRegisteredEvent` and `diagnosis/` reacts. Synchronous calls between modules are limited to read-only queries that a module exports and the consumer reaches through a port of its own. Neither the domain nor the application layer imports framework code: use cases are plain classes that Nest builds through `applicationProvider`, and they publish events through the `EVENT_PUBLISHER` port. Repositories implement domain ports; HTTP clients (INNLAB Core) implement domain ports. The IRL calculator is a pure function over the conversion table, exhaustively property-tested.
+Modular monolith with DDD-lite. One NestJS module per bounded context. Modules never call each other's processes directly: `diagnosis/` owns the diagnostic and publishes domain events (`DeepAnalysisRequestedEvent`), and `routing/` and `roadmap/` react independently; `initiative/` publishes `InitiativeRegisteredEvent` and `diagnosis/` reacts. Synchronous calls between modules are limited to read-only queries that a module exports and the consumer reaches through a port of its own. Neither the domain nor the application layer imports framework code: use cases are plain classes that Nest builds through `applicationProvider`, and they publish events through the `EVENT_PUBLISHER` port. Repositories implement domain ports; HTTP clients (INNLAB Core) implement domain ports. The IRL calculator is a pure function over the conversion table, exhaustively property-tested.
 
 ## Database
 
 Single PostgreSQL database, **two schemas**:
 
-- `irl_catalog` — read-only at runtime. Holds dimensions, statements, conversion ranges, dimension pairs and dependencies, sectors, initiative stages, roadmap texts, portfolio services and the routing configuration. Populated by seeds only.
-- `irl_diagnostic` — transactional. Holds `diagnostic`, `initiative`, `consent`, `answer`, `dimension_result`, `imbalance_analysis`, `portfolio_recommendation`, `recommendation_alternative`, `layer_trace`, `scaling_roadmap` (owned by the four business modules). The migration also creates `notification`, `report_download` and `audit_event`, reserved for a future reporting context; no code uses them yet.
+- `irl_catalog` — read-only at runtime. Holds the framework versions with their statements and conversion ranges ([ADR 0012](../../docs/architecture/decisions/0012-framework-content-versioned.md)), dimensions, dimension pairs and dependencies, sectors, initiative stages, the published consent texts (`consent_terms`), portfolio services with their stages and the routing configuration (ordinal intensities, eligibility and exception rules, the single row of scoring parameters, calibration labels). Populated by seeds only; the seed upserts by natural key and refuses to rewrite a framework version or a consent text that is already in use.
+- `irl_diagnostic` — transactional. Holds `diagnostic`, `answer`, `dimension_result`, `imbalance_analysis`, `initiative`, `consent` (one row per acceptance), `initiative_profile` (one per diagnostic), `portfolio_recommendation` (with its trace), `recommendation_rank`, `scaling_roadmap` (owned by the four business modules; [ADR 0011](../../docs/architecture/decisions/0011-initiative-identity-and-consent-per-initiative.md)). Deleting a diagnostic or an initiative cascades to its rows ([ADR 0010](../../docs/architecture/decisions/0010-foreign-keys-cascade-across-modules.md)). There are no tables for the future reporting context: they are designed with it.
 
 The read-only rule on `irl_catalog` is enforced by the code (no catalog writer outside the seeds); there are no per-schema database roles.
 
@@ -170,7 +170,7 @@ Four rules:
    hand by the Core team — not OAuth `client_credentials`, and never the user's
    own JWT. See RNF-05.
 
-**Resource authorization** remains a separate concern, checked inside use cases through a port that answers `NotFoundError` / `ForbiddenError` (see `initiative/`'s `DiagnosticOwnershipPort`). RNF-04 — no user sees another user's diagnostics. Today only consent and initiative registration, and `GET diagnostics/:id`, enforce it; the other per-diagnostic endpoints do not yet.
+**Resource authorization** remains a separate concern, checked inside use cases through a port that answers `NotFoundError` / `ForbiddenError` (see `initiative/`'s `DiagnosticOwnershipPort`). RNF-04 — no user sees another user's diagnostics. Every per-diagnostic endpoint enforces it: `diagnosis`, `routing` and `roadmap` answer someone else's diagnostic as missing (404); the consent and initiative endpoints answer 403 for it.
 
 When debugging an auth failure, read
 [`test/e2e/shared/identity/cognito-jwt-guard.e2e-spec.ts`](./test/e2e/shared/identity/cognito-jwt-guard.e2e-spec.ts)
