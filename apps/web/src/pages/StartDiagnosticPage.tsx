@@ -1,4 +1,5 @@
 import { useEffect, useRef, type JSX } from 'react';
+import { UserContextGate, UserMenu, useCurrentUser } from '@features/auth';
 import { PageShell } from '@/shared/ui/page-shell';
 import { Alert } from '@/shared/ui/alert';
 import { Button } from '@/shared/ui/button';
@@ -20,39 +21,46 @@ import { RETRY_LATER } from '@/shared/lib/copy';
  * asked for with their click), unlike accepting the deep analysis, which
  * never fires on its own. The `ref` prevents StrictMode's double firing in
  * development, which would otherwise ask for the diagnostic twice at once.
+ *
+ * The request waits for the user's context (`UserContextGate`, RF-01): a
+ * diagnostic belongs to whoever starts it, so without knowing who that is
+ * nothing is created and the page says why.
  */
 export default function StartDiagnosticPage(): JSX.Element {
+  const user = useCurrentUser();
   const start = useStartDiagnostic();
   const requested = useRef(false);
 
   useEffect(() => {
-    if (requested.current) return;
+    if (!user.isSuccess || requested.current) return;
     requested.current = true;
     start.mutate();
-  }, [start]);
+  }, [user.isSuccess, start]);
 
   return (
-    <PageShell width="reading" showAttribution>
-      {start.isError ? (
-        <Alert
-          tone="critical"
-          title="No fue posible iniciar el diagnóstico"
-          action={
-            <Button
-              variant="secondary"
-              onClick={() => {
-                start.mutate();
-              }}
-            >
-              Reintentar
-            </Button>
-          }
-        >
-          {RETRY_LATER}
-        </Alert>
-      ) : (
-        <LoadingState label="Preparando tu diagnóstico…" />
-      )}
+    <PageShell width="reading" showAttribution headerActions={<UserMenu />}>
+      <UserContextGate>
+        {start.isError ? (
+          <Alert
+            tone="critical"
+            title="No fue posible iniciar el diagnóstico"
+            action={
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  start.mutate();
+                }}
+              >
+                Reintentar
+              </Button>
+            }
+          >
+            {RETRY_LATER}
+          </Alert>
+        ) : (
+          <LoadingState label="Preparando tu diagnóstico…" />
+        )}
+      </UserContextGate>
     </PageShell>
   );
 }

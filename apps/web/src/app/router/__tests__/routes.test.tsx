@@ -20,7 +20,8 @@ vi.mock('@/shared/auth/session', async (importOriginal) => ({
 }));
 vi.mock('@features/auth', () => ({
   useSessionLiveness: () => undefined,
-  LogoutButton: () => null,
+  UserMenu: () => null,
+  UserContextGate: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 const ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
@@ -80,7 +81,9 @@ describe('AppRoutes — el flujo de diagnóstico', () => {
 
       expect(screen.queryByText('INICIO_PAGE')).not.toBeInTheDocument();
       expect(session.redirectToSso).toHaveBeenCalledTimes(1);
-      expect(session.redirectToSso).toHaveBeenCalledWith(expect.stringContaining('/diagnosticos/nuevo'));
+      expect(session.redirectToSso).toHaveBeenCalledWith(
+        expect.stringContaining('/diagnosticos/nuevo'),
+      );
     });
   });
 

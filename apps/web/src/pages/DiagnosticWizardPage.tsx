@@ -1,6 +1,6 @@
 import { useEffect, type JSX } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
-import { LogoutButton } from '@features/auth';
+import { UserMenu } from '@features/auth';
 import {
   selectDraft,
   selectDraftDiagnosticId,
@@ -102,7 +102,7 @@ export default function DiagnosticWizardPage(): JSX.Element {
       <PageShell
         width={step === 'consentimiento' ? 'reading' : 'standard'}
         showAttribution
-        headerActions={<LogoutButton />}
+        headerActions={<UserMenu />}
       >
         <WizardStepper
           className="mb-8"
@@ -141,7 +141,7 @@ export default function DiagnosticWizardPage(): JSX.Element {
   }
 
   return (
-    <PageShell width="reading" showAttribution headerActions={<LogoutButton />}>
+    <PageShell width="reading" showAttribution headerActions={<UserMenu />}>
       {failed ? (
         <Alert tone="critical" title="No fue posible abrir tu diagnóstico">
           {RETRY_LATER}

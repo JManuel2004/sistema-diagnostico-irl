@@ -3,7 +3,7 @@ import { paths } from '@/shared/lib/paths';
 import type { DimensionCode } from '@innlab/contracts';
 import { ArrowRight, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { LogoutButton } from '@features/auth';
+import { UserMenu } from '@features/auth';
 import { buttonVariants } from '@/shared/ui/button';
 import { PageShell } from '@/shared/ui/page-shell';
 import { DIMENSION_ORDER, getDimensionVisual } from '@/shared/lib/dimensions';
@@ -79,7 +79,7 @@ export default function LandingPage(): JSX.Element {
     <PageShell
       width="wide"
       showAttribution
-      headerActions={hasStoredSession() ? <LogoutButton /> : undefined}
+      headerActions={hasStoredSession() ? <UserMenu /> : undefined}
       contentClassName="py-0 sm:py-0"
     >
       {/* Hero — institutional layout, left-aligned per brand manual */}

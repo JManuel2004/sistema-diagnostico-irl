@@ -1,10 +1,12 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { setupServer } from 'msw/node';
 import LandingPage from '../LandingPage';
 import { clearSession, saveSession } from '@/shared/auth/session';
+import { meContextHandler } from '@/test/fixtures/me-context';
+import { renderWithClient } from '@/test/render-with-client';
 
 // No handlers: any request when mounting the landing would fail the suite.
 const server = setupServer();
@@ -16,7 +18,7 @@ beforeEach(() => {
 });
 
 function renderPage() {
-  return render(
+  return renderWithClient(
     <MemoryRouter initialEntries={['/']}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
@@ -77,19 +79,20 @@ describe('LandingPage — portada pública', () => {
     expect(hrefs.some((h) => h.includes('/demo/'))).toBe(false);
   });
 
-  describe('cerrar sesión', () => {
+  describe('menú de cuenta', () => {
     it('no se ofrece sin sesión', () => {
       renderPage();
 
-      expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Cuenta' })).not.toBeInTheDocument();
     });
 
-    it('se ofrece si el usuario ya tiene sesión', () => {
+    it('se ofrece si el usuario ya tiene sesión', async () => {
       saveSession({ token: 'id-token', accessToken: 'access-token' });
+      server.use(meContextHandler());
 
       renderPage();
 
-      expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Cuenta' })).toBeInTheDocument();
     });
   });
 

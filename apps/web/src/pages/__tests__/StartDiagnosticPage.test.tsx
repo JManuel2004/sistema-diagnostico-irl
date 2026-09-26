@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
@@ -7,12 +7,21 @@ import { http as mswHttp, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import StartDiagnosticPage from '../StartDiagnosticPage';
 import { renderWithClient } from '@/test/render-with-client';
+import { meContextHandler, signIn } from '@/test/fixtures/me-context';
+import { clearSession } from '@/shared/auth/session';
 
 const DIAGNOSTIC_ID = '3f1c9a52-7d4e-4b8a-9c21-5e6f7a8b9c0d';
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterEach(() => server.resetHandlers());
+beforeEach(() => {
+  signIn();
+  server.use(meContextHandler());
+});
+afterEach(() => {
+  server.resetHandlers();
+  clearSession();
+});
 afterAll(() => server.close());
 
 const diagnostic = {
@@ -67,12 +76,12 @@ describe('StartDiagnosticPage — continuar solo tras «Iniciar diagnóstico»',
     expect(peticiones).toBe(1);
   });
 
-  it('muestra que está preparando el diagnóstico mientras espera', () => {
+  it('muestra que está preparando el diagnóstico mientras espera', async () => {
     server.use(mswHttp.post('*/diagnostics', () => new Promise(() => undefined)));
 
     renderPage();
 
-    expect(screen.getByRole('status')).toHaveTextContent('Preparando tu diagnóstico…');
+    expect(await screen.findByText('Preparando tu diagnóstico…')).toBeInTheDocument();
   });
 
   it('avisa si no se pudo y permite reintentar', async () => {
@@ -96,5 +105,23 @@ describe('StartDiagnosticPage — continuar solo tras «Iniciar diagnóstico»',
 
     expect(await screen.findByText('ASISTENTE_STUB')).toBeInTheDocument();
     expect(intentos).toBe(2);
+  });
+
+  // RF-01, scenario "user context unavailable": a diagnostic belongs to whoever starts it.
+  it('sin el perfil del usuario no pide el diagnóstico y dice por qué', async () => {
+    let requests = 0;
+    server.use(
+      meContextHandler(503),
+      mswHttp.post('*/diagnostics', () => {
+        requests += 1;
+        return HttpResponse.json(diagnostic, { status: 201 });
+      }),
+    );
+
+    renderPage();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/no está disponible temporalmente/);
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+    expect(requests).toBe(0);
   });
 });

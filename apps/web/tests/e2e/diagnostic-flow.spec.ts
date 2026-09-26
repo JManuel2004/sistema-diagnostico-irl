@@ -10,6 +10,7 @@ import {
   initiativeSummaryFixture,
 } from '../../src/test/fixtures/initiative';
 import { dimensionResultFixture } from '../../src/test/fixtures/dimensions';
+import { ME_CONTEXT } from '../../src/test/fixtures/me-context';
 
 /**
  * HU-04 → HU-05 → HU-06 → HU-07/HU-10 → HU-11: a user starts a diagnostic
@@ -69,14 +70,15 @@ async function fakeBackend(page: Page): Promise<string[]> {
     createdAt: '2026-09-22T14:00:00.000Z',
   });
   const profile = () => initiativeFixture({ diagnosticId: ID });
-  const summary = () =>
-    initiativeSummaryFixture({ latestProfile: initiative ? profile() : null });
+  const summary = () => initiativeSummaryFixture({ latestProfile: initiative ? profile() : null });
 
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname.replace('/api/v1', '');
     const key = `${request.method()} ${path.replace(ID, ':id')}`;
     switch (key) {
+      case 'GET /me/context':
+        return json(route, ME_CONTEXT);
       case 'POST /diagnostics':
         calls.push('start');
         return json(route, diagnostic(), 201);

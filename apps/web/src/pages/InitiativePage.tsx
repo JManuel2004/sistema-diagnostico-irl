@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { LogoutButton } from '@features/auth';
+import { UserMenu } from '@features/auth';
 import {
   InitiativeEditor,
   initiativeToFormValues,
@@ -45,7 +45,7 @@ export default function InitiativePage(): JSX.Element {
   }
 
   return (
-    <PageShell width="standard" showAttribution showNavigation headerActions={<LogoutButton />}>
+    <PageShell width="standard" showAttribution showNavigation headerActions={<UserMenu />}>
       <PageHeader
         overline="Tu iniciativa"
         title="Corrige la información de tu iniciativa"
@@ -76,21 +76,24 @@ export default function InitiativePage(): JSX.Element {
           submitLabel="Guardar cambios"
           onSubmit={(command) => {
             const initiativeId = initiative.data?.initiativeId ?? '';
-            register.mutate({ initiativeId, ...command }, {
-              onSuccess: () => {
-                notify.success('Cambios guardados.');
-                void navigate(paths.panel);
+            register.mutate(
+              { initiativeId, ...command },
+              {
+                onSuccess: () => {
+                  notify.success('Cambios guardados.');
+                  void navigate(paths.panel);
+                },
+                onError: (error) => {
+                  notify.error(
+                    isApiErrorWithStatus(error, 404)
+                      ? 'No encontramos este diagnóstico.'
+                      : isApiErrorWithStatus(error, 409)
+                        ? 'No fue posible guardar la iniciativa: el análisis profundo ya fue aceptado o el texto del consentimiento cambió. Recarga la página.'
+                        : `No fue posible guardar la iniciativa. ${RETRY_LATER}`,
+                  );
+                },
               },
-              onError: (error) => {
-                notify.error(
-                  isApiErrorWithStatus(error, 404)
-                    ? 'No encontramos este diagnóstico.'
-                    : isApiErrorWithStatus(error, 409)
-                      ? 'No fue posible guardar la iniciativa: el análisis profundo ya fue aceptado o el texto del consentimiento cambió. Recarga la página.'
-                      : `No fue posible guardar la iniciativa. ${RETRY_LATER}`,
-                );
-              },
-            });
+            );
           }}
         />
       )}

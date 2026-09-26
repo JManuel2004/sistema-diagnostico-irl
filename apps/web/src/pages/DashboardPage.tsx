@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { LogoutButton } from '@features/auth';
+import { UserContextGate, UserMenu } from '@features/auth';
 import { InitiativeSummary, useInitiative } from '@features/initiative';
 import { PageShell } from '@/shared/ui/page-shell';
 import { PageHeader } from '@/shared/ui/page-header';
@@ -39,7 +39,7 @@ export default function DashboardPage(): JSX.Element {
   const start = useStartDiagnostic();
 
   return (
-    <PageShell width="standard" showAttribution showNavigation headerActions={<LogoutButton />}>
+    <PageShell width="standard" showAttribution showNavigation headerActions={<UserMenu />}>
       <PageHeader
         overline="Panel de iniciativa"
         title="Tu iniciativa"
@@ -62,20 +62,25 @@ export default function DashboardPage(): JSX.Element {
               <p className="text-muted-foreground mt-2 max-w-prose text-base leading-relaxed">
                 Inicia uno para registrar tu iniciativa y responder el cuestionario IRL.
               </p>
-              <Button
-                size="lg"
-                className="mt-5 w-full sm:w-auto"
-                onClick={() => {
-                  start.mutate(undefined, {
-                    onError: () => {
-                      notify.error(`No fue posible iniciar el diagnóstico. ${RETRY_LATER}`);
-                    },
-                  });
-                }}
-                disabled={start.isPending}
-              >
-                {start.isPending ? 'Preparando tu diagnóstico…' : 'Iniciar diagnóstico'}
-              </Button>
+              {/* A diagnostic belongs to whoever starts it: without the user's context it is not offered. */}
+              <div className="mt-5">
+                <UserContextGate>
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      start.mutate(undefined, {
+                        onError: () => {
+                          notify.error(`No fue posible iniciar el diagnóstico. ${RETRY_LATER}`);
+                        },
+                      });
+                    }}
+                    disabled={start.isPending}
+                  >
+                    {start.isPending ? 'Preparando tu diagnóstico…' : 'Iniciar diagnóstico'}
+                  </Button>
+                </UserContextGate>
+              </div>
             </CardContent>
           </Card>
         )}

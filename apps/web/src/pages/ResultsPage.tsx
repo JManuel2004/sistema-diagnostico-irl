@@ -1,7 +1,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { Compass, Layers, Route, Scale, type LucideIcon } from 'lucide-react';
 import { Navigate, useParams } from 'react-router-dom';
-import { LogoutButton } from '@features/auth';
+import { UserMenu } from '@features/auth';
 import {
   ImbalanceInsights,
   ProfileContext,
@@ -101,7 +101,7 @@ export default function ResultsPage(): JSX.Element {
   }
 
   return (
-    <PageShell width="standard" showAttribution showNavigation headerActions={<LogoutButton />}>
+    <PageShell width="standard" showAttribution showNavigation headerActions={<UserMenu />}>
       {profile.data ? (
         <ProfileHero
           initiativeName={subject}

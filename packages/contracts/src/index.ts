@@ -29,6 +29,7 @@ export * from './diagnosis/diagnostic.schema.js';
 
 // ── identity (shared/identity) ────────────────────────────────────────
 export * from './identity/core-session.schema.js';
+export * from './identity/me-context.schema.js';
 
 // ── initiative ────────────────────────────────────────────────────────
 export * from './initiative/consent.schema.js';

@@ -45,7 +45,7 @@ packages/contracts/
 │   │   ├── problem-details.schema.ts  # RFC 7807
 │   │   └── uuid.schema.ts
 │   ├── identity/                      # shared/identity
-│   │   └── core-session.schema.ts     # the session returned by the INNLAB SSO exchange
+│   │   ├── core-session.schema.ts     # the session returned by the INNLAB SSO exchange
 │   ├── irl-taxonomy/                  # shared/irl-taxonomy
 │   │   └── dimension.schema.ts        # DIMENSION_CODES, dimension shape
 │   ├── diagnosis/                     # modules/diagnosis

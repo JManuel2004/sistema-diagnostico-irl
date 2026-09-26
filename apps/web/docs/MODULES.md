@@ -10,7 +10,7 @@ The rule that overrides everything else: **features cannot import from other fea
 
 | Feature | Talks to (backend) | Page |
 | --- | --- | --- |
-| `auth` | `shared/identity` — INNLAB SSO session, `me/context` | `AuthCallbackPage` |
+| `auth` | `shared/identity` — INNLAB SSO session and the user's profile (`me/context`): `UserMenu`, `UserContextGate`, `useCurrentUser` | `AuthCallbackPage`; the header of every page; `StartDiagnosticPage`, `DashboardPage` |
 | `questionnaire` | `diagnosis` — questionnaire structure; the draft of the 48 answers and their justifications (Zustand); the summary table | `DiagnosticWizardPage` (steps 3 and 4) |
 | `consent` | `initiative` — the current consent text (served by the backend) and recording a new acceptance of an initiative (Law 1581) | `DiagnosticWizardPage` (step 2) |
 | `initiative` | `initiative` — the user's initiatives (list, create with the first acceptance, `InitiativeChooser`), profile registration and reading, sector and stage catalogs; the browser draft of step 1 | `DiagnosticWizardPage` (step 1), `InitiativePage`, `DashboardPage` |
@@ -31,6 +31,12 @@ The wizard has four steps, in this order: `iniciativa` (choose one of the user's
 - **The questionnaire is the diagnostic's framework version**: steps 3 and 4 and the results ask for `catalog/questionnaire?version=<Diagnostic.frameworkVersion>`.
 - The old `/perfil`, `/recomendacion` and `/roadmap` routes redirect to `/resultados`; `/cuestionario` and `/consentimiento` redirect to their wizard step; `/diagnosticos` redirects to `/`.
 - `/panel` shows the initiative of the latest diagnostic **with results**, offers to continue one still in the wizard, and reserves the space for the history of past diagnostics (a future story). `/diagnosticos/:id/iniciativa` is only for correcting an already registered initiative profile, and only while the deep analysis is not accepted (afterwards it says the profile is frozen, and the panel hides «Editar iniciativa»); the first registration is wizard step 1.
+
+### The user's profile (HU-01, HU-25)
+
+- **Where it comes from:** an access token from the shared pool carries only the `sub`, with no email or name. `useCurrentUser` therefore asks this system's backend (`GET /me/context`), which asks INNLAB Core, the owner of that data. The response is validated against `meContextResponseSchema` in `@innlab/contracts`, and the backend controller is typed with the same contract, so a drift fails at compile time.
+- **`UserMenu`** is the header's only account control: an avatar (the initial of the name, or of the email) that opens a dropdown with name, email and «Cerrar sesión». If the profile does not arrive it simply does not render.
+- **`UserContextGate`** withholds what needs to know who the user is. Starting a diagnostic, above all: a diagnostic belongs to whoever starts it. It wraps the request on `/diagnosticos/nuevo` and the panel's «Iniciar diagnóstico». If Core cannot be reached it says the service is temporarily unavailable and offers a manual retry, instead of creating a diagnostic nobody can claim.
 
 ## Where things live
 

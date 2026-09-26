@@ -5,7 +5,7 @@ import 'reflect-metadata';
  *
  * Each e2e suite is responsible for booting a NestJS application with
  * `Test.createTestingModule`, attaching supertest, mocking external
- * services with `nock` (Cognito JWKS, InnLab Core), and exercising one
+ * services with `nock` (the Cognito JWKS, InnLab Core), and exercising one
  * full HTTP round trip per Gherkin scenario from the target story.
  *
  * Jest timeout is configured in jest.config.js (testTimeout: 180_000).

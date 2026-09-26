@@ -5,6 +5,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { http as mswHttp, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
+import { meContextHandler, signIn } from '@/test/fixtures/me-context';
+import { clearSession } from '@/shared/auth/session';
 import type { DimensionCode } from '@innlab/contracts';
 import ResultsPage from '../ResultsPage';
 import { renderWithClient } from '@/test/render-with-client';
@@ -29,7 +31,9 @@ beforeEach(() => {
   server.use(
     mswHttp.get('*/diagnostics/:id/initiative', () =>
       HttpResponse.json(
-        initiativeFixture({ productType: 'Aplicación web y módulo de trazabilidad para cooperativas' }),
+        initiativeFixture({
+          productType: 'Aplicación web y módulo de trazabilidad para cooperativas',
+        }),
       ),
     ),
     mswHttp.get('*/api/v1/catalog/questionnaire', () => HttpResponse.json(questionnaireFixture())),
@@ -70,7 +74,11 @@ function diagnostic(accepted: boolean, completed = true) {
   return {
     id: ID,
     userId: 'user-1',
-    state: accepted ? 'DEEP_ANALYSIS_IN_PROGRESS' : completed ? 'PROFILE_GENERATED' : 'WITH_INITIATIVE',
+    state: accepted
+      ? 'DEEP_ANALYSIS_IN_PROGRESS'
+      : completed
+        ? 'PROFILE_GENERATED'
+        : 'WITH_INITIATIVE',
     completed,
     deepAnalysisAccepted: accepted,
     createdAt: '2026-03-01T00:00:00.000Z',
@@ -156,12 +164,15 @@ describe('ResultsPage — navegación y acceso', () => {
     );
   });
 
-  it('ofrece cerrar sesión', async () => {
+  it('ofrece el menú de cuenta', async () => {
     backend({ accepted: false });
+    signIn();
+    server.use(meContextHandler());
 
     renderPage();
 
-    expect(await screen.findByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Cuenta' })).toBeInTheDocument();
+    clearSession();
   });
 
   it('un diagnóstico que sigue en el asistente no tiene resultados: se le devuelve a él', async () => {
@@ -182,7 +193,9 @@ describe('ResultsPage — sin análisis profundo', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'AgroConecta' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'AgroConecta' }),
+    ).toBeInTheDocument();
     expect(await screen.findByRole('group', { name: /Cuello de botella/ })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /Brecha/ })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Perfil IRL — gráfico radar' })).toBeInTheDocument();
@@ -208,9 +221,7 @@ describe('ResultsPage — sin análisis profundo', () => {
     renderPage();
 
     await screen.findByRole('group', { name: /Cuello de botella/ });
-    expect(
-      screen.queryByRole('heading', { name: /plan de escalamiento/ }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /plan de escalamiento/ })).not.toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: /servicio de INNLAB para/ }),
     ).not.toBeInTheDocument();
@@ -486,7 +497,9 @@ describe('ResultsPage — la iniciativa como protagonista', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'AgroConecta' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'AgroConecta' }),
+    ).toBeInTheDocument();
     expect(
       screen.getByText('Aplicación web y módulo de trazabilidad para cooperativas'),
     ).toBeInTheDocument();
@@ -509,7 +522,9 @@ describe('ResultsPage — la iniciativa como protagonista', () => {
     renderPage();
 
     expect(
-      await screen.findByRole('heading', { name: '¿Quieres profundizar el diagnóstico de AgroConecta?' }),
+      await screen.findByRole('heading', {
+        name: '¿Quieres profundizar el diagnóstico de AgroConecta?',
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ir a mi panel' })).toHaveAttribute('href', '/panel');
   });
@@ -527,13 +542,13 @@ describe('ResultsPage — la iniciativa como protagonista', () => {
 
   it('si la iniciativa no carga, la cabecera habla de «tu iniciativa» y el resto sigue', async () => {
     backend({ accepted: false });
-    server.use(
-      mswHttp.get('*/diagnostics/:id/initiative', () => problem('INTERNAL', 500)),
-    );
+    server.use(mswHttp.get('*/diagnostics/:id/initiative', () => problem('INTERNAL', 500)));
 
     renderPage();
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Tu iniciativa' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Tu iniciativa' }),
+    ).toBeInTheDocument();
     expect(await screen.findByRole('group', { name: /Cuello de botella/ })).toBeInTheDocument();
   });
 });
@@ -556,11 +571,21 @@ describe('ResultsPage — el análisis profundo se entiende sin conocer el siste
         name: 'Mentoría',
         score: 4,
         contributions: {
-          bottleneck: { value: 1, details: [{ dimension: 'IPRL', sourceLabel: 'primary', value: 1 }] },
+          bottleneck: {
+            value: 1,
+            details: [{ dimension: 'IPRL', sourceLabel: 'primary', value: 1 }],
+          },
           gaps: { value: 0, details: [] },
           imbalances: {
             value: 1,
-            details: [{ pair: 'TRL-IPRL', classification: 'CRITICAL', sourceLabel: 'secondary', value: 0.5 }],
+            details: [
+              {
+                pair: 'TRL-IPRL',
+                classification: 'CRITICAL',
+                sourceLabel: 'secondary',
+                value: 0.5,
+              },
+            ],
           },
           stageAffinity: { value: 1, matches: true },
           rangePenalty: { value: 0, applied: false },
@@ -600,8 +625,8 @@ describe('ResultsPage — el análisis profundo se entiende sin conocer el siste
     await user.click(screen.getByRole('button', { name: /Cómo se armó este plan/ }));
     await screen.findByText('Se dejó Consultoría como primera opción');
 
-    const deep = ['deep-imbalances', 'deep-roadmap', 'deep-recommendation'].map((id) =>
-      document.getElementById(id)!.closest('section')!.textContent,
+    const deep = ['deep-imbalances', 'deep-roadmap', 'deep-recommendation'].map(
+      (id) => document.getElementById(id)!.closest('section')!.textContent,
     );
     for (const text of deep) {
       expect(text).not.toMatch(/[→⇄⇔↔Δ≤≥]/);

@@ -15,6 +15,10 @@ export default tseslint.config(
       'apps/web/eslint.config.js',
       'apps/web/postcss.config.js',
       'apps/web/tailwind.config.ts',
+      // Playwright specs and config are in no tsconfig, so the type-aware rules
+      // cannot parse them; `pnpm lint` does not cover them either (web lints src/).
+      'apps/web/tests/**',
+      'apps/web/playwright.config.ts',
     ],
   },
   js.configs.recommended,

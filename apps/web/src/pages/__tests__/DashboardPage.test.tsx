@@ -1,9 +1,11 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { http as mswHttp, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
+import { meContextHandler, signIn } from '@/test/fixtures/me-context';
+import { clearSession } from '@/shared/auth/session';
 import DashboardPage from '../DashboardPage';
 import { renderWithClient } from '@/test/render-with-client';
 import { initiativeFixture } from '@/test/fixtures/initiative';
@@ -13,7 +15,14 @@ const OLDER = 'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33';
 
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterEach(() => server.resetHandlers());
+beforeEach(() => {
+  signIn();
+  server.use(meContextHandler());
+});
+afterEach(() => {
+  server.resetHandlers();
+  clearSession();
+});
 afterAll(() => server.close());
 
 function diagnostic(id: string, state = 'PROFILE_GENERATED') {
@@ -176,7 +185,7 @@ describe('DashboardPage — panel de iniciativa', () => {
         'href',
         '/panel',
       );
-      expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Cuenta' })).toBeInTheDocument();
     });
   });
 

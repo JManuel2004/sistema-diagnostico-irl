@@ -1,4 +1,8 @@
 export const queryKeys = {
+  session: {
+    /** Context of the authenticated user — `GET /me/context`. */
+    context: ['session', 'context'] as const,
+  },
   catalog: {
     questionnaire: (frameworkVersion: string) =>
       ['catalog', 'questionnaire', frameworkVersion] as const,
@@ -15,8 +19,7 @@ export const queryKeys = {
     profile: (id: string) => ['diagnostic', id, 'profile'] as const,
     initiative: (id: string) => ['diagnostic', id, 'initiative'] as const,
     recommendation: (id: string) => ['diagnostic', id, 'recommendation'] as const,
-    recommendationTrace: (id: string) =>
-      ['diagnostic', id, 'recommendation', 'trace'] as const,
+    recommendationTrace: (id: string) => ['diagnostic', id, 'recommendation', 'trace'] as const,
     roadmap: (id: string) => ['diagnostic', id, 'roadmap'] as const,
   },
 } as const;
