@@ -28,3 +28,4 @@ Architecture Decision Records: short (context, decision, consequences) and immut
 | [0011](./decisions/0011-initiative-identity-and-consent-per-initiative.md) | An initiative has its own identity; its consent is a history |
 | [0012](./decisions/0012-framework-content-versioned.md) | The IRL framework's content is versioned |
 | [0013](./decisions/0013-routing-configuration-shape.md) | The routing configuration: natural keys, one row per fact, a uniform ranking |
+| [0014](./decisions/0014-adjustment-only-services.md) | Adjustment-only services enter the ranking only through an adjustment |
