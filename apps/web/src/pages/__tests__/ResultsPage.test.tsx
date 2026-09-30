@@ -348,6 +348,21 @@ describe('ResultsPage — con análisis profundo', () => {
     );
   });
 
+  it('la barra de secciones marca en cuál se está, como la navegación principal', async () => {
+    backend({ accepted: true });
+
+    renderPage();
+
+    const bar = await screen.findByRole('navigation', { name: 'Secciones del resultado' });
+    const current = within(bar)
+      .getAllByRole('link')
+      .filter((link) => link.getAttribute('aria-current') === 'location');
+    // Which one depends on the scroll (see `useActiveSection`); here, that
+    // exactly one is marked, with the same blue underline as the header.
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveClass('aria-[current=location]:border-primary');
+  });
+
   it('ya no ofrece aceptar el análisis profundo', async () => {
     backend({ accepted: true });
 

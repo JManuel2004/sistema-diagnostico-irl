@@ -39,6 +39,7 @@ import {
 } from '@/shared/ui/accept-deep-analysis-card';
 import { isApiErrorWithCode, isApiErrorWithStatus } from '@/shared/api/http';
 import { useDiagnostic } from '@/shared/hooks/useDiagnostics';
+import { useActiveSection } from '@/shared/hooks/useActiveSection';
 import { paths } from '@/shared/lib/paths';
 import { FALLBACK_SUBJECT, RETRY_LATER, RETRY_LATER_OR_CONTACT } from '@/shared/lib/copy';
 
@@ -203,15 +204,21 @@ export default function ResultsPage(): JSX.Element {
 /**
  * With the deep analysis accepted the page grows to four blocks: a sticky
  * bar, under the header, reaches each one without scrolling through it all.
+ * Like the header navigation, it marks where the reader is with a blue
+ * underline, on top of `aria-current`, and follows the scroll.
  */
-const RESULT_SECTIONS: readonly { href: string; label: string; icon: LucideIcon }[] = [
-  { href: '#perfil', label: 'Perfil', icon: Layers },
-  { href: '#desequilibrios', label: 'Desequilibrios y alertas', icon: Scale },
-  { href: '#roadmap', label: 'Roadmap', icon: Route },
-  { href: '#servicio', label: 'Servicio INNLAB', icon: Compass },
+const RESULT_SECTIONS: readonly { id: string; label: string; icon: LucideIcon }[] = [
+  { id: 'perfil', label: 'Perfil', icon: Layers },
+  { id: 'desequilibrios', label: 'Desequilibrios y alertas', icon: Scale },
+  { id: 'roadmap', label: 'Roadmap', icon: Route },
+  { id: 'servicio', label: 'Servicio INNLAB', icon: Compass },
 ];
 
+const RESULT_SECTION_IDS = RESULT_SECTIONS.map((section) => section.id);
+
 function ResultSectionNav(): JSX.Element {
+  const active = useActiveSection(RESULT_SECTION_IDS);
+
   return (
     <nav
       aria-label="Secciones del resultado"
@@ -219,10 +226,11 @@ function ResultSectionNav(): JSX.Element {
     >
       <ul className="flex min-w-max gap-6">
         {RESULT_SECTIONS.map((section) => (
-          <li key={section.href}>
+          <li key={section.id}>
             <a
-              href={section.href}
-              className="text-muted-foreground hover:text-foreground hover:border-primary flex h-12 items-center gap-2 border-b-2 border-transparent text-[0.9375rem] font-semibold"
+              href={`#${section.id}`}
+              aria-current={active === section.id ? 'location' : undefined}
+              className="text-muted-foreground hover:text-foreground hover:border-primary/40 aria-[current=location]:border-primary aria-[current=location]:text-foreground flex h-12 items-center gap-2 border-b-2 border-transparent text-[0.9375rem] font-semibold aria-[current=location]:font-bold"
             >
               <section.icon className="size-4 shrink-0" aria-hidden="true" />
               {section.label}
