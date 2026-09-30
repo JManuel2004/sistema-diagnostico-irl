@@ -10,6 +10,8 @@ import {
 } from '../../../../../src/shared/kernel/infrastructure/database/seeds/data/routing.js';
 import { CalibrationScale } from '../../../../../src/modules/routing/domain/value-objects/calibration-scale.vo.js';
 import type { OrdinalProfile } from '../../../../../src/modules/routing/domain/value-objects/ordinal-profile.vo.js';
+import type { AdjustmentOnlyService } from '../../../../../src/modules/routing/domain/value-objects/adjustment-only-service.vo.js';
+import { isIncluded } from '../../../../../src/modules/routing/domain/value-objects/scored-candidate.vo.js';
 import { OrdinalTranslatorService } from '../../../../../src/modules/routing/domain/services/ordinal-translator.service.js';
 import { EligibilityFilterService } from '../../../../../src/modules/routing/domain/services/eligibility-filter.service.js';
 import { AffinityScorerService } from '../../../../../src/modules/routing/domain/services/affinity-scorer.service.js';
@@ -31,6 +33,9 @@ import type { CompiledExceptionRule } from '../../../../../src/modules/routing/d
  * term-by-term breakdown is below so they can be checked without running
  * anything.
  *
+ * The services are INNLAB's official portfolio; their intensities, stages
+ * and rules are simulated (see `data/routing.ts`).
+ *
  * AgroConecta profile: TRL 6 · CRL 4 · BRL 3 · IPRL 1 · TmRL 5 · FRL 2
  *   - bottleneck:       IPRL (level 1, no tie)
  *   - gaps (IRL ≤ 3):   BRL, IPRL, FRL  → three
@@ -39,8 +44,9 @@ import type { CompiledExceptionRule } from '../../../../../src/modules/routing/d
  *                       TmRL-FRL and BRL-IPRL moderate; CRL-BRL acceptable
  */
 
-const ID_BY_SERVICE = new Map(
-  SERVICES.map((s, i) => [s.name, i + 1] as const),
+const ID_BY_SERVICE = new Map(SERVICES.map((s, i) => [s.name, i + 1] as const));
+const ADJUSTMENT_ONLY = new Set(
+  SERVICES.filter((s) => s.adjustmentOnly).map((s) => s.name),
 );
 
 const LEVELS: Record<DimensionCode, number> = {
@@ -89,42 +95,51 @@ function buildEngine() {
     })),
   );
 
-  const profiles: OrdinalProfile[] = ORDINAL_PROFILES.map((f) => ({
+  // As the configuration repository does: only scored services get a profile
+  // for layers 1 and 2; adjustment-only ones are kept apart for layer 3.
+  const profiles: OrdinalProfile[] = ORDINAL_PROFILES.filter(
+    (f) => !ADJUSTMENT_ONLY.has(f.service),
+  ).map((f) => ({
     idService: ID_BY_SERVICE.get(f.service)!,
     serviceName: f.service,
-    minLevel: f.minLevel,
-    maxLevel: f.maxLevel,
+    minLevel: f.minLevel!,
+    maxLevel: f.maxLevel!,
     relevantStages: f.relevantStages,
     intensities: new Map(
       Object.entries(f.intensities) as [DimensionCode, string][],
     ),
   }));
+  const adjustmentOnly: AdjustmentOnlyService[] = SERVICES.filter(
+    (s) => s.adjustmentOnly,
+  ).map((s) => ({
+    idService: ID_BY_SERVICE.get(s.name)!,
+    serviceName: s.name,
+  }));
 
-  const eligibilityRules: CompiledEligibilityRule[] =
-    ELIGIBILITY_RULES.map((r) => ({
+  const eligibilityRules: CompiledEligibilityRule[] = ELIGIBILITY_RULES.map(
+    (r) => ({
       code: r.code,
       idService: ID_BY_SERVICE.get(r.service)!,
       expression: compiler.compile(r.predicate, 'BOOLEAN'),
       exclusionMessage: r.exclusionMessage,
-    }));
-
-  const exceptionRules: CompiledExceptionRule[] = EXCEPTION_RULES.map(
-    (r) => ({
-      code: r.code,
-      priorityOrder: r.priorityOrder,
-      expression: compiler.compile(r.predicate, 'WITH_DEGREE'),
-      action: r.action,
-      idTargetService: ID_BY_SERVICE.get(r.targetService)!,
-      positions: r.positions,
-      declaredReason: r.declaredReason,
     }),
   );
 
-  return { scale, profiles, eligibilityRules, exceptionRules };
+  const exceptionRules: CompiledExceptionRule[] = EXCEPTION_RULES.map((r) => ({
+    code: r.code,
+    priorityOrder: r.priorityOrder,
+    expression: compiler.compile(r.predicate, 'WITH_DEGREE'),
+    action: r.action,
+    idTargetService: ID_BY_SERVICE.get(r.targetService)!,
+    positions: r.positions,
+    declaredReason: r.declaredReason,
+  }));
+
+  return { scale, profiles, adjustmentOnly, eligibilityRules, exceptionRules };
 }
 
 function evaluate(facts: DiagnosticFacts) {
-  const { scale, profiles, eligibilityRules, exceptionRules } =
+  const { scale, profiles, adjustmentOnly, eligibilityRules, exceptionRules } =
     buildEngine();
 
   const numericas = new OrdinalTranslatorService().translate(profiles, scale);
@@ -145,121 +160,160 @@ function evaluate(facts: DiagnosticFacts) {
     initialRanking,
     exceptionRules,
     facts,
+    adjustmentOnly,
   );
 
   return { excluded, initialRanking, ...result };
 }
 
 describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
+  describe('servicios solo por ajuste', () => {
+    it('no participan en la capa 1 ni en la 2: no se excluyen ni se puntúan', () => {
+      const { excluded, initialRanking } = evaluate(FACTS_AGROCONECTA);
+      const seen = [
+        ...excluded.map((e) => e.name),
+        ...initialRanking.map((c) => c.serviceName),
+      ];
+
+      expect([...ADJUSTMENT_ONLY].sort()).toEqual([
+        'Academia a la Medida',
+        'Alianza Residente',
+        'Chispa',
+        'Práctica de Innovación',
+      ]);
+      for (const name of ADJUSTMENT_ONLY) expect(seen).not.toContain(name);
+    });
+  });
+
   describe('capa 1 · eligibility', () => {
-    it('excluye Proyectos de Grado por falta de vinculación académica (ELG-01)', () => {
+    it('excluye las dos Células de Grado por falta de vinculación académica (ELG-01A, ELG-01B)', () => {
       const { excluded } = evaluate(FACTS_AGROCONECTA);
 
-      expect(excluded).toHaveLength(1);
-      expect(excluded[0].name).toBe('Proyectos de Grado');
+      expect(excluded.map((e) => [e.ruleCode, e.name])).toEqual([
+        ['ELG-01A', 'Célula de Grado · Pregrado'],
+        ['ELG-01B', 'Célula de Grado · Posgrado'],
+      ]);
       expect(excluded[0].exclusionMessage).toContain(
         'vinculación académica confirmada',
       );
     });
 
-    it('no excluye Retos en el Aula: el equipo tiene 3 personas (ELG-02 exige ≥2)', () => {
+    it('no excluye Reto en el Aula: el equipo tiene 3 personas (ELG-02 exige ≥2)', () => {
       const { excluded } = evaluate(FACTS_AGROCONECTA);
 
-      expect(excluded.map((e) => e.name)).not.toContain('Retos en el Aula');
+      expect(excluded.map((e) => e.name)).not.toContain('Reto en el Aula');
     });
   });
 
   describe('capa 2 · cálculo de afinidad', () => {
     /**
-     * Consultoría breakdown, derived by hand from the configuration:
+     * Reto Express breakdown, derived by hand from the configuration:
      *
-     *   intensities → TRL 0.0 · CRL 1.0 · BRL 1.0 · IPRL 0.5 · TmRL 0.0 · FRL 0.5
+     *   intensities → TRL 1.0 · CRL 0.5 · BRL 0.2 · IPRL 0.0 · TmRL 0.2 · FRL 0.0
      *
-     *   bottleneck (IPRL)  3.0 × 0.5                              = 1.50
-     *   gaps               1.5 × (BRL 1.0 + IPRL 0.5 + FRL 0.5)   = 3.00
-     *   imbalances      TRL-CRL   0.5 × max(0.0, 1.0) = 0.50
-     *                   TRL-BRL   0.5 × max(0.0, 1.0) = 0.50
+     *   bottleneck (IPRL)  3.0 × 0.0                              = 0.00
+     *   gaps               1.5 × (BRL 0.2 + IPRL 0.0 + FRL 0.0)   = 0.30
+     *   imbalances      TRL-CRL   0.5 × max(1.0, 0.5) = 0.50
+     *                   TRL-BRL   0.5 × max(1.0, 0.2) = 0.50
      *                   CRL-BRL   acceptable          = 0.00
-     *                   TmRL-FRL  0.5 × max(0.0, 0.5) = 0.25
-     *                   BRL-IPRL  0.5 × max(1.0, 0.5) = 0.50
-     *                   TRL-IPRL  1.0 × max(0.0, 0.5) = 0.50      = 2.25
-     *   stage affinity  validation ∈ {validation, growth}         = 0.80
-     *   penalty         average 3.5 < min_level 4                 = −2.00
-     *                                                     total =  5.55
+     *                   TmRL-FRL  0.5 × max(0.2, 0.0) = 0.10
+     *                   BRL-IPRL  0.5 × max(0.2, 0.0) = 0.10
+     *                   TRL-IPRL  1.0 × max(1.0, 0.0) = 1.00      = 2.20
+     *   stage affinity  validacion ∈ {idea, validacion}           = 0.80
+     *   penalty         average 3.5 within 3–5                    = 0.00
+     *                                                     total =  3.30
      */
-    it('puntúa Consultoría en 5.55, con el breakdown término a término esperado', () => {
+    it('puntúa Reto Express en 3.30, con el desglose término a término esperado', () => {
       const { initialRanking } = evaluate(FACTS_AGROCONECTA);
-      const consulting = initialRanking.find(
-        (c) => c.serviceName === 'Consultoría',
-      );
+      const reto = initialRanking.find((c) => c.serviceName === 'Reto Express');
 
-      expect(consulting).toBeDefined();
-      expect(consulting!.contributions.bottleneck.value).toBeCloseTo(1.5, 3);
-      expect(consulting!.contributions.gaps.value).toBeCloseTo(3.0, 3);
-      expect(consulting!.contributions.imbalances.value).toBeCloseTo(2.25, 3);
-      expect(consulting!.contributions.stageAffinity.value).toBeCloseTo(0.8, 3);
-      expect(consulting!.contributions.rangePenalty.value).toBeCloseTo(2.0, 3);
-      expect(consulting!.contributions.rangePenalty.applied).toBe(true);
-      expect(consulting!.total).toBeCloseTo(5.55, 3);
+      expect(reto).toBeDefined();
+      expect(reto!.contributions.bottleneck.value).toBeCloseTo(0, 3);
+      expect(reto!.contributions.gaps.value).toBeCloseTo(0.3, 3);
+      expect(reto!.contributions.imbalances.value).toBeCloseTo(2.2, 3);
+      expect(reto!.contributions.stageAffinity.value).toBeCloseTo(0.8, 3);
+      expect(reto!.contributions.rangePenalty.applied).toBe(false);
+      expect(reto!.total).toBeCloseTo(3.3, 3);
     });
 
-    it('produce el ranking pre-excepción esperado', () => {
+    /**
+     * The rest, by hand (bottleneck + gaps + imbalances + stage − penalty):
+     *   Célula Dedicada · Co.LAB  0.60 + 1.05 + 2.50 + 0.0 − 2.0 = 2.15
+     *   Consultoría Experta       0.60 + 1.05 + 2.35 + 0.0 − 2.0 = 2.00
+     *   Reto en el Aula           0.00 + 0.75 + 2.25 + 0.8 − 2.0 = 1.80
+     *   Semillero con Propósito   0.00 + 0.30 + 2.35 + 0.8 − 2.0 = 1.45
+     *   Talento In-House          0.00 + 0.30 + 2.60 + 0.0 − 2.0 = 0.90
+     * Every one of them is outside its band for an average of 3.5.
+     */
+    it('produce el ranking previo a los ajustes esperado', () => {
       const { initialRanking } = evaluate(FACTS_AGROCONECTA);
 
       expect(
         initialRanking.map((c) => [c.serviceName, c.total] as const),
       ).toEqual([
-        ['Consultoría', 5.55],
-        ['Mentoría', 3.8],
-        ['Proyectos Integradores', 3.05],
-        ['Formación', 3.0],
-        ['Retos en el Aula', 2.9],
+        ['Reto Express', 3.3],
+        ['Célula Dedicada · Co.LAB', 2.15],
+        ['Consultoría Experta', 2.0],
+        ['Reto en el Aula', 1.8],
+        ['Semillero con Propósito', 1.45],
+        ['Talento In-House', 0.9],
       ]);
     });
 
-    it('conserva la label ordinal de origen junto a cada contribution', () => {
+    it('conserva la etiqueta ordinal de origen junto a cada contribución', () => {
       const { initialRanking } = evaluate(FACTS_AGROCONECTA);
-      const consulting = initialRanking.find(
-        (c) => c.serviceName === 'Consultoría',
+      const colab = initialRanking.find(
+        (c) => c.serviceName === 'Célula Dedicada · Co.LAB',
       )!;
 
-      // It is what allows explaining "it is secondary in IPRL" instead of
-      // exposing the 0.5 of the calibration.
-      expect(consulting.contributions.bottleneck.details).toEqual([
-        { dimension: 'IPRL', sourceLabel: 'secondary', value: 0.5 },
+      // It is what allows explaining "it is marginal in IPRL" instead of
+      // exposing the 0.2 of the calibration.
+      expect(colab.contributions.bottleneck.details).toEqual([
+        { dimension: 'IPRL', sourceLabel: 'marginal', value: 0.2 },
       ]);
     });
   });
 
-  describe('capa 3 · ajustes puntuales', () => {
-    it('activa E-01 y descarta E-02 y E-03, en ese order de prioridad', () => {
+  describe('capa 3 · ajustes', () => {
+    it('solo se dispara INC-02; los demás se descartan en su orden de prioridad', () => {
       const { applied, discarded } = evaluate(FACTS_AGROCONECTA);
 
-      expect(applied.map((e) => e.code)).toEqual(['E-01']);
-      expect(discarded.map((e) => e.code)).toEqual(['E-02', 'E-03']);
+      expect(applied.map((e) => e.code)).toEqual(['INC-02']);
+      expect(discarded.map((e) => e.code)).toEqual([
+        'E-02',
+        'E-03',
+        'INC-01',
+        'INC-03',
+        'INC-04',
+      ]);
     });
 
-    it('E-01 fuerza Consultoría y deja constancia de que era una decisión, no un cálculo', () => {
-      const { applied } = evaluate(FACTS_AGROCONECTA);
-      const e01 = applied[0];
+    it('INC-02 mete Academia a la Medida en el puesto 2 del ranking, sin puntaje', () => {
+      const { applied, finalRanking } = evaluate(FACTS_AGROCONECTA);
+      const inc02 = applied[0];
 
-      expect(e01.action).toBe('FORCE');
-      expect(e01.targetService).toBe('Consultoría');
-      expect(e01.declaredReason).toContain('riesgo legal crítico');
-      // Consultoría was already first by calculation; the trace has to say
-      // that it was also pinned explicitly, because for the audit "it won"
-      // and "it was decided that it would win" are not the same.
-      expect(e01.effect).toContain('ya ocupaba el puesto 1');
-      expect(e01.rankingBefore[0].serviceName).toBe('Consultoría');
-      expect(e01.rankingAfter[0].serviceName).toBe('Consultoría');
+      expect(inc02.action).toBe('INCLUDE');
+      expect(inc02.targetService).toBe('Academia a la Medida');
+      expect(inc02.effect).toBe(
+        'Academia a la Medida entra al ranking en el puesto 2, sin puntaje',
+      );
+      expect(finalRanking.map((c) => c.serviceName)).toEqual([
+        'Reto Express',
+        'Academia a la Medida',
+        'Célula Dedicada · Co.LAB',
+        'Consultoría Experta',
+        'Reto en el Aula',
+        'Semillero con Propósito',
+        'Talento In-House',
+      ]);
+      expect(isIncluded(finalRanking[1])).toBe(true);
     });
 
     it('descarta E-02 porque el cuello de botella es IPRL', () => {
       const { discarded } = evaluate(FACTS_AGROCONECTA);
-      // gaps count >= 3 holds, but NOT(bottleneck contains IPRL) does
-      // not: the guard is precisely what keeps an adjustment meant for
-      // diffuse profiles from displacing a service chosen for a specific
-      // urgency.
+      // gaps count >= 3 holds, but NOT(bottleneck contains IPRL) does not:
+      // the guard keeps an adjustment meant for diffuse profiles from
+      // displacing a service chosen for a specific urgency.
       expect(discarded.find((e) => e.code === 'E-02')?.reason).toContain(
         'no se cumple',
       );
@@ -267,37 +321,28 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
   });
 
   describe('resultado final', () => {
-    it('recomienda Consultoría, con Mentoría y Proyectos Integradores como alternatives', () => {
+    it('recomienda Reto Express, con Academia a la Medida como alternativa exenta del umbral', () => {
       const { finalRanking } = evaluate(FACTS_AGROCONECTA);
-      const aboveThreshold = finalRanking.filter(
-        (c) => c.total >= SCORING_PARAMETERS.minimumThreshold,
+      // The included service passes without a score; every other scored
+      // service is below the threshold (2.5).
+      const eligibleForResult = finalRanking.filter(
+        (c) => isIncluded(c) || c.total >= SCORING_PARAMETERS.minimumThreshold,
       );
 
-      expect(aboveThreshold[0].serviceName).toBe('Consultoría');
-      expect(
-        aboveThreshold
-          .slice(1, 1 + SCORING_PARAMETERS.alternativesCount)
-          .map((c) => c.serviceName),
-      ).toEqual(['Mentoría', 'Proyectos Integradores']);
-    });
-
-    it('todos los candidates eligible superan el threshold mínimo de 2.5', () => {
-      const { finalRanking } = evaluate(FACTS_AGROCONECTA);
-
-      expect(
-        finalRanking.every((c) => c.total >= SCORING_PARAMETERS.minimumThreshold),
-      ).toBe(true);
+      expect(eligibleForResult.map((c) => c.serviceName)).toEqual([
+        'Reto Express',
+        'Academia a la Medida',
+      ]);
     });
   });
 
   describe('sensibilidad del caso', () => {
     /**
-     * Counter-check of E-02's guard. If the bottleneck were not IPRL, E-01
-     * would not fire and E-02 would, promoting Retos en el Aula two
-     * positions. Checking it is what proves the guard does something and that
-     * the priority cascade is not decorative.
+     * Counter-check of E-02's guard. If the bottleneck were not IPRL, E-02
+     * would fire and promote Reto en el Aula two positions. Checking it is
+     * what proves the guard does something.
      */
-    it('sin cuello de botella en IPRL, E-01 calla y E-02 promueve Retos en el Aula', () => {
+    it('sin cuello de botella en IPRL, E-02 promueve Reto en el Aula', () => {
       const withoutIprl: DiagnosticFacts = {
         ...FACTS_AGROCONECTA,
         levelByDimension: { ...LEVELS, IPRL: 5, BRL: 1 },
@@ -310,22 +355,56 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
         ),
       };
 
-      const { applied, discarded } = evaluate(withoutIprl);
-
-      expect(discarded.map((e) => e.code)).toContain('E-01');
-      expect(applied.map((e) => e.code)).toContain('E-02');
-
+      const { applied } = evaluate(withoutIprl);
       const e02 = applied.find((e) => e.code === 'E-02')!;
-      expect(e02.action).toBe('PROMOTE');
-      expect(e02.targetService).toBe('Retos en el Aula');
 
+      expect(e02.action).toBe('PROMOTE');
+      expect(e02.targetService).toBe('Reto en el Aula');
       const before = e02.rankingBefore.findIndex(
-        (c) => c.serviceName === 'Retos en el Aula',
+        (c) => c.serviceName === 'Reto en el Aula',
       );
       const after = e02.rankingAfter.findIndex(
-        (c) => c.serviceName === 'Retos en el Aula',
+        (c) => c.serviceName === 'Reto en el Aula',
       );
       expect(after).toBe(Math.max(0, before - 2));
+    });
+
+    it('con vinculación académica, las Células de Grado vuelven a competir', () => {
+      const linked: DiagnosticFacts = {
+        ...FACTS_AGROCONECTA,
+        characterization: {
+          ...FACTS_AGROCONECTA.characterization,
+          academicLinkage: true,
+        },
+      };
+
+      const { excluded, initialRanking } = evaluate(linked);
+
+      expect(excluded).toEqual([]);
+      expect(initialRanking.map((c) => c.serviceName)).toContain(
+        'Célula de Grado · Posgrado',
+      );
+    });
+
+    it('un equipo de una persona excluye Reto en el Aula e incluye Práctica de Innovación', () => {
+      const solo: DiagnosticFacts = {
+        ...FACTS_AGROCONECTA,
+        characterization: {
+          ...FACTS_AGROCONECTA.characterization,
+          teamSize: 1,
+        },
+      };
+
+      const { excluded, finalRanking } = evaluate(solo);
+
+      expect(excluded.map((e) => e.ruleCode)).toContain('ELG-02');
+      // INC-02 puts Academia in position 2; INC-03, applied after it, puts
+      // Práctica in position 2 and pushes Academia to 3.
+      expect(finalRanking.slice(0, 3).map((c) => c.serviceName)).toEqual([
+        'Reto Express',
+        'Práctica de Innovación',
+        'Academia a la Medida',
+      ]);
     });
   });
 });

@@ -1,5 +1,9 @@
 import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js';
-import type { ScoredCandidate } from '../value-objects/scored-candidate.vo.js';
+import {
+  isIncluded,
+  type RankedCandidate,
+  type ScoredCandidate,
+} from '../value-objects/scored-candidate.vo.js';
 import type {
   AppliedException,
   DiscardedException,
@@ -17,6 +21,10 @@ import type { ExcludedService } from '../services/eligibility-filter.service.js'
  * the system never to return an empty or ambiguous recommendation; it does
  * not require it to always find one. If every candidate was excluded or none
  * cleared the threshold, that is said explicitly.
+ *
+ * A service an `INCLUDE` adjustment put into the ranking has no score, and
+ * the threshold does not apply to it: the center decided it belongs there,
+ * so its position alone makes it the recommendation or an alternative.
  */
 export type ResultType = 'RECOMMENDATION' | 'NO_RECOMMENDATION';
 
@@ -25,7 +33,7 @@ export interface EvaluationTrace {
   readonly rankingBeforeExceptions: readonly ScoredCandidate[];
   readonly appliedExceptions: readonly AppliedException[];
   readonly discardedExceptions: readonly DiscardedException[];
-  readonly rankingAfterExceptions: readonly ScoredCandidate[];
+  readonly rankingAfterExceptions: readonly RankedCandidate[];
   readonly incompleteCharacterization: readonly string[];
   readonly factsHash: string;
 }
@@ -34,8 +42,8 @@ export class Recommendation {
   private constructor(
     public readonly diagnosticId: Uuid,
     public readonly resultType: ResultType,
-    public readonly primary: ScoredCandidate | null,
-    public readonly alternatives: readonly ScoredCandidate[],
+    public readonly primary: RankedCandidate | null,
+    public readonly alternatives: readonly RankedCandidate[],
     public readonly justification: string | null,
     public readonly noRecommendationReason: string | null,
     public readonly trace: EvaluationTrace,
@@ -44,7 +52,7 @@ export class Recommendation {
 
   static create(input: {
     diagnosticId: Uuid;
-    finalRanking: readonly ScoredCandidate[];
+    finalRanking: readonly RankedCandidate[];
     minimumThreshold: number;
     alternativesCount: number;
     justification: string | null;
@@ -53,7 +61,7 @@ export class Recommendation {
     generatedAt: Date;
   }): Recommendation {
     const aboveThreshold = input.finalRanking.filter(
-      (c) => c.total >= input.minimumThreshold,
+      (c) => isIncluded(c) || c.total >= input.minimumThreshold,
     );
 
     if (aboveThreshold.length === 0) {
@@ -64,7 +72,7 @@ export class Recommendation {
         [],
         null,
         input.noRecommendationReason ??
-          'Ningún service del portafolio alcanzó la pertinencia mínima para este perfil.',
+          'Ningún servicio del portafolio alcanzó la pertinencia mínima para este perfil.',
         input.trace,
         input.generatedAt,
       );
@@ -89,8 +97,8 @@ export class Recommendation {
   static fromPersistence(row: {
     diagnosticId: string;
     resultType: ResultType;
-    primary: ScoredCandidate | null;
-    alternatives: readonly ScoredCandidate[];
+    primary: RankedCandidate | null;
+    alternatives: readonly RankedCandidate[];
     justification: string | null;
     noRecommendationReason: string | null;
     trace: EvaluationTrace;

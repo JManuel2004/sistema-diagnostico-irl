@@ -35,8 +35,8 @@ import { agroconectaAnswers } from '../../support/agroconecta-case.js';
  *
  *   - that the event reaches both real listeners,
  *   - that each module publishes its own "calculated" event,
- *   - that the result is still AgroConecta's (Consultoría, with Mentoría
- *     and Proyectos Integradores as alternatives),
+ *   - that the result is still AgroConecta's (Reto Express, with Academia
+ *     a la Medida as the alternative an adjustment put into the ranking),
  *   - and that the recommendation exists without ever calling a direct
  *     endpoint of `routing/`.
  *
@@ -97,7 +97,11 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
               ($3, $2, 'QUESTIONNAIRE_IN_PROGRESS', (SELECT id FROM irl_catalog.framework_version WHERE code = 'KTH-IRL-1.0'))`,
       [diagnosticId, E2E_USER.sub, withoutProfile],
     );
-    initiativeId = await insertInitiativeWithProfile(dataSource, diagnosticId, E2E_USER.sub);
+    initiativeId = await insertInitiativeWithProfile(
+      dataSource,
+      diagnosticId,
+      E2E_USER.sub,
+    );
 
     const statements = await dataSource.query<
       { id_statement: string; code: string; sequence: number }[]
@@ -121,7 +125,10 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
         `DELETE FROM irl_diagnostic.diagnostic WHERE id = ANY($1)`,
         [[diagnosticId, withoutProfile]],
       );
-      await dataSource.query(`DELETE FROM irl_diagnostic.initiative WHERE id = $1`, [initiativeId]);
+      await dataSource.query(
+        `DELETE FROM irl_diagnostic.initiative WHERE id = $1`,
+        [initiativeId],
+      );
     }
     nock.cleanAll();
     await app?.close();
@@ -191,11 +198,10 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
     const dto = recommendationResponseSchema.parse(res.body);
 
     expect(dto.resultType).toBe('RECOMMENDATION');
-    expect(dto.primary?.name).toBe('Consultoría');
-    expect(dto.primary?.score).toBeCloseTo(5.55, 3);
+    expect(dto.primary?.name).toBe('Reto Express');
+    expect(dto.primary?.score).toBeCloseTo(3.3, 3);
     expect(dto.alternatives.map((a) => a.name)).toEqual([
-      'Mentoría',
-      'Proyectos Integradores',
+      'Academia a la Medida',
     ]);
   });
 

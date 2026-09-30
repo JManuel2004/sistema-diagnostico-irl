@@ -39,8 +39,23 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  *     band) and its two child tables (`portfolio_service_stage`, the stages
  *     it fits; `ordinal_intensity`, one label of the calibration scale per
  *     dimension).
- *   - A recommendation keeps its trace in its own row, and its ranking in
- *     `recommendation_rank` (position 1 is the recommended service).
+ *   - A service is either scored or **adjustment-only**
+ *     (`portfolio_service.adjustment_only`): an adjustment-only service takes
+ *     no part in the exclusions or the score, and only enters the ranking
+ *     when an `INCLUDE` adjustment puts it at the position the rule sets
+ *     (`positions`). It is an explicit flag, not inferred from the band,
+ *     because an adjustment-only service may still have one; a scored
+ *     service must have one (`ck_portfolio_service_scored_band`).
+ *   - The rules cannot point at the wrong kind of service. The composite
+ *     foreign keys to `portfolio_service (id, adjustment_only)` carry the
+ *     target's flag into `eligibility_rule` and `exception_rule`: an
+ *     exclusion only targets a scored service, and `INCLUDE` only an
+ *     adjustment-only one. The other adjustments may target either kind: an
+ *     included service is one more place of the ranking.
+ *   - A recommendation keeps its trace in its own row and its ranking in
+ *     `recommendation_rank` (position 1 is the recommended service). A place
+ *     an adjustment included has no score and records the rule instead
+ *     (`ck_recommendation_rank_origin`).
  *   - `conversion_range` cannot overlap within a version
  *     (`ex_conversion_range_overlap`); the seed also checks that every
  *     reachable average falls in exactly one range.
@@ -182,11 +197,17 @@ const UP: readonly string[] = [
       name character varying(80) NOT NULL,
       description character varying(500),
       is_active boolean DEFAULT true NOT NULL,
-      min_level integer NOT NULL,
-      max_level integer NOT NULL,
+      adjustment_only boolean NOT NULL,
+      min_level integer,
+      max_level integer,
       CONSTRAINT pk_portfolio_service PRIMARY KEY (id),
       CONSTRAINT uq_portfolio_service_name UNIQUE (name),
-      CONSTRAINT ck_portfolio_service_levels CHECK (min_level BETWEEN 1 AND 9 AND max_level BETWEEN 1 AND 9 AND min_level <= max_level)
+      CONSTRAINT uq_portfolio_service_selection UNIQUE (id, adjustment_only),
+      CONSTRAINT ck_portfolio_service_levels CHECK (
+        (min_level IS NULL AND max_level IS NULL)
+        OR (min_level BETWEEN 1 AND 9 AND max_level BETWEEN 1 AND 9 AND min_level <= max_level)
+      ),
+      CONSTRAINT ck_portfolio_service_scored_band CHECK (adjustment_only OR min_level IS NOT NULL)
   )`,
   `CREATE TABLE irl_catalog.portfolio_service_stage (
       id_service integer NOT NULL,
@@ -222,9 +243,12 @@ const UP: readonly string[] = [
       id_service integer NOT NULL,
       predicate jsonb NOT NULL,
       exclusion_message character varying(500) NOT NULL,
+      service_adjustment_only boolean DEFAULT false NOT NULL,
       CONSTRAINT pk_eligibility_rule PRIMARY KEY (id),
       CONSTRAINT uq_eligibility_rule_code UNIQUE (code),
-      CONSTRAINT fk_eligibility_rule_service FOREIGN KEY (id_service) REFERENCES irl_catalog.portfolio_service (id)
+      CONSTRAINT ck_eligibility_rule_scored_service CHECK (NOT service_adjustment_only),
+      CONSTRAINT fk_eligibility_rule_service FOREIGN KEY (id_service, service_adjustment_only)
+        REFERENCES irl_catalog.portfolio_service (id, adjustment_only) ON UPDATE CASCADE
   )`,
   `CREATE TABLE irl_catalog.exception_rule (
       id bigint GENERATED ALWAYS AS IDENTITY,
@@ -235,15 +259,18 @@ const UP: readonly string[] = [
       positions integer,
       declared_reason character varying(1000) NOT NULL,
       priority_order integer NOT NULL,
+      target_adjustment_only boolean NOT NULL,
       CONSTRAINT pk_exception_rule PRIMARY KEY (id),
       CONSTRAINT uq_exception_rule_code UNIQUE (code),
       CONSTRAINT uq_exception_rule_priority UNIQUE (priority_order),
-      CONSTRAINT ck_exception_rule_action CHECK (action IN ('FORCE', 'VETO', 'PROMOTE', 'DEMOTE')),
+      CONSTRAINT ck_exception_rule_action CHECK (action IN ('FORCE', 'VETO', 'PROMOTE', 'DEMOTE', 'INCLUDE')),
       CONSTRAINT ck_exception_rule_positions CHECK (
-        (action IN ('PROMOTE', 'DEMOTE') AND positions IS NOT NULL AND positions > 0)
+        (action IN ('PROMOTE', 'DEMOTE', 'INCLUDE') AND positions IS NOT NULL AND positions > 0)
         OR (action IN ('FORCE', 'VETO') AND positions IS NULL)
       ),
-      CONSTRAINT fk_exception_rule_service FOREIGN KEY (id_target_service) REFERENCES irl_catalog.portfolio_service (id)
+      CONSTRAINT ck_exception_rule_include_target CHECK (action <> 'INCLUDE' OR target_adjustment_only),
+      CONSTRAINT fk_exception_rule_service FOREIGN KEY (id_target_service, target_adjustment_only)
+        REFERENCES irl_catalog.portfolio_service (id, adjustment_only) ON UPDATE CASCADE
   )`,
   `CREATE TABLE irl_catalog.scoring_parameters (
       id smallint DEFAULT 1 NOT NULL,
@@ -397,10 +424,12 @@ const UP: readonly string[] = [
       id_service integer NOT NULL,
       service_snapshot character varying(80) NOT NULL,
       position integer NOT NULL,
-      score numeric(8,3) NOT NULL,
+      score numeric(8,3),
+      included_by_rule character varying(16),
       CONSTRAINT pk_recommendation_rank PRIMARY KEY (id),
       CONSTRAINT uq_recommendation_rank_position UNIQUE (id_recommendation, position),
       CONSTRAINT ck_recommendation_rank_position CHECK (position >= 1),
+      CONSTRAINT ck_recommendation_rank_origin CHECK ((score IS NULL) = (included_by_rule IS NOT NULL)),
       CONSTRAINT fk_recommendation_rank_recommendation FOREIGN KEY (id_recommendation) REFERENCES irl_diagnostic.portfolio_recommendation (id) ON DELETE CASCADE,
       CONSTRAINT fk_recommendation_rank_service FOREIGN KEY (id_service) REFERENCES irl_catalog.portfolio_service (id)
   )`,

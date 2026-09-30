@@ -2,9 +2,10 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import type { Predicate } from '@innlab/contracts';
 
 /**
- * A deliberate override of the computed ranking. Layer 3.
+ * A deliberate adjustment of the center. Layer 3: it moves a scored service
+ * in the computed ranking, or includes an adjustment-only one.
  *
- * `code` is the stable business identifier (E-01, E-02, ...) used when
+ * `code` is the stable business identifier (E-02, INC-01, ...) used when
  * attributing an outcome to the adjustment that caused it — a synthetic
  * primary key would not survive a republish.
  *
@@ -36,4 +37,11 @@ export class ExceptionRuleOrm {
 
   @Column({ name: 'priority_order', type: 'integer' })
   priorityOrder!: number;
+
+  /**
+   * The target service's `adjustment_only`, carried by the composite foreign
+   * key: `INCLUDE` requires it, every other action forbids it.
+   */
+  @Column({ name: 'target_adjustment_only', type: 'boolean' })
+  targetAdjustmentOnly!: boolean;
 }

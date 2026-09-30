@@ -18,6 +18,9 @@ interface Props {
  * internal detail of the calibration and showing it invites discussing the
  * number instead of the recommendation. Whoever wants the breakdown has it
  * in the explanation of how it was reached.
+ *
+ * An alternative an adjustment of the center put into the ranking says so,
+ * with the reason of the adjustment: it did not come from the calculation.
  */
 export function RecommendationSummary({
   recommendation,
@@ -95,6 +98,17 @@ export function RecommendationSummary({
                   </li>
                 ))}
               </ul>
+              {recommendation.alternatives
+                .filter((alt) => alt.adjustmentReason !== null)
+                .map((alt) => (
+                  <p
+                    key={alt.idService}
+                    className="text-muted-foreground mt-3 max-w-prose text-base leading-relaxed"
+                  >
+                    <span className="text-foreground font-semibold">{alt.name}</span> la sugiere el
+                    centro: {alt.adjustmentReason}
+                  </p>
+                ))}
             </div>
           )}
         </CardContent>

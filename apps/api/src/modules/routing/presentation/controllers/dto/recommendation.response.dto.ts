@@ -7,9 +7,21 @@ import type {
 
 class RecommendedServiceDto implements RecommendedService {
   @ApiProperty() idService!: number;
-  @ApiProperty({ example: 'Consultoría' }) name!: string;
+  @ApiProperty({ example: 'Reto Express' }) name!: string;
   @ApiProperty({ minimum: 1 }) position!: number;
-  @ApiProperty() score!: number;
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description: 'Null for a service an adjustment put into the ranking',
+  })
+  score!: number | null;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description:
+      'Reason of the adjustment that put the service into the ranking, if one did',
+  })
+  adjustmentReason!: string | null;
 }
 
 /** OpenAPI shape of `RecommendationResponse` — the initiative leader's view. */
@@ -25,6 +37,7 @@ export class RecommendationResponseDto implements RecommendationResponse {
     | null;
   @ApiProperty({ type: [RecommendedServiceDto] })
   alternatives!: RecommendedServiceDto[];
+
   @ApiProperty({ format: 'date-time' }) generatedAt!: string;
 }
 
@@ -63,6 +76,7 @@ export class LayerTraceResponseDto implements LayerTraceResponse {
   discardedExceptions!: LayerTraceResponse['discardedExceptions'];
   @ApiProperty({ ...OBJECT_LIST, description: 'Final ranking' })
   rankingAfterExceptions!: LayerTraceResponse['rankingAfterExceptions'];
+
   @ApiProperty({
     description:
       'The recommended service is not the one that won the calculation',

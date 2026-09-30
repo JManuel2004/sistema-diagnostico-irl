@@ -58,12 +58,24 @@ export const contributionBreakdownSchema = z.object({
 
 export type ContributionBreakdown = z.infer<typeof contributionBreakdownSchema>;
 
+/** The adjustment that put an adjustment-only service into the ranking. */
+export const inclusionSchema = z.object({
+  ruleCode: z.string().min(1),
+  declaredReason: z.string(),
+});
+
+/**
+ * A place of the ranking. A calculated one has a `score` and its
+ * `contributions`; one an `INCLUDE` adjustment put there has `score: null`
+ * and `includedBy`, and is exempt from the minimum threshold.
+ */
 export const rankingEntrySchema = z.object({
   position: z.number().int().positive(),
   idService: z.number().int().positive(),
   name: z.string(),
-  score: z.number(),
+  score: z.number().nullable(),
   contributions: contributionBreakdownSchema.optional(),
+  includedBy: inclusionSchema.nullable(),
 });
 
 export const layer1ExclusionSchema = z.object({
@@ -74,13 +86,17 @@ export const layer1ExclusionSchema = z.object({
 });
 
 /**
- * The actions an exception rule can take on the ranking. Single source of
- * truth for the extension point: the domain derives its `ExceptionAction`
- * type from this list, the engine keeps one strategy per entry (the compiler
- * fails until it has one), and only the database `CHECK` constraint
+ * The actions an exception rule can take. Single source of truth for the
+ * extension point: the domain derives its `ExceptionAction` type from this
+ * list, the engine keeps one strategy per entry (the compiler fails until it
+ * has one), and only the database `CHECK` constraint
  * (`ck_exception_rule_action`) has to be widened by a migration.
+ *
+ * `INCLUDE` puts an adjustment-only service into the ranking at the
+ * position the rule sets (`positions`), without a score. `FORCE`, `VETO`,
+ * `PROMOTE` and `DEMOTE` move any place of the ranking, an included one too.
  */
-export const EXCEPTION_ACTIONS = ['FORCE', 'VETO', 'PROMOTE', 'DEMOTE'] as const;
+export const EXCEPTION_ACTIONS = ['FORCE', 'VETO', 'PROMOTE', 'DEMOTE', 'INCLUDE'] as const;
 
 export const exceptionActionSchema = z.enum(EXCEPTION_ACTIONS);
 
@@ -126,3 +142,4 @@ export type RankingEntry = z.infer<typeof rankingEntrySchema>;
 export type AppliedException = z.infer<typeof appliedExceptionSchema>;
 export type DiscardedException = z.infer<typeof discardedExceptionSchema>;
 export type Layer1Exclusion = z.infer<typeof layer1ExclusionSchema>;
+export type Inclusion = z.infer<typeof inclusionSchema>;

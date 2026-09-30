@@ -3,7 +3,10 @@ import type {
   LayerTraceResponse,
 } from '@innlab/contracts';
 import type { Recommendation } from '../../domain/entities/recommendation.aggregate.js';
-import type { ScoredCandidate } from '../../domain/value-objects/scored-candidate.vo.js';
+import {
+  isIncluded,
+  type RankedCandidate,
+} from '../../domain/value-objects/scored-candidate.vo.js';
 
 /**
  * Maps the aggregate to the public response.
@@ -75,21 +78,32 @@ export function toLayerTraceResponse(
   };
 }
 
-function toRecommendedService(c: ScoredCandidate, position: number) {
+function toRecommendedService(c: RankedCandidate, position: number) {
   return {
     idService: c.idService,
     name: c.serviceName,
     position,
-    score: c.total,
+    score: isIncluded(c) ? null : c.total,
+    adjustmentReason: isIncluded(c) ? c.includedBy.declaredReason : null,
   };
 }
 
-function toRankingEntry(c: ScoredCandidate, i: number) {
+function toRankingEntry(c: RankedCandidate, i: number) {
+  if (isIncluded(c)) {
+    return {
+      position: i + 1,
+      idService: c.idService,
+      name: c.serviceName,
+      score: null,
+      includedBy: { ...c.includedBy },
+    };
+  }
   return {
     position: i + 1,
     idService: c.idService,
     name: c.serviceName,
     score: c.total,
+    includedBy: null,
     contributions: {
       bottleneck: {
         value: c.contributions.bottleneck.value,

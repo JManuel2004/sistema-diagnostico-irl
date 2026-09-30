@@ -3,7 +3,11 @@ import {
   Recommendation,
   type EvaluationTrace,
 } from '../../../../../src/modules/routing/domain/entities/recommendation.aggregate.js';
-import type { ScoredCandidate } from '../../../../../src/modules/routing/domain/value-objects/scored-candidate.vo.js';
+import type {
+  IncludedCandidate,
+  RankedCandidate,
+  ScoredCandidate,
+} from '../../../../../src/modules/routing/domain/value-objects/scored-candidate.vo.js';
 import { Uuid } from '../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
 import {
   CalibrationNotMonotonicError,
@@ -46,9 +50,20 @@ function trace(over: Partial<EvaluationTrace> = {}): EvaluationTrace {
   };
 }
 
+/** An adjustment-only service an INCLUDE put into the ranking: no score. */
+const ACADEMIA: IncludedCandidate = {
+  idService: 30,
+  serviceName: 'Academia a la Medida',
+  includedBy: { ruleCode: 'INC-02', declaredReason: 'formar al propio equipo' },
+};
+
 function buildRecommendation(
-  ranking: ScoredCandidate[],
-  over: { minimumThreshold?: number; alternativesCount?: number; trace?: EvaluationTrace } = {},
+  ranking: RankedCandidate[],
+  over: {
+    minimumThreshold?: number;
+    alternativesCount?: number;
+    trace?: EvaluationTrace;
+  } = {},
 ) {
   return Recommendation.create({
     diagnosticId: Uuid.create(DIAG),
@@ -63,37 +78,67 @@ function buildRecommendation(
 }
 
 describe('Recommendation (agregado)', () => {
+  // Decision: an included service has no score and is exempt from the
+  // threshold; its position alone decides what it becomes.
+  it('un servicio incluido es alternativa aunque no tenga puntaje', () => {
+    const r = buildRecommendation([
+      cand(2, 'Reto Express', 3.3),
+      ACADEMIA,
+      cand(11, 'Célula Dedicada · Co.LAB', 2.15),
+    ]);
+
+    expect(r.primary?.serviceName).toBe('Reto Express');
+    expect(r.alternatives.map((a) => a.serviceName)).toEqual([
+      'Academia a la Medida',
+    ]);
+  });
+
+  it('un servicio incluido en el primer puesto es la recomendación', () => {
+    const r = buildRecommendation([ACADEMIA, cand(2, 'Reto Express', 3.3)]);
+
+    expect(r.primary).toEqual(ACADEMIA);
+    expect(r.alternatives.map((a) => a.serviceName)).toEqual(['Reto Express']);
+  });
+
+  it('si ningún puntuable alcanza el umbral, el incluido evita el «sin recomendación»', () => {
+    const r = buildRecommendation([cand(2, 'Reto Express', 1.2), ACADEMIA]);
+
+    expect(r.resultType).toBe('RECOMMENDATION');
+    expect(r.primary).toEqual(ACADEMIA);
+    expect(r.alternatives).toEqual([]);
+  });
+
   it('toma como primary el primero por encima del threshold', () => {
     const r = buildRecommendation([
-      cand(3, 'Consultoría', 5.55),
-      cand(2, 'Mentoría', 3.8),
-      cand(5, 'Proyectos Integradores', 3.05),
+      cand(3, 'Consultoría Experta', 5.55),
+      cand(2, 'Reto Express', 3.8),
+      cand(5, 'Semillero con Propósito', 3.05),
     ]);
 
     expect(r.resultType).toBe('RECOMMENDATION');
-    expect(r.primary?.serviceName).toBe('Consultoría');
+    expect(r.primary?.serviceName).toBe('Consultoría Experta');
   });
 
   it('limita las alternatives a `alternativesCount` y nunca incluye la primary', () => {
     const r = buildRecommendation(
       [
-        cand(3, 'Consultoría', 5.55),
-        cand(2, 'Mentoría', 3.8),
-        cand(5, 'Proyectos Integradores', 3.05),
-        cand(1, 'Formación', 3.0),
+        cand(3, 'Consultoría Experta', 5.55),
+        cand(2, 'Reto Express', 3.8),
+        cand(5, 'Semillero con Propósito', 3.05),
+        cand(1, 'Talento In-House', 3.0),
       ],
       { alternativesCount: 2 },
     );
 
     expect(r.alternatives.map((a) => a.serviceName)).toEqual([
-      'Mentoría',
-      'Proyectos Integradores',
+      'Reto Express',
+      'Semillero con Propósito',
     ]);
   });
 
   it('descarta del ranking a los que no llegan al threshold', () => {
     const r = buildRecommendation(
-      [cand(3, 'Consultoría', 5.55), cand(2, 'Mentoría', 1.2)],
+      [cand(3, 'Consultoría Experta', 5.55), cand(2, 'Reto Express', 1.2)],
       { minimumThreshold: 2.5 },
     );
 
@@ -104,7 +149,9 @@ describe('Recommendation (agregado)', () => {
     // It is a legitimate outcome, not a failure: RF-15 asks the system not
     // to return an empty or ambiguous recommendation, not to always find
     // one.
-    const r = buildRecommendation([cand(3, 'Consultoría', 1.0)], { minimumThreshold: 2.5 });
+    const r = buildRecommendation([cand(3, 'Consultoría Experta', 1.0)], {
+      minimumThreshold: 2.5,
+    });
 
     expect(r.resultType).toBe('NO_RECOMMENDATION');
     expect(r.primary).toBeNull();
@@ -120,10 +167,10 @@ describe('Recommendation (agregado)', () => {
 
   describe('adjustedByException', () => {
     it('es falso cuando el ganador del cálculo también gana al final', () => {
-      const r = buildRecommendation([cand(3, 'Consultoría', 5.55)], {
+      const r = buildRecommendation([cand(3, 'Consultoría Experta', 5.55)], {
         trace: trace({
-          rankingBeforeExceptions: [cand(3, 'Consultoría', 5.55)],
-          rankingAfterExceptions: [cand(3, 'Consultoría', 5.55)],
+          rankingBeforeExceptions: [cand(3, 'Consultoría Experta', 5.55)],
+          rankingAfterExceptions: [cand(3, 'Consultoría Experta', 5.55)],
         }),
       });
       expect(r.adjustedByException()).toBe(false);
@@ -133,17 +180,19 @@ describe('Recommendation (agregado)', () => {
       // The distinction that separates an auditable system from one that
       // looks objective without being so, which is why it is derived from the
       // aggregate and not from the UI.
-      const r = buildRecommendation([cand(4, 'Retos en el Aula', 3.4)], {
+      const r = buildRecommendation([cand(4, 'Reto en el Aula', 3.4)], {
         trace: trace({
-          rankingBeforeExceptions: [cand(3, 'Consultoría', 5.55)],
-          rankingAfterExceptions: [cand(4, 'Retos en el Aula', 3.4)],
+          rankingBeforeExceptions: [cand(3, 'Consultoría Experta', 5.55)],
+          rankingAfterExceptions: [cand(4, 'Reto en el Aula', 3.4)],
         }),
       });
       expect(r.adjustedByException()).toBe(true);
     });
 
     it('es falso si la trace está vacía, en vez de reventar', () => {
-      expect(buildRecommendation([cand(3, 'C', 5)]).adjustedByException()).toBe(false);
+      expect(buildRecommendation([cand(3, 'C', 5)]).adjustedByException()).toBe(
+        false,
+      );
     });
   });
 
@@ -152,15 +201,15 @@ describe('Recommendation (agregado)', () => {
     const r = Recommendation.fromPersistence({
       diagnosticId: DIAG,
       resultType: 'RECOMMENDATION',
-      primary: cand(3, 'Consultoría', 5.55),
-      alternatives: [cand(2, 'Mentoría', 3.8)],
+      primary: cand(3, 'Consultoría Experta', 5.55),
+      alternatives: [cand(2, 'Reto Express', 3.8)],
       justification: 'porque sí',
       noRecommendationReason: null,
       trace: t,
       generatedAt: new Date('2026-09-07T14:30:00.000Z'),
     });
 
-    expect(r.primary?.serviceName).toBe('Consultoría');
+    expect(r.primary?.serviceName).toBe('Consultoría Experta');
     expect(r.trace.incompleteCharacterization).toEqual(['stage']);
     expect(r.diagnosticId.value).toBe(DIAG);
   });

@@ -63,10 +63,18 @@ const PROFILE = {
 const RECOMMENDATION = {
   diagnosticId: ID,
   resultType: 'RECOMMENDATION' as const,
-  primary: { idService: 3, name: 'Consultoría', position: 1, score: 5.55 },
+  primary: {
+    idService: 3,
+    name: 'Consultoría Experta',
+    position: 1,
+    score: 5.55,
+    adjustmentReason: null,
+  },
   justification: 'Atiende el riesgo legal más urgente del perfil.',
   noRecommendationReason: null,
-  alternatives: [{ idService: 2, name: 'Mentoría', position: 2, score: 3.8 }],
+  alternatives: [
+    { idService: 2, name: 'Reto Express', position: 2, score: 3.8, adjustmentReason: null },
+  ],
   generatedAt: '2026-03-06T09:00:00.000Z',
 };
 
@@ -280,7 +288,7 @@ describe('ResultsPage — sin análisis profundo', () => {
       await screen.findByRole('heading', { name: 'Desequilibrios y alertas' }),
     ).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Fase 1' })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: 'Consultoría' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Consultoría Experta' })).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Solicitar análisis profundo' }),
     ).not.toBeInTheDocument();
@@ -317,7 +325,7 @@ describe('ResultsPage — con análisis profundo', () => {
       screen.getByRole('article', { name: 'Negocio está en estado crítico' }),
     ).toHaveTextContent('Prioridad máxima');
     expect(await screen.findByRole('heading', { name: 'Fase 1' })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: 'Consultoría' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Consultoría Experta' })).toBeInTheDocument();
     // The profile is still there, on the same page.
     expect(screen.getByRole('heading', { level: 1, name: 'AgroConecta' })).toBeInTheDocument();
   });
@@ -327,7 +335,7 @@ describe('ResultsPage — con análisis profundo', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: 'Consultoría' });
+    await screen.findByRole('heading', { name: 'Consultoría Experta' });
     const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
     expect(headings).toEqual(
       expect.arrayContaining([
@@ -345,7 +353,7 @@ describe('ResultsPage — con análisis profundo', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: 'Consultoría' });
+    await screen.findByRole('heading', { name: 'Consultoría Experta' });
     expect(
       screen.queryByRole('button', { name: /Solicitar análisis profundo/ }),
     ).not.toBeInTheDocument();
@@ -357,7 +365,7 @@ describe('ResultsPage — con análisis profundo', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: 'Consultoría' });
+    await screen.findByRole('heading', { name: 'Consultoría Experta' });
     expect(screen.getByText(/Resultado guardado el 5 de marzo de 2026/)).toBeInTheDocument();
     expect(screen.getByText(/Resultado guardado el 8 de septiembre de 2026/)).toBeInTheDocument();
     expect(screen.getByText(/Resultado guardado el 6 de marzo de 2026/)).toBeInTheDocument();
@@ -368,7 +376,7 @@ describe('ResultsPage — con análisis profundo', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: 'Consultoría' });
+    await screen.findByRole('heading', { name: 'Consultoría Experta' });
     expect(screen.getByRole('button', { name: /Cómo se armó este plan/ })).toHaveAttribute(
       'aria-expanded',
       'false',
@@ -386,7 +394,7 @@ describe('ResultsPage — con análisis profundo', () => {
     expect(await screen.findByText(/No fue posible generar el roadmap/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Intentar de nuevo' })).toBeInTheDocument();
     // The recommendation, which did exist, is still shown.
-    expect(await screen.findByRole('heading', { name: 'Consultoría' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Consultoría Experta' })).toBeInTheDocument();
   });
 
   it('si la recomendación no se generó, avisa y el roadmap sigue visible', async () => {
@@ -559,8 +567,8 @@ describe('ResultsPage — el análisis profundo se entiende sin conocer el siste
     layer1Excluded: [
       {
         idService: 6,
-        name: 'Proyectos de Grado',
-        ruleCode: 'ELG-01',
+        name: 'Célula de Grado · Pregrado',
+        ruleCode: 'ELG-01A',
         exclusionMessage: 'Requieren vinculación académica.',
       },
     ],
@@ -568,8 +576,9 @@ describe('ResultsPage — el análisis profundo se entiende sin conocer el siste
       {
         position: 1,
         idService: 2,
-        name: 'Mentoría',
+        name: 'Reto Express',
         score: 4,
+        includedBy: null,
         contributions: {
           bottleneck: {
             value: 1,
@@ -597,11 +606,15 @@ describe('ResultsPage — el análisis profundo se entiende sin conocer el siste
         code: 'E-01',
         order: 1,
         action: 'FORCE',
-        targetService: 'Consultoría',
+        targetService: 'Consultoría Experta',
         declaredReason: 'Un riesgo legal crítico requiere asesoría especializada.',
-        rankingBefore: [{ position: 2, idService: 3, name: 'Consultoría', score: 3 }],
-        rankingAfter: [{ position: 1, idService: 3, name: 'Consultoría', score: 3 }],
-        effect: 'Consultoría pasa del puesto 2 al puesto 1',
+        rankingBefore: [
+          { position: 2, idService: 3, name: 'Consultoría Experta', score: 3, includedBy: null },
+        ],
+        rankingAfter: [
+          { position: 1, idService: 3, name: 'Consultoría Experta', score: 3, includedBy: null },
+        ],
+        effect: 'Consultoría Experta pasa del puesto 2 al puesto 1',
       },
     ],
     discardedExceptions: [{ code: 'E-02', order: 2, reason: 'La condición no se cumple' }],
@@ -620,10 +633,10 @@ describe('ResultsPage — el análisis profundo se entiende sin conocer el siste
     const user = userEvent.setup();
 
     renderPage();
-    await screen.findByRole('heading', { name: 'Consultoría' });
+    await screen.findByRole('heading', { name: 'Consultoría Experta' });
     await user.click(screen.getByRole('button', { name: /Cómo se llegó a esta recomendación/ }));
     await user.click(screen.getByRole('button', { name: /Cómo se armó este plan/ }));
-    await screen.findByText('Se dejó Consultoría como primera opción');
+    await screen.findByText('Se dejó Consultoría Experta como primera opción');
 
     const deep = ['deep-imbalances', 'deep-roadmap', 'deep-recommendation'].map(
       (id) => document.getElementById(id)!.closest('section')!.textContent,
@@ -644,9 +657,9 @@ describe('ResultsPage — el análisis profundo se entiende sin conocer el siste
     const user = userEvent.setup();
 
     renderPage();
-    await screen.findByRole('heading', { name: 'Consultoría' });
+    await screen.findByRole('heading', { name: 'Consultoría Experta' });
     await user.click(screen.getByRole('button', { name: /Cómo se llegó a esta recomendación/ }));
-    await screen.findByText('Se dejó Consultoría como primera opción');
+    await screen.findByText('Se dejó Consultoría Experta como primera opción');
 
     for (const id of ['deep-imbalances', 'deep-roadmap', 'deep-recommendation']) {
       const html = document.getElementById(id)!.closest('section')!.innerHTML;

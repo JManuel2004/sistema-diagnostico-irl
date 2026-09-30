@@ -19,4 +19,11 @@ export class EligibilityRuleOrm {
 
   @Column({ name: 'exclusion_message', type: 'varchar', length: 500 })
   exclusionMessage!: string;
+
+  /**
+   * The target service's `adjustment_only`, carried by the composite foreign
+   * key; always `false`, since layer 1 only applies to scored services.
+   */
+  @Column({ name: 'service_adjustment_only', type: 'boolean', default: false })
+  serviceAdjustmentOnly!: boolean;
 }

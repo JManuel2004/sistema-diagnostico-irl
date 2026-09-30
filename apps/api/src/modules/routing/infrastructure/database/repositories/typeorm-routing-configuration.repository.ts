@@ -7,6 +7,7 @@ import type {
   ResolvedConfiguration,
 } from '../../../domain/repositories/routing-configuration.repository.port.js';
 import { CalibrationScale } from '../../../domain/value-objects/calibration-scale.vo.js';
+import type { AdjustmentOnlyService } from '../../../domain/value-objects/adjustment-only-service.vo.js';
 import type { OrdinalProfile } from '../../../domain/value-objects/ordinal-profile.vo.js';
 import type { CompiledEligibilityRule } from '../../../domain/services/eligibility-filter.service.js';
 import type { CompiledExceptionRule } from '../../../domain/services/exception-engine.service.js';
@@ -33,7 +34,9 @@ import {
  * The configuration is not versioned: there is one, made of the scoring
  * parameters (single row), the calibration scale, the services with their
  * ordinal profiles (level band, stages, one intensity label per dimension)
- * and the eligibility and exception rules.
+ * and the eligibility and exception rules. The services come out in two
+ * lists: the scored ones, with their profile, and the adjustment-only ones,
+ * which only an `INCLUDE` adjustment uses.
  *
  * The stages a service fits are stored by id; their codes come from
  * `initiative/` through `InitiativeCharacterizationPort`, never from its
@@ -50,9 +53,7 @@ import {
  * any module can reach into.
  */
 @Injectable()
-export class TypeOrmRoutingConfigurationRepository
-  implements RoutingConfigurationRepositoryPort
-{
+export class TypeOrmRoutingConfigurationRepository implements RoutingConfigurationRepositoryPort {
   private readonly compiler = new PredicateCompilerService();
 
   constructor(
@@ -101,11 +102,31 @@ export class TypeOrmRoutingConfigurationRepository
     ]);
 
     const labelById = new Map(tiers.map((t) => [t.id, t.label] as const));
-    const codeByDimension = new Map(dimensions.map((d) => [d.id, d.code.value] as const));
+    const codeByDimension = new Map(
+      dimensions.map((d) => [d.id, d.code.value] as const),
+    );
 
-    const profiles: OrdinalProfile[] = serviceRows.map((service) => {
+    // Adjustment-only services are kept apart: layers 1 and 2 never see them.
+    const scoredRows = serviceRows.filter((service) => !service.adjustmentOnly);
+    const adjustmentOnlyServices: AdjustmentOnlyService[] = serviceRows
+      .filter((service) => service.adjustmentOnly)
+      .map((service) => ({
+        idService: service.idService,
+        serviceName: service.name,
+      }));
+
+    const profiles: OrdinalProfile[] = scoredRows.map((service) => {
+      // The database requires the band of a scored service
+      // (`ck_portfolio_service_scored_band`); this only narrows the type.
+      if (service.minLevel === null || service.maxLevel === null) {
+        throw new Error(
+          `The scored service '${service.name}' has no level band`,
+        );
+      }
       const intensities = new Map<DimensionCode, string>();
-      for (const i of intensityRows.filter((r) => r.idService === service.idService)) {
+      for (const i of intensityRows.filter(
+        (r) => r.idService === service.idService,
+      )) {
         const code = codeByDimension.get(i.idDimension);
         const label = labelById.get(i.idCalibrationLabel);
         if (code && label) intensities.set(code, label);
@@ -123,12 +144,14 @@ export class TypeOrmRoutingConfigurationRepository
       };
     });
 
-    const eligibilityRules: CompiledEligibilityRule[] = eligibilityRows.map((r) => ({
-      code: r.code,
-      idService: r.idService,
-      expression: this.compiler.compile(r.predicate, 'BOOLEAN'),
-      exclusionMessage: r.exclusionMessage,
-    }));
+    const eligibilityRules: CompiledEligibilityRule[] = eligibilityRows.map(
+      (r) => ({
+        code: r.code,
+        idService: r.idService,
+        expression: this.compiler.compile(r.predicate, 'BOOLEAN'),
+        exclusionMessage: r.exclusionMessage,
+      }),
+    );
 
     const exceptionRules: CompiledExceptionRule[] = exceptionRows.map((r) => ({
       code: r.code,
@@ -160,6 +183,7 @@ export class TypeOrmRoutingConfigurationRepository
         alternativesCount: params.alternativesCount,
       },
       profiles,
+      adjustmentOnlyServices,
       eligibilityRules,
       exceptionRules,
     };

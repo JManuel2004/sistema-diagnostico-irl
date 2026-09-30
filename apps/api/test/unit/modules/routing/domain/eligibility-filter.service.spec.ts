@@ -37,7 +37,11 @@ function profile(id: number, name: string): NumericProfile {
   };
 }
 
-const ORDINAL_PROFILES = [profile(1, 'Formación'), profile(2, 'Retos'), profile(3, 'Grado')];
+const ORDINAL_PROFILES = [
+  profile(1, 'Talento In-House'),
+  profile(2, 'Retos'),
+  profile(3, 'Grado'),
+];
 
 function rule(
   idService: number,
@@ -68,10 +72,14 @@ describe('EligibilityFilterService', () => {
         'Retos requiere al menos 2 personas',
       ),
     ];
-    const { eligible, excluded } = filtro.filter(ORDINAL_PROFILES, rules, FACTS);
+    const { eligible, excluded } = filtro.filter(
+      ORDINAL_PROFILES,
+      rules,
+      FACTS,
+    );
 
     expect(eligible.map((f) => f.serviceName)).toEqual([
-      'Formación',
+      'Talento In-House',
       'Grado',
     ]);
     expect(excluded).toEqual([
@@ -101,7 +109,12 @@ describe('EligibilityFilterService', () => {
     // out, not a generic message.
     const rules = [
       rule(3, { field: 'gaps', op: 'contains', value: 'TRL' }, 'primera', 'R1'),
-      rule(3, { field: 'gaps', op: 'contains', value: 'IPRL' }, 'segunda', 'R2'),
+      rule(
+        3,
+        { field: 'gaps', op: 'contains', value: 'IPRL' },
+        'segunda',
+        'R2',
+      ),
     ];
     const { excluded } = filtro.filter(ORDINAL_PROFILES, rules, FACTS);
     expect(excluded[0].exclusionMessage).toBe('segunda');
@@ -115,19 +128,31 @@ describe('EligibilityFilterService', () => {
         'requiere vinculación',
       ),
     ];
-    const { eligible, excluded } = filtro.filter(ORDINAL_PROFILES, rules, FACTS);
+    const { eligible, excluded } = filtro.filter(
+      ORDINAL_PROFILES,
+      rules,
+      FACTS,
+    );
     expect(excluded.map((e) => e.name)).toEqual(['Grado']);
     expect(eligible.map((f) => f.serviceName)).toEqual([
-      'Formación',
+      'Talento In-House',
       'Retos',
     ]);
   });
 
   it('puede excluir todos los services', () => {
     const rules = ORDINAL_PROFILES.map((f) =>
-      rule(f.idService, { field: 'gaps', op: 'contains', value: 'IPRL' }, 'fuera'),
+      rule(
+        f.idService,
+        { field: 'gaps', op: 'contains', value: 'IPRL' },
+        'fuera',
+      ),
     );
-    const { eligible, excluded } = filtro.filter(ORDINAL_PROFILES, rules, FACTS);
+    const { eligible, excluded } = filtro.filter(
+      ORDINAL_PROFILES,
+      rules,
+      FACTS,
+    );
     expect(eligible).toHaveLength(0);
     expect(excluded).toHaveLength(3);
   });
