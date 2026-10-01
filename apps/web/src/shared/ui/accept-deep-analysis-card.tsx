@@ -117,7 +117,7 @@ export function AcceptDeepAnalysisCard({
               <Button
                 variant="secondary"
                 size="lg"
-                className="text-primary w-full border-white sm:w-auto"
+                className="text-primary w-full border-white hover:bg-white/85 active:bg-white/75 sm:w-auto"
                 onClick={onAccept}
               >
                 {!failed && <CircleDollarSign className="size-5" aria-hidden="true" />}
