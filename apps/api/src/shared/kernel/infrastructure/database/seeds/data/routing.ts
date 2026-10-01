@@ -9,8 +9,8 @@
  * the relevant stages of each service, the calibration scale, the eight
  * weights, and every eligibility and exception rule.
  *
- * Taken from the portfolio: each service's name, its description (with the
- * sub-formats of the row) and its level band — the «Madurez (IRL)» column,
+ * Taken from the portfolio: each service's name, its description (the
+ * «¿De qué se trata?» text, verbatim) and its level band — the «Madurez (IRL)» column,
  * read as the band of the initiative's global average IRL level when it
  * enters the service. The other columns (level Descubre/Co-crea/Profundiza/
  * Alíate, time, dedication, team, expert, investment, what students receive,
@@ -28,8 +28,8 @@
 // Portfolio services
 // ─────────────────────────────────────────────────────────────────────────
 //
-// The name is the one that covers the whole row; the sub-formats and
-// variants go in the description. The two Células de Grado are two rows of
+// The name is the one that covers the whole row; the description is the
+// row's «¿De qué se trata?» text, verbatim. The two Células de Grado are two rows of
 // the portfolio, so two services; the Reto en el Aula of undergraduate and
 // graduate programs is one row, so one service.
 
@@ -44,73 +44,73 @@ export const SERVICES: readonly ServiceSeed[] = [
   {
     name: 'Chispa',
     description:
-      'Un experto de la Universidad llega a tu organización, o tu equipo viene al campus, con una charla o conferencia de sensibilización sobre tendencias, design thinking, innovación y futuros. Formatos: charlas y conferencias, en una sesión única. Deja inspiración y un lenguaje común de innovación instalado en tu equipo.',
+      'Un experto de la Universidad llega a tu organización (o tu equipo viene al campus) con una charla o conferencia que abre la mente: tendencias, design thinking, innovación, futuros. Es el primer contacto perfecto con la forma Icesi de crear.',
     adjustmentOnly: true,
   },
   {
     name: 'Reto Express',
     description:
-      'Tu organización plantea un reto y equipos de estudiantes lo atacan en formato intensivo, desde una tarde de ideación hasta un sprint de cinco días. Formatos: hackatón, design sprint y challenge, abiertos a toda la comunidad universitaria o cerrados a un curso o grupo. Entrega un banco de ideas, conceptos y prototipos tempranos (TRL 3–5) y un informe síntesis.',
+      'Tu organización plantea un reto y equipos de estudiantes lo atacan en formato intensivo: desde una tarde de ideación hasta un sprint de 5 días continuos. Puede ser abierto (convocatoria a toda la comunidad universitaria) o cerrado (un curso o grupo seleccionado). Terminas con un banco de ideas y prototipos tempranos.',
     adjustmentOnly: false,
   },
   {
     name: 'Academia a la Medida',
     description:
-      'Formación empresarial basada en proyectos, adaptada a tu reto real: tu equipo aprende resolviendo sus propios desafíos. Formatos: cursos cortos, seminarios de 36 a 48 horas, diplomados y cohortes exclusivas de maestría. Deja capacidades de innovación, diseño o UX instaladas en tu equipo y proyectos internos desarrollados durante la formación.',
+      'Sistemas modulares de aprendizaje basado en proyectos para tu organización: desde cursos cortos y seminarios de 36–48 horas hasta diplomados y cohortes exclusivas de maestría. El aula se adapta a tu reto real: tu equipo aprende resolviendo sus propios desafíos.',
     adjustmentOnly: true,
   },
   {
     name: 'Reto en el Aula',
     description:
-      'Tu reto entra como proyecto oficial de una materia: todos los equipos del curso trabajan sobre él, guiados por el profesor. En pregrado (4 a 18 semanas) exploran y prototipan; en posgrado (5 a 7 semanas, con estudiantes de maestría) lo abordan con mirada estratégica. Entrega un banco amplio de ideas y prototipos (TRL 4–6) con varios caminos de solución.',
+      'Tu reto entra como proyecto oficial de una materia: todos los equipos del curso trabajan sobre él durante semanas, guiados por el profesor. En pregrado (4–18 semanas) exploran y prototipan; en posgrado (5–7 semanas, con estudiantes de maestría) lo abordan con mirada estratégica. Resultado: un banco de ideas amplio con varios caminos de solución.',
     adjustmentOnly: false,
   },
   {
     name: 'Semillero con Propósito',
     description:
-      'Estudiantes de semilleros de innovación e investigación (Co.seeds), acompañados por un experto mentor, trabajan tu reto en paralelo a sus estudios durante 6 a 12 meses, con dedicación semanal constante. Entrega prototipos avanzados y pruebas con usuarios (TRL 6–7), con entregas periódicas, y una cantera temprana de talento.',
+      'Estudiantes de semilleros de innovación e investigación — acompañados por un experto mentor — trabajan tu reto en paralelo a sus estudios, con dedicación semanal constante. Más profundidad que un reto de aula, más flexibilidad que una célula de tiempo completo.',
     adjustmentOnly: false,
   },
   {
     name: 'Célula de Grado · Pregrado',
     description:
-      'Equipos de estudiantes de últimos semestres dedican su proyecto de grado (PdG) a tu desafío: medio año de investigación y medio de implementación, con tutor y asesores expertos. Entrega un informe de investigación y un prototipo avanzado (TRL 6–7), listo para la comprobación de mercado.',
+      'Equipos de estudiantes de últimos semestres dedican su proyecto de grado a tu desafío: medio año de investigación profunda y medio de implementación, con tutor y asesores expertos. El resultado llega a prototipos avanzados, listos para validación de mercado.',
     adjustmentOnly: false,
   },
   {
     name: 'Célula de Grado · Posgrado',
     description:
-      'Estudiantes de las maestrías en Gestión de la Innovación y Experiencia de Usuario convierten tu reto en su trabajo de grado (TdG), con análisis de profundidad profesional, marcos estratégicos y validación. Perfil senior, con experiencia liderando equipos. Entrega diagnóstico, estrategia y conceptos validados (TRL 3–5) con calidad de consultoría.',
+      'Estudiantes de maestría (Gestión de la Innovación, Experiencia de Usuario) convierten tu reto en su trabajo de grado: análisis con profundidad profesional, marcos estratégicos y validación. Perfil senior: la mayoría ya lidera equipos en sus propias organizaciones.',
     adjustmentOnly: false,
   },
   {
     name: 'Práctica de Innovación',
     description:
-      'Un estudiante de último semestre se integra a tu organización en práctica profesional (vía CEDEP), dedicado a proyectos de innovación y diseño, con un asesor de práctica de la Universidad. Aporta capacidad de ejecución continua sobre las metas que define tu organización y una vía de reclutamiento temprano.',
+      'Un estudiante de último semestre se integra a tu organización en práctica profesional, dedicado a proyectos de innovación y diseño, con asesor de práctica de la Universidad. La forma más directa de probar talento Icesi dentro de tu operación.',
     adjustmentOnly: true,
   },
   {
     name: 'Talento In-House',
     description:
-      'Una célula de 2 a 5 practicantes con un experto de la Universidad (InHouse Internship) se instala en tu organización para desarrollar proyectos de innovación de forma continua, con estándar académico y ritmo de industria. Lleva los proyectos hasta prototipo avanzado y validación (TRL 6–7) dentro de tu operación.',
+      'Un equipo de 2 a 5 practicantes con un experto de la Universidad se instala en tu organización para desarrollar proyectos de innovación de forma continua. Capacidad dedicada, con estándar académico y ritmo de industria.',
     adjustmentOnly: false,
   },
   {
     name: 'Consultoría Experta',
     description:
-      'Consultoría colaborativa: los profesionales de la Universidad, con estudiantes monitores, desarrollan soluciones con calidad lista para el mercado en productos, servicios, experiencias digitales, analítica y culturas de innovación. Entrega un desarrollo profesional listo para el mercado (TRL 7–9).',
+      'Trabajo directo de los profesionales de la Universidad — con estudiantes monitores — para desarrollar soluciones con calidad lista para el mercado: productos, servicios, experiencias digitales, analítica y culturas de innovación.',
     adjustmentOnly: false,
   },
   {
     name: 'Célula Dedicada · Co.LAB',
     description:
-      'Alianza Co.LAB: una célula estable de expertos y talento Icesi trabaja durante un año como el laboratorio de innovación de tu organización, con backlog conjunto y ciclos continuos de desarrollo. Entrega un portafolio continuo de soluciones de alta madurez (TRL 7–8).',
+      'Una célula estable de expertos y talento Icesi trabaja durante un año como el laboratorio de innovación de tu organización: backlog conjunto, ciclos continuos de desarrollo y resultados de alta madurez. Tú pones los retos; el campus pone el laboratorio.',
     adjustmentOnly: false,
   },
   {
     name: 'Alianza Residente',
     description:
-      'Alianza estratégica con presencia en el campus (modelo Banco W): tu organización se instala en la Universidad, con oficina o espacio propio y una bolsa de horas canjeable por todo el portafolio: asesorías, consultorías, retos con estudiantes, células y formación. Da acceso al ecosistema completo de talento, expertos, laboratorios, eventos y marca compartida.',
+      'Tu organización se instala físicamente en la Universidad: oficina o espacio en el campus, más una bolsa de horas canjeable por todo este portafolio — asesorías, consultorías, retos con estudiantes, células y formación. Un solo pago combinado, acceso total al ecosistema.',
     adjustmentOnly: true,
   },
 ];
