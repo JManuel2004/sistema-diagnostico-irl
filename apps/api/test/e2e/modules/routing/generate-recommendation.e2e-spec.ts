@@ -166,6 +166,16 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     );
   });
 
+  it('cada servicio trae la descripción del catálogo del portafolio', async () => {
+    const res = await agent
+      .get(`/api/v1/diagnostics/${diagnosticId}/recommendation`)
+      .expect(200);
+    const dto = recommendationResponseSchema.parse(res.body);
+
+    expect(dto.primary?.description).toContain('formato intensivo');
+    expect(dto.alternatives[0].description).toContain('Formación empresarial');
+  });
+
   it('la justificación habla de afinidad global: ningún servicio atiende IPRL, el cuello de botella', () => {
     return agent
       .get(`/api/v1/diagnostics/${diagnosticId}/recommendation`)
