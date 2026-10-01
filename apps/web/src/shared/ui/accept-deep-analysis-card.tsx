@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import {
   CalendarClock,
   Compass,
+  Gem,
   Info,
   Route,
   Scale,
@@ -28,6 +29,9 @@ import { FALLBACK_SUBJECT } from '@/shared/lib/copy';
  * acceptance, so accepting is a user action and never an effect of opening
  * the screen. «Por ahora no» sends nothing: the profile is already saved
  * and the user can come back from their panel whenever they want.
+ *
+ * It is a paid feature: a «Premium · De pago» badge and the same mark on the
+ * button say so before the user asks for it.
  */
 interface AcceptDeepAnalysisCardProps {
   readonly onAccept: () => void;
@@ -75,10 +79,16 @@ export function AcceptDeepAnalysisCard({
         <Card className="border-border border-t-primary border-t-[3px]">
           <CardContent className="flex flex-col gap-6 p-6 md:p-10">
             <div>
-              <Badge tone="info">
-                <Sparkles className="size-4" aria-hidden="true" />
-                Análisis profundo · Recomendado
-              </Badge>
+              <div className="flex flex-wrap gap-2">
+                <Badge tone="info">
+                  <Sparkles className="size-4" aria-hidden="true" />
+                  Análisis profundo · Recomendado
+                </Badge>
+                <Badge tone="neutral">
+                  <Gem className="size-4" aria-hidden="true" />
+                  Premium · De pago
+                </Badge>
+              </div>
               <h3 className="text-foreground mt-4 text-2xl font-bold leading-tight">
                 Conecta {subject} con una ruta de acompañamiento
               </h3>
@@ -103,6 +113,7 @@ export function AcceptDeepAnalysisCard({
 
             <div>
               <Button size="lg" className="w-full sm:w-auto" onClick={onAccept}>
+                {!failed && <Gem className="size-5" aria-hidden="true" />}
                 {failed ? 'Intentar de nuevo' : 'Solicitar análisis profundo'}
               </Button>
             </div>
