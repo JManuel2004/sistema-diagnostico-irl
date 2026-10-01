@@ -213,21 +213,23 @@ function assertConversionTableCoversEveryAverage(): void {
 /** Consent texts. A version with acceptances cannot change. */
 async function seedConsentTerms(manager: EntityManager): Promise<void> {
   for (const terms of CONSENT_TERMS) {
+    // The sections are compared by Postgres: jsonb reorders object keys, so a
+    // JSON.stringify of the stored value never matches the seed's key order.
     const [existing] = await manager.query<
-      { title: string; sections: unknown; checkbox_label: string; accepted: boolean }[]
+      { title: string; same_sections: boolean; checkbox_label: string; accepted: boolean }[]
     >(
-      `SELECT t.title, t.sections, t.checkbox_label,
+      `SELECT t.title, t.sections = $2::jsonb AS same_sections, t.checkbox_label,
               EXISTS (SELECT 1 FROM irl_diagnostic.consent c WHERE c.terms_version = t.version) AS accepted
          FROM irl_catalog.consent_terms t
         WHERE t.version = $1`,
-      [terms.version],
+      [terms.version, JSON.stringify(terms.sections)],
     );
 
     if (existing?.accepted) {
       const same =
         existing.title === terms.title &&
         existing.checkbox_label === terms.checkboxLabel &&
-        JSON.stringify(existing.sections) === JSON.stringify(terms.sections);
+        existing.same_sections;
       if (!same) {
         throw new Error(
           `Consent terms ${terms.version} already have acceptances and their text differs ` +
