@@ -33,4 +33,10 @@ export interface ResolvedConfiguration {
 export interface RoutingConfigurationRepositoryPort {
   /** The live configuration, or `null` if none has been seeded yet. */
   load(): Promise<ResolvedConfiguration | null>;
+  /**
+   * The catalog description of every service, by id. Read live rather than
+   * snapshotted into the recommendation: it describes the service, not the
+   * result.
+   */
+  findServiceDescriptions(): Promise<ReadonlyMap<number, string | null>>;
 }

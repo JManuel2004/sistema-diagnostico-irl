@@ -75,7 +75,7 @@ import { InitiativeModule } from '../initiative/initiative.module.js';
     AffinityScorerService,
     ExceptionEngineService,
     applicationProvider(GenerateRecommendationUseCase, [ROUTING_CONFIGURATION_REPOSITORY, RECOMMENDATION_REPOSITORY, INITIATIVE_CHARACTERIZATION_READER, GetMaturityProfileUseCase, OrdinalTranslatorService, EligibilityFilterService, AffinityScorerService, ExceptionEngineService, EVENT_PUBLISHER]),
-    applicationProvider(GetRecommendationUseCase, [RECOMMENDATION_REPOSITORY, DIAGNOSTIC_OWNERSHIP]),
+    applicationProvider(GetRecommendationUseCase, [RECOMMENDATION_REPOSITORY, DIAGNOSTIC_OWNERSHIP, ROUTING_CONFIGURATION_REPOSITORY]),
     applicationProvider(GetRecommendationTraceUseCase, [RECOMMENDATION_REPOSITORY, DIAGNOSTIC_OWNERSHIP]),
     { provide: DIAGNOSTIC_OWNERSHIP, useClass: DiagnosisOwnershipAdapter },
     DeepAnalysisRequestedListener,

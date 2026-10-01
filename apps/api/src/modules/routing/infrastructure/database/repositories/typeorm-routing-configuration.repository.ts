@@ -77,6 +77,13 @@ export class TypeOrmRoutingConfigurationRepository implements RoutingConfigurati
     private readonly initiative: InitiativeCharacterizationPort,
   ) {}
 
+  async findServiceDescriptions(): Promise<ReadonlyMap<number, string | null>> {
+    const rows = await this.services.find({
+      select: { idService: true, description: true },
+    });
+    return new Map(rows.map((r) => [r.idService, r.description] as const));
+  }
+
   async load(): Promise<ResolvedConfiguration | null> {
     const [params] = await this.parameters.find({ take: 1 });
     if (!params) return null;

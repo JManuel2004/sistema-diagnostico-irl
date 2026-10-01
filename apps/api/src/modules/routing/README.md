@@ -27,7 +27,7 @@ Implemented: three-layer engine with adjustment-only services, trace, idempotent
 ## What it exposes
 - **Events it publishes:** `PortfolioRecommendationCalculatedEvent` (`shared/kernel/events/`); `diagnosis/` hears it to complete the deep analysis.
 - **Events it listens to:** `DeepAnalysisRequestedEvent`.
-- **HTTP (read only):** `GET diagnostics/:id/recommendation` and `GET diagnostics/:id/recommendation/trace`. Contracts in Swagger (`/api/docs`).
+- **HTTP (read only):** `GET diagnostics/:id/recommendation` and `GET diagnostics/:id/recommendation/trace`. Contracts in Swagger (`/api/docs`). Each recommended service carries its `description`, read live from `portfolio_service` (not snapshotted into the recommendation: it describes the service, not the result).
 
 ## What it depends on
 `diagnosis/` through its exported `GetMaturityProfileUseCase` and `FindDiagnosisOwnerQuery` (behind `DiagnosticOwnershipPort`); `initiative/` through its exported `GetInitiativeCharacterizationUseCase` and `ListStagesUseCase` (behind `InitiativeCharacterizationPort`: the characterization, and the stage codes of the service profiles); `shared/irl-taxonomy` through `TAXONOMY_REPOSITORY`; `shared/kernel` for `EVENT_PUBLISHER`.

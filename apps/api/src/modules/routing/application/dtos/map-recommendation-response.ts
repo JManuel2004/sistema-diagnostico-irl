@@ -19,17 +19,18 @@ import {
  */
 export function toRecommendationResponse(
   recommendation: Recommendation,
+  descriptionById: ReadonlyMap<number, string | null>,
 ): RecommendationResponse {
   return {
     diagnosticId: recommendation.diagnosticId.value,
     resultType: recommendation.resultType,
     primary: recommendation.primary
-      ? toRecommendedService(recommendation.primary, 1)
+      ? toRecommendedService(recommendation.primary, 1, descriptionById)
       : null,
     justification: recommendation.justification,
     noRecommendationReason: recommendation.noRecommendationReason,
     alternatives: recommendation.alternatives.map((c, i) =>
-      toRecommendedService(c, i + 2),
+      toRecommendedService(c, i + 2, descriptionById),
     ),
     generatedAt: recommendation.generatedAt.toISOString(),
   };
@@ -78,10 +79,15 @@ export function toLayerTraceResponse(
   };
 }
 
-function toRecommendedService(c: RankedCandidate, position: number) {
+function toRecommendedService(
+  c: RankedCandidate,
+  position: number,
+  descriptionById: ReadonlyMap<number, string | null>,
+) {
   return {
     idService: c.idService,
     name: c.serviceName,
+    description: descriptionById.get(c.idService) ?? null,
     position,
     score: isIncluded(c) ? null : c.total,
     adjustmentReason: isIncluded(c) ? c.includedBy.declaredReason : null,

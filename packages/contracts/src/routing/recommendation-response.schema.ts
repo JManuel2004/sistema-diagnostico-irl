@@ -23,6 +23,10 @@ import { uuidSchema } from '../common/uuid.schema.js';
 export const recommendedServiceSchema = z.object({
   idService: z.number().int().positive(),
   name: z.string().min(1),
+  description: z
+    .string()
+    .nullable()
+    .describe('What the service is about, read from the portfolio catalog'),
   position: z.number().int().positive(),
   score: z.number().nullable(),
   adjustmentReason: z

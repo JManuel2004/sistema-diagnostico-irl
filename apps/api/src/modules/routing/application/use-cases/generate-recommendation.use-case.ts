@@ -131,7 +131,8 @@ export class GenerateRecommendationUseCase {
       }),
     );
 
-    return Result.ok(toRecommendationResponse(recommendation));
+    const descriptions = await this.configuration.findServiceDescriptions();
+    return Result.ok(toRecommendationResponse(recommendation, descriptions));
   }
 
   /**

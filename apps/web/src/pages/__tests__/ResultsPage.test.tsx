@@ -66,6 +66,7 @@ const RECOMMENDATION = {
   primary: {
     idService: 3,
     name: 'Consultoría Experta',
+    description: 'Consultoría colaborativa con calidad lista para el mercado.',
     position: 1,
     score: 5.55,
     adjustmentReason: null,
@@ -73,7 +74,14 @@ const RECOMMENDATION = {
   justification: 'Atiende el riesgo legal más urgente del perfil.',
   noRecommendationReason: null,
   alternatives: [
-    { idService: 2, name: 'Reto Express', position: 2, score: 3.8, adjustmentReason: null },
+    {
+      idService: 2,
+      name: 'Reto Express',
+      description: null,
+      position: 2,
+      score: 3.8,
+      adjustmentReason: null,
+    },
   ],
   generatedAt: '2026-03-06T09:00:00.000Z',
 };

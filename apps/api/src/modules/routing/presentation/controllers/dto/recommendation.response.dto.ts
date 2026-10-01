@@ -8,6 +8,12 @@ import type {
 class RecommendedServiceDto implements RecommendedService {
   @ApiProperty() idService!: number;
   @ApiProperty({ example: 'Reto Express' }) name!: string;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'What the service is about, read from the portfolio catalog',
+  })
+  description!: string | null;
   @ApiProperty({ minimum: 1 }) position!: number;
   @ApiProperty({
     type: Number,
