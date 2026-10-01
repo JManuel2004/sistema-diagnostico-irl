@@ -488,6 +488,7 @@ describe('RecommendationSummary', () => {
     primary: {
       idService: 3,
       name: 'Consultoría Experta',
+      description: 'Consultoría colaborativa con calidad lista para el mercado.',
       position: 1,
       score: 5.55,
       adjustmentReason: null,
@@ -495,7 +496,14 @@ describe('RecommendationSummary', () => {
     justification: 'Atiende el riesgo legal más urgente del perfil.',
     noRecommendationReason: null,
     alternatives: [
-      { idService: 2, name: 'Reto Express', position: 2, score: 3.8, adjustmentReason: null },
+      {
+        idService: 2,
+        name: 'Reto Express',
+        description: null,
+        position: 2,
+        score: 3.8,
+        adjustmentReason: null,
+      },
     ],
   };
 
@@ -547,6 +555,7 @@ describe('RecommendationSummary', () => {
           primary: {
             idService: 2,
             name: 'Reto Express',
+            description: null,
             position: 1,
             score: 3.3,
             adjustmentReason: null,
@@ -555,6 +564,7 @@ describe('RecommendationSummary', () => {
             {
               idService: 3,
               name: 'Academia a la Medida',
+              description: null,
               position: 2,
               score: null,
               adjustmentReason: 'Formar al propio equipo deja capacidades instaladas.',
@@ -575,5 +585,44 @@ describe('RecommendationSummary', () => {
     render(<RecommendationSummary recommendation={recommendation} />);
 
     expect(screen.queryByText(/la sugiere el/)).not.toBeInTheDocument();
+  });
+
+  it('explica de qué se trata el servicio recomendado con la descripción del catálogo', () => {
+    render(<RecommendationSummary recommendation={recommendation} />);
+
+    expect(screen.getByRole('heading', { name: '¿De qué se trata?' })).toBeInTheDocument();
+    expect(screen.getByText(/calidad lista para el mercado/)).toBeInTheDocument();
+  });
+
+  it('sin descripción en el catálogo no muestra la sección', () => {
+    render(
+      <RecommendationSummary
+        recommendation={{
+          ...recommendation,
+          primary: { ...recommendation.primary, description: null },
+        }}
+      />,
+    );
+
+    expect(screen.queryByRole('heading', { name: '¿De qué se trata?' })).not.toBeInTheDocument();
+  });
+
+  it('sin flujo de solicitud, la acción se muestra deshabilitada y anunciada como próxima', () => {
+    render(<RecommendationSummary recommendation={recommendation} />);
+
+    expect(screen.getByRole('button', { name: 'Solicitar acompañamiento' })).toBeDisabled();
+    expect(screen.getByText(/Próximamente podrás pedirle este servicio/)).toBeInTheDocument();
+  });
+
+  it('con flujo de solicitud, la acción lo dispara', async () => {
+    const onRequestService = vi.fn();
+    render(
+      <RecommendationSummary recommendation={recommendation} onRequestService={onRequestService} />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Solicitar acompañamiento' }));
+
+    expect(onRequestService).toHaveBeenCalledOnce();
+    expect(screen.queryByText(/Próximamente/)).not.toBeInTheDocument();
   });
 });
