@@ -134,16 +134,22 @@ describe('AcceptDeepAnalysisCard', () => {
     renderCard({ onAccept });
     expect(onAccept).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Solicitar análisis profundo' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Adquirir análisis profundo' }));
 
     expect(onAccept).toHaveBeenCalledTimes(1);
+  });
+
+  it('dice que el análisis profundo es de pago antes de pedirlo', () => {
+    renderCard({});
+
+    expect(screen.getByText('De pago')).toBeInTheDocument();
   });
 
   it('tras un fallo el botón pasa a «Intentar de nuevo»', () => {
     renderCard({ failed: true });
 
     expect(screen.getByRole('button', { name: 'Intentar de nuevo' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Solicitar análisis profundo' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Adquirir análisis profundo' })).not.toBeInTheDocument();
   });
 
   it('ofrece el otro camino, «por ahora no», sin ejecutar nada: lleva al panel', () => {

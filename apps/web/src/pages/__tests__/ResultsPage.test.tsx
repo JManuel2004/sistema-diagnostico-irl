@@ -257,7 +257,7 @@ describe('ResultsPage — sin análisis profundo', () => {
     renderPage();
 
     expect(
-      await screen.findByRole('button', { name: 'Solicitar análisis profundo' }),
+      await screen.findByRole('button', { name: 'Adquirir análisis profundo' }),
     ).toBeInTheDocument();
     expect(requests.deepAnalysis).toBe(0);
   });
@@ -290,7 +290,7 @@ describe('ResultsPage — sin análisis profundo', () => {
     const user = userEvent.setup();
 
     renderPage();
-    await user.click(await screen.findByRole('button', { name: 'Solicitar análisis profundo' }));
+    await user.click(await screen.findByRole('button', { name: 'Adquirir análisis profundo' }));
 
     expect(
       await screen.findByRole('heading', { name: 'Desequilibrios y alertas' }),
@@ -298,7 +298,7 @@ describe('ResultsPage — sin análisis profundo', () => {
     expect(await screen.findByRole('heading', { name: 'Fase 1' })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Consultoría Experta' })).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Solicitar análisis profundo' }),
+      screen.queryByRole('button', { name: 'Adquirir análisis profundo' }),
     ).not.toBeInTheDocument();
   });
 
@@ -308,7 +308,7 @@ describe('ResultsPage — sin análisis profundo', () => {
     const user = userEvent.setup();
 
     renderPage();
-    await user.click(await screen.findByRole('button', { name: 'Solicitar análisis profundo' }));
+    await user.click(await screen.findByRole('button', { name: 'Adquirir análisis profundo' }));
 
     expect(await screen.findByRole('button', { name: 'Intentar de nuevo' })).toBeInTheDocument();
     expect(toast.error).toHaveBeenCalledWith(
@@ -378,7 +378,7 @@ describe('ResultsPage — con análisis profundo', () => {
 
     await screen.findByRole('heading', { name: 'Consultoría Experta' });
     expect(
-      screen.queryByRole('button', { name: /Solicitar análisis profundo/ }),
+      screen.queryByRole('button', { name: /Adquirir análisis profundo/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -727,7 +727,7 @@ describe('ResultsPage — estados de error y de carga', () => {
       await screen.findByText('No fue posible saber si aceptaste el análisis profundo'),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Solicitar análisis profundo' }),
+      screen.queryByRole('button', { name: 'Adquirir análisis profundo' }),
     ).not.toBeInTheDocument();
   });
 });
