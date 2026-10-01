@@ -1,7 +1,8 @@
 import type { JSX } from 'react';
-import { Compass, Sparkles } from 'lucide-react';
+import { Compass, Send, Sparkles } from 'lucide-react';
 import type { RecommendationResponse } from '@innlab/contracts';
 import { Badge } from '@/shared/ui/badge';
+import { Button } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
 import { FALLBACK_SUBJECT } from '@/shared/lib/copy';
 
@@ -9,6 +10,11 @@ interface Props {
   readonly recommendation: RecommendationResponse;
   /** Name of the initiative, to address it. */
   readonly subject?: string;
+  /**
+   * Asks INNLAB for the recommended service. The request flow is not defined
+   * yet, so without it the action is shown but disabled, as coming soon.
+   */
+  readonly onRequestService?: () => void;
 }
 
 /**
@@ -21,10 +27,14 @@ interface Props {
  *
  * An alternative an adjustment of the center put into the ranking says so,
  * with the reason of the adjustment: it did not come from the calculation.
+ *
+ * The recommended service carries its catalog description, and an action to
+ * request it from INNLAB, prepared for a request flow still to be defined.
  */
 export function RecommendationSummary({
   recommendation,
   subject = FALLBACK_SUBJECT,
+  onRequestService,
 }: Props): JSX.Element {
   if (recommendation.resultType === 'NO_RECOMMENDATION') {
     return (
@@ -73,11 +83,37 @@ export function RecommendationSummary({
             </div>
           </div>
 
+          {primary?.description && (
+            <div className="mt-5">
+              <h3 className="text-foreground text-lg font-bold">¿De qué se trata?</h3>
+              <p className="text-muted-foreground mt-2 max-w-prose text-lg leading-relaxed">
+                {primary.description}
+              </p>
+            </div>
+          )}
+
           {recommendation.justification !== null && (
             <p className="text-foreground mt-5 max-w-prose text-lg leading-relaxed">
               {recommendation.justification}
             </p>
           )}
+
+          <div className="mt-6 flex flex-col items-start gap-2">
+            <Button
+              size="lg"
+              onClick={onRequestService}
+              disabled={onRequestService === undefined}
+              aria-describedby={onRequestService ? undefined : 'request-service-soon'}
+            >
+              <Send className="size-5" aria-hidden="true" />
+              Solicitar acompañamiento
+            </Button>
+            {onRequestService === undefined && (
+              <p id="request-service-soon" className="text-muted-foreground text-base">
+                Próximamente podrás pedirle este servicio a INNLAB desde aquí.
+              </p>
+            )}
+          </div>
 
           {recommendation.alternatives.length > 0 && (
             <div className="border-border mt-6 border-t pt-5">
