@@ -78,7 +78,7 @@ export function QuestionnaireStep({ diagnosticId, frameworkVersion }: Props): JS
 
         <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
           <Link
-            to={wizardPath(diagnosticId, 'consentimiento')}
+            to={wizardPath(diagnosticId, 'iniciativa')}
             className={buttonVariants({ variant: 'ghost' })}
           >
             Atrás

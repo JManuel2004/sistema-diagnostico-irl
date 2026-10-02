@@ -79,6 +79,12 @@ export function initiativeToFormValues(initiative: Initiative): InitiativeFormVa
   };
 }
 
+/** The profile fields when the form is valid, or `null` while it is not. */
+export function profileFieldsFromForm(values: InitiativeFormValues): InitiativeProfileFields | null {
+  const parsed = initiativeFormSchema.safeParse(values);
+  return parsed.success ? parsed.data : null;
+}
+
 /** The draft stored in the browser, to fill the form again. */
 export function commandToFormValues(command: InitiativeProfileFields): InitiativeFormValues {
   return {

@@ -1,4 +1,4 @@
-import { Suspense, type JSX, type ReactNode } from 'react';
+import { Suspense, useEffect, useRef, type JSX, type ReactNode } from 'react';
 import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -33,6 +33,8 @@ export interface InitiativeFormProps {
   readonly onSubmit: (command: InitiativeProfileFields) => void;
   readonly isSubmitting: boolean;
   readonly submitLabel?: string;
+  /** Called with the current field values, so leaving the step keeps the draft. */
+  readonly onDraftChange?: (values: Values) => void;
 }
 
 /**
@@ -54,16 +56,28 @@ export function InitiativeForm({
   onSubmit,
   isSubmitting,
   submitLabel = 'Guardar y continuar',
+  onDraftChange,
 }: InitiativeFormProps): JSX.Element {
   const {
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<Values, unknown, InitiativeProfileFields>({
     resolver: zodResolver(initiativeFormSchema),
     defaultValues: initial ?? EMPTY_INITIATIVE_FORM,
   });
+  const onDraftChangeRef = useRef(onDraftChange);
+  onDraftChangeRef.current = onDraftChange;
+
+  useEffect(() => {
+    if (!onDraftChange) return;
+    const subscription = watch((values) => {
+      onDraftChangeRef.current?.(values as Values);
+    });
+    return () => subscription.unsubscribe();
+  }, [onDraftChange, watch]);
 
   const limit = `Máximo ${String(INITIATIVE_TEXT_MAX)} caracteres`;
 

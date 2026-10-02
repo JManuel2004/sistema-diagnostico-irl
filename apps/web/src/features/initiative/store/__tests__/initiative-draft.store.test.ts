@@ -19,10 +19,14 @@ const DRAFT: InitiativeDraft = { initiativeId: null, command: COMMAND };
 describe('initiative draft store', () => {
   beforeEach(() => {
     sessionStorage.clear();
-    useInitiativeDraftStore.setState({ diagnosticId: null, draft: null });
+    useInitiativeDraftStore.setState({
+      diagnosticId: null,
+      draft: null,
+      acceptedTermsVersion: null,
+    });
   });
 
-  it('guarda el formulario del paso 1 mientras el consentimiento no está aceptado', () => {
+  it('guarda el formulario de la iniciativa antes de registrarla', () => {
     useInitiativeDraftStore.getState().initialize('d1');
     useInitiativeDraftStore.getState().save(DRAFT);
 
@@ -62,7 +66,19 @@ describe('initiative draft store', () => {
     useInitiativeDraftStore.getState().clear();
 
     expect(useInitiativeDraftStore.getState().draft).toBeNull();
+    expect(useInitiativeDraftStore.getState().acceptedTermsVersion).toBeNull();
     expect(useInitiativeDraftStore.getState().diagnosticId).toBe('d1');
+  });
+
+  it('recuerda la versión del texto aceptada antes de elegir la iniciativa', () => {
+    useInitiativeDraftStore.getState().initialize('d1');
+    useInitiativeDraftStore.getState().acceptTerms('v1');
+
+    expect(useInitiativeDraftStore.getState().acceptedTermsVersion).toBe('v1');
+
+    useInitiativeDraftStore.getState().initialize('d2');
+
+    expect(useInitiativeDraftStore.getState().acceptedTermsVersion).toBeNull();
   });
 
   it('vive en sessionStorage, no en localStorage: muere con la pestaña', () => {

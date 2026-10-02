@@ -36,8 +36,8 @@ function renderStep(): ReturnType<typeof render> {
           />
           <Route path="/diagnosticos/:id/asistente/resumen" element={<div>RESUMEN_STUB</div>} />
           <Route
-            path="/diagnosticos/:id/asistente/consentimiento"
-            element={<div>CONSENTIMIENTO_STUB</div>}
+            path="/diagnosticos/:id/asistente/iniciativa"
+            element={<div>INICIATIVA_STUB</div>}
           />
         </Routes>
       </MemoryRouter>
@@ -227,13 +227,13 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
     expect(await screen.findByText('RESUMEN_STUB')).toBeInTheDocument();
   });
 
-  it('«Atrás» goes back to the consent step', async () => {
+  it('«Atrás» goes back to the initiative step', async () => {
     const user = userEvent.setup();
     renderStep();
 
     await user.click(await screen.findByRole('link', { name: 'Atrás' }));
 
-    expect(screen.getByText('CONSENTIMIENTO_STUB')).toBeInTheDocument();
+    expect(screen.getByText('INICIATIVA_STUB')).toBeInTheDocument();
   });
 
   // The autofill exists only in development builds.
