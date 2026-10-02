@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { queryKeys } from '@/shared/api/query-keys';
 import { invalidateDiagnostic } from '@/shared/api/invalidate-diagnostic';
 import { finalizeInitialDiagnostic } from '@/shared/api/diagnostic.api';
+import { holdForMinimum } from '@/shared/lib/hold-for-minimum';
 import { paths } from '@/shared/lib/paths';
 
 export interface FinalizeAnswer {
@@ -19,8 +20,12 @@ export function useFinalizeDiagnostic(diagnosticId: string) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (answers: readonly FinalizeAnswer[]) =>
-      finalizeInitialDiagnostic(diagnosticId, [...answers]),
+    mutationFn: async (answers: readonly FinalizeAnswer[]) => {
+      const startedAt = Date.now();
+      const profile = await finalizeInitialDiagnostic(diagnosticId, [...answers]);
+      await holdForMinimum(startedAt);
+      return profile;
+    },
     onSuccess: async (profile) => {
       queryClient.setQueryData(queryKeys.diagnostic.profile(diagnosticId), profile);
       // Waits for the refetch: the results screen decides from `completed`,

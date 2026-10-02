@@ -32,6 +32,7 @@ import { SectionHeader } from '@/shared/ui/section-header';
 import { ResultMeta } from '@/shared/ui/result-meta';
 import { Alert } from '@/shared/ui/alert';
 import { LoadingState } from '@/shared/ui/loading-state';
+import { ProcessingState } from '@/shared/ui/processing-state';
 import { notify } from '@/shared/ui/notify';
 import {
   AcceptDeepAnalysisCard,
@@ -158,7 +159,7 @@ export default function ResultsPage(): JSX.Element {
           {diagnostic.data && !accepted && (
             <>
               {accept.isPending ? (
-                <LoadingState label="Calculando el análisis profundo…" />
+                <DeepAnalysisProcessing />
               ) : (
                 <AcceptDeepAnalysisCard
                   onAccept={() => {
@@ -390,6 +391,16 @@ function DeepAnalysis({
   );
 }
 
+function DeepAnalysisProcessing(): JSX.Element {
+  return (
+    <ProcessingState
+      overline="Análisis profundo"
+      title="Estamos preparando tu análisis"
+      description="Estamos cruzando tus seis áreas para recomendarte un servicio de INNLAB y un plan de fortalecimiento."
+    />
+  );
+}
+
 function MissingResult({
   what,
   onRetry,
@@ -400,7 +411,7 @@ function MissingResult({
   readonly retrying: boolean;
 }): JSX.Element {
   return retrying ? (
-    <LoadingState label="Calculando el análisis profundo…" />
+    <DeepAnalysisProcessing />
   ) : (
     <>
       <Alert

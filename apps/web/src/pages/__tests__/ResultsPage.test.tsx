@@ -293,7 +293,7 @@ describe('ResultsPage — sin análisis profundo', () => {
     await user.click(await screen.findByRole('button', { name: 'Adquirir análisis profundo' }));
 
     expect(
-      await screen.findByRole('heading', { name: 'Desequilibrios y alertas' }),
+      await screen.findByRole('heading', { name: 'Desequilibrios y alertas' }, { timeout: 5000 }),
     ).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Fase 1' })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Consultoría Experta' })).toBeInTheDocument();

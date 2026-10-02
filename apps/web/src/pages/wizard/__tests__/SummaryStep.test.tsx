@@ -238,7 +238,7 @@ describe('SummaryStep — resumen antes de procesar', () => {
 
       await user.click(await screen.findByRole('button', { name: 'Procesar diagnóstico' }));
 
-      expect(await screen.findByText('RESULTADOS_STUB')).toBeInTheDocument();
+      expect(await screen.findByText('RESULTADOS_STUB', {}, { timeout: 5000 })).toBeInTheDocument();
       expect(body?.answers).toHaveLength(48);
       expect(body?.answers.every((a) => a.justification === `Porque sí ${a.statementId}`)).toBe(true);
       // Saved on the server: the browser draft is emptied.
@@ -247,7 +247,7 @@ describe('SummaryStep — resumen antes de procesar', () => {
       });
     });
 
-    it('muestra «Procesando…» y bloquea el botón mientras espera', async () => {
+    it('muestra la pantalla de carga y oculta el resumen mientras espera', async () => {
       let release!: () => void;
       server.use(
         mswHttp.post(
@@ -266,12 +266,13 @@ describe('SummaryStep — resumen antes de procesar', () => {
 
       await user.click(await screen.findByRole('button', { name: 'Procesar diagnóstico' }));
 
-      expect(await screen.findByRole('button', { name: 'Procesando…' })).toBeDisabled();
+      expect(await screen.findByRole('status')).toHaveTextContent('Estamos armando tu perfil');
+      expect(screen.queryByRole('button', { name: 'Procesar diagnóstico' })).not.toBeInTheDocument();
       await act(async () => {
         release();
         await Promise.resolve();
       });
-      await waitFor(() => screen.getByText('RESULTADOS_STUB'));
+      await waitFor(() => screen.getByText('RESULTADOS_STUB'), { timeout: 5000 });
     });
 
     it('avisa si el servidor falla y no abre los resultados', async () => {

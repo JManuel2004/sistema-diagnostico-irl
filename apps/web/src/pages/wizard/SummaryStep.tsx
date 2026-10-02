@@ -13,6 +13,7 @@ import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
 import { Button, buttonVariants } from '@/shared/ui/button';
 import { LoadingState } from '@/shared/ui/loading-state';
+import { ProcessingState } from '@/shared/ui/processing-state';
 import { notify } from '@/shared/ui/notify';
 import { useFinalizeDiagnostic } from '@/shared/hooks/useFinalizeDiagnostic';
 import { RETRY_LATER } from '@/shared/lib/copy';
@@ -47,7 +48,19 @@ export function SummaryStep({ diagnosticId, frameworkVersion }: Props): JSX.Elem
   if (!catalog) return <LoadingState label="Cargando tus respuestas…" />;
   // Once processed, the draft is emptied while the results open: that empty
   // draft must not send the user back to the questionnaire.
-  if (process.isSuccess) return <LoadingState label="Abriendo tus resultados…" />;
+  if (process.isPending || process.isSuccess) {
+    return (
+      <ProcessingState
+        overline="Diagnóstico"
+        title={process.isSuccess ? 'Abriendo tus resultados' : 'Estamos armando tu perfil'}
+        description={
+          process.isSuccess
+            ? 'Tu perfil ya está listo. Te llevamos a verlo.'
+            : 'Estamos convirtiendo tus 48 respuestas en el nivel de cada área. En un momento verás el resultado.'
+        }
+      />
+    );
+  }
   if (!isComplete) return <Navigate to={wizardPath(diagnosticId, 'cuestionario')} replace />;
 
   return (
@@ -119,9 +132,8 @@ export function SummaryStep({ diagnosticId, frameworkVersion }: Props): JSX.Elem
               },
             );
           }}
-          disabled={process.isPending}
         >
-          {process.isPending ? 'Procesando…' : 'Procesar diagnóstico'}
+          Procesar diagnóstico
         </Button>
       </div>
     </>

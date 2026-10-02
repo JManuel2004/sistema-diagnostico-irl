@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { Alert } from '../alert';
 import { LoadingState } from '../loading-state';
+import { ProcessingState } from '../processing-state';
 import { ResultMeta } from '../result-meta';
 import { PageHeader } from '../page-header';
 import { DisclosurePanel } from '../disclosure-panel';
@@ -47,6 +48,24 @@ describe('LoadingState', () => {
     render(<LoadingState label="Cargando perfil…" />);
 
     expect(screen.getByRole('status')).toHaveTextContent('Cargando perfil…');
+  });
+});
+
+describe('ProcessingState', () => {
+  it('anuncia qué se está calculando, con título y explicación', () => {
+    render(
+      <ProcessingState
+        overline="Diagnóstico"
+        title="Estamos armando tu perfil"
+        description="En un momento verás el resultado."
+      />,
+    );
+
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Diagnóstico');
+    expect(status).toHaveTextContent('Estamos armando tu perfil');
+    expect(status).toHaveTextContent('En un momento verás el resultado.');
+    expect(screen.getByRole('heading', { level: 2, name: 'Estamos armando tu perfil' })).toBeInTheDocument();
   });
 });
 
