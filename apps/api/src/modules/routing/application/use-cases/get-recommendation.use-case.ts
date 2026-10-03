@@ -30,7 +30,12 @@ export class GetRecommendationUseCase {
 
   async execute(
     query: GetRecommendationQuery,
-  ): Promise<Result<RecommendationResponse, NotFoundError | RecommendationNotGeneratedError>> {
+  ): Promise<
+    Result<
+      RecommendationResponse,
+      NotFoundError | RecommendationNotGeneratedError
+    >
+  > {
     const owned = await this.ownership.verify(query.diagnosticId, query.userId);
     if (!owned.ok) return owned;
 
@@ -43,7 +48,7 @@ export class GetRecommendationUseCase {
       );
     }
 
-    const descriptions = await this.configuration.findServiceDescriptions();
-    return Result.ok(toRecommendationResponse(recommendation, descriptions));
+    const catalog = await this.configuration.findServiceCatalog();
+    return Result.ok(toRecommendationResponse(recommendation, catalog));
   }
 }

@@ -10,6 +10,10 @@ import { ConversionRangeOrm } from '../orm-entities/conversion-range.orm-entity.
 import { DimensionPairOrm } from '../orm-entities/dimension-pair.orm-entity.js';
 import { FrameworkVersionOrm } from '../orm-entities/framework-version.orm-entity.js';
 import { FrameworkVersion } from '../../../domain/entities/framework-version.js';
+import { LevelDescriptions } from '../../../domain/entities/level-descriptions.js';
+import { DimensionLevelDescriptionOrm } from '../orm-entities/dimension-level-description.orm-entity.js';
+import { GlobalLevelDescriptionOrm } from '../orm-entities/global-level-description.orm-entity.js';
+import type { DimensionCode } from '@innlab/contracts';
 
 /**
  * TypeORM-backed adapter for the taxonomy port.
@@ -30,7 +34,40 @@ export class TypeOrmTaxonomyRepository implements TaxonomyRepositoryPort {
     private readonly pairs: Repository<DimensionPairOrm>,
     @InjectRepository(FrameworkVersionOrm)
     private readonly versions: Repository<FrameworkVersionOrm>,
+    @InjectRepository(DimensionLevelDescriptionOrm)
+    private readonly dimensionLevels: Repository<DimensionLevelDescriptionOrm>,
+    @InjectRepository(GlobalLevelDescriptionOrm)
+    private readonly globalLevels: Repository<GlobalLevelDescriptionOrm>,
   ) {}
+
+  async findLevelDescriptions(
+    frameworkVersionId: number,
+  ): Promise<LevelDescriptions> {
+    const [dimensionRows, globalRows, dimensions] = await Promise.all([
+      this.dimensionLevels.find({
+        where: { idFrameworkVersion: frameworkVersionId },
+      }),
+      this.globalLevels.find({
+        where: { idFrameworkVersion: frameworkVersionId },
+      }),
+      this.dimensions.find(),
+    ]);
+    const codeById = new Map(
+      dimensions.map((d) => [d.idDimension, d.code as DimensionCode]),
+    );
+    const byDimension = new Map<DimensionCode, Map<number, string>>();
+    for (const row of dimensionRows) {
+      const code = codeById.get(row.idDimension);
+      if (!code) continue;
+      const levels = byDimension.get(code) ?? new Map<number, string>();
+      levels.set(row.irlLevel, row.description);
+      byDimension.set(code, levels);
+    }
+    return LevelDescriptions.create(
+      byDimension,
+      new Map(globalRows.map((r) => [r.irlLevel, r.description] as const)),
+    );
+  }
 
   async findAllDimensions(): Promise<Dimension[]> {
     const rows = await this.dimensions.find({ order: { sequence: 'ASC' } });
@@ -49,7 +86,10 @@ export class TypeOrmTaxonomyRepository implements TaxonomyRepositoryPort {
   }
 
   async findCurrentFrameworkVersion(): Promise<FrameworkVersion | null> {
-    const [row] = await this.versions.find({ order: { publishedAt: 'DESC' }, take: 1 });
+    const [row] = await this.versions.find({
+      order: { publishedAt: 'DESC' },
+      take: 1,
+    });
     return row ? FrameworkVersion.fromPersistence(row) : null;
   }
 
@@ -58,12 +98,16 @@ export class TypeOrmTaxonomyRepository implements TaxonomyRepositoryPort {
     return row ? FrameworkVersion.fromPersistence(row) : null;
   }
 
-  async findFrameworkVersionByCode(code: string): Promise<FrameworkVersion | null> {
+  async findFrameworkVersionByCode(
+    code: string,
+  ): Promise<FrameworkVersion | null> {
     const row = await this.versions.findOne({ where: { code } });
     return row ? FrameworkVersion.fromPersistence(row) : null;
   }
 
-  async findConversionRanges(frameworkVersionId: number): Promise<ConversionRange[]> {
+  async findConversionRanges(
+    frameworkVersionId: number,
+  ): Promise<ConversionRange[]> {
     const rows = await this.ranges.find({
       where: { idFrameworkVersion: frameworkVersionId },
       order: { irlLevel: 'ASC' },

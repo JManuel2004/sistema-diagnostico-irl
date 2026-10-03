@@ -64,8 +64,9 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  *     column width if needed (the longest today is 25 characters).
  *   - `exception_rule.action` is checked against the actions of
  *     `EXCEPTION_ACTIONS` in `@innlab/contracts`.
- *   - `answer.justification` is mandatory and must contain at least one
- *     non-whitespace character (`btrim` would only strip spaces).
+ *   - `answer.justification` is optional (`NULL` when the user gave none);
+ *     when present it must contain at least one non-whitespace character
+ *     (`btrim` would only strip spaces).
  *   - `diagnostic.recommendation_calculated_at` and `roadmap_calculated_at`
  *     record when each result of the deep analysis arrived; with both, the
  *     diagnostic is `DEEP_ANALYSIS_COMPLETE`.
@@ -147,6 +148,26 @@ const UP: readonly string[] = [
       CONSTRAINT fk_statement_dimension FOREIGN KEY (id_dimension) REFERENCES irl_catalog.dimension (id_dimension)
   )`,
   `CREATE INDEX ix_statement_dimension ON irl_catalog.statement (id_dimension)`,
+  `CREATE TABLE irl_catalog.dimension_level_description (
+      id_framework_version smallint NOT NULL,
+      id_dimension integer NOT NULL,
+      irl_level smallint NOT NULL,
+      description character varying(300) NOT NULL,
+      CONSTRAINT pk_dimension_level_description PRIMARY KEY (id_framework_version, id_dimension, irl_level),
+      CONSTRAINT ck_dimension_level_description_level CHECK (irl_level BETWEEN 1 AND 9),
+      CONSTRAINT ck_dimension_level_description_text CHECK (description ~ '\\S'),
+      CONSTRAINT fk_dimension_level_description_version FOREIGN KEY (id_framework_version) REFERENCES irl_catalog.framework_version (id),
+      CONSTRAINT fk_dimension_level_description_dimension FOREIGN KEY (id_dimension) REFERENCES irl_catalog.dimension (id_dimension)
+  )`,
+  `CREATE TABLE irl_catalog.global_level_description (
+      id_framework_version smallint NOT NULL,
+      irl_level smallint NOT NULL,
+      description character varying(300) NOT NULL,
+      CONSTRAINT pk_global_level_description PRIMARY KEY (id_framework_version, irl_level),
+      CONSTRAINT ck_global_level_description_level CHECK (irl_level BETWEEN 1 AND 9),
+      CONSTRAINT ck_global_level_description_text CHECK (description ~ '\\S'),
+      CONSTRAINT fk_global_level_description_version FOREIGN KEY (id_framework_version) REFERENCES irl_catalog.framework_version (id)
+  )`,
 
   // ── irl_catalog: roadmap ───────────────────────────────────────────────
   `CREATE TABLE irl_catalog.dimension_dependency (
@@ -162,6 +183,18 @@ const UP: readonly string[] = [
       CONSTRAINT fk_dimension_dependency_target FOREIGN KEY (id_dimension_target) REFERENCES irl_catalog.dimension (id_dimension)
   )`,
   `CREATE INDEX ix_dimension_dependency_target ON irl_catalog.dimension_dependency (id_dimension_target)`,
+  // How the roadmap paces and closes the route (single row): how many
+  // levels a dimension may rise in one phase, and the largest gap between
+  // two paired dimensions accepted at the end (1: no imbalance with an alert).
+  `CREATE TABLE irl_catalog.roadmap_parameters (
+      id smallint DEFAULT 1 NOT NULL,
+      max_levels_per_phase smallint NOT NULL,
+      balance_tolerance smallint NOT NULL,
+      CONSTRAINT pk_roadmap_parameters PRIMARY KEY (id),
+      CONSTRAINT ck_roadmap_parameters_single_row CHECK (id = 1),
+      CONSTRAINT ck_roadmap_parameters_step CHECK (max_levels_per_phase BETWEEN 1 AND 8),
+      CONSTRAINT ck_roadmap_parameters_tolerance CHECK (balance_tolerance BETWEEN 0 AND 8)
+  )`,
 
   // ── irl_catalog: initiative ───────────────────────────────────────────
   `CREATE TABLE irl_catalog.sector (
@@ -192,10 +225,26 @@ const UP: readonly string[] = [
   )`,
 
   // ── irl_catalog: routing ───────────────────────────────────────────────
+  `CREATE TABLE irl_catalog.service_tier (
+      id smallint GENERATED ALWAYS AS IDENTITY,
+      code character varying(16) NOT NULL,
+      name character varying(40) NOT NULL,
+      sequence smallint NOT NULL,
+      tagline character varying(120),
+      description character varying(300),
+      CONSTRAINT pk_service_tier PRIMARY KEY (id),
+      CONSTRAINT uq_service_tier_code UNIQUE (code),
+      CONSTRAINT uq_service_tier_name UNIQUE (name),
+      CONSTRAINT uq_service_tier_sequence UNIQUE (sequence),
+      CONSTRAINT ck_service_tier_sequence CHECK (sequence BETWEEN 1 AND 9)
+  )`,
   `CREATE TABLE irl_catalog.portfolio_service (
       id integer GENERATED ALWAYS AS IDENTITY,
       name character varying(80) NOT NULL,
+      subtitle character varying(120) NOT NULL,
       description character varying(500),
+      scope character varying(500) NOT NULL,
+      id_tier smallint NOT NULL,
       is_active boolean DEFAULT true NOT NULL,
       adjustment_only boolean NOT NULL,
       min_level integer,
@@ -207,7 +256,8 @@ const UP: readonly string[] = [
         (min_level IS NULL AND max_level IS NULL)
         OR (min_level BETWEEN 1 AND 9 AND max_level BETWEEN 1 AND 9 AND min_level <= max_level)
       ),
-      CONSTRAINT ck_portfolio_service_scored_band CHECK (adjustment_only OR min_level IS NOT NULL)
+      CONSTRAINT ck_portfolio_service_scored_band CHECK (adjustment_only OR min_level IS NOT NULL),
+      CONSTRAINT fk_portfolio_service_tier FOREIGN KEY (id_tier) REFERENCES irl_catalog.service_tier (id)
   )`,
   `CREATE TABLE irl_catalog.portfolio_service_stage (
       id_service integer NOT NULL,
@@ -282,12 +332,15 @@ const UP: readonly string[] = [
       out_of_range_penalty numeric(4,2) NOT NULL,
       minimum_threshold numeric(5,2) NOT NULL,
       alternatives_count integer NOT NULL,
+      phase_coverage_weight numeric(4,2) NOT NULL,
+      phase_minimum_threshold numeric(5,2) NOT NULL,
       CONSTRAINT pk_scoring_parameters PRIMARY KEY (id),
       CONSTRAINT ck_scoring_parameters_single_row CHECK (id = 1),
       CONSTRAINT ck_scoring_parameters_non_negative CHECK (
         bottleneck_weight >= 0 AND gap_weight >= 0 AND moderate_imbalance_weight >= 0
         AND critical_imbalance_weight >= 0 AND stage_affinity_weight >= 0
         AND out_of_range_penalty >= 0 AND minimum_threshold >= 0 AND alternatives_count >= 0
+        AND phase_coverage_weight >= 0 AND phase_minimum_threshold >= 0
       )
   )`,
 
@@ -316,11 +369,11 @@ const UP: readonly string[] = [
       id_diagnostic uuid NOT NULL,
       id_statement bigint NOT NULL,
       likert_value integer NOT NULL,
-      justification character varying(1000) NOT NULL,
+      justification character varying(1000),
       answered_at timestamp with time zone DEFAULT now() NOT NULL,
       CONSTRAINT pk_answer PRIMARY KEY (id),
       CONSTRAINT uq_answer_diagnostic_statement UNIQUE (id_diagnostic, id_statement),
-      CONSTRAINT ck_answer_justification CHECK (justification ~ '\\S'),
+      CONSTRAINT ck_answer_justification CHECK (justification IS NULL OR justification ~ '\\S'),
       CONSTRAINT ck_answer_likert_value CHECK (likert_value BETWEEN 1 AND 5),
       CONSTRAINT fk_answer_diagnostic FOREIGN KEY (id_diagnostic) REFERENCES irl_diagnostic.diagnostic (id) ON DELETE CASCADE,
       CONSTRAINT fk_answer_statement FOREIGN KEY (id_statement) REFERENCES irl_catalog.statement (id_statement)
@@ -439,6 +492,8 @@ const UP: readonly string[] = [
       id bigint GENERATED ALWAYS AS IDENTITY,
       id_diagnostic uuid NOT NULL,
       phases jsonb NOT NULL,
+      final_levels jsonb NOT NULL,
+      balanced boolean NOT NULL,
       generated_at timestamp with time zone NOT NULL,
       CONSTRAINT pk_scaling_roadmap PRIMARY KEY (id),
       CONSTRAINT uq_scaling_roadmap_diagnostic UNIQUE (id_diagnostic),

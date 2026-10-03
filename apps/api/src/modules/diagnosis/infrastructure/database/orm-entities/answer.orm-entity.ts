@@ -18,8 +18,13 @@ export class AnswerOrm {
   @Column({ name: 'likert_value', type: 'integer' })
   likertValue!: number;
 
-  @Column({ name: 'justification', type: 'varchar', length: 1000 })
-  justification!: string;
+  @Column({
+    name: 'justification',
+    type: 'varchar',
+    length: 1000,
+    nullable: true,
+  })
+  justification!: string | null;
 
   @Column({
     name: 'answered_at',

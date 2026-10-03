@@ -8,6 +8,8 @@ import type {
   DimensionMinimumSnapshot,
 } from '../../../domain/repositories/dependency-graph.repository.port.js';
 import { DimensionDependencyOrm } from '../orm-entities/dimension-dependency.orm-entity.js';
+import { RoadmapParametersOrm } from '../orm-entities/roadmap-parameters.orm-entity.js';
+import type { RoadmapParameters } from '../../../domain/value-objects/roadmap-parameters.vo.js';
 import {
   TAXONOMY_REPOSITORY,
   type TaxonomyRepositoryPort,
@@ -26,12 +28,12 @@ import {
  * context, not a table any module can reach into.
  */
 @Injectable()
-export class TypeOrmDependencyGraphRepository
-  implements DependencyGraphRepositoryPort
-{
+export class TypeOrmDependencyGraphRepository implements DependencyGraphRepositoryPort {
   constructor(
     @InjectRepository(DimensionDependencyOrm)
     private readonly dependencies: Repository<DimensionDependencyOrm>,
+    @InjectRepository(RoadmapParametersOrm)
+    private readonly parameters: Repository<RoadmapParametersOrm>,
     @Inject(TAXONOMY_REPOSITORY)
     private readonly taxonomy: TaxonomyRepositoryPort,
   ) {}
@@ -66,10 +68,18 @@ export class TypeOrmDependencyGraphRepository
     }));
   }
 
+  async findParameters(): Promise<RoadmapParameters | null> {
+    const [row] = await this.parameters.find({ take: 1 });
+    return row
+      ? {
+          maxLevelsPerPhase: row.maxLevelsPerPhase,
+          balanceTolerance: row.balanceTolerance,
+        }
+      : null;
+  }
+
   private async codeById(): Promise<ReadonlyMap<number, DimensionCode>> {
     const dimensions = await this.taxonomy.findAllDimensions();
-    return new Map(
-      dimensions.map((d) => [d.id, d.code.value] as const),
-    );
+    return new Map(dimensions.map((d) => [d.id, d.code.value] as const));
   }
 }

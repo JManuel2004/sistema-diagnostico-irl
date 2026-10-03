@@ -110,6 +110,66 @@ describe('Catalog seed (integration)', () => {
     expect(rows.map((r) => r.code)).toEqual(['BRL', 'CRL', 'TmRL']);
   });
 
+  it('seeds the four service tiers and gives every service its tier, subtitle and scope', async () => {
+    await runSeed();
+
+    const tiers = await dataSource.query<{ name: string; sequence: number }[]>(
+      `SELECT name, sequence FROM irl_catalog.service_tier ORDER BY sequence`,
+    );
+    expect(tiers.map((t) => t.name)).toEqual([
+      'Descubre',
+      'Co-crea',
+      'Profundiza',
+      'Alíate',
+    ]);
+    const [reto] = await dataSource.query<
+      { subtitle: string; scope: string; tier: string }[]
+    >(
+      `SELECT s.subtitle, s.scope, t.name AS tier
+         FROM irl_catalog.portfolio_service s
+         JOIN irl_catalog.service_tier t ON t.id = s.id_tier
+        WHERE s.name = 'Reto Express'`,
+    );
+    expect(reto).toEqual({
+      subtitle: 'Hackatón · Design Sprint · Challenge',
+      scope:
+        'Banco de ideas, conceptos y prototipos tempranos (TRL 3–5) + informe síntesis del sprint.',
+      tier: 'Descubre',
+    });
+  });
+
+  it('seeds what each level means: 54 dimension texts and 9 global ones for the version', async () => {
+    await runSeed();
+
+    expect(await count('irl_catalog.dimension_level_description')).toBe('54');
+    expect(await count('irl_catalog.global_level_description')).toBe('9');
+    const [trl1] = await dataSource.query<{ description: string }[]>(
+      `SELECT l.description
+         FROM irl_catalog.dimension_level_description l
+         JOIN irl_catalog.dimension d ON d.id_dimension = l.id_dimension
+        WHERE d.code = 'TRL' AND l.irl_level = 1`,
+    );
+    expect(trl1.description).toBe(
+      'Se han observado y reportado principios básicos científicos.',
+    );
+    await expect(
+      dataSource.query(
+        `UPDATE irl_catalog.global_level_description SET description = '   ' WHERE irl_level = 1`,
+      ),
+    ).rejects.toThrow(/ck_global_level_description_text/);
+  });
+
+  it('seeds how the roadmap paces and closes the route', async () => {
+    await runSeed();
+
+    const [row] = await dataSource.query<
+      { max_levels_per_phase: number; balance_tolerance: number }[]
+    >(
+      `SELECT max_levels_per_phase, balance_tolerance FROM irl_catalog.roadmap_parameters`,
+    );
+    expect(row).toEqual({ max_levels_per_phase: 2, balance_tolerance: 1 });
+  });
+
   it('applies a change of the routing configuration when seeding again', async () => {
     await runSeed();
     await dataSource.query(
@@ -133,8 +193,9 @@ describe('Catalog seed (integration)', () => {
   it('removes the services and rules that are no longer in the seed', async () => {
     await runSeed();
     const [{ id }] = await dataSource.query<{ id: number }[]>(
-      `INSERT INTO irl_catalog.portfolio_service (name, is_active, adjustment_only, min_level, max_level)
-       VALUES ('Mentoría', true, false, 1, 6) RETURNING id`,
+      `INSERT INTO irl_catalog.portfolio_service
+         (name, subtitle, scope, id_tier, is_active, adjustment_only, min_level, max_level)
+       VALUES ('Mentoría', 'x', 'x', (SELECT id FROM irl_catalog.service_tier ORDER BY sequence LIMIT 1), true, false, 1, 6) RETURNING id`,
     );
     await dataSource.query(
       `INSERT INTO irl_catalog.ordinal_intensity (id_service, id_dimension, id_calibration_label)
@@ -164,8 +225,9 @@ describe('Catalog seed (integration)', () => {
     await runSeed();
     const diagnosticId = randomUUID();
     const [{ id }] = await dataSource.query<{ id: number }[]>(
-      `INSERT INTO irl_catalog.portfolio_service (name, is_active, adjustment_only, min_level, max_level)
-       VALUES ('Formación', true, false, 1, 5) RETURNING id`,
+      `INSERT INTO irl_catalog.portfolio_service
+         (name, subtitle, scope, id_tier, is_active, adjustment_only, min_level, max_level)
+       VALUES ('Formación', 'x', 'x', (SELECT id FROM irl_catalog.service_tier ORDER BY sequence LIMIT 1), true, false, 1, 5) RETURNING id`,
     );
     await dataSource.query(
       `INSERT INTO irl_diagnostic.diagnostic (id, cognito_user_id, state, id_framework_version)
@@ -211,8 +273,8 @@ describe('Catalog seed (integration)', () => {
       await runSeed();
       await expect(
         dataSource.query(
-          `INSERT INTO irl_catalog.portfolio_service (name, is_active, adjustment_only)
-           VALUES ('Sin banda', true, false)`,
+          `INSERT INTO irl_catalog.portfolio_service (name, subtitle, scope, id_tier, is_active, adjustment_only)
+           VALUES ('Sin banda', 'x', 'x', (SELECT id FROM irl_catalog.service_tier ORDER BY sequence LIMIT 1), true, false)`,
         ),
       ).rejects.toThrow(/ck_portfolio_service_scored_band/);
     });

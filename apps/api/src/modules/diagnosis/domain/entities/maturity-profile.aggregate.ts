@@ -96,9 +96,16 @@ export class MaturityProfile {
    * dimensions share that minimum, all of them are reported (explicit tie —
    * the frontend must never assume size 1).
    */
-  bottleneck(): { readonly dimensions: readonly DimensionResult[]; readonly level: number } {
-    const minLevel = Math.min(...this._dimensionResults.map((r) => r.irlLevel.value));
-    const dimensions = this._dimensionResults.filter((r) => r.irlLevel.value === minLevel);
+  bottleneck(): {
+    readonly dimensions: readonly DimensionResult[];
+    readonly level: number;
+  } {
+    const minLevel = Math.min(
+      ...this._dimensionResults.map((r) => r.irlLevel.value),
+    );
+    const dimensions = this._dimensionResults.filter(
+      (r) => r.irlLevel.value === minLevel,
+    );
     return { dimensions, level: minLevel };
   }
 
@@ -114,10 +121,25 @@ export class MaturityProfile {
     return Math.round(mean * 10) / 10;
   }
 
+  /**
+   * The whole level the global average stands for, to pick what it means:
+   * the average as shown (one decimal) rounded half up, so 3.5 → 4.
+   */
+  globalLevel(): number {
+    return Math.min(9, Math.max(1, Math.round(this.globalAverage())));
+  }
+
   /** Dimension(s) with the highest IRL level — the strength of the profile. */
-  strength(): { readonly dimensions: readonly DimensionResult[]; readonly level: number } {
-    const maxLevel = Math.max(...this._dimensionResults.map((r) => r.irlLevel.value));
-    const dimensions = this._dimensionResults.filter((r) => r.irlLevel.value === maxLevel);
+  strength(): {
+    readonly dimensions: readonly DimensionResult[];
+    readonly level: number;
+  } {
+    const maxLevel = Math.max(
+      ...this._dimensionResults.map((r) => r.irlLevel.value),
+    );
+    const dimensions = this._dimensionResults.filter(
+      (r) => r.irlLevel.value === maxLevel,
+    );
     return { dimensions, level: maxLevel };
   }
 

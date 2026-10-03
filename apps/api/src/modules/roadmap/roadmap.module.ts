@@ -10,7 +10,12 @@ import { DimensionDependencyOrm } from './infrastructure/database/orm-entities/d
 import { TypeOrmDependencyGraphRepository } from './infrastructure/database/repositories/typeorm-dependency-graph.repository.js';
 import { DEPENDENCY_GRAPH_REPOSITORY } from './domain/repositories/dependency-graph.repository.port.js';
 import { RoadmapClosureService } from './domain/services/roadmap-closure.service.js';
-import { TopologicalLayeringService } from './domain/services/topological-layering.service.js';
+import { RoadmapBalancingService } from './domain/services/roadmap-balancing.service.js';
+import { PhasePlannerService } from './domain/services/phase-planner.service.js';
+import { PHASE_SERVICE_ADVISOR } from './domain/repositories/phase-service-advisor.port.js';
+import { PhaseServiceAdvisorAdapter } from './infrastructure/phase-service-advisor.adapter.js';
+import { RoadmapParametersOrm } from './infrastructure/database/orm-entities/roadmap-parameters.orm-entity.js';
+import { RoutingModule } from '../routing/routing.module.js';
 import { TargetLevelCalculatorService } from './domain/services/target-level-calculator.service.js';
 import { GenerateScalingRoadmapUseCase } from './application/use-cases/generate-scaling-roadmap.use-case.js';
 import { GetScalingRoadmapUseCase } from './application/use-cases/get-scaling-roadmap.use-case.js';
@@ -32,7 +37,7 @@ import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module
  * is preferred over leaving two different patterns for two contexts
  * created days apart.
  *
- * The three domain services are pure and undecorated: Nest registers
+ * The domain services are pure and undecorated: Nest registers
  * them as class providers because they take nothing in the constructor,
  * just like `IrlCalculatorService`.
  *
@@ -42,27 +47,39 @@ import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DimensionDependencyOrm, ScalingRoadmapOrm]),
+    TypeOrmModule.forFeature([
+      DimensionDependencyOrm,
+      ScalingRoadmapOrm,
+      RoadmapParametersOrm,
+    ]),
     IrlTaxonomyModule,
     DiagnosisModule,
+    // Only for the read-only queries it exports: the service of each phase
+    // and the card of a service, reached behind `PhaseServiceAdvisorPort`.
+    RoutingModule,
   ],
   providers: [
     RoadmapClosureService,
-    TopologicalLayeringService,
     TargetLevelCalculatorService,
+    RoadmapBalancingService,
+    PhasePlannerService,
     applicationProvider(GenerateScalingRoadmapUseCase, [
       DEPENDENCY_GRAPH_REPOSITORY,
       GetMaturityProfileUseCase,
       RoadmapClosureService,
-      TopologicalLayeringService,
       TargetLevelCalculatorService,
+      RoadmapBalancingService,
+      PhasePlannerService,
+      PHASE_SERVICE_ADVISOR,
       ROADMAP_REPOSITORY,
     ]),
     applicationProvider(GetScalingRoadmapUseCase, [
       ROADMAP_REPOSITORY,
       TAXONOMY_REPOSITORY,
       DIAGNOSTIC_OWNERSHIP,
+      PHASE_SERVICE_ADVISOR,
     ]),
+    { provide: PHASE_SERVICE_ADVISOR, useClass: PhaseServiceAdvisorAdapter },
     { provide: DIAGNOSTIC_OWNERSHIP, useClass: DiagnosisOwnershipAdapter },
     DeepAnalysisRequestedListener,
     { provide: ROADMAP_REPOSITORY, useClass: TypeOrmRoadmapRepository },

@@ -1,6 +1,9 @@
 import { beforeAll, afterAll, describe, expect, it } from '@jest/globals';
 import { Test } from '@nestjs/testing';
-import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  type NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { DataSource } from 'typeorm';
 import request from 'supertest';
 import nock from 'nock';
@@ -45,16 +48,21 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
 
   /** A fresh diagnostic of this suite's user, in `STARTED`. */
   async function start(): Promise<string> {
-    await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE cognito_user_id = $1`, [
-      userId,
-    ]);
+    await dataSource.query(
+      `DELETE FROM irl_diagnostic.diagnostic WHERE cognito_user_id = $1`,
+      [userId],
+    );
     const res = await agent.post('/api/v1/diagnostics').expect(201);
     return diagnosticSchema.parse(res.body).id;
   }
 
   /** The initiative profile of the case, for this suite's initiative. */
   function body(over: Record<string, unknown> = {}) {
-    return { initiativeId, ...agroconectaInitiative({ sectorId, stageId }), ...over };
+    return {
+      initiativeId,
+      ...agroconectaInitiative({ sectorId, stageId }),
+      ...over,
+    };
   }
 
   async function stateOf(id: string): Promise<string> {
@@ -66,7 +74,9 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
   }
 
   async function statements() {
-    return dataSource.query<{ id_statement: string; code: string; sequence: number }[]>(
+    return dataSource.query<
+      { id_statement: string; code: string; sequence: number }[]
+    >(
       `SELECT a.id_statement, d.code, a.sequence
          FROM irl_catalog.statement a
          JOIN irl_catalog.dimension d ON d.id_dimension = a.id_dimension
@@ -75,7 +85,9 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
   }
 
   beforeAll(async () => {
-    const moduleFixture = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleFixture = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
     app = moduleFixture.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ logger: false }),
     );
@@ -88,29 +100,38 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
       .set('Authorization', authenticateAgainst(app, userId));
     dataSource = app.get(DataSource);
 
-    const sectors = await agent.get('/api/v1/initiative-catalog/sectors').expect(200);
+    const sectors = await agent
+      .get('/api/v1/initiative-catalog/sectors')
+      .expect(200);
     sectorId = (sectors.body as { id: string; name: string }[]).find(
       (s) => s.name === 'Agroindustria / AgriTech',
     )!.id;
-    const stages = await agent.get('/api/v1/initiative-catalog/stages').expect(200);
+    const stages = await agent
+      .get('/api/v1/initiative-catalog/stages')
+      .expect(200);
     stageId = (stages.body as { id: string; code: string }[]).find(
       (s) => s.code === 'validacion',
     )!.id;
 
     // The initiative is created once, accepting its consent; each diagnostic
     // below registers a snapshot of its profile.
-    const initiative = await agent.post('/api/v1/initiatives').send({ version: 'v1' }).expect(201);
+    const initiative = await agent
+      .post('/api/v1/initiatives')
+      .send({ version: 'v1' })
+      .expect(201);
     initiativeId = (initiative.body as { id: string }).id;
   }, 60_000);
 
   afterAll(async () => {
     if (dataSource?.isInitialized) {
-      await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE cognito_user_id = $1`, [
-        userId,
-      ]);
-      await dataSource.query(`DELETE FROM irl_diagnostic.initiative WHERE cognito_user_id = $1`, [
-        userId,
-      ]);
+      await dataSource.query(
+        `DELETE FROM irl_diagnostic.diagnostic WHERE cognito_user_id = $1`,
+        [userId],
+      );
+      await dataSource.query(
+        `DELETE FROM irl_diagnostic.initiative WHERE cognito_user_id = $1`,
+        [userId],
+      );
       if (created.length > 0) {
         await dataSource.query(
           `DELETE FROM irl_diagnostic.diagnostic WHERE id = ANY($1::uuid[])`,
@@ -124,13 +145,27 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
 
   describe('catálogos de la iniciativa', () => {
     it('sirve el sector del caso y las tres etapas en orden', async () => {
-      const sectors = await agent.get('/api/v1/initiative-catalog/sectors').expect(200);
-      const stages = await agent.get('/api/v1/initiative-catalog/stages').expect(200);
+      const sectors = await agent
+        .get('/api/v1/initiative-catalog/sectors')
+        .expect(200);
+      const stages = await agent
+        .get('/api/v1/initiative-catalog/stages')
+        .expect(200);
 
-      const parsedSectors = (sectors.body as unknown[]).map((s) => sectorSchema.parse(s));
-      const parsedStages = (stages.body as unknown[]).map((s) => initiativeStageSchema.parse(s));
-      expect(parsedSectors.map((s) => s.name)).toContain('Agroindustria / AgriTech');
-      expect(parsedStages.map((s) => s.code)).toEqual(['idea', 'validacion', 'crecimiento']);
+      const parsedSectors = (sectors.body as unknown[]).map((s) =>
+        sectorSchema.parse(s),
+      );
+      const parsedStages = (stages.body as unknown[]).map((s) =>
+        initiativeStageSchema.parse(s),
+      );
+      expect(parsedSectors.map((s) => s.name)).toContain(
+        'Agroindustria / AgriTech',
+      );
+      expect(parsedStages.map((s) => s.code)).toEqual([
+        'idea',
+        'validacion',
+        'crecimiento',
+      ]);
     });
   });
 
@@ -164,7 +199,10 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
 
       const initiative = initiativeSchema.parse(res.body);
       expect(initiative.sector.name).toBe('Agroindustria / AgriTech');
-      expect(initiative.stage).toMatchObject({ code: 'validacion', name: 'Validación' });
+      expect(initiative.stage).toMatchObject({
+        code: 'validacion',
+        name: 'Validación',
+      });
       expect(initiative.teamSize).toBe(3);
       expect(initiative.currentFunding).toContain('COP 25M');
     });
@@ -176,7 +214,9 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
         .send(body())
         .expect(201);
 
-      const read = await agent.get(`/api/v1/diagnostics/${id}/initiative`).expect(200);
+      const read = await agent
+        .get(`/api/v1/diagnostics/${id}/initiative`)
+        .expect(200);
 
       const initiative = initiativeSchema.parse(read.body);
       expect(initiative.name).toContain('AgroConecta');
@@ -197,32 +237,42 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
 
     it('volver a registrarla la actualiza y no retrocede el diagnóstico', async () => {
       const id = await start();
-      await agent.post(`/api/v1/diagnostics/${id}/initiative`).send(body()).expect(201);
+      await agent
+        .post(`/api/v1/diagnostics/${id}/initiative`)
+        .send(body())
+        .expect(201);
 
       await agent
         .post(`/api/v1/diagnostics/${id}/initiative`)
         .send(body({ currentFunding: 'Otro financiamiento' }))
         .expect(201);
 
-      const read = await agent.get(`/api/v1/diagnostics/${id}/initiative`).expect(200);
-      expect(initiativeSchema.parse(read.body).currentFunding).toBe('Otro financiamiento');
+      const read = await agent
+        .get(`/api/v1/diagnostics/${id}/initiative`)
+        .expect(200);
+      expect(initiativeSchema.parse(read.body).currentFunding).toBe(
+        'Otro financiamiento',
+      );
       expect(await stateOf(id)).toBe('WITH_INITIATIVE');
     });
 
-    it.each(['productType', 'declaredStage', 'teamDescription', 'targetMarket', 'currentFunding'])(
-      'rechaza con 422 un perfil sin %s y no lo guarda',
-      async (field) => {
-        const id = await start();
+    it.each([
+      'productType',
+      'declaredStage',
+      'teamDescription',
+      'targetMarket',
+      'currentFunding',
+    ])('rechaza con 422 un perfil sin %s y no lo guarda', async (field) => {
+      const id = await start();
 
-        await agent
-          .post(`/api/v1/diagnostics/${id}/initiative`)
-          .send(body({ [field]: '  ' }))
-          .expect(422);
+      await agent
+        .post(`/api/v1/diagnostics/${id}/initiative`)
+        .send(body({ [field]: '  ' }))
+        .expect(422);
 
-        await agent.get(`/api/v1/diagnostics/${id}/initiative`).expect(404);
-        expect(await stateOf(id)).toBe('STARTED');
-      },
-    );
+      await agent.get(`/api/v1/diagnostics/${id}/initiative`).expect(404);
+      expect(await stateOf(id)).toBe('STARTED');
+    });
 
     it('rechaza con 404 una etapa que no existe', async () => {
       const id = await start();
@@ -254,7 +304,9 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
 
       const profile = maturityProfileResponseSchema.parse(res.body);
       expect(
-        Object.fromEntries(profile.dimensionResults.map((r) => [r.dimensionCode, r.irlLevel])),
+        Object.fromEntries(
+          profile.dimensionResults.map((r) => [r.dimensionCode, r.irlLevel]),
+        ),
       ).toEqual(AGROCONECTA_LEVELS);
       expect(await stateOf(id)).toBe('PROFILE_GENERATED');
     });
@@ -262,27 +314,75 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
     it('guarda la justificación junto a cada respuesta', async () => {
       const id = await withInitiative();
       const answers = agroconectaAnswers(await statements());
-      await agent.post(`/api/v1/diagnostics/${id}/finalize-initial`).send({ answers }).expect(201);
+      await agent
+        .post(`/api/v1/diagnostics/${id}/finalize-initial`)
+        .send({ answers })
+        .expect(201);
 
-      const rows = await dataSource.query<{ id_statement: string; justification: string }[]>(
+      const rows = await dataSource.query<
+        { id_statement: string; justification: string }[]
+      >(
         `SELECT id_statement::text AS id_statement, justification
            FROM irl_diagnostic.answer WHERE id_diagnostic = $1`,
         [id],
       );
 
       expect(rows).toHaveLength(48);
-      const byStatement = new Map(rows.map((r) => [r.id_statement, r.justification]));
+      const byStatement = new Map(
+        rows.map((r) => [r.id_statement, r.justification]),
+      );
       for (const a of answers) {
         expect(byStatement.get(a.statementId)).toBe(a.justification);
       }
     });
 
-    it('rechaza con 422 un envío en que falta una justificación, sin guardar nada', async () => {
+    it('la justificación es opcional: una en blanco, una nula y una ausente se guardan como NULL', async () => {
+      const id = await withInitiative();
+      const answers: {
+        statementId: string;
+        value: number;
+        justification?: string | null;
+      }[] = agroconectaAnswers(await statements());
+      answers[10] = { ...answers[10], justification: '   ' };
+      answers[11] = { ...answers[11], justification: null };
+      answers[12] = {
+        statementId: answers[12].statementId,
+        value: answers[12].value,
+      };
+
+      await agent
+        .post(`/api/v1/diagnostics/${id}/finalize-initial`)
+        .send({ answers })
+        .expect(201);
+
+      const rows = await dataSource.query<
+        { id_statement: string; justification: string | null }[]
+      >(
+        `SELECT id_statement::text AS id_statement, justification
+           FROM irl_diagnostic.answer WHERE id_diagnostic = $1`,
+        [id],
+      );
+      const byStatement = new Map(
+        rows.map((r) => [r.id_statement, r.justification]),
+      );
+      expect(rows).toHaveLength(48);
+      for (const i of [10, 11, 12])
+        expect(byStatement.get(answers[i].statementId)).toBeNull();
+      expect(byStatement.get(answers[0].statementId)).toBe(
+        answers[0].justification,
+      );
+      expect(await stateOf(id)).toBe('PROFILE_GENERATED');
+    });
+
+    it('rechaza con 422 una justificación de más de 1000 caracteres, sin guardar nada', async () => {
       const id = await withInitiative();
       const answers = agroconectaAnswers(await statements());
-      answers[10] = { ...answers[10], justification: '   ' };
+      answers[10] = { ...answers[10], justification: 'x'.repeat(1001) };
 
-      await agent.post(`/api/v1/diagnostics/${id}/finalize-initial`).send({ answers }).expect(422);
+      await agent
+        .post(`/api/v1/diagnostics/${id}/finalize-initial`)
+        .send({ answers })
+        .expect(422);
 
       const [{ count }] = await dataSource.query<{ count: string }[]>(
         `SELECT count(*) FROM irl_diagnostic.answer WHERE id_diagnostic = $1`,
@@ -290,16 +390,6 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
       );
       expect(Number(count)).toBe(0);
       expect(await stateOf(id)).toBe('WITH_INITIATIVE');
-    });
-
-    it('rechaza con 422 un envío sin el campo justification', async () => {
-      const id = await withInitiative();
-      const answers = agroconectaAnswers(await statements()).map(({ statementId, value }) => ({
-        statementId,
-        value,
-      }));
-
-      await agent.post(`/api/v1/diagnostics/${id}/finalize-initial`).send({ answers }).expect(422);
     });
 
     it('no deja procesar el cuestionario antes de registrar la iniciativa', async () => {
@@ -339,22 +429,53 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
     it('el perfil trae el estado crítico calculado por el backend: solo BRL', async () => {
       const id = await withProfile();
 
-      const res = await agent.get(`/api/v1/diagnostics/${id}/profile`).expect(200);
+      const res = await agent
+        .get(`/api/v1/diagnostics/${id}/profile`)
+        .expect(200);
 
       // BRL is at level 3 (a gap in a susceptible dimension); IPRL (1) and FRL
       // (2) are gaps too, but they cannot be in critical state.
       const profile = maturityProfileResponseSchema.parse(res.body);
-      expect(profile.gaps.dimensions).toEqual(expect.arrayContaining(['BRL', 'IPRL', 'FRL']));
+      expect(profile.gaps.dimensions).toEqual(
+        expect.arrayContaining(['BRL', 'IPRL', 'FRL']),
+      );
       expect(profile.criticalState.dimensions).toEqual(['BRL']);
     });
 
     it('el perfil trae el promedio IRL global (RF-09) de las seis dimensiones del caso', async () => {
       const id = await withProfile();
 
-      const res = await agent.get(`/api/v1/diagnostics/${id}/profile`).expect(200);
+      const res = await agent
+        .get(`/api/v1/diagnostics/${id}/profile`)
+        .expect(200);
 
       // AgroConecta: (6 + 4 + 3 + 1 + 5 + 2) / 6 = 3.5
-      expect(maturityProfileResponseSchema.parse(res.body).globalAverage).toBe(3.5);
+      expect(maturityProfileResponseSchema.parse(res.body).globalAverage).toBe(
+        3.5,
+      );
+    });
+
+    it('cada puntaje trae lo que significa su nivel, y el global se redondea hacia arriba en x,5', async () => {
+      const id = await withProfile();
+
+      const profile = maturityProfileResponseSchema.parse(
+        (await agent.get(`/api/v1/diagnostics/${id}/profile`).expect(200)).body,
+      );
+
+      const trl = profile.dimensionResults.find(
+        (r) => r.dimensionCode === 'TRL',
+      );
+      expect(trl).toMatchObject({
+        irlLevel: 6,
+        levelDescription:
+          'El sistema completo funciona como prototipo en entorno operativo real.',
+      });
+      // 3.5 → level 4.
+      expect(profile.globalLevel.level).toBe(4);
+      expect(profile.globalLevel.description).toContain('primera validación');
+      expect(profile.levelScale.FRL?.[3]).toBe(
+        'Se ha asegurado el primer financiamiento externo (semilla o subsidio).',
+      );
     });
 
     it('el diagnóstico dice que el análisis profundo no fue aceptado, hasta que se acepta', async () => {

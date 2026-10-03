@@ -18,27 +18,87 @@ export class ScoringParametersOrm {
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'id' })
   id!: string;
 
-  @Column({ name: 'bottleneck_weight', type: 'numeric', precision: 4, scale: 2, transformer: numericTransformer })
+  @Column({
+    name: 'bottleneck_weight',
+    type: 'numeric',
+    precision: 4,
+    scale: 2,
+    transformer: numericTransformer,
+  })
   bottleneckWeight!: number;
 
-  @Column({ name: 'gap_weight', type: 'numeric', precision: 4, scale: 2, transformer: numericTransformer })
+  @Column({
+    name: 'gap_weight',
+    type: 'numeric',
+    precision: 4,
+    scale: 2,
+    transformer: numericTransformer,
+  })
   gapWeight!: number;
 
-  @Column({ name: 'moderate_imbalance_weight', type: 'numeric', precision: 4, scale: 2, transformer: numericTransformer })
+  @Column({
+    name: 'moderate_imbalance_weight',
+    type: 'numeric',
+    precision: 4,
+    scale: 2,
+    transformer: numericTransformer,
+  })
   moderateImbalanceWeight!: number;
 
-  @Column({ name: 'critical_imbalance_weight', type: 'numeric', precision: 4, scale: 2, transformer: numericTransformer })
+  @Column({
+    name: 'critical_imbalance_weight',
+    type: 'numeric',
+    precision: 4,
+    scale: 2,
+    transformer: numericTransformer,
+  })
   criticalImbalanceWeight!: number;
 
-  @Column({ name: 'stage_affinity_weight', type: 'numeric', precision: 4, scale: 2, transformer: numericTransformer })
+  @Column({
+    name: 'stage_affinity_weight',
+    type: 'numeric',
+    precision: 4,
+    scale: 2,
+    transformer: numericTransformer,
+  })
   stageAffinityWeight!: number;
 
-  @Column({ name: 'out_of_range_penalty', type: 'numeric', precision: 4, scale: 2, transformer: numericTransformer })
+  @Column({
+    name: 'out_of_range_penalty',
+    type: 'numeric',
+    precision: 4,
+    scale: 2,
+    transformer: numericTransformer,
+  })
   outOfRangePenalty!: number;
 
-  @Column({ name: 'minimum_threshold', type: 'numeric', precision: 5, scale: 2, transformer: numericTransformer })
+  @Column({
+    name: 'minimum_threshold',
+    type: 'numeric',
+    precision: 5,
+    scale: 2,
+    transformer: numericTransformer,
+  })
   minimumThreshold!: number;
 
   @Column({ name: 'alternatives_count', type: 'integer' })
   alternativesCount!: number;
+
+  @Column({
+    name: 'phase_coverage_weight',
+    type: 'numeric',
+    precision: 4,
+    scale: 2,
+    transformer: numericTransformer,
+  })
+  phaseCoverageWeight!: number;
+
+  @Column({
+    name: 'phase_minimum_threshold',
+    type: 'numeric',
+    precision: 5,
+    scale: 2,
+    transformer: numericTransformer,
+  })
+  phaseMinimumThreshold!: number;
 }

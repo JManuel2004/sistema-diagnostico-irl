@@ -2,6 +2,8 @@ import type { MaturityProfileResponse } from '@innlab/contracts';
 import type { MaturityProfile } from '../../domain/entities/maturity-profile.aggregate.js';
 import type { ImbalanceResult } from '../../domain/value-objects/imbalance-result.vo.js';
 import type { Dimension } from '../../../../shared/irl-taxonomy/domain/entities/dimension.js';
+import type { LevelDescriptions } from '../../../../shared/irl-taxonomy/domain/entities/level-descriptions.js';
+import { DIMENSION_CODES, type DimensionCode } from '@innlab/contracts';
 import {
   dimensionRefsByCode,
   requireDimensionRef,
@@ -13,10 +15,17 @@ const CLASSIFICATION_MAP = {
   ACCEPTABLE: 'acceptable',
 } as const;
 
+/**
+ * Maps the profile to its response. Every score travels with what it means
+ * (`levels`, from the framework version the diagnostic was answered with):
+ * each dimension's current level, the global level, and the nine levels of
+ * each dimension, which the roadmap's targets also use.
+ */
 export function toMaturityProfileResponse(
   profile: MaturityProfile,
   imbalances: readonly ImbalanceResult[],
   dimensions: readonly Dimension[],
+  levels: LevelDescriptions,
 ): MaturityProfileResponse {
   const refs = dimensionRefsByCode(dimensions);
   const bottleneck = profile.bottleneck();
@@ -41,9 +50,23 @@ export function toMaturityProfileResponse(
         shortName: ref.shortName,
         averageLikert: r.averageLikert,
         irlLevel: r.irlLevel.value,
+        levelDescription: levels.forDimension(
+          r.dimensionCode.value,
+          r.irlLevel.value,
+        ),
       };
     }),
     globalAverage: profile.globalAverage(),
+    globalLevel: {
+      level: profile.globalLevel(),
+      description: levels.forGlobal(profile.globalLevel()),
+    },
+    levelScale: Object.fromEntries(
+      DIMENSION_CODES.map((code: DimensionCode) => [
+        code,
+        levels.scaleOf(code),
+      ]),
+    ),
     bottleneck: {
       dimensions: bottleneck.dimensions.map((r) => r.dimensionCode.value),
       level: bottleneck.level,

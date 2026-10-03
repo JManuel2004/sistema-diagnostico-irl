@@ -73,17 +73,22 @@ describe('Recomendación — persistencia (integration)', () => {
     repo = new TypeOrmRecommendationRepository(ormRepo);
 
     // Minimum configuration to satisfy the foreign keys.
+    await dataSource.query(
+      `INSERT INTO irl_catalog.service_tier (code, name, sequence) VALUES ('descubre', 'Descubre', 1)`,
+    );
     [{ id: idService }] = await dataSource.query(
-      `INSERT INTO irl_catalog.portfolio_service (name, is_active, adjustment_only, min_level, max_level)
-       VALUES ('Consultoría Experta', true, false, 1, 9) RETURNING id`,
+      `INSERT INTO irl_catalog.portfolio_service
+         (name, subtitle, scope, id_tier, is_active, adjustment_only, min_level, max_level)
+       VALUES ('Consultoría Experta', 'x', 'x', (SELECT id FROM irl_catalog.service_tier ORDER BY sequence LIMIT 1), true, false, 1, 9) RETURNING id`,
     );
     await dataSource.query(
-      `INSERT INTO irl_catalog.portfolio_service (name, is_active, adjustment_only, min_level, max_level)
-       VALUES ('Reto Express', true, false, 1, 9)`,
+      `INSERT INTO irl_catalog.portfolio_service
+         (name, subtitle, scope, id_tier, is_active, adjustment_only, min_level, max_level)
+       VALUES ('Reto Express', 'x', 'x', (SELECT id FROM irl_catalog.service_tier ORDER BY sequence LIMIT 1), true, false, 1, 9)`,
     );
     [{ id: idAdjustmentOnly }] = await dataSource.query(
-      `INSERT INTO irl_catalog.portfolio_service (name, is_active, adjustment_only)
-       VALUES ('Academia a la Medida', true, true) RETURNING id`,
+      `INSERT INTO irl_catalog.portfolio_service (name, subtitle, scope, id_tier, is_active, adjustment_only)
+       VALUES ('Academia a la Medida', 'x', 'x', (SELECT id FROM irl_catalog.service_tier ORDER BY sequence LIMIT 1), true, true) RETURNING id`,
     );
   }, 120_000);
 

@@ -34,7 +34,11 @@ export class AnswerSheet {
     return new AnswerSheet(diagnosticId, map);
   }
 
-  setAnswer(statementId: string, value: LikertValue, justification: string): AnswerSheet {
+  setAnswer(
+    statementId: string,
+    value: LikertValue,
+    justification: string | null,
+  ): AnswerSheet {
     const existing = this.answersByStatement.get(statementId);
     const next = existing
       ? existing.withResponse(value, justification)

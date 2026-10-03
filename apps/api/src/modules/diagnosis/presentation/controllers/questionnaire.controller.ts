@@ -25,7 +25,7 @@ export class QuestionnaireController {
   @ApiOperation({
     summary: 'Save the answers without computing the profile',
     description:
-      'Stores the 48 answers with their justifications. The wizard uses `finalize-initial`, ' +
+      'Stores the 48 answers with their optional justifications. The wizard uses `finalize-initial`, ' +
       'which saves them and computes the profile in one step.',
   })
   @ApiCreatedResponse({ type: SubmitQuestionnaireResponseDto })

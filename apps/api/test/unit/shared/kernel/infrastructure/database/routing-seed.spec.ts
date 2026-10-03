@@ -4,6 +4,7 @@ import {
   EXCEPTION_RULES,
   ORDINAL_PROFILES,
   SERVICES,
+  SERVICE_TIERS,
   STAGES,
   type EligibilityRuleSeed,
   type ExceptionRuleSeed,
@@ -18,6 +19,7 @@ import { assertRoutingSeedIsConsistent } from '../../../../../../src/shared/kern
  * misconfiguration fails on the data, not halfway through the transaction.
  */
 const SEED = {
+  tiers: SERVICE_TIERS,
   services: SERVICES,
   profiles: ORDINAL_PROFILES,
   eligibilityRules: ELIGIBILITY_RULES,
@@ -56,6 +58,57 @@ describe('Seed de enrutamiento — portafolio oficial', () => {
       ],
     );
     expect(SERVICES.map((s) => s.name)).not.toContain('Mentoría');
+  });
+
+  it('cada servicio trae nombre, subtítulo, descripción, alcance y nivel, separados', () => {
+    const reto = SERVICES.find((s) => s.name === 'Reto Express')!;
+    expect(reto.subtitle).toBe('Hackatón · Design Sprint · Challenge');
+    expect(reto.scope).toContain('prototipos tempranos (TRL 3–5)');
+    expect(reto.tier).toBe('descubre');
+    // The name never carries the subtitle glued to it.
+    for (const s of SERVICES) expect(s.name).not.toContain(s.subtitle);
+  });
+
+  it('los cuatro niveles del portafolio van de lo más liviano a lo más profundo', () => {
+    expect(SERVICE_TIERS.map((t) => [t.order, t.name])).toEqual([
+      [1, 'Descubre'],
+      [2, 'Co-crea'],
+      [3, 'Profundiza'],
+      [4, 'Alíate'],
+    ]);
+    const tierOf = (name: string) =>
+      SERVICES.find((s) => s.name === name)!.tier;
+    expect(tierOf('Chispa')).toBe('descubre');
+    expect(tierOf('Reto en el Aula')).toBe('co-crea');
+    expect(tierOf('Talento In-House')).toBe('profundiza');
+    expect(tierOf('Alianza Residente')).toBe('aliate');
+  });
+
+  it('rechaza un servicio con un nivel que no existe', () => {
+    const services = SERVICES.map((s) =>
+      s.name === 'Chispa' ? { ...s, tier: 'inexistente' } : s,
+    );
+    expect(() => assertRoutingSeedIsConsistent(withServices(services))).toThrow(
+      /unknown tier 'inexistente'/,
+    );
+  });
+
+  it('rechaza un servicio sin subtítulo o sin alcance', () => {
+    const services = SERVICES.map((s) =>
+      s.name === 'Chispa' ? { ...s, subtitle: ' ', scope: '' } : s,
+    );
+    expect(() => assertRoutingSeedIsConsistent(withServices(services))).toThrow(
+      /'Chispa' needs a subtitle[\s\S]*'Chispa' needs a scope/,
+    );
+  });
+
+  it('rechaza niveles cuyo orden no es consecutivo desde 1', () => {
+    const tiers = SERVICE_TIERS.map((t) =>
+      t.order === 4 ? { ...t, order: 5 } : t,
+    );
+    expect(() => assertRoutingSeedIsConsistent({ ...SEED, tiers })).toThrow(
+      /consecutive from 1/,
+    );
   });
 
   it('cada servicio tiene una ficha con sus seis intensidades', () => {
@@ -214,7 +267,14 @@ describe('Seed de enrutamiento — portafolio oficial', () => {
   it('rechaza un servicio sin ficha', () => {
     const services = [
       ...SERVICES,
-      { name: 'Mentoría', description: 'x', adjustmentOnly: false },
+      {
+        name: 'Mentoría',
+        subtitle: 'x',
+        description: 'x',
+        scope: 'x',
+        tier: 'descubre',
+        adjustmentOnly: false,
+      },
     ];
 
     expect(() => assertRoutingSeedIsConsistent(withServices(services))).toThrow(

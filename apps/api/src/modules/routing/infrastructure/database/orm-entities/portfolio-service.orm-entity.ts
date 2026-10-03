@@ -1,8 +1,8 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 /**
- * A service of the INNLAB portfolio with its ordinal profile: the band of
- * IRL levels it serves. The stages it fits and its intensity per dimension
+ * A service of the INNLAB portfolio: its card (subtitle, description, scope),
+ * its tier and its ordinal profile — the band of IRL levels it serves. The stages it fits and its intensity per dimension
  * are its two child tables (`portfolio_service_stage`, `ordinal_intensity`).
  *
  * `adjustmentOnly` services take no part in the exclusions or the score:
@@ -17,8 +17,17 @@ export class PortfolioServiceOrm {
   @Column({ name: 'name', type: 'varchar', length: 80 })
   name!: string;
 
+  @Column({ name: 'subtitle', type: 'varchar', length: 120 })
+  subtitle!: string;
+
   @Column({ name: 'description', type: 'varchar', length: 500, nullable: true })
   description!: string | null;
+
+  @Column({ name: 'scope', type: 'varchar', length: 500 })
+  scope!: string;
+
+  @Column({ name: 'id_tier', type: 'smallint' })
+  idTier!: number;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive!: boolean;

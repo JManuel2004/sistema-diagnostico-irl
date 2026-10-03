@@ -60,8 +60,9 @@ export class Recommendation {
     trace: EvaluationTrace;
     generatedAt: Date;
   }): Recommendation {
-    const aboveThreshold = input.finalRanking.filter(
-      (c) => isIncluded(c) || c.total >= input.minimumThreshold,
+    const aboveThreshold = Recommendation.aboveThreshold(
+      input.finalRanking,
+      input.minimumThreshold,
     );
 
     if (aboveThreshold.length === 0) {
@@ -88,6 +89,18 @@ export class Recommendation {
       input.trace,
       input.generatedAt,
     );
+  }
+
+  /**
+   * The places of a ranking that can be recommended: a calculated one that
+   * reaches the threshold, or one an adjustment included (exempt from it).
+   * The route by phases of the roadmap opens with the same selection.
+   */
+  static aboveThreshold(
+    ranking: readonly RankedCandidate[],
+    minimumThreshold: number,
+  ): RankedCandidate[] {
+    return ranking.filter((c) => isIncluded(c) || c.total >= minimumThreshold);
   }
 
   /**

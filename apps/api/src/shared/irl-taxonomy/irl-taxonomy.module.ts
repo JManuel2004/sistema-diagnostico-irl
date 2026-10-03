@@ -4,6 +4,8 @@ import { DimensionOrm } from './infrastructure/database/orm-entities/dimension.o
 import { ConversionRangeOrm } from './infrastructure/database/orm-entities/conversion-range.orm-entity.js';
 import { DimensionPairOrm } from './infrastructure/database/orm-entities/dimension-pair.orm-entity.js';
 import { FrameworkVersionOrm } from './infrastructure/database/orm-entities/framework-version.orm-entity.js';
+import { DimensionLevelDescriptionOrm } from './infrastructure/database/orm-entities/dimension-level-description.orm-entity.js';
+import { GlobalLevelDescriptionOrm } from './infrastructure/database/orm-entities/global-level-description.orm-entity.js';
 import { TypeOrmTaxonomyRepository } from './infrastructure/database/repositories/typeorm-taxonomy.repository.js';
 import { TAXONOMY_REPOSITORY } from './domain/repositories/taxonomy.repository.port.js';
 
@@ -21,6 +23,8 @@ import { TAXONOMY_REPOSITORY } from './domain/repositories/taxonomy.repository.p
       ConversionRangeOrm,
       DimensionPairOrm,
       FrameworkVersionOrm,
+      DimensionLevelDescriptionOrm,
+      GlobalLevelDescriptionOrm,
     ]),
   ],
   providers: [

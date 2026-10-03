@@ -3,6 +3,8 @@ import type {
   LayerTraceResponse,
 } from '@innlab/contracts';
 import type { Recommendation } from '../../domain/entities/recommendation.aggregate.js';
+import type { ServiceCatalogEntry } from '../../domain/value-objects/service-catalog-entry.vo.js';
+import { toServiceDetail } from './map-service-detail.js';
 import {
   isIncluded,
   type RankedCandidate,
@@ -16,21 +18,24 @@ import {
  * know what is suggested and why in plain words; whoever audits it needs
  * the breakdown by layers. Mixing them would turn the result screen into a
  * calculation dump.
+ *
+ * Each service carries its card from the catalog (what it is, what it can
+ * achieve, its band and its tier), read live: it describes the service.
  */
 export function toRecommendationResponse(
   recommendation: Recommendation,
-  descriptionById: ReadonlyMap<number, string | null>,
+  catalog: ReadonlyMap<number, ServiceCatalogEntry>,
 ): RecommendationResponse {
   return {
     diagnosticId: recommendation.diagnosticId.value,
     resultType: recommendation.resultType,
     primary: recommendation.primary
-      ? toRecommendedService(recommendation.primary, 1, descriptionById)
+      ? toRecommendedService(recommendation.primary, 1, catalog)
       : null,
     justification: recommendation.justification,
     noRecommendationReason: recommendation.noRecommendationReason,
     alternatives: recommendation.alternatives.map((c, i) =>
-      toRecommendedService(c, i + 2, descriptionById),
+      toRecommendedService(c, i + 2, catalog),
     ),
     generatedAt: recommendation.generatedAt.toISOString(),
   };
@@ -82,12 +87,12 @@ export function toLayerTraceResponse(
 function toRecommendedService(
   c: RankedCandidate,
   position: number,
-  descriptionById: ReadonlyMap<number, string | null>,
+  catalog: ReadonlyMap<number, ServiceCatalogEntry>,
 ) {
   return {
-    idService: c.idService,
+    ...toServiceDetail(c.idService, catalog),
+    // The name the result was calculated with (it may have been renamed since).
     name: c.serviceName,
-    description: descriptionById.get(c.idService) ?? null,
     position,
     score: isIncluded(c) ? null : c.total,
     adjustmentReason: isIncluded(c) ? c.includedBy.declaredReason : null,

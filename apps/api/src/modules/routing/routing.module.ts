@@ -10,6 +10,7 @@ import { OrdinalIntensityOrm } from './infrastructure/database/orm-entities/ordi
 import { EligibilityRuleOrm } from './infrastructure/database/orm-entities/eligibility-rule.orm-entity.js';
 import { ExceptionRuleOrm } from './infrastructure/database/orm-entities/exception-rule.orm-entity.js';
 import { PortfolioServiceOrm } from './infrastructure/database/orm-entities/portfolio-service.orm-entity.js';
+import { ServiceTierOrm } from './infrastructure/database/orm-entities/service-tier.orm-entity.js';
 import { PortfolioRecommendationOrm } from './infrastructure/database/orm-entities/portfolio-recommendation.orm-entity.js';
 import { RecommendationRankOrm } from './infrastructure/database/orm-entities/recommendation-rank.orm-entity.js';
 import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module.js';
@@ -24,6 +25,9 @@ import { OrdinalTranslatorService } from './domain/services/ordinal-translator.s
 import { EligibilityFilterService } from './domain/services/eligibility-filter.service.js';
 import { AffinityScorerService } from './domain/services/affinity-scorer.service.js';
 import { ExceptionEngineService } from './domain/services/exception-engine.service.js';
+import { EvaluatePhaseServiceQuery } from './application/use-cases/evaluate-phase-service.query.js';
+import { GetServiceDetailsQuery } from './application/use-cases/get-service-details.query.js';
+import { PhaseAffinityScorerService } from './domain/services/phase-affinity-scorer.service.js';
 import { GenerateRecommendationUseCase } from './application/use-cases/generate-recommendation.use-case.js';
 import { GetRecommendationUseCase } from './application/use-cases/get-recommendation.use-case.js';
 import { GetRecommendationTraceUseCase } from './application/use-cases/get-recommendation-trace.use-case.js';
@@ -62,6 +66,7 @@ import { InitiativeModule } from '../initiative/initiative.module.js';
       EligibilityRuleOrm,
       ExceptionRuleOrm,
       PortfolioServiceOrm,
+      ServiceTierOrm,
       PortfolioRecommendationOrm,
       RecommendationRankOrm,
     ]),
@@ -74,21 +79,57 @@ import { InitiativeModule } from '../initiative/initiative.module.js';
     EligibilityFilterService,
     AffinityScorerService,
     ExceptionEngineService,
-    applicationProvider(GenerateRecommendationUseCase, [ROUTING_CONFIGURATION_REPOSITORY, RECOMMENDATION_REPOSITORY, INITIATIVE_CHARACTERIZATION_READER, GetMaturityProfileUseCase, OrdinalTranslatorService, EligibilityFilterService, AffinityScorerService, ExceptionEngineService, EVENT_PUBLISHER]),
-    applicationProvider(GetRecommendationUseCase, [RECOMMENDATION_REPOSITORY, DIAGNOSTIC_OWNERSHIP, ROUTING_CONFIGURATION_REPOSITORY]),
-    applicationProvider(GetRecommendationTraceUseCase, [RECOMMENDATION_REPOSITORY, DIAGNOSTIC_OWNERSHIP]),
+    PhaseAffinityScorerService,
+    applicationProvider(EvaluatePhaseServiceQuery, [
+      ROUTING_CONFIGURATION_REPOSITORY,
+      INITIATIVE_CHARACTERIZATION_READER,
+      OrdinalTranslatorService,
+      EligibilityFilterService,
+      AffinityScorerService,
+      PhaseAffinityScorerService,
+      ExceptionEngineService,
+    ]),
+    applicationProvider(GetServiceDetailsQuery, [
+      ROUTING_CONFIGURATION_REPOSITORY,
+    ]),
+    applicationProvider(GenerateRecommendationUseCase, [
+      ROUTING_CONFIGURATION_REPOSITORY,
+      RECOMMENDATION_REPOSITORY,
+      INITIATIVE_CHARACTERIZATION_READER,
+      GetMaturityProfileUseCase,
+      OrdinalTranslatorService,
+      EligibilityFilterService,
+      AffinityScorerService,
+      ExceptionEngineService,
+      EVENT_PUBLISHER,
+    ]),
+    applicationProvider(GetRecommendationUseCase, [
+      RECOMMENDATION_REPOSITORY,
+      DIAGNOSTIC_OWNERSHIP,
+      ROUTING_CONFIGURATION_REPOSITORY,
+    ]),
+    applicationProvider(GetRecommendationTraceUseCase, [
+      RECOMMENDATION_REPOSITORY,
+      DIAGNOSTIC_OWNERSHIP,
+    ]),
     { provide: DIAGNOSTIC_OWNERSHIP, useClass: DiagnosisOwnershipAdapter },
     DeepAnalysisRequestedListener,
     {
       provide: ROUTING_CONFIGURATION_REPOSITORY,
       useClass: TypeOrmRoutingConfigurationRepository,
     },
-    { provide: RECOMMENDATION_REPOSITORY, useClass: TypeOrmRecommendationRepository },
+    {
+      provide: RECOMMENDATION_REPOSITORY,
+      useClass: TypeOrmRecommendationRepository,
+    },
     {
       provide: INITIATIVE_CHARACTERIZATION_READER,
       useClass: InitiativeCharacterizationAdapter,
     },
   ],
   controllers: [RecommendationController],
+  // Read-only queries `roadmap/` reaches behind its own port: the service
+  // of each phase of the route, and the card of a service.
+  exports: [EvaluatePhaseServiceQuery, GetServiceDetailsQuery],
 })
 export class RoutingModule {}

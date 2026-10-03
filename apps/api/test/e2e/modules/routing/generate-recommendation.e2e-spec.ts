@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto';
 import {
   recommendationResponseSchema,
   layerTraceResponseSchema,
+  roadmapResponseSchema,
 } from '@innlab/contracts';
 import { AppModule } from '../../../../src/app.module.js';
 import { configureApp } from '../../../../src/shared/kernel/infrastructure/http/configure-app.js';
@@ -173,7 +174,49 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     const dto = recommendationResponseSchema.parse(res.body);
 
     expect(dto.primary?.description).toContain('formato intensivo');
-    expect(dto.alternatives[0].description).toContain('aprendizaje basado en proyectos');
+    expect(dto.alternatives[0].description).toContain(
+      'aprendizaje basado en proyectos',
+    );
+  });
+
+  it('cada servicio trae su ficha: subtítulo, qué puede lograr, banda y nivel', async () => {
+    const res = await agent
+      .get(`/api/v1/diagnostics/${diagnosticId}/recommendation`)
+      .expect(200);
+    const dto = recommendationResponseSchema.parse(res.body);
+
+    expect(dto.primary).toMatchObject({
+      subtitle: 'Hackatón · Design Sprint · Challenge',
+      scope:
+        'Banco de ideas, conceptos y prototipos tempranos (TRL 3–5) + informe síntesis del sprint.',
+      band: { minLevel: 3, maxLevel: 5 },
+      tier: {
+        code: 'descubre',
+        name: 'Descubre',
+        order: 1,
+        tagline: 'Conócenos jugando',
+        description:
+          'Formatos cortos y de baja inversión para encender la relación: una charla, un reto express o formación a la medida.',
+      },
+    });
+    // Academia a la Medida has no band in the portfolio.
+    expect(dto.alternatives[0].band).toBeNull();
+  });
+
+  it('el roadmap abre con esta recomendación y sigue con servicios más profundos', async () => {
+    const res = await agent
+      .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
+      .expect(200);
+    const roadmap = roadmapResponseSchema.parse(res.body);
+
+    expect(
+      roadmap.phases.map((f) => [f.service?.name, f.service?.approximate]),
+    ).toEqual([
+      ['Reto Express', false],
+      ['Reto en el Aula', false],
+      // No service of the portfolio works Financiación: the best one, approximate.
+      ['Semillero con Propósito', true],
+    ]);
   });
 
   it('la justificación habla de afinidad global: ningún servicio atiende IPRL, el cuello de botella', () => {

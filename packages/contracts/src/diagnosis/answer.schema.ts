@@ -11,8 +11,8 @@ export const ANSWER_JUSTIFICATION_MAX = 1000;
  * `statementId` is the bigint PK of `irl_catalog.statement` serialized as a
  * string (TypeORM returns bigint columns as strings). It is NOT a UUID.
  *
- * `justification` is mandatory: each of the 48 answers is saved with the
- * reason for the chosen level.
+ * `justification` is optional: the user may explain the chosen level or
+ * not. A missing one travels as `null`; a blank text counts as missing.
  */
 export const answerItemSchema = z
   .object({
@@ -22,9 +22,13 @@ export const answerItemSchema = z
     justification: z
       .string()
       .trim()
-      .min(1, 'La justificación es obligatoria')
-      .max(ANSWER_JUSTIFICATION_MAX, `La justificación no puede exceder ${String(ANSWER_JUSTIFICATION_MAX)} caracteres`)
-      .describe('Why the user chose that level of agreement'),
+      .max(
+        ANSWER_JUSTIFICATION_MAX,
+        `La justificación no puede exceder ${String(ANSWER_JUSTIFICATION_MAX)} caracteres`,
+      )
+      .transform((text) => (text.length === 0 ? null : text))
+      .nullable()
+      .describe('Why the user chose that level of agreement; null when not given'),
   })
   .describe('An answer to a questionnaire statement');
 

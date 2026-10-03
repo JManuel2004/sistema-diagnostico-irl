@@ -1,41 +1,102 @@
 /**
  * Configuration of the portfolio routing engine.
  *
- * The services are INNLAB's official portfolio (`innlab-portfolio.xlsx`,
- * one row per service). Everything else the engine needs is not in that
- * file, so it is simulated:
+ * The services are INNLAB's official portfolio (the portfolio page
+ * «Portafolio de Colaboración — Nodos», one format per service). Everything
+ * else the engine needs is not in that source, so it is simulated:
  *
  * ⚠ SIMULATED AND PROVISIONAL, pending INNLAB: the 72 ordinal intensities,
- * the relevant stages of each service, the calibration scale, the eight
- * weights, and every eligibility and exception rule.
+ * the relevant stages of each service, the calibration scale, the weights,
+ * and every eligibility and exception rule.
  *
- * Taken from the portfolio: each service's name, its description (the
- * «¿De qué se trata?» text, verbatim) and its level band — the «Madurez (IRL)» column,
- * read as the band of the initiative's global average IRL level when it
- * enters the service. The other columns (level Descubre/Co-crea/Profundiza/
- * Alíate, time, dedication, team, expert, investment, what students receive,
- * payment) are commercial data the engine does not use.
+ * Taken from the portfolio, verbatim: each service's name, its subtitle,
+ * its description (the «¿De qué se trata?» text), what it can achieve (the
+ * «Alcance y entregables» text), its tier (Descubre, Co-crea, Profundiza,
+ * Alíate) and its level band — read as the band of the initiative's global
+ * average IRL level when it enters the service. The commercial columns
+ * (time, dedication, team, expert, investment, what students receive,
+ * payment) are out of scope.
  *
  * A service is either **scored** — it goes through the exclusions and the
  * score — or **adjustment-only**: it takes no part in either, and only
  * enters the ranking when an `INCLUDE` adjustment puts it at the position
- * the rule sets, without a score and exempt from the threshold. The four whose band the portfolio gives as «No aplica» or «Según
- * el proyecto» are adjustment-only, and so is Alianza Residente, whose band
- * (1–9) covers everything and therefore discriminates nothing.
+ * the rule sets, without a score and exempt from the threshold. The four
+ * whose band the portfolio gives as «No aplica» or «Según el proyecto» are
+ * adjustment-only, and so is Alianza Residente, whose band (1–9) covers
+ * everything and therefore discriminates nothing.
  */
+
+// ─────────────────────────────────────────────────────────────────────────
+// Service tiers
+// ─────────────────────────────────────────────────────────────────────────
+//
+// How deep a service goes, from the lightest (1) to the deepest (4). The
+// route by phases of the roadmap never proposes a tier lighter than the
+// one of the previous phase. Taken verbatim from the portfolio.
+
+export interface ServiceTierSeed {
+  readonly code: string;
+  readonly name: string;
+  /** 1 is the lightest. */
+  readonly order: number;
+  readonly tagline: string;
+  readonly description: string;
+}
+
+export const SERVICE_TIERS: readonly ServiceTierSeed[] = [
+  {
+    code: 'descubre',
+    name: 'Descubre',
+    order: 1,
+    tagline: 'Conócenos jugando',
+    description:
+      'Formatos cortos y de baja inversión para encender la relación: una charla, un reto express o formación a la medida.',
+  },
+  {
+    code: 'co-crea',
+    name: 'Co-crea',
+    order: 2,
+    tagline: 'Tu reto entra al aula',
+    description:
+      'Tu organización lleva retos reales a cursos y semilleros: decenas de mentes generando un banco de ideas durante el semestre.',
+  },
+  {
+    code: 'profundiza',
+    name: 'Profundiza',
+    order: 3,
+    tagline: 'Células y talento dedicado',
+    description:
+      'Equipos de grado y practicantes trabajando por meses en tu desafío, con acompañamiento experto y madurez alta de resultados.',
+  },
+  {
+    code: 'aliate',
+    name: 'Alíate',
+    order: 4,
+    tagline: 'Vivamos juntos la innovación',
+    description:
+      'Relaciones de largo plazo: consultoría experta, células dedicadas tipo laboratorio y presencia física en el campus.',
+  },
+];
 
 // ─────────────────────────────────────────────────────────────────────────
 // Portfolio services
 // ─────────────────────────────────────────────────────────────────────────
 //
-// The name is the one that covers the whole row; the description is the
-// row's «¿De qué se trata?» text, verbatim. The two Células de Grado are two rows of
-// the portfolio, so two services; the Reto en el Aula of undergraduate and
-// graduate programs is one row, so one service.
+// The name is only the name: the portfolio's first spreadsheet glued it to
+// the subtitle, and the subtitle is its own field. The two Células de Grado
+// are two formats of the portfolio, so two services; the Reto en el Aula of
+// undergraduate and graduate programs is one format, so one service.
 
 export interface ServiceSeed {
   readonly name: string;
+  /** The formats it covers, shown under the name. */
+  readonly subtitle: string;
+  /** «¿De qué se trata?» */
   readonly description: string;
+  /** What it can achieve: «Alcance y entregables». */
+  readonly scope: string;
+  /** Code of its tier in `SERVICE_TIERS`. */
+  readonly tier: string;
   /** Only an `INCLUDE` adjustment puts it into the ranking. */
   readonly adjustmentOnly: boolean;
 }
@@ -43,74 +104,122 @@ export interface ServiceSeed {
 export const SERVICES: readonly ServiceSeed[] = [
   {
     name: 'Chispa',
+    subtitle: 'Sensibilización — charlas y conferencias',
     description:
       'Un experto de la Universidad llega a tu organización (o tu equipo viene al campus) con una charla o conferencia que abre la mente: tendencias, design thinking, innovación, futuros. Es el primer contacto perfecto con la forma Icesi de crear.',
+    scope:
+      'Apropiación de conceptos, inspiración y un lenguaje común de innovación instalado en tu equipo.',
+    tier: 'descubre',
     adjustmentOnly: true,
   },
   {
     name: 'Reto Express',
+    subtitle: 'Hackatón · Design Sprint · Challenge',
     description:
       'Tu organización plantea un reto y equipos de estudiantes lo atacan en formato intensivo: desde una tarde de ideación hasta un sprint de 5 días continuos. Puede ser abierto (convocatoria a toda la comunidad universitaria) o cerrado (un curso o grupo seleccionado). Terminas con un banco de ideas y prototipos tempranos.',
+    scope:
+      'Banco de ideas, conceptos y prototipos tempranos (TRL 3–5) + informe síntesis del sprint.',
+    tier: 'descubre',
     adjustmentOnly: false,
   },
   {
     name: 'Academia a la Medida',
+    subtitle:
+      'Formación empresarial — cursos, seminarios, diplomados y maestrías exclusivas',
     description:
       'Sistemas modulares de aprendizaje basado en proyectos para tu organización: desde cursos cortos y seminarios de 36–48 horas hasta diplomados y cohortes exclusivas de maestría. El aula se adapta a tu reto real: tu equipo aprende resolviendo sus propios desafíos.',
+    scope:
+      'Apropiación de conceptos y proyectos internos desarrollados durante la formación.',
+    tier: 'descubre',
     adjustmentOnly: true,
   },
   {
     name: 'Reto en el Aula',
+    subtitle: 'Proyectos académicos integradores (pregrado y posgrado)',
     description:
       'Tu reto entra como proyecto oficial de una materia: todos los equipos del curso trabajan sobre él durante semanas, guiados por el profesor. En pregrado (4–18 semanas) exploran y prototipan; en posgrado (5–7 semanas, con estudiantes de maestría) lo abordan con mirada estratégica. Resultado: un banco de ideas amplio con varios caminos de solución.',
+    scope:
+      'Banco de ideas y prototipos con madurez TRL 4–6, presentados ante tu equipo.',
+    tier: 'co-crea',
     adjustmentOnly: false,
   },
   {
     name: 'Semillero con Propósito',
+    subtitle: 'Co.seeds — semilleros de innovación',
     description:
       'Estudiantes de semilleros de innovación e investigación — acompañados por un experto mentor — trabajan tu reto en paralelo a sus estudios, con dedicación semanal constante. Más profundidad que un reto de aula, más flexibilidad que una célula de tiempo completo.',
+    scope:
+      'Prototipos avanzados y pruebas con usuarios (TRL 6–7), con entregas periódicas.',
+    tier: 'co-crea',
     adjustmentOnly: false,
   },
   {
     name: 'Célula de Grado · Pregrado',
+    subtitle: 'PdG — Proyectos de Grado',
     description:
       'Equipos de estudiantes de últimos semestres dedican su proyecto de grado a tu desafío: medio año de investigación profunda y medio de implementación, con tutor y asesores expertos. El resultado llega a prototipos avanzados, listos para validación de mercado.',
+    scope:
+      'Informe de investigación + prototipo avanzado (TRL 6–7) previo a comprobación de mercado.',
+    tier: 'profundiza',
     adjustmentOnly: false,
   },
   {
     name: 'Célula de Grado · Posgrado',
+    subtitle: 'TdG — Trabajos de Grado (maestrías en Innovación y UX)',
     description:
       'Estudiantes de maestría (Gestión de la Innovación, Experiencia de Usuario) convierten tu reto en su trabajo de grado: análisis con profundidad profesional, marcos estratégicos y validación. Perfil senior: la mayoría ya lidera equipos en sus propias organizaciones.',
+    scope:
+      'Diagnóstico, estrategia y conceptos validados (TRL 3–5) con calidad de consultoría.',
+    tier: 'profundiza',
     adjustmentOnly: false,
   },
   {
     name: 'Práctica de Innovación',
+    subtitle: 'Práctica empresarial (vía CEDEP)',
     description:
       'Un estudiante de último semestre se integra a tu organización en práctica profesional, dedicado a proyectos de innovación y diseño, con asesor de práctica de la Universidad. La forma más directa de probar talento Icesi dentro de tu operación.',
+    scope:
+      'Metas que define tu organización; ejecución continua de proyectos internos de innovación.',
+    tier: 'profundiza',
     adjustmentOnly: true,
   },
   {
     name: 'Talento In-House',
+    subtitle: 'InHouse Internship — célula de practicantes',
     description:
       'Un equipo de 2 a 5 practicantes con un experto de la Universidad se instala en tu organización para desarrollar proyectos de innovación de forma continua. Capacidad dedicada, con estándar académico y ritmo de industria.',
+    scope:
+      'Proyectos desarrollados hasta prototipo avanzado y validación (TRL 6–7) dentro de tu operación.',
+    tier: 'profundiza',
     adjustmentOnly: false,
   },
   {
     name: 'Consultoría Experta',
+    subtitle: 'Consultoría colaborativa',
     description:
       'Trabajo directo de los profesionales de la Universidad — con estudiantes monitores — para desarrollar soluciones con calidad lista para el mercado: productos, servicios, experiencias digitales, analítica y culturas de innovación.',
+    scope: 'Desarrollo profesional listo para el mercado (TRL 7–9).',
+    tier: 'aliate',
     adjustmentOnly: false,
   },
   {
     name: 'Célula Dedicada · Co.LAB',
+    subtitle: 'Alianza Co.LAB',
     description:
       'Una célula estable de expertos y talento Icesi trabaja durante un año como el laboratorio de innovación de tu organización: backlog conjunto, ciclos continuos de desarrollo y resultados de alta madurez. Tú pones los retos; el campus pone el laboratorio.',
+    scope:
+      'Portafolio continuo de soluciones de alta madurez (TRL 7–8) durante todo el año.',
+    tier: 'aliate',
     adjustmentOnly: false,
   },
   {
     name: 'Alianza Residente',
+    subtitle: 'Alianza estratégica con presencia en campus (modelo Banco W)',
     description:
       'Tu organización se instala físicamente en la Universidad: oficina o espacio en el campus, más una bolsa de horas canjeable por todo este portafolio — asesorías, consultorías, retos con estudiantes, células y formación. Un solo pago combinado, acceso total al ecosistema.',
+    scope:
+      'Acceso al ecosistema completo: talento, expertos, laboratorios, eventos y marca compartida.',
+    tier: 'aliate',
     adjustmentOnly: true,
   },
 ];
@@ -174,6 +283,16 @@ export const SCORING_PARAMETERS = {
   minimumThreshold: 2.5,
   /** How many alternatives accompany the main recommendation. */
   alternativesCount: 2,
+  /**
+   * Route by phases: what working a dimension of the phase is worth, per
+   * level the phase raises it and per unit of intensity.
+   */
+  phaseCoverageWeight: 1.5,
+  /**
+   * Below this, the phase shows its best service marked as approximate
+   * instead of a fitting one.
+   */
+  phaseMinimumThreshold: 1.0,
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────

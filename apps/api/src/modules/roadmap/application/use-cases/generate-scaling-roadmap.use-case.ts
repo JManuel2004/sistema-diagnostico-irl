@@ -2,7 +2,14 @@ import { type DependencyGraphRepositoryPort } from '../../domain/repositories/de
 import { type RoadmapRepositoryPort } from '../../domain/repositories/roadmap.repository.port.js';
 import { DependencyGraph } from '../../domain/value-objects/dependency-graph.vo.js';
 import type { RoadmapClosureService } from '../../domain/services/roadmap-closure.service.js';
-import type { TopologicalLayeringService } from '../../domain/services/topological-layering.service.js';
+import { RoadmapBalancingService } from '../../domain/services/roadmap-balancing.service.js';
+import type { PhasePlannerService } from '../../domain/services/phase-planner.service.js';
+import { type PhaseServiceAdvisorPort } from '../../domain/repositories/phase-service-advisor.port.js';
+import {
+  DIMENSION_CODES,
+  type DimensionCode,
+  type PhaseServiceTrace,
+} from '@innlab/contracts';
 import type { TargetLevelCalculatorService } from '../../domain/services/target-level-calculator.service.js';
 import {
   ScalingRoadmap,
@@ -27,9 +34,22 @@ export interface GenerateScalingRoadmapCommand {
  * and `GET /roadmap` only reads what was saved. Calculating again (the
  * acceptance is repeatable) replaces the saved one.
  *
- * Resolves the IO — profile and graph — and then chains three pure
- * domain services. None of them touches the database, so the whole
- * algorithm is tested with literals and without starting anything.
+ * The route, in four steps over pure domain services:
+ *
+ *  1. Targets: the dimensions below their expected minimum, closed over
+ *     their enablers (`RoadmapClosureService`), each with the level the
+ *     minimum or a dependent asks for (`TargetLevelCalculatorService`).
+ *  2. Balance: the route must not end with an imbalance with an alert, so
+ *     the lower dimension of every pair too far apart rises too
+ *     (`RoadmapBalancingService`); it may bring new dimensions in.
+ *  3. Phases: each phase works the dimensions whose enablers already got
+ *     there, at most `maxLevelsPerPhase` levels each
+ *     (`PhasePlannerService`).
+ *  4. A service per phase, through the portfolio (`PhaseServiceAdvisorPort`,
+ *     over the queries `routing/` exports): the first phase opens with the
+ *     portfolio recommendation; each next one gets the service that best
+ *     works its dimensions on the profile projected to its start, never
+ *     lighter than the previous one and never repeated.
  *
  * Reads the profile through `MaturityProfileModule`'s read use case,
  * never reaching into its tables; the same coupling
@@ -46,8 +66,10 @@ export class GenerateScalingRoadmapUseCase {
     private readonly graphs: DependencyGraphRepositoryPort,
     private readonly profiles: GetMaturityProfileUseCase,
     private readonly closure: RoadmapClosureService,
-    private readonly layering: TopologicalLayeringService,
     private readonly targets: TargetLevelCalculatorService,
+    private readonly balancing: RoadmapBalancingService,
+    private readonly planner: PhasePlannerService,
+    private readonly advisor: PhaseServiceAdvisorPort,
     private readonly roadmaps: RoadmapRepositoryPort,
   ) {}
 
@@ -78,41 +100,90 @@ export class GenerateScalingRoadmapUseCase {
 
     const levels = irlLevelsByDimension(profile.dimensionResults);
 
-    const [edges, minimums] = await Promise.all([
+    const [edges, minimums, parameters] = await Promise.all([
       this.graphs.findEdges(),
       this.graphs.findExpectedMinimums(),
+      this.graphs.findParameters(),
     ]);
+    // Without its parameters the route is neither paced nor balanced: each
+    // dimension rises to its target in one phase, as before balancing existed.
+    const { maxLevelsPerPhase, balanceTolerance } = parameters ?? UNPACED;
 
     const graph = DependencyGraph.create(edges, minimums);
 
+    // 1–2. Targets, then balance.
     const closure = this.closure.compute(levels, graph);
-    const layers = this.layering.layer(closure, graph);
-    const targets = this.targets.compute(closure, graph);
+    const dependencyTargets = this.targets.compute(closure, graph);
+    const final = this.balancing.balance(
+      levels,
+      dependencyTargets,
+      graph,
+      balanceTolerance,
+    );
+    const finalTargets = new Map(
+      [...final].map(([d, t]) => [d, t.target] as const),
+    );
+    const roadmapDimensions = new Set(final.keys());
 
-    const phases: RoadmapPhase[] = layers.map((layer, index) => ({
-      order: index + 1,
-      dimensions: layer.map((code) => ({
-        dimensionCode: code,
-        currentLevel: levels.get(code) ?? 0,
-        targetLevel: targets.get(code) ?? graph.expectedMinimum(code),
-        // The justification: what this dimension unblocks, limited to
-        // the ones that are actually going to be worked on.
-        enables: graph
-          .outgoingEdges(code)
-          .filter((e) => closure.has(e.target))
-          .map((e) => e.target),
-        inclusionReason:
-          (levels.get(code) ?? 0) < graph.expectedMinimum(code)
-            ? ('BELOW_EXPECTED_MINIMUM' as const)
-            : ('REQUIRED_ENABLER' as const),
-        expectedMinimum: graph.expectedMinimum(code),
-        targetDrivenBy: this.targets.demandedBy(code, closure, graph),
-      })),
-    }));
+    // 3. Phases.
+    const planned = this.planner.plan(
+      levels,
+      finalTargets,
+      graph,
+      maxLevelsPerPhase,
+    );
+
+    // 4. A service per phase, on the profile projected to its start.
+    const projected = new Map(levels);
+    const used: number[] = [];
+    let minimumTierOrder = 1;
+    const phases: RoadmapPhase[] = [];
+    for (const [index, steps] of planned.entries()) {
+      const advice = await this.advisor.advise({
+        diagnosticId: diagnosticId.value,
+        levels: asRecord(projected),
+        work: steps,
+        minimumTierOrder,
+        excludedServiceIds: [...used],
+        mode: index === 0 ? 'RECOMMENDATION' : 'PHASE',
+      });
+      const service = advice?.service ?? null;
+      if (service) {
+        used.push(service.idService);
+        minimumTierOrder = Math.max(minimumTierOrder, service.tierOrder);
+      }
+
+      phases.push({
+        order: index + 1,
+        dimensions: steps.map((step) => {
+          const target = final.get(step.dimension)!;
+          return {
+            dimensionCode: step.dimension,
+            currentLevel: step.fromLevel,
+            targetLevel: step.toLevel,
+            finalTargetLevel: target.target,
+            // What it unblocks: the roadmap dimensions that depend on it.
+            enables: graph
+              .outgoingEdges(step.dimension)
+              .filter((e) => roadmapDimensions.has(e.target))
+              .map((e) => e.target),
+            inclusionReason: target.inclusionReason,
+            expectedMinimum: graph.expectedMinimum(step.dimension),
+            targetReason: target.targetReason,
+            targetDrivenBy: target.targetDrivenBy,
+          };
+        }),
+        service,
+        serviceTrace: advice?.trace ?? noAdviceTrace(projected),
+      });
+      for (const step of steps) projected.set(step.dimension, step.toLevel);
+    }
 
     const roadmap = ScalingRoadmap.create({
       diagnosticId,
       phases,
+      finalLevels: asRecord(projected),
+      balanced: RoadmapBalancingService.isBalanced(projected, balanceTolerance),
       generatedAt: new Date(),
     });
 
@@ -120,4 +191,33 @@ export class GenerateScalingRoadmapUseCase {
 
     return Result.ok(roadmap);
   }
+}
+
+/** The route without its parameters: no limit per phase, balance as the framework's acceptable gap. */
+const UNPACED = { maxLevelsPerPhase: 8, balanceTolerance: 8 } as const;
+
+function asRecord(
+  levels: ReadonlyMap<DimensionCode, number>,
+): Record<DimensionCode, number> {
+  return Object.fromEntries(
+    DIMENSION_CODES.map((code) => [code, levels.get(code) ?? 1]),
+  ) as Record<DimensionCode, number>;
+}
+
+/** The trace of a phase whose service could not be asked: the routing configuration is missing. */
+function noAdviceTrace(
+  levels: ReadonlyMap<DimensionCode, number>,
+): PhaseServiceTrace {
+  const values = DIMENSION_CODES.map((code) => levels.get(code) ?? 1);
+  return {
+    mode: 'PHASE',
+    projectedLevels: asRecord(levels),
+    averageLevel:
+      Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 1000) /
+      1000,
+    excluded: [],
+    skipped: [],
+    ranking: [],
+    appliedAdjustments: [],
+  };
 }

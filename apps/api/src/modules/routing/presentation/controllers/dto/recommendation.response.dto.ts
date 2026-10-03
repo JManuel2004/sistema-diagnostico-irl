@@ -3,17 +3,57 @@ import type {
   LayerTraceResponse,
   RecommendationResponse,
   RecommendedService,
+  ServiceBand,
+  ServiceTier,
 } from '@innlab/contracts';
+
+class ServiceTierDto implements ServiceTier {
+  @ApiProperty({ example: 'descubre' }) code!: string;
+  @ApiProperty({ example: 'Descubre' }) name!: string;
+  @ApiProperty({ minimum: 1, description: '1 is the lightest tier' })
+  order!: number;
+  @ApiProperty({ type: String, nullable: true, example: 'Conócenos jugando' })
+  tagline!: string | null;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: 'Formatos cortos y de baja inversión para encender la relación…',
+  })
+  description!: string | null;
+}
+
+class ServiceBandDto implements ServiceBand {
+  @ApiProperty({ minimum: 1, maximum: 9 }) minLevel!: number;
+  @ApiProperty({ minimum: 1, maximum: 9 }) maxLevel!: number;
+}
 
 class RecommendedServiceDto implements RecommendedService {
   @ApiProperty() idService!: number;
   @ApiProperty({ example: 'Reto Express' }) name!: string;
+  @ApiProperty({
+    example: 'Hackatón · Design Sprint · Challenge',
+    description: 'The formats the service covers',
+  })
+  subtitle!: string;
   @ApiProperty({
     type: String,
     nullable: true,
     description: 'What the service is about, read from the portfolio catalog',
   })
   description!: string | null;
+  @ApiProperty({
+    description:
+      'What the service can achieve, read from the portfolio catalog',
+  })
+  scope!: string;
+  @ApiProperty({
+    type: ServiceBandDto,
+    nullable: true,
+    description:
+      'Global IRL level band the service suits; null when the portfolio gives none',
+  })
+  band!: ServiceBandDto | null;
+  @ApiProperty({ type: ServiceTierDto }) tier!: ServiceTierDto;
   @ApiProperty({ minimum: 1 }) position!: number;
   @ApiProperty({
     type: Number,

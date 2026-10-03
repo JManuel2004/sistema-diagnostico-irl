@@ -11,6 +11,7 @@ import {
   type DimensionCode,
   type DimensionResult,
   type Gaps,
+  type GlobalLevel,
   type ImbalanceClassification,
   type ImbalancePairResult,
   type MaturityProfileResponse,
@@ -30,7 +31,10 @@ export class DiagnosticResponseDto implements Diagnostic {
   completed!: boolean;
   @ApiProperty({ description: 'The user accepted the deep analysis' })
   deepAnalysisAccepted!: boolean;
-  @ApiProperty({ example: 'KTH-IRL-1.0', description: 'IRL framework version it is answered with' })
+  @ApiProperty({
+    example: 'KTH-IRL-1.0',
+    description: 'IRL framework version it is answered with',
+  })
   frameworkVersion!: string;
   @ApiProperty({ format: 'date-time' }) createdAt!: string;
 }
@@ -53,6 +57,27 @@ class DimensionResultDto implements DimensionResult {
   @ApiProperty({ example: 'Tecnología' }) shortName!: string;
   @ApiProperty({ minimum: 1, maximum: 5 }) averageLikert!: number;
   @ApiProperty({ minimum: 1, maximum: 9 }) irlLevel!: number;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'What the level means for this dimension',
+  })
+  levelDescription!: string | null;
+}
+
+class GlobalLevelDto implements GlobalLevel {
+  @ApiProperty({
+    minimum: 1,
+    maximum: 9,
+    description: 'The global average, as shown, rounded half up',
+  })
+  level!: number;
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'What the global level means',
+  })
+  description!: string | null;
 }
 
 class BottleneckDto implements Bottleneck {
@@ -98,6 +123,17 @@ export class MaturityProfileResponseDto implements MaturityProfileResponse {
     description: 'RF-09: simple average of the six levels',
   })
   globalAverage!: number;
+  @ApiProperty({ type: GlobalLevelDto }) globalLevel!: GlobalLevelDto;
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: {
+      type: 'array',
+      items: { type: 'string', nullable: true },
+    },
+    description:
+      'What each level 1–9 means, per dimension (index 0 is level 1)',
+  })
+  levelScale!: MaturityProfileResponse['levelScale'];
   @ApiProperty({ type: BottleneckDto }) bottleneck!: BottleneckDto;
   @ApiProperty({
     type: BottleneckDto,

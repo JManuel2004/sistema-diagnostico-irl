@@ -38,6 +38,7 @@ export * from './initiative/initiative.schema.js';
 // ── routing ───────────────────────────────────────────────────────────
 export * from './routing/predicate.schema.js';
 export * from './routing/diagnostic-facts.schema.js';
+export * from './routing/service-detail.schema.js';
 export * from './routing/recommendation-response.schema.js';
 export * from './routing/layer-trace.schema.js';
 

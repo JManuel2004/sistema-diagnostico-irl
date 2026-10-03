@@ -7,10 +7,12 @@ import {
   ELIGIBILITY_RULES,
   EXCEPTION_RULES,
   SERVICES,
+  SERVICE_TIERS,
   type EligibilityRuleSeed,
   type ExceptionRuleSeed,
   type OrdinalProfileSeed,
   type ServiceSeed,
+  type ServiceTierSeed,
 } from './data/routing.js';
 
 /**
@@ -31,6 +33,7 @@ export async function seedRouting(
   manager: EntityManager,
 ): Promise<{ services: number }> {
   assertRoutingSeedIsConsistent({
+    tiers: SERVICE_TIERS,
     services: SERVICES,
     profiles: ORDINAL_PROFILES,
     eligibilityRules: ELIGIBILITY_RULES,
@@ -45,6 +48,17 @@ export async function seedRouting(
        ON CONFLICT (code) DO UPDATE
          SET name = EXCLUDED.name, sequence = EXCLUDED.sequence`,
       [e.code, e.name, e.order],
+    );
+  }
+
+  for (const t of SERVICE_TIERS) {
+    await manager.query(
+      `INSERT INTO irl_catalog.service_tier (code, name, sequence, tagline, description)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (code) DO UPDATE
+         SET name = EXCLUDED.name, sequence = EXCLUDED.sequence,
+             tagline = EXCLUDED.tagline, description = EXCLUDED.description`,
+      [t.code, t.name, t.order, t.tagline, t.description],
     );
   }
 
@@ -64,8 +78,9 @@ export async function seedRouting(
     `INSERT INTO irl_catalog.scoring_parameters
        (id, bottleneck_weight, gap_weight, moderate_imbalance_weight,
         critical_imbalance_weight, stage_affinity_weight,
-        out_of_range_penalty, minimum_threshold, alternatives_count)
-     VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8)
+        out_of_range_penalty, minimum_threshold, alternatives_count,
+        phase_coverage_weight, phase_minimum_threshold)
+     VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      ON CONFLICT (id) DO UPDATE
        SET bottleneck_weight = EXCLUDED.bottleneck_weight,
            gap_weight = EXCLUDED.gap_weight,
@@ -74,7 +89,9 @@ export async function seedRouting(
            stage_affinity_weight = EXCLUDED.stage_affinity_weight,
            out_of_range_penalty = EXCLUDED.out_of_range_penalty,
            minimum_threshold = EXCLUDED.minimum_threshold,
-           alternatives_count = EXCLUDED.alternatives_count`,
+           alternatives_count = EXCLUDED.alternatives_count,
+           phase_coverage_weight = EXCLUDED.phase_coverage_weight,
+           phase_minimum_threshold = EXCLUDED.phase_minimum_threshold`,
     [
       P.bottleneckWeight,
       P.gapWeight,
@@ -84,6 +101,8 @@ export async function seedRouting(
       P.outOfRangePenalty,
       P.minimumThreshold,
       P.alternativesCount,
+      P.phaseCoverageWeight,
+      P.phaseMinimumThreshold,
     ],
   );
 
@@ -105,17 +124,26 @@ export async function seedRouting(
     }
     const [{ id: idService }] = await manager.query<{ id: number }[]>(
       `INSERT INTO irl_catalog.portfolio_service
-         (name, description, is_active, adjustment_only, min_level, max_level)
-       VALUES ($1, $2, true, $3, $4, $5)
+         (name, subtitle, description, scope, id_tier, is_active, adjustment_only,
+          min_level, max_level)
+       SELECT $1, $2, $3, $4, t.id, true, $6, $7, $8
+         FROM irl_catalog.service_tier t
+        WHERE t.code = $5
        ON CONFLICT (name) DO UPDATE
-         SET description = EXCLUDED.description,
+         SET subtitle = EXCLUDED.subtitle,
+             description = EXCLUDED.description,
+             scope = EXCLUDED.scope,
+             id_tier = EXCLUDED.id_tier,
              adjustment_only = EXCLUDED.adjustment_only,
              min_level = EXCLUDED.min_level,
              max_level = EXCLUDED.max_level
        RETURNING id`,
       [
         s.name,
+        s.subtitle,
         s.description,
+        s.scope,
+        s.tier,
         s.adjustmentOnly,
         profile.minLevel,
         profile.maxLevel,
@@ -244,6 +272,7 @@ async function removeServicesNotInSeed(manager: EntityManager): Promise<void> {
  * enforces the same rules on its own.
  */
 export function assertRoutingSeedIsConsistent(data: {
+  readonly tiers: readonly ServiceTierSeed[];
   readonly services: readonly ServiceSeed[];
   readonly profiles: readonly OrdinalProfileSeed[];
   readonly eligibilityRules: readonly EligibilityRuleSeed[];
@@ -255,6 +284,33 @@ export function assertRoutingSeedIsConsistent(data: {
 
   if (service.size !== data.services.length)
     errors.push('two services share a name');
+
+  const tierCodes = new Set(data.tiers.map((t) => t.code));
+  if (tierCodes.size !== data.tiers.length)
+    errors.push('two tiers share a code');
+  if (new Set(data.tiers.map((t) => t.name)).size !== data.tiers.length)
+    errors.push('two tiers share a name');
+  const orders = data.tiers.map((t) => t.order).sort((a, b) => a - b);
+  if (orders.some((o, i) => o !== i + 1))
+    errors.push(
+      'the tier orders must be consecutive from 1 (1 is the lightest)',
+    );
+
+  for (const s of data.services) {
+    if (!tierCodes.has(s.tier))
+      errors.push(`'${s.name}' names the unknown tier '${s.tier}'`);
+    for (const [field, text, max] of [
+      ['subtitle', s.subtitle, 120],
+      ['scope', s.scope, 500],
+      ['description', s.description, 500],
+    ] as const) {
+      if (text.trim().length === 0) errors.push(`'${s.name}' needs a ${field}`);
+      else if (text.length > max)
+        errors.push(
+          `'${s.name}': the ${field} exceeds ${String(max)} characters`,
+        );
+    }
+  }
 
   for (const s of data.services) {
     const profiles = data.profiles.filter((p) => p.service === s.name);

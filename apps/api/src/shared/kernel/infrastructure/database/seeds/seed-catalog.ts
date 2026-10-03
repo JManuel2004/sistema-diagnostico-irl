@@ -5,6 +5,10 @@ import { DIMENSIONS } from './data/dimensions.js';
 import { FRAMEWORK_VERSION } from './data/framework-version.js';
 import { SECTORS } from './data/sectors.js';
 import { STATEMENTS } from './data/statements.js';
+import {
+  DIMENSION_LEVEL_DESCRIPTIONS,
+  GLOBAL_LEVEL_DESCRIPTIONS,
+} from './data/level-descriptions.js';
 import { seedRouting } from './seed-routing.js';
 import { seedRoadmapGraph } from './seed-roadmap-graph.js';
 
@@ -56,7 +60,8 @@ export async function seedCatalog(manager: EntityManager): Promise<{
     );
   }
 
-  await seedFrameworkVersion(manager);
+  const versionId = await seedFrameworkVersion(manager);
+  await seedLevelDescriptions(manager, versionId);
 
   const PAIRS: [string, string][] = [
     ['TRL', 'CRL'],
@@ -156,34 +161,82 @@ async function seedFrameworkVersion(manager: EntityManager): Promise<number> {
   return id;
 }
 
+/**
+ * What each level means, per dimension and global, for the framework
+ * version. They explain the levels rather than being what the user
+ * answered, so they are updated even on a version already in use.
+ */
+async function seedLevelDescriptions(
+  manager: EntityManager,
+  versionId: number,
+): Promise<void> {
+  for (const [code, texts] of Object.entries(DIMENSION_LEVEL_DESCRIPTIONS)) {
+    for (const [index, text] of texts.entries()) {
+      await manager.query(
+        `INSERT INTO irl_catalog.dimension_level_description
+           (id_framework_version, id_dimension, irl_level, description)
+         SELECT $1, d.id_dimension, $3, $4 FROM irl_catalog.dimension d WHERE d.code = $2
+         ON CONFLICT (id_framework_version, id_dimension, irl_level) DO UPDATE
+           SET description = EXCLUDED.description`,
+        [versionId, code, index + 1, text],
+      );
+    }
+  }
+  for (const [index, text] of GLOBAL_LEVEL_DESCRIPTIONS.entries()) {
+    await manager.query(
+      `INSERT INTO irl_catalog.global_level_description (id_framework_version, irl_level, description)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (id_framework_version, irl_level) DO UPDATE
+         SET description = EXCLUDED.description`,
+      [versionId, index + 1, text],
+    );
+  }
+}
+
 /** Fails if the stored content of a version in use differs from the seed's. */
-async function assertVersionUnchanged(manager: EntityManager, versionId: number): Promise<void> {
-  const statements = await manager.query<{ code: string; sequence: number; text_es: string }[]>(
+async function assertVersionUnchanged(
+  manager: EntityManager,
+  versionId: number,
+): Promise<void> {
+  const statements = await manager.query<
+    { code: string; sequence: number; text_es: string }[]
+  >(
     `SELECT d.code, s.sequence, s.text_es
        FROM irl_catalog.statement s
        JOIN irl_catalog.dimension d ON d.id_dimension = s.id_dimension
       WHERE s.id_framework_version = $1`,
     [versionId],
   );
-  const stored = new Map(statements.map((s) => [`${s.code}-${String(s.sequence)}`, s.text_es]));
+  const stored = new Map(
+    statements.map((s) => [`${s.code}-${String(s.sequence)}`, s.text_es]),
+  );
   const changedStatement = STATEMENTS.find(
     (s) => stored.get(`${s.dimensionCode}-${String(s.sequence)}`) !== s.textEs,
   );
 
-  const ranges = await manager.query<{ irl_level: number; avg_min: string; avg_max: string }[]>(
+  const ranges = await manager.query<
+    { irl_level: number; avg_min: string; avg_max: string }[]
+  >(
     `SELECT irl_level, avg_min, avg_max FROM irl_catalog.conversion_range
       WHERE id_framework_version = $1`,
     [versionId],
   );
   const storedRanges = new Map(
-    ranges.map((r) => [r.irl_level, [Number(r.avg_min), Number(r.avg_max)] as const]),
+    ranges.map((r) => [
+      r.irl_level,
+      [Number(r.avg_min), Number(r.avg_max)] as const,
+    ]),
   );
   const changedRange = CONVERSION_RANGES.find((r) => {
     const current = storedRanges.get(r.irlLevel);
     return current?.[0] !== r.avgMin || current[1] !== r.avgMax;
   });
 
-  if (changedStatement || changedRange || statements.length !== STATEMENTS.length) {
+  if (
+    changedStatement ||
+    changedRange ||
+    statements.length !== STATEMENTS.length
+  ) {
     throw new Error(
       `Framework version ${FRAMEWORK_VERSION.code} is already used by diagnostics and its ` +
         'content differs from the seed. Publish the change as a new framework version ' +
@@ -198,9 +251,15 @@ async function assertVersionUnchanged(manager: EntityManager, versionId: number)
  * prevents overlaps; this also rules out gaps.
  */
 function assertConversionTableCoversEveryAverage(): void {
-  for (let sum = ANSWERS_PER_DIMENSION; sum <= ANSWERS_PER_DIMENSION * 5; sum++) {
+  for (
+    let sum = ANSWERS_PER_DIMENSION;
+    sum <= ANSWERS_PER_DIMENSION * 5;
+    sum++
+  ) {
     const average = sum / ANSWERS_PER_DIMENSION;
-    const matches = CONVERSION_RANGES.filter((r) => average >= r.avgMin && average <= r.avgMax);
+    const matches = CONVERSION_RANGES.filter(
+      (r) => average >= r.avgMin && average <= r.avgMax,
+    );
     if (matches.length !== 1) {
       throw new Error(
         `Conversion table covers the average ${String(average)} ${String(matches.length)} times; ` +
@@ -216,7 +275,12 @@ async function seedConsentTerms(manager: EntityManager): Promise<void> {
     // The sections are compared by Postgres: jsonb reorders object keys, so a
     // JSON.stringify of the stored value never matches the seed's key order.
     const [existing] = await manager.query<
-      { title: string; same_sections: boolean; checkbox_label: string; accepted: boolean }[]
+      {
+        title: string;
+        same_sections: boolean;
+        checkbox_label: string;
+        accepted: boolean;
+      }[]
     >(
       `SELECT t.title, t.sections = $2::jsonb AS same_sections, t.checkbox_label,
               EXISTS (SELECT 1 FROM irl_diagnostic.consent c WHERE c.terms_version = t.version) AS accepted
@@ -247,7 +311,13 @@ async function seedConsentTerms(manager: EntityManager): Promise<void> {
              sections = EXCLUDED.sections,
              checkbox_label = EXCLUDED.checkbox_label,
              published_at = EXCLUDED.published_at`,
-      [terms.version, terms.title, JSON.stringify(terms.sections), terms.checkboxLabel, terms.publishedAt],
+      [
+        terms.version,
+        terms.title,
+        JSON.stringify(terms.sections),
+        terms.checkboxLabel,
+        terms.publishedAt,
+      ],
     );
   }
 }

@@ -11,12 +11,12 @@ import { LikertValue } from '../../../src/shared/kernel/domain/value-objects/lik
 import { Uuid } from '../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
 
 /**
- * Persistence of the answers with their justification.
+ * Persistence of the answers with their optional justification.
  *
- * The justification is mandatory in three places — the domain, the contract
- * and the database. This spec covers the last one: the column is `NOT NULL`
- * and a blank value violates `ck_answer_justification`, so an insert that
- * skips the domain still cannot store an answer without its reason.
+ * A missing justification is stored as `NULL`. When there is one, the
+ * database keeps the same guarantee as the domain: a blank value violates
+ * `ck_answer_justification`, so an insert that skips the domain still
+ * cannot store whitespace as a reason.
  */
 describe('Answers with justification — persistence (integration)', () => {
   let container: StartedPostgreSqlContainer;
@@ -42,7 +42,9 @@ describe('Answers with justification — persistence (integration)', () => {
     await dataSource.runMigrations();
     await dataSource.transaction((manager) => seedCatalog(manager));
 
-    repo = new TypeOrmAnswerSheetRepository(dataSource.getRepository(AnswerOrm));
+    repo = new TypeOrmAnswerSheetRepository(
+      dataSource.getRepository(AnswerOrm),
+    );
     const rows = await dataSource.query<{ id_statement: string }[]>(
       `SELECT id_statement::text AS id_statement FROM irl_catalog.statement ORDER BY id_statement`,
     );
@@ -63,9 +65,11 @@ describe('Answers with justification — persistence (integration)', () => {
     );
   });
 
-  function sheet(justifications: string[]): AnswerSheet {
+  function sheet(justifications: (string | null)[]): AnswerSheet {
     const s = AnswerSheet.create(Uuid.create(diagnosticId));
-    justifications.forEach((j, i) => s.setAnswer(statementIds[i], LikertValue.create(3), j));
+    justifications.forEach((j, i) =>
+      s.setAnswer(statementIds[i], LikertValue.create(3), j),
+    );
     return s;
   }
 
@@ -100,14 +104,17 @@ describe('Answers with justification — persistence (integration)', () => {
     expect(read!.answers()[0].justification).toHaveLength(1000);
   });
 
-  it('the database refuses an answer without a justification (NULL)', async () => {
-    await expect(
-      dataSource.query(
-        `INSERT INTO irl_diagnostic.answer (id_diagnostic, id_statement, likert_value)
-         VALUES ($1, $2, 3)`,
-        [diagnosticId, statementIds[0]],
-      ),
-    ).rejects.toThrow(/justification/);
+  it('stores an answer without a justification as NULL and reads it back', async () => {
+    await repo.save(sheet([null]));
+
+    const read = await repo.findByDiagnosticId(diagnosticId);
+    const [row] = await dataSource.query<{ justification: string | null }[]>(
+      `SELECT justification FROM irl_diagnostic.answer WHERE id_diagnostic = $1`,
+      [diagnosticId],
+    );
+
+    expect(read!.answers()[0].justification).toBeNull();
+    expect(row.justification).toBeNull();
   });
 
   it.each(['', '   ', '\n\t'])(

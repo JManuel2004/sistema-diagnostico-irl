@@ -19,6 +19,8 @@ import { OrdinalIntensityOrm } from '../orm-entities/ordinal-intensity.orm-entit
 import { EligibilityRuleOrm } from '../orm-entities/eligibility-rule.orm-entity.js';
 import { ExceptionRuleOrm } from '../orm-entities/exception-rule.orm-entity.js';
 import { PortfolioServiceOrm } from '../orm-entities/portfolio-service.orm-entity.js';
+import { ServiceTierOrm } from '../orm-entities/service-tier.orm-entity.js';
+import type { ServiceCatalogEntry } from '../../../domain/value-objects/service-catalog-entry.vo.js';
 import {
   TAXONOMY_REPOSITORY,
   type TaxonomyRepositoryPort,
@@ -71,17 +73,48 @@ export class TypeOrmRoutingConfigurationRepository implements RoutingConfigurati
     private readonly exceptions: Repository<ExceptionRuleOrm>,
     @InjectRepository(PortfolioServiceOrm)
     private readonly services: Repository<PortfolioServiceOrm>,
+    @InjectRepository(ServiceTierOrm)
+    private readonly serviceTiers: Repository<ServiceTierOrm>,
     @Inject(TAXONOMY_REPOSITORY)
     private readonly taxonomy: TaxonomyRepositoryPort,
     @Inject(INITIATIVE_CHARACTERIZATION_READER)
     private readonly initiative: InitiativeCharacterizationPort,
   ) {}
 
-  async findServiceDescriptions(): Promise<ReadonlyMap<number, string | null>> {
-    const rows = await this.services.find({
-      select: { idService: true, description: true },
-    });
-    return new Map(rows.map((r) => [r.idService, r.description] as const));
+  async findServiceCatalog(): Promise<
+    ReadonlyMap<number, ServiceCatalogEntry>
+  > {
+    const [rows, tiers] = await Promise.all([
+      this.services.find(),
+      this.serviceTiers.find(),
+    ]);
+    const tierById = new Map(tiers.map((t) => [t.id, t] as const));
+    return new Map(
+      rows.map((r) => {
+        const tier = tierById.get(r.idTier);
+        // `fk_portfolio_service_tier` guarantees it; this only narrows the type.
+        if (!tier) throw new Error(`The service '${r.name}' has no tier`);
+        const entry: ServiceCatalogEntry = {
+          idService: r.idService,
+          name: r.name,
+          subtitle: r.subtitle,
+          description: r.description,
+          scope: r.scope,
+          band:
+            r.minLevel !== null && r.maxLevel !== null
+              ? { minLevel: r.minLevel, maxLevel: r.maxLevel }
+              : null,
+          tier: {
+            code: tier.code,
+            name: tier.name,
+            order: tier.sequence,
+            tagline: tier.tagline,
+            description: tier.description,
+          },
+        };
+        return [r.idService, entry] as const;
+      }),
+    );
   }
 
   async load(): Promise<ResolvedConfiguration | null> {
@@ -107,6 +140,10 @@ export class TypeOrmRoutingConfigurationRepository implements RoutingConfigurati
       this.taxonomy.findAllDimensions(),
       this.initiative.findStageCodes(),
     ]);
+    const tierRows = await this.serviceTiers.find();
+    const tierOrderById = new Map(
+      tierRows.map((t) => [t.id, t.sequence] as const),
+    );
 
     const labelById = new Map(tiers.map((t) => [t.id, t.label] as const));
     const codeByDimension = new Map(
@@ -189,10 +226,19 @@ export class TypeOrmRoutingConfigurationRepository implements RoutingConfigurati
         minimumThreshold: params.minimumThreshold,
         alternativesCount: params.alternativesCount,
       },
+      phaseParameters: {
+        coverageWeight: params.phaseCoverageWeight,
+        minimumThreshold: params.phaseMinimumThreshold,
+      },
       profiles,
       adjustmentOnlyServices,
       eligibilityRules,
       exceptionRules,
+      tierOrderByService: new Map(
+        serviceRows.map(
+          (s) => [s.idService, tierOrderById.get(s.idTier) ?? 1] as const,
+        ),
+      ),
     };
   }
 }
