@@ -1,8 +1,10 @@
 import type {
-  DiagnosticReport,
   DimensionCode,
   ImbalanceClassification,
-  RoadmapDimensionTarget,
+  RoadmapDimensionTarget} from '@innlab/contracts';
+import {
+  LIKERT_LABELS,
+  type DiagnosticReport
 } from '@innlab/contracts';
 
 /**
@@ -20,7 +22,39 @@ export type ReportBlock =
   | { readonly kind: 'paragraph'; readonly text: string }
   | { readonly kind: 'field'; readonly label: string; readonly value: string }
   | { readonly kind: 'bullet'; readonly text: string }
-  | { readonly kind: 'alert'; readonly text: string };
+  | { readonly kind: 'alert'; readonly text: string }
+  /** The six levels on the 1–9 scale, as a radar; each point named. */
+  | {
+      readonly kind: 'radar';
+      readonly points: readonly {
+        readonly dimensionCode: DimensionCode;
+        readonly label: string;
+        readonly level: number;
+      }[];
+    }
+  /** Each dimension today and at the end of the route, on the 1–9 scale. */
+  | {
+      readonly kind: 'route';
+      readonly rows: readonly {
+        readonly dimensionCode: DimensionCode;
+        readonly label: string;
+        readonly today: number;
+        readonly end: number;
+      }[];
+    }
+  /** The statements of one dimension with the 1–5 value the user gave. */
+  | {
+      readonly kind: 'answers';
+      readonly dimensionCode: DimensionCode;
+      readonly title: string;
+      readonly rows: readonly {
+        readonly sequence: number;
+        readonly text: string;
+        readonly value: number;
+        readonly valueLabel: string;
+        readonly justification: string | null;
+      }[];
+    };
 
 export interface ReportDocumentModel {
   /** The document's title (also its PDF metadata). */
@@ -157,6 +191,14 @@ export function buildReportDocument(
       label: 'Cuello de botella',
       value: `${namesOf(profile.bottleneck.dimensions)}, nivel ${String(profile.bottleneck.level)}`,
     },
+    {
+      kind: 'radar',
+      points: profile.dimensionResults.map((r) => ({
+        dimensionCode: r.dimensionCode,
+        label: r.shortName,
+        level: r.irlLevel,
+      })),
+    },
   );
   for (const r of profile.dimensionResults) {
     push(
@@ -288,20 +330,49 @@ export function buildReportDocument(
     });
   }
   if (roadmap.phases.length > 0) {
-    push({ kind: 'subheading', text: 'Al terminar la ruta' });
-    for (const r of profile.dimensionResults) {
-      const end = roadmap.finalLevels[r.dimensionCode] ?? r.irlLevel;
-      push({
-        kind: 'bullet',
-        text: `${r.shortName}: nivel ${String(r.irlLevel)} hoy, nivel ${String(end)} al final.`,
-      });
-    }
+    push(
+      { kind: 'subheading', text: 'Al terminar la ruta' },
+      {
+        kind: 'route',
+        rows: profile.dimensionResults.map((r) => ({
+          dimensionCode: r.dimensionCode,
+          label: r.shortName,
+          today: r.irlLevel,
+          end: roadmap.finalLevels[r.dimensionCode] ?? r.irlLevel,
+        })),
+      },
+    );
     push({
       kind: 'paragraph',
       text: roadmap.balanced
         ? 'Al terminar, ningún par de dimensiones queda con un desequilibrio con alerta.'
         : 'Al terminar, todavía queda algún par de dimensiones con un desequilibrio con alerta.',
     });
+  }
+
+  // Answers to the questionnaire.
+  if (report.answers.some((d) => d.answers.length > 0)) {
+    push(
+      { kind: 'heading', text: 'Respuestas al cuestionario' },
+      {
+        kind: 'paragraph',
+        text: 'Lo que respondiste a cada afirmación, de 1 (totalmente en desacuerdo) a 5 (totalmente de acuerdo), con tu justificación cuando la diste.',
+      },
+    );
+    for (const d of report.answers) {
+      push({
+        kind: 'answers',
+        dimensionCode: d.dimensionCode,
+        title: d.name,
+        rows: d.answers.map((a) => ({
+          sequence: a.sequence,
+          text: a.text,
+          value: a.value,
+          valueLabel: LIKERT_LABELS[a.value] ?? String(a.value),
+          justification: a.justification,
+        })),
+      });
+    }
   }
 
   // Attribution.
