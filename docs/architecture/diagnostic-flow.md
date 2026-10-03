@@ -19,6 +19,9 @@ How a diagnostic moves through the product: the screens the user goes through, w
            └─ «Adquirir análisis profundo» → imbalances, critical state, recommendation, then the roadmap:
               balanced phases, each with the service that could be contracted, and «Al terminar la ruta»:
               how the route leaves each dimension and each pair against today
+           └─ (deep analysis complete) «Ver reporte completo» → /diagnosticos/:id/reporte
+              the full report: initiative, six dimensions, gaps and alerts, recommendation, roadmap,
+              KTH attribution
 /panel   the initiative of the latest diagnostic with results; «Continuar diagnóstico» if one is unfinished
 /diagnosticos/:id/iniciativa   correct an already registered initiative profile (not after the deep analysis)
 ```
@@ -43,7 +46,7 @@ STARTED ──InitiativeRegisteredEvent──▶ (WITH_CONSENT ▶) WITH_INITIAT
 
 - Transitions are linear; none is skipped or undone. A profile is only registered with a current consent, so its event takes a `STARTED` diagnostic through `WITH_CONSENT` to `WITH_INITIATIVE`. Re-registering the profile does not move a diagnostic backwards (the listener is idempotent).
 - **The inputs freeze with the results** (MD-04): the answers are accepted only up to `QUESTIONNAIRE_COMPLETE` (processing again from `PROFILE_GENERATED` answers 409), and the initiative profile cannot be corrected once the deep analysis is accepted (409; the frontend hides «Editar iniciativa»).
-- `completed` (the profile exists: `PROFILE_GENERATED` or later) and `deepAnalysisAccepted` are derived by the backend and exposed on `GET /diagnostics/:id`; the frontend decides what to show from them and infers nothing from the state.
+- `completed` (the profile exists: `PROFILE_GENERATED` or later), `deepAnalysisAccepted` and `deepAnalysisCompleted` (`DEEP_ANALYSIS_COMPLETE`: the full report exists) are derived by the backend and exposed on `GET /diagnostics/:id`; the frontend decides what to show from them and infers nothing from the state.
 - The deep analysis is complete once both of its results are saved: `diagnosis` records when each "calculated" event arrives (`recommendation_calculated_at`, `roadmap_calculated_at`) and, with both, moves the diagnostic to `DEEP_ANALYSIS_COMPLETE` ([ADR 0008](./decisions/0008-deep-analysis-completes-from-its-results.md)).
 - `DEEP_ANALYSIS_DECLINED` exists in the state machine but nothing moves a diagnostic into it yet: «Por ahora no» only takes the user to the panel.
 
@@ -57,6 +60,7 @@ STARTED ──InitiativeRegisteredEvent──▶ (WITH_CONSENT ▶) WITH_INITIAT
 | Process | `POST /diagnostics/:id/finalize-initial` | `diagnosis` | — | — |
 | Deep analysis | `POST /diagnostics/:id/deep-analysis` | `diagnosis` | `DeepAnalysisRequestedEvent` | `routing` saves the recommendation, `roadmap` saves the roadmap (asking `routing`'s exported `EvaluatePhaseServiceQuery` for each phase's service); each then publishes its "calculated" event |
 | Results saved | — | `routing`, `roadmap` | `PortfolioRecommendationCalculatedEvent`, `ScalingRoadmapCalculatedEvent` | `diagnosis` → `DEEP_ANALYSIS_COMPLETE` once both arrived |
+| Full report | `GET /diagnostics/:id/report` | `reporting` | — | — (reads the saved results; 409 before `DEEP_ANALYSIS_COMPLETE`, [ADR 0018](./decisions/0018-report-gathered-from-saved-results.md)) |
 
 - Every endpoint that names a diagnostic first checks that it exists and belongs to the caller (RNF-04). `diagnosis`, `routing` and `roadmap` answer someone else's diagnostic as missing (404), so its id is not revealed; the initiative endpoints answer 404 for a missing diagnostic or initiative and 403 for someone else's (`initiative`'s `DiagnosticOwnershipPort` and the initiative's owner). The other modules reach the owner through `diagnosis`'s exported `FindDiagnosisOwnerQuery`.
 - `finalize-initial` validates the 48 answers and their optional justifications in the domain before storing anything, then stores them and computes the profile.

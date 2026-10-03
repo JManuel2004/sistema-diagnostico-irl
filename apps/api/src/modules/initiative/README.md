@@ -30,7 +30,7 @@ The user's initiatives, the data-processing consent of each one (Law 1581, RF-03
 
 ## What it exposes
 
-- **Exported use cases:** `GetInitiativeCharacterizationUseCase` and `ListStagesUseCase` (consumed by `routing/` through its `InitiativeCharacterizationPort`).
+- **Exported use cases:** `GetInitiativeCharacterizationUseCase` and `ListStagesUseCase` (consumed by `routing/` through its `InitiativeCharacterizationPort`), and `GetInitiativeProfileUseCase` (consumed by `reporting/` for the full report).
 - **Events it publishes:** `InitiativeRegisteredEvent` (`shared/kernel/events/`).
 - **HTTP:** `GET initiatives` (one's own, with the latest consent and profile), `POST initiatives` (creates one with its first acceptance), `POST initiatives/:id/consent`, `GET consent-terms/current`, `POST/GET diagnostics/:id/initiative` (the profile, body with `initiativeId`), `GET diagnostics` (one's own list, most recent first), `GET initiative-catalog/sectors` and `GET initiative-catalog/stages`. Contracts in Swagger (`/api/docs`); request bodies are validated by the class-validator DTOs in `presentation/controllers/dto/`.
 
