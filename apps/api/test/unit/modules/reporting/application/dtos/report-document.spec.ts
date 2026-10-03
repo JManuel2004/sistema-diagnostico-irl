@@ -9,7 +9,12 @@ import { aReport } from '../../support/a-report.js';
 
 function textOf(blocks: readonly ReportBlock[]): string {
   return blocks
-    .map((b) => (b.kind === 'field' ? `${b.label}: ${b.value}` : b.text))
+    .map((b) => {
+      if (b.kind === 'field') return `${b.label}: ${b.value}`;
+      if (b.kind === 'radar' || b.kind === 'route') return '';
+      if (b.kind === 'answers') return b.rows.map((r) => r.text).join('\n');
+      return b.text;
+    })
     .join('\n');
 }
 
@@ -27,8 +32,64 @@ describe('buildReportDocument', () => {
       'Brechas, alertas y desequilibrios',
       'Recomendación del portafolio INNLAB',
       'Roadmap de escalamiento',
+      'Respuestas al cuestionario',
       'Marco de referencia',
     ]);
+  });
+
+  it('draws the profile as a radar of the six levels, each point named', () => {
+    const radar = buildReportDocument(aReport()).blocks.find(
+      (b) => b.kind === 'radar',
+    );
+
+    expect(radar).toEqual({
+      kind: 'radar',
+      points: [
+        { dimensionCode: 'TRL', label: 'Tecnología', level: 6 },
+        { dimensionCode: 'CRL', label: 'Cliente', level: 4 },
+        { dimensionCode: 'BRL', label: 'Negocio', level: 3 },
+        { dimensionCode: 'IPRL', label: 'Propiedad intelectual', level: 1 },
+        { dimensionCode: 'TmRL', label: 'Equipo', level: 5 },
+        { dimensionCode: 'FRL', label: 'Financiación', level: 2 },
+      ],
+    });
+  });
+
+  it('draws each dimension today and at the end of the route', () => {
+    const route = buildReportDocument(aReport()).blocks.find(
+      (b) => b.kind === 'route',
+    );
+
+    if (route?.kind !== 'route') throw new Error('expected the route chart');
+    expect(route.rows.find((r) => r.dimensionCode === 'CRL')).toEqual({
+      dimensionCode: 'CRL',
+      label: 'Cliente',
+      today: 4,
+      end: 5,
+    });
+  });
+
+  it('lists the 48 answers by dimension, each value in words and with its justification', () => {
+    const answers = buildReportDocument(aReport()).blocks.flatMap((b) =>
+      b.kind === 'answers' ? [b] : [],
+    );
+
+    expect(answers.map((a) => a.dimensionCode)).toEqual([
+      'TRL',
+      'CRL',
+      'BRL',
+      'IPRL',
+      'TmRL',
+      'FRL',
+    ]);
+    expect(answers.flatMap((a) => a.rows)).toHaveLength(48);
+    expect(answers[0]?.rows[0]).toEqual({
+      sequence: 1,
+      text: 'Afirmación 1 de Tecnología',
+      value: 1,
+      valueLabel: 'Totalmente en desacuerdo',
+      justification: 'Justificación de Tecnología',
+    });
   });
 
   it('is titled with the initiative and dated when the deep analysis finished', () => {
