@@ -2,6 +2,7 @@ import {
   DIMENSION_CODES,
   IRL_ATTRIBUTION,
   type DiagnosticReport,
+  type DimensionAnswers,
   type DimensionCode,
   type MaturityProfileResponse,
   type RecommendationResponse,
@@ -63,6 +64,24 @@ function recommendation(): RecommendationResponse {
   };
 }
 
+/**
+ * The 48 answers: values cycling 1..5 so every shade appears, and a
+ * justification on the first statement of each dimension.
+ */
+export function answersFixture(): DimensionAnswers[] {
+  return DIMENSION_CODES.map((code, d) => ({
+    dimensionCode: code,
+    name: dimensionResultFixture(code, LEVELS[code]).name,
+    answers: Array.from({ length: 8 }, (_, i) => ({
+      statementId: String(d * 8 + i + 1),
+      sequence: i + 1,
+      text: `Afirmación ${String(i + 1)} de ${code}`,
+      value: ((i + d) % 5) + 1,
+      justification: i === 0 ? `Porque así lo vemos en ${code}.` : null,
+    })),
+  }));
+}
+
 /** The full report of the AgroConecta diagnostic, as `GET /report` serves it. */
 export function agroconectaReportFixture(): DiagnosticReport {
   return {
@@ -70,6 +89,7 @@ export function agroconectaReportFixture(): DiagnosticReport {
     frameworkVersion: 'KTH-IRL-1.0',
     completedAt: '2026-09-08T10:00:01.000Z',
     initiative: initiativeFixture(),
+    answers: answersFixture(),
     profile: agroconectaProfileFixture(),
     recommendation: recommendation(),
     roadmap: agroconectaRoadmapFixture(),
