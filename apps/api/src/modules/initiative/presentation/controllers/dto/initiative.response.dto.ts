@@ -27,7 +27,8 @@ export class ConsentRecordResponseDto implements ConsentRecord {
 }
 
 export class InitiativeResponseDto implements Initiative {
-  @ApiProperty({ format: 'uuid', description: 'Id of the profile snapshot' }) id!: string;
+  @ApiProperty({ format: 'uuid', description: 'Id of the profile snapshot' })
+  id!: string;
   @ApiProperty({ format: 'uuid' }) initiativeId!: string;
   @ApiProperty({ format: 'uuid' }) diagnosticId!: string;
   @ApiProperty() name!: string;
@@ -38,8 +39,6 @@ export class InitiativeResponseDto implements Initiative {
   @ApiProperty() declaredStage!: string;
   @ApiProperty({ minimum: 1 }) teamSize!: number;
   @ApiProperty() teamDescription!: string;
-  @ApiProperty({ description: 'Confirmed link with the university' })
-  academicLinkage!: boolean;
   @ApiProperty() targetMarket!: string;
   @ApiProperty() currentFunding!: string;
   @ApiProperty({ format: 'date-time' }) recordedAt!: string;

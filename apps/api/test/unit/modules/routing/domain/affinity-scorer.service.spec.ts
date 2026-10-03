@@ -59,7 +59,12 @@ function facts(overrides: Partial<DiagnosticFacts> = {}): DiagnosticFacts {
     imbalances: [
       { left: 'TRL', right: 'CRL', difference: 2, classification: 'MODERATE' },
       { left: 'TRL', right: 'BRL', difference: 3, classification: 'MODERATE' },
-      { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACCEPTABLE' },
+      {
+        left: 'CRL',
+        right: 'BRL',
+        difference: 1,
+        classification: 'ACCEPTABLE',
+      },
       { left: 'TmRL', right: 'FRL', difference: 3, classification: 'MODERATE' },
       { left: 'BRL', right: 'IPRL', difference: 2, classification: 'MODERATE' },
       { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICAL' },
@@ -69,7 +74,6 @@ function facts(overrides: Partial<DiagnosticFacts> = {}): DiagnosticFacts {
       stage: 'validacion',
       sector: null,
       teamSize: 3,
-      academicLinkage: false,
     },
     ...overrides,
   };
@@ -133,7 +137,12 @@ describe('AffinityScorerService', () => {
         [profile({ TRL: 0.0, IPRL: 0.5 })],
         facts({
           imbalances: [
-            { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICAL' },
+            {
+              left: 'TRL',
+              right: 'IPRL',
+              difference: 5,
+              classification: 'CRITICAL',
+            },
           ],
         }),
         PARAMS,
@@ -146,7 +155,12 @@ describe('AffinityScorerService', () => {
         [profile({ CRL: 1.0, BRL: 1.0 })],
         facts({
           imbalances: [
-            { left: 'CRL', right: 'BRL', difference: 1, classification: 'ACCEPTABLE' },
+            {
+              left: 'CRL',
+              right: 'BRL',
+              difference: 1,
+              classification: 'ACCEPTABLE',
+            },
           ],
         }),
         PARAMS,
@@ -162,7 +176,12 @@ describe('AffinityScorerService', () => {
         [profile({ TmRL: 1.0 })],
         facts({
           imbalances: [
-            { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICAL' },
+            {
+              left: 'TRL',
+              right: 'IPRL',
+              difference: 5,
+              classification: 'CRITICAL',
+            },
           ],
         }),
         PARAMS,
@@ -186,7 +205,6 @@ describe('AffinityScorerService', () => {
             stage: null,
             sector: null,
             teamSize: null,
-            academicLinkage: null,
           },
         }),
         PARAMS,
@@ -225,11 +243,7 @@ describe('AffinityScorerService', () => {
     it('el total es exactamente la suma de contributions menos la penalización', () => {
       fc.assert(
         fc.property(arbIntensities, (intensities) => {
-          const [c] = scorer.score(
-            [profile(intensities)],
-            facts(),
-            PARAMS,
-          );
+          const [c] = scorer.score([profile(intensities)], facts(), PARAMS);
           const expected =
             c.contributions.bottleneck.value +
             c.contributions.gaps.value +
@@ -252,16 +266,8 @@ describe('AffinityScorerService', () => {
             fc.pre(low <= high);
             const withLow = { ...base, IPRL: low };
             const withHigh = { ...base, IPRL: high };
-            const [a] = scorer.score(
-              [profile(withLow)],
-              facts(),
-              PARAMS,
-            );
-            const [b] = scorer.score(
-              [profile(withHigh)],
-              facts(),
-              PARAMS,
-            );
+            const [a] = scorer.score([profile(withLow)], facts(), PARAMS);
+            const [b] = scorer.score([profile(withHigh)], facts(), PARAMS);
             expect(b.total).toBeGreaterThanOrEqual(a.total - 1e-9);
           },
         ),
@@ -284,9 +290,7 @@ describe('AffinityScorerService', () => {
     it('el score es determinista', () => {
       fc.assert(
         fc.property(arbIntensities, (intensities) => {
-          const f = profile(
-            intensities,
-          );
+          const f = profile(intensities);
           const [a] = scorer.score([f], facts(), PARAMS);
           const [b] = scorer.score([f], facts(), PARAMS);
           expect(a.total).toBe(b.total);

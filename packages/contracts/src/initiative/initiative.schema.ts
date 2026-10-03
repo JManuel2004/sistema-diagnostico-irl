@@ -44,7 +44,10 @@ const requiredText = (label: string) =>
     .string()
     .trim()
     .min(1, `${label} es obligatorio`)
-    .max(INITIATIVE_TEXT_MAX, `${label} no puede exceder ${String(INITIATIVE_TEXT_MAX)} caracteres`);
+    .max(
+      INITIATIVE_TEXT_MAX,
+      `${label} no puede exceder ${String(INITIATIVE_TEXT_MAX)} caracteres`,
+    );
 
 /**
  * Registration of the profile of an initiative for a diagnostic (HU-06 /
@@ -63,8 +66,6 @@ const requiredText = (label: string) =>
  *     words, next to the catalog stage (the one the router uses).
  *   - `teamSize` is an integer ≥ 1 and `teamDescription` says who the team
  *     is.
- *   - `academicLinkage`: whether the initiative has a confirmed link with
- *     the university; the router's eligibility rules read it.
  *
  * Registering it again replaces the diagnostic's snapshot, until the deep
  * analysis is accepted: from then on it is frozen (409).
@@ -83,10 +84,6 @@ export const registerInitiativeSchema = z
     declaredStage: requiredText('La etapa declarada'),
     teamSize: z.number().int().min(1, 'El equipo tiene al menos una persona').max(10000),
     teamDescription: requiredText('La descripción del equipo'),
-    academicLinkage: z.boolean({
-      required_error: 'Indica si la iniciativa tiene vinculación académica',
-      invalid_type_error: 'Indica si la iniciativa tiene vinculación académica',
-    }),
     targetMarket: requiredText('El mercado objetivo'),
     currentFunding: requiredText('El financiamiento actual'),
   })
@@ -114,7 +111,6 @@ export const initiativeSchema = z
     declaredStage: z.string().min(1),
     teamSize: z.number().int().min(1),
     teamDescription: z.string().min(1),
-    academicLinkage: z.boolean(),
     targetMarket: z.string().min(1),
     currentFunding: z.string().min(1),
     recordedAt: z.string().datetime(),

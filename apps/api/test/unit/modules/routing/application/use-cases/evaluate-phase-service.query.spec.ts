@@ -16,7 +16,7 @@ import {
 /**
  * The service of each phase of AgroConecta's route, on the seeded
  * (simulated) configuration. Profile: TRL 6 · CRL 4 · BRL 3 · IPRL 1 ·
- * TmRL 5 · FRL 2; stage validación, three people, no academic linkage.
+ * TmRL 5 · FRL 2; stage validación, three people.
  */
 const AGROCONECTA = { TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 };
 
@@ -30,7 +30,6 @@ function query(configured = true): EvaluatePhaseServiceQuery {
         stage: 'validacion',
         sector: 'Agroindustria / AgriTech',
         teamSize: 3,
-        academicLinkage: false,
       }),
   } as unknown as InitiativeCharacterizationPort;
   return new EvaluatePhaseServiceQuery(
@@ -68,16 +67,14 @@ describe('EvaluatePhaseServiceQuery — the service of each phase of the route',
     });
 
     expect(value.service).toEqual({
-      idService: ID_BY_SERVICE.get('Reto Express'),
-      name: 'Reto Express',
-      tierOrder: 1,
+      idService: ID_BY_SERVICE.get('Célula de Grado · Posgrado'),
+      name: 'Célula de Grado · Posgrado',
+      tierOrder: 3,
       approximate: false,
     });
     expect(value.trace.mode).toBe('RECOMMENDATION');
-    expect(value.trace.excluded.map((e) => e.name)).toEqual([
-      'Célula de Grado · Pregrado',
-      'Célula de Grado · Posgrado',
-    ]);
+    // A team of three: no eligibility rule leaves a service out.
+    expect(value.trace.excluded).toEqual([]);
   });
 
   it('a next phase gets the service that best works its dimensions, never one already proposed', async () => {
@@ -128,6 +125,7 @@ describe('EvaluatePhaseServiceQuery — the service of each phase of the route',
       excludedServiceIds: [
         ID_BY_SERVICE.get('Reto Express')!,
         ID_BY_SERVICE.get('Reto en el Aula')!,
+        ID_BY_SERVICE.get('Célula de Grado · Posgrado')!,
       ],
       mode: 'PHASE',
     });

@@ -220,7 +220,6 @@ function missingCharacterizationFields(facts: DiagnosticFacts): string[] {
   if (c.stage === null) missing.push('stage');
   if (c.sector === null) missing.push('sector');
   if (c.teamSize === null) missing.push('teamSize');
-  if (c.academicLinkage === null) missing.push('academicLinkage');
   return missing;
 }
 

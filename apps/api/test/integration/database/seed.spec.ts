@@ -185,7 +185,7 @@ describe('Catalog seed (integration)', () => {
       `SELECT gap_weight FROM irl_catalog.scoring_parameters`,
     );
     expect(Number(gap_weight)).toBe(1.5);
-    expect(await count('irl_catalog.eligibility_rule')).toBe('3');
+    expect(await count('irl_catalog.eligibility_rule')).toBe('1');
   });
 
   // The engine loads every service of the catalog: a service that left the

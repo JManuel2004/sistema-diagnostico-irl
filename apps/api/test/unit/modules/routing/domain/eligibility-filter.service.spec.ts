@@ -21,7 +21,6 @@ const FACTS: DiagnosticFacts = {
     stage: 'validacion',
     sector: null,
     teamSize: 1,
-    academicLinkage: false,
   },
 } as unknown as DiagnosticFacts;
 
@@ -124,8 +123,8 @@ describe('EligibilityFilterService', () => {
     const rules = [
       rule(
         3,
-        { field: 'characterization.academicLinkage', op: '=', value: false },
-        'requiere vinculación',
+        { field: 'characterization.teamSize', op: '=', value: 1 },
+        'requiere un equipo',
       ),
     ];
     const { eligible, excluded } = filtro.filter(

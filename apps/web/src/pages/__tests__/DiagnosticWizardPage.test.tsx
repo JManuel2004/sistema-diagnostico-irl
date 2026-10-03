@@ -39,7 +39,6 @@ const COMMAND = {
   declaredStage: 'Piloto completado',
   teamSize: 3,
   teamDescription: 'Fundadora y equipo',
-  academicLinkage: false,
   targetMarket: 'Productores de café',
   currentFunding: 'Ahorros',
 };
@@ -164,7 +163,6 @@ async function fillInitiative(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Etapa declarada'), 'Piloto completado');
   await user.type(screen.getByLabelText('Personas en el equipo'), '3');
   await user.type(screen.getByLabelText('Equipo'), 'Fundadora y equipo');
-  await user.selectOptions(screen.getByLabelText('Vinculación académica'), 'false');
   await user.type(screen.getByLabelText('Mercado objetivo'), 'Productores de café');
   await user.type(screen.getByLabelText('Financiamiento actual'), 'Ahorros');
 }

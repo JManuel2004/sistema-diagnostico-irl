@@ -24,7 +24,7 @@ Re-running the recommendation on the profile projected to each phase was evaluat
 
 ## Consequences
 
-- The route depends on the content more than on the code. With the current simulated intensities, no service works Propiedad Intelectual or Financiación, so those phases show an approximate service. That changes when INNLAB delivers its intensities.
+- The route depends on the content more than on the code. With the current simulated intensities, no service works Propiedad Intelectual or Financiación well, and the tier order narrows the choice: once the recommendation opens the route with a deep tier, the next phases can only take services of that tier or deeper. For AgroConecta the route opens with Célula de Grado · Posgrado (Profundiza), and its second and third phases show an approximate service. That changes when INNLAB delivers its intensities.
 - The roadmap can get longer: a balanced route with a limit per phase has more phases than the old one (AgroConecta goes from two to three).
 - `roadmap/` now depends on `routing/`, but only through exported read queries, never its tables or domain.
 - The recommendation shown first and the first phase's service are the same by construction.

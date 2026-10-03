@@ -15,10 +15,6 @@ import {
 
 type Values = InitiativeFormValues;
 
-const ACADEMIC_LINKAGE_OPTIONS = [
-  { id: 'true', name: 'Sí' },
-  { id: 'false', name: 'No' },
-] as const;
 type FormControl = Control<Values, unknown, InitiativeProfileFields>;
 
 export interface InitiativeFormProps {
@@ -42,8 +38,8 @@ export interface InitiativeFormProps {
  * contract's. The fields hold text and `teamSize` becomes a number on
  * validation; `onSubmit` receives the profile fields ready to send.
  *
- * The ten fields are grouped in three blocks (the initiative, the team,
- * market and funding); sector, stage and academic linkage are native `<select>`s.
+ * The nine fields are grouped in three blocks (the initiative, the team,
+ * market and funding); sector and stage are native `<select>`s.
  */
 export function InitiativeForm({
   sectors,
@@ -157,7 +153,7 @@ export function InitiativeForm({
       <FormSection
         id="initiative-group-team"
         title="El equipo"
-        description="Quiénes la impulsan hoy, con qué dedicación y si tiene vínculo con la universidad."
+        description="Quiénes la impulsan hoy y con qué dedicación."
       >
         <div className="grid gap-5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-start">
           <TextField
@@ -176,15 +172,6 @@ export function InitiativeForm({
             multiline
           />
         </div>
-        <SelectField
-          control={control}
-          name="academicLinkage"
-          label="Vinculación académica"
-          hint="¿La iniciativa tiene un vínculo confirmado con la universidad?"
-          error={errors.academicLinkage?.message}
-          placeholder="Selecciona una opción"
-          options={ACADEMIC_LINKAGE_OPTIONS}
-        />
       </FormSection>
 
       <FormSection

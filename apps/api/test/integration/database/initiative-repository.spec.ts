@@ -58,10 +58,18 @@ describe('Initiative — persistence (integration)', () => {
     await dataSource.runMigrations();
     await dataSource.transaction((manager) => seedCatalog(manager));
 
-    initiatives = new TypeOrmInitiativeRepository(dataSource.getRepository(InitiativeOrm));
-    profiles = new TypeOrmInitiativeProfileRepository(dataSource.getRepository(InitiativeProfileOrm));
-    consents = new TypeOrmConsentRepository(dataSource.getRepository(ConsentOrm));
-    terms = new TypeOrmConsentTermsRepository(dataSource.getRepository(ConsentTermsOrm));
+    initiatives = new TypeOrmInitiativeRepository(
+      dataSource.getRepository(InitiativeOrm),
+    );
+    profiles = new TypeOrmInitiativeProfileRepository(
+      dataSource.getRepository(InitiativeProfileOrm),
+    );
+    consents = new TypeOrmConsentRepository(
+      dataSource.getRepository(ConsentOrm),
+    );
+    terms = new TypeOrmConsentTermsRepository(
+      dataSource.getRepository(ConsentTermsOrm),
+    );
     catalog = new TypeOrmInitiativeCatalogRepository(
       dataSource.getRepository(SectorOrm),
       dataSource.getRepository(InitiativeStageOrm),
@@ -114,7 +122,6 @@ describe('Initiative — persistence (integration)', () => {
       declaredStage: 'Piloto completado',
       teamSize: 3,
       teamDescription: 'Fundadora, coordinadora y desarrollador externo',
-      academicLinkage: false,
       targetMarket: 'Productores de café',
       currentFunding: 'Ahorros de la fundadora',
       ...over,
@@ -127,7 +134,11 @@ describe('Initiative — persistence (integration)', () => {
     const current = await terms.findCurrent();
 
     expect(sectors.map((s) => s.name)).toContain('Agroindustria / AgriTech');
-    expect(stages.map((s) => s.code)).toEqual(['idea', 'validacion', 'crecimiento']);
+    expect(stages.map((s) => s.code)).toEqual([
+      'idea',
+      'validacion',
+      'crecimiento',
+    ]);
     expect(current?.version).toBe('v1');
     expect(current?.sections.length).toBeGreaterThan(0);
   });
@@ -137,14 +148,18 @@ describe('Initiative — persistence (integration)', () => {
 
     const sectors = await catalog.findAllSectors();
 
-    expect(sectors.filter((s) => s.name === 'Agroindustria / AgriTech')).toHaveLength(1);
+    expect(
+      sectors.filter((s) => s.name === 'Agroindustria / AgriTech'),
+    ).toHaveLength(1);
   });
 
   it('an initiative is stored with its first consent and listed for its owner', async () => {
     const initiative = await createdInitiative('owner-a');
 
     const listed = await initiatives.findByOwner('owner-a');
-    const consent = await consents.findLatestByInitiativeId(initiative.id.value);
+    const consent = await consents.findLatestByInitiativeId(
+      initiative.id.value,
+    );
 
     expect(listed.map((i) => i.id.value)).toEqual([initiative.id.value]);
     expect(consent?.termsVersion).toBe('v1');
@@ -170,11 +185,18 @@ describe('Initiative — persistence (integration)', () => {
       [initiative.id.value],
     );
     expect(rows.map((r) => r.terms_version)).toEqual(['v1', 'v2']);
-    expect((await consents.findLatestByInitiativeId(initiative.id.value))?.termsVersion).toBe('v2');
+    expect(
+      (await consents.findLatestByInitiativeId(initiative.id.value))
+        ?.termsVersion,
+    ).toBe('v2');
     expect((await terms.findCurrent())?.version).toBe('v2');
 
-    await dataSource.query(`DELETE FROM irl_diagnostic.consent WHERE terms_version = 'v2'`);
-    await dataSource.query(`DELETE FROM irl_catalog.consent_terms WHERE version = 'v2'`);
+    await dataSource.query(
+      `DELETE FROM irl_diagnostic.consent WHERE terms_version = 'v2'`,
+    );
+    await dataSource.query(
+      `DELETE FROM irl_catalog.consent_terms WHERE version = 'v2'`,
+    );
   });
 
   it("the database refuses a consent whose user is not the initiative's owner", async () => {
@@ -215,16 +237,18 @@ describe('Initiative — persistence (integration)', () => {
     const read = await profiles.findByDiagnosticId(diagnosticId);
 
     expect(read!.toPersistence()).toEqual(saved.toPersistence());
-    expect((await profiles.findLatestByInitiativeId(initiative.id.value))?.id.value).toBe(
-      saved.id.value,
-    );
+    expect(
+      (await profiles.findLatestByInitiativeId(initiative.id.value))?.id.value,
+    ).toBe(saved.id.value);
   });
 
   it("saving again replaces the diagnostic's snapshot instead of adding another", async () => {
     const initiative = await createdInitiative();
     const first = await profileOf(initiative);
     await profiles.save(first);
-    await profiles.save(await profileOf(initiative, { currentFunding: 'Un incentivo regional' }));
+    await profiles.save(
+      await profileOf(initiative, { currentFunding: 'Un incentivo regional' }),
+    );
 
     const rows = await dataSource.query<{ count: string }[]>(
       `SELECT count(*) FROM irl_diagnostic.initiative_profile WHERE id_diagnostic = $1`,

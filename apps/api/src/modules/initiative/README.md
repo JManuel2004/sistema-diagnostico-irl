@@ -2,7 +2,7 @@
 
 ## Scope
 
-The user's initiatives, the data-processing consent of each one (Law 1581, RF-03) and the initiative profile each diagnostic keeps (name, sector, product type, catalog stage and declared stage, team, academic linkage, target market, current funding), plus the user's list of diagnostics. **Does not cover** the diagnostic's state or the questionnaire (`diagnosis/`). The consent lives here, not in `diagnosis/`: Law 1581 ties the consent to the data being processed, which is the initiative's ([ADR 0011](../../../../../docs/architecture/decisions/0011-initiative-identity-and-consent-per-initiative.md)).
+The user's initiatives, the data-processing consent of each one (Law 1581, RF-03) and the initiative profile each diagnostic keeps (name, sector, product type, catalog stage and declared stage, team, target market, current funding), plus the user's list of diagnostics. **Does not cover** the diagnostic's state or the questionnaire (`diagnosis/`). The consent lives here, not in `diagnosis/`: Law 1581 ties the consent to the data being processed, which is the initiative's ([ADR 0011](../../../../../docs/architecture/decisions/0011-initiative-identity-and-consent-per-initiative.md)).
 
 ## Rules that must hold
 
@@ -13,7 +13,7 @@ The user's initiatives, the data-processing consent of each one (Law 1581, RF-03
 - **A profile requires a current consent** (RF-03, RNF-06): `RegisterInitiativeProfileUseCase` checks, in order, the diagnostic's ownership, the initiative's ownership, that the initiative's latest acceptance is of the current text (409), and that the diagnostic has not accepted the deep analysis (409 — the recommendation and the roadmap were computed from the profile), before validating the sector and stage. It stores nothing if any fails.
 - **The profile is a snapshot per diagnostic** (`initiative_profile`, unique per diagnostic): each diagnostic keeps the data it was computed with. Registering it again replaces that diagnostic's snapshot (that is how it is corrected) and does not move the diagnostic backwards.
 - `initiative/` never changes the diagnostic's state: it publishes `InitiativeRegisteredEvent` **after** saving the profile, and `diagnosis/` moves its own state machine.
-- **Every profile field is mandatory** (the contract and the aggregate validate them; free text up to 500 characters, name from 3 to 120, a team of at least one person, and whether it has a confirmed link with the university). `academicLinkage` is what the router's eligibility rule ELG-01 reads. The catalog stage (`stageId`) is what the router reads; `declaredStage` is the user's own description and is only shown back.
+- **Every profile field is mandatory** (the contract and the aggregate validate them; free text up to 500 characters, name from 3 to 120, a team of at least one person). The catalog stage (`stageId`) is what the router reads; `declaredStage` is the user's own description and is only shown back.
 
 ## Completeness
 

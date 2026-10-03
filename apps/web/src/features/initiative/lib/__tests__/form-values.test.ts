@@ -12,7 +12,6 @@ describe('valores del formulario de la iniciativa', () => {
       declaredStage: 'Piloto completado',
       teamSize: '3',
       teamDescription: 'Fundadora, coordinadora y desarrollador externo',
-      academicLinkage: 'false',
       targetMarket: 'Productores de café del suroccidente',
       currentFunding: 'Ahorros de la fundadora',
     });
@@ -27,7 +26,6 @@ describe('valores del formulario de la iniciativa', () => {
       declaredStage: 'Piloto',
       teamSize: 3,
       teamDescription: 'Equipo',
-      academicLinkage: false,
       targetMarket: 'Café',
       currentFunding: 'Ahorros',
     });

@@ -5,7 +5,6 @@ const CHARACTERIZATION = {
   stage: 'validacion',
   sector: 'Agroindustria / AgriTech',
   teamSize: 3,
-  academicLinkage: false,
 };
 
 describe('factsFromLevels — the facts of a projected profile', () => {

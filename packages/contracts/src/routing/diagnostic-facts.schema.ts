@@ -20,11 +20,7 @@ import { uuidSchema } from '../common/uuid.schema.js';
  * trace — a recommendation calculated without characterization is weaker,
  * and that has to show instead of passing silently.
  */
-export const imbalanceFactClassificationSchema = z.enum([
-  'CRITICAL',
-  'MODERATE',
-  'ACCEPTABLE',
-]);
+export const imbalanceFactClassificationSchema = z.enum(['CRITICAL', 'MODERATE', 'ACCEPTABLE']);
 
 export const imbalanceFactSchema = z.object({
   left: dimensionCodeSchema,
@@ -37,7 +33,6 @@ export const characterizationSchema = z.object({
   stage: z.string().nullable(),
   sector: z.string().nullable(),
   teamSize: z.number().int().positive().nullable(),
-  academicLinkage: z.boolean().nullable(),
 });
 
 export type Characterization = z.infer<typeof characterizationSchema>;

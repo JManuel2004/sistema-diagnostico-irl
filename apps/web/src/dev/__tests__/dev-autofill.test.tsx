@@ -229,7 +229,6 @@ describe('InitiativeAutofill button', () => {
         declaredStage: AGROCONECTA_INITIATIVE.declaredStage,
         teamSize: '3',
         teamDescription: AGROCONECTA_INITIATIVE.teamDescription,
-        academicLinkage: 'false',
         targetMarket: AGROCONECTA_INITIATIVE.targetMarket,
         currentFunding: AGROCONECTA_INITIATIVE.currentFunding,
       },

@@ -30,8 +30,8 @@ export class InitiativeController {
   @ApiOperation({
     summary: 'Register (or correct) the initiative profile of the diagnostic',
     description:
-      'The snapshot of the profile of one of the caller\'s initiatives for this diagnostic. ' +
-      '409 when the initiative\'s consent is not accepted at the current version, or once the ' +
+      "The snapshot of the profile of one of the caller's initiatives for this diagnostic. " +
+      "409 when the initiative's consent is not accepted at the current version, or once the " +
       'deep analysis is accepted (the profile is frozen). Registering it moves the diagnostic ' +
       'to `WITH_INITIATIVE` through `InitiativeRegisteredEvent` (HU-06, RF-04).',
   })
@@ -54,7 +54,6 @@ export class InitiativeController {
         declaredStage: body.declaredStage,
         teamSize: body.teamSize,
         teamDescription: body.teamDescription,
-        academicLinkage: body.academicLinkage,
         targetMarket: body.targetMarket,
         currentFunding: body.currentFunding,
       }),

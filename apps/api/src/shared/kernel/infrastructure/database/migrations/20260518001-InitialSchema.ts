@@ -438,7 +438,6 @@ const UP: readonly string[] = [
       declared_stage character varying(500) NOT NULL,
       team_size integer NOT NULL,
       team_description character varying(500) NOT NULL,
-      academic_linkage boolean NOT NULL,
       target_market character varying(500) NOT NULL,
       current_funding character varying(500) NOT NULL,
       recorded_at timestamp with time zone DEFAULT now() NOT NULL,

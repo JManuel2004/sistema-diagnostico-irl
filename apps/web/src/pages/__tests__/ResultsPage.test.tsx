@@ -652,8 +652,8 @@ describe('ResultsPage — el análisis profundo se entiende sin conocer el siste
       {
         idService: 6,
         name: 'Célula de Grado · Pregrado',
-        ruleCode: 'ELG-01A',
-        exclusionMessage: 'Requieren vinculación académica.',
+        ruleCode: 'ELG-02',
+        exclusionMessage: 'Requiere al menos 2 personas en el equipo.',
       },
     ],
     rankingBeforeExceptions: [

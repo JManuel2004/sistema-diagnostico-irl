@@ -522,7 +522,7 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
 // database refuses one on an adjustment-only service.
 //
 // A rule excludes one service; a condition that applies to several is one
-// rule per service (ELG-01A, ELG-01B).
+// rule per service.
 
 export interface EligibilityRuleSeed {
   readonly code: string;
@@ -531,27 +531,7 @@ export interface EligibilityRuleSeed {
   readonly exclusionMessage: string;
 }
 
-const WITHOUT_ACADEMIC_LINKAGE = {
-  field: 'characterization.academicLinkage',
-  op: '=',
-  value: false,
-} as const;
-
 export const ELIGIBILITY_RULES: readonly EligibilityRuleSeed[] = [
-  {
-    code: 'ELG-01A',
-    service: 'Célula de Grado · Pregrado',
-    predicate: WITHOUT_ACADEMIC_LINKAGE,
-    exclusionMessage:
-      'La Célula de Grado de pregrado requiere vinculación académica confirmada con la universidad.',
-  },
-  {
-    code: 'ELG-01B',
-    service: 'Célula de Grado · Posgrado',
-    predicate: WITHOUT_ACADEMIC_LINKAGE,
-    exclusionMessage:
-      'La Célula de Grado de posgrado requiere vinculación académica confirmada con la universidad.',
-  },
   {
     code: 'ELG-02',
     service: 'Reto en el Aula',

@@ -31,7 +31,6 @@ const FACTS: DiagnosticFacts = {
     stage: 'validacion',
     sector: null,
     teamSize: 3,
-    academicLinkage: false,
   },
 };
 

@@ -53,7 +53,6 @@ const facts = (
     stage,
     sector: null,
     teamSize: 3,
-    academicLinkage: false,
   });
 
 describe('PhaseAffinityScorerService — how a service works the dimensions of a phase', () => {

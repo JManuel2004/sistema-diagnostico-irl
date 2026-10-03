@@ -164,7 +164,6 @@ test('from the landing to the results through the four wizard steps', async ({ p
   await page.getByLabel('Etapa declarada').fill('Piloto con tres productores');
   await page.getByLabel('Personas en el equipo').fill('3');
   await page.getByLabel('Equipo', { exact: true }).fill('Fundadora y dos ingenieros');
-  await page.getByLabel('Vinculación académica').selectOption('false');
   await page.getByLabel('Mercado objetivo').fill('Productores de café');
   await page.getByLabel('Financiamiento actual').fill('Ahorros propios');
   await page.getByRole('button', { name: 'Continuar' }).click();

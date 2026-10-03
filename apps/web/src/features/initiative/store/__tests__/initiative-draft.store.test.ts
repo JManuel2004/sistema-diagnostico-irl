@@ -9,7 +9,6 @@ const COMMAND: InitiativeDraft['command'] = {
   declaredStage: 'Piloto completado',
   teamSize: 3,
   teamDescription: 'Fundadora y equipo',
-  academicLinkage: false,
   targetMarket: 'Productores de café',
   currentFunding: 'Ahorros',
 };

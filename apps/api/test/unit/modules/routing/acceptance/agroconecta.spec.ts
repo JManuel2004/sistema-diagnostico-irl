@@ -72,16 +72,10 @@ const FACTS_AGROCONECTA: DiagnosticFacts = {
     { left: 'TRL', right: 'IPRL', difference: 5, classification: 'CRITICAL' },
   ],
   averageLevel: 3.5,
-  // The case document records `academic linkage` as "null (assumed
-  // false)". The assumption is encoded explicitly as `false` instead of
-  // leaving it to a coercion of `null`, so it is visible in the data: the
-  // engine treats `null` as "does not exclude", so relying on the coercion
-  // would silently have given the opposite result.
   characterization: {
     stage: 'validacion',
     sector: 'agroindustria',
     teamSize: 3,
-    academicLinkage: false,
   },
 };
 
@@ -186,15 +180,12 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
   });
 
   describe('capa 1 · eligibility', () => {
-    it('excluye las dos Células de Grado por falta de vinculación académica (ELG-01A, ELG-01B)', () => {
-      const { excluded } = evaluate(FACTS_AGROCONECTA);
+    it('no excluye ningún servicio: su equipo tiene más de una persona', () => {
+      const { excluded, initialRanking } = evaluate(FACTS_AGROCONECTA);
 
-      expect(excluded.map((e) => [e.ruleCode, e.name])).toEqual([
-        ['ELG-01A', 'Célula de Grado · Pregrado'],
-        ['ELG-01B', 'Célula de Grado · Posgrado'],
-      ]);
-      expect(excluded[0].exclusionMessage).toContain(
-        'vinculación académica confirmada',
+      expect(excluded).toEqual([]);
+      expect(initialRanking.map((c) => c.serviceName)).toContain(
+        'Célula de Grado · Posgrado',
       );
     });
 
@@ -237,8 +228,39 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
     });
 
     /**
+     * Célula de Grado · Posgrado breakdown, by hand:
+     *
+     *   intensities → TRL 0.2 · CRL 1.0 · BRL 1.0 · IPRL 0.0 · TmRL 0.5 · FRL 0.2
+     *
+     *   bottleneck (IPRL)  3.0 × 0.0                              = 0.00
+     *   gaps               1.5 × (BRL 1.0 + IPRL 0.0 + FRL 0.2)   = 1.80
+     *   imbalances      TRL-CRL   0.5 × max(0.2, 1.0) = 0.50
+     *                   TRL-BRL   0.5 × max(0.2, 1.0) = 0.50
+     *                   CRL-BRL   acceptable          = 0.00
+     *                   TmRL-FRL  0.5 × max(0.5, 0.2) = 0.25
+     *                   BRL-IPRL  0.5 × max(1.0, 0.0) = 0.50
+     *                   TRL-IPRL  1.0 × max(0.2, 0.0) = 0.20      = 1.95
+     *   stage affinity  validacion ∈ {idea, validacion}           = 0.80
+     *   penalty         average 3.5 within 3–5                    = 0.00
+     *                                                     total =  4.55
+     */
+    it('puntúa Célula de Grado · Posgrado en 4.55: trabaja Cliente y Negocio dentro de su banda', () => {
+      const { initialRanking } = evaluate(FACTS_AGROCONECTA);
+      const posgrado = initialRanking.find(
+        (c) => c.serviceName === 'Célula de Grado · Posgrado',
+      );
+
+      expect(posgrado).toBeDefined();
+      expect(posgrado!.contributions.gaps.value).toBeCloseTo(1.8, 3);
+      expect(posgrado!.contributions.imbalances.value).toBeCloseTo(1.95, 3);
+      expect(posgrado!.contributions.rangePenalty.applied).toBe(false);
+      expect(posgrado!.total).toBeCloseTo(4.55, 3);
+    });
+
+    /**
      * The rest, by hand (bottleneck + gaps + imbalances + stage − penalty):
      *   Célula Dedicada · Co.LAB  0.60 + 1.05 + 2.50 + 0.0 − 2.0 = 2.15
+     *   Célula de Grado · Pregr.  0.60 + 0.60 + 2.10 + 0.8 − 2.0 = 2.10
      *   Consultoría Experta       0.60 + 1.05 + 2.35 + 0.0 − 2.0 = 2.00
      *   Reto en el Aula           0.00 + 0.75 + 2.25 + 0.8 − 2.0 = 1.80
      *   Semillero con Propósito   0.00 + 0.30 + 2.35 + 0.8 − 2.0 = 1.45
@@ -251,8 +273,10 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
       expect(
         initialRanking.map((c) => [c.serviceName, c.total] as const),
       ).toEqual([
+        ['Célula de Grado · Posgrado', 4.55],
         ['Reto Express', 3.3],
         ['Célula Dedicada · Co.LAB', 2.15],
+        ['Célula de Grado · Pregrado', 2.1],
         ['Consultoría Experta', 2.0],
         ['Reto en el Aula', 1.8],
         ['Semillero con Propósito', 1.45],
@@ -298,9 +322,11 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
         'Academia a la Medida entra al ranking en el puesto 2, sin puntaje',
       );
       expect(finalRanking.map((c) => c.serviceName)).toEqual([
-        'Reto Express',
+        'Célula de Grado · Posgrado',
         'Academia a la Medida',
+        'Reto Express',
         'Célula Dedicada · Co.LAB',
+        'Célula de Grado · Pregrado',
         'Consultoría Experta',
         'Reto en el Aula',
         'Semillero con Propósito',
@@ -321,17 +347,18 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
   });
 
   describe('resultado final', () => {
-    it('recomienda Reto Express, con Academia a la Medida como alternativa exenta del umbral', () => {
+    it('recomienda Célula de Grado · Posgrado, con Academia a la Medida (exenta del umbral) y Reto Express', () => {
       const { finalRanking } = evaluate(FACTS_AGROCONECTA);
-      // The included service passes without a score; every other scored
-      // service is below the threshold (2.5).
+      // The included service passes without a score; of the scored ones,
+      // only Célula de Grado · Posgrado and Reto Express reach the threshold (2.5).
       const eligibleForResult = finalRanking.filter(
         (c) => isIncluded(c) || c.total >= SCORING_PARAMETERS.minimumThreshold,
       );
 
       expect(eligibleForResult.map((c) => c.serviceName)).toEqual([
-        'Reto Express',
+        'Célula de Grado · Posgrado',
         'Academia a la Medida',
+        'Reto Express',
       ]);
     });
   });
@@ -369,23 +396,6 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
       expect(after).toBe(Math.max(0, before - 2));
     });
 
-    it('con vinculación académica, las Células de Grado vuelven a competir', () => {
-      const linked: DiagnosticFacts = {
-        ...FACTS_AGROCONECTA,
-        characterization: {
-          ...FACTS_AGROCONECTA.characterization,
-          academicLinkage: true,
-        },
-      };
-
-      const { excluded, initialRanking } = evaluate(linked);
-
-      expect(excluded).toEqual([]);
-      expect(initialRanking.map((c) => c.serviceName)).toContain(
-        'Célula de Grado · Posgrado',
-      );
-    });
-
     it('un equipo de una persona excluye Reto en el Aula e incluye Práctica de Innovación', () => {
       const solo: DiagnosticFacts = {
         ...FACTS_AGROCONECTA,
@@ -401,7 +411,7 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
       // INC-02 puts Academia in position 2; INC-03, applied after it, puts
       // Práctica in position 2 and pushes Academia to 3.
       expect(finalRanking.slice(0, 3).map((c) => c.serviceName)).toEqual([
-        'Reto Express',
+        'Célula de Grado · Posgrado',
         'Práctica de Innovación',
         'Academia a la Medida',
       ]);

@@ -56,8 +56,8 @@ function trace(over: Partial<LayerTraceResponse> = {}): LayerTraceResponse {
       {
         idService: 6,
         name: 'Célula de Grado · Pregrado',
-        ruleCode: 'ELG-01A',
-        exclusionMessage: 'Requieren vinculación académica confirmada.',
+        ruleCode: 'ELG-02',
+        exclusionMessage: 'Requiere al menos 2 personas en el equipo.',
       },
     ],
     rankingBeforeExceptions: [
@@ -154,7 +154,7 @@ describe('LayerTracePanel', () => {
       const panel = await openPanel();
 
       expect(panel.textContent).toContain('Célula de Grado · Pregrado.');
-      expect(panel.textContent).toContain('Requieren vinculación académica confirmada.');
+      expect(panel.textContent).toContain('Requiere al menos 2 personas en el equipo.');
     });
 
     it('dice que ninguno se descartó cuando es así', async () => {

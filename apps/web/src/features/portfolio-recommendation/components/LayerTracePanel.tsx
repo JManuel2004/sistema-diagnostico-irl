@@ -489,7 +489,6 @@ const READABLE_FIELDS: Readonly<Record<string, string>> = {
   stage: 'la etapa',
   sector: 'el sector',
   teamSize: 'el tamaño del equipo',
-  academicLinkage: 'la vinculación académica',
 };
 
 function readableField(field: string): string {
