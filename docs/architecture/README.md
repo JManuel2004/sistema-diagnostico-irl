@@ -32,3 +32,4 @@ Architecture Decision Records: short (context, decision, consequences) and immut
 | [0015](./decisions/0015-consent-before-the-initiative.md) | The wizard asks for the consent before the initiative |
 | [0016](./decisions/0016-route-by-phases-with-services.md) | The roadmap is a balanced route by phases, with a service per phase |
 | [0017](./decisions/0017-level-descriptions.md) | Every score is shown with what its level means |
+| [0018](./decisions/0018-report-gathered-from-saved-results.md) | The full report is gathered from the saved results, in a module of its own |
