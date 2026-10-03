@@ -26,6 +26,7 @@ import {
   RoadmapPhaseList,
   useScalingRoadmap,
 } from '@features/scaling-roadmap';
+import { FullReportCard } from '@features/report';
 import { PageShell } from '@/shared/ui/page-shell';
 import { PageHeader } from '@/shared/ui/page-header';
 import { SectionHeader } from '@/shared/ui/section-header';
@@ -56,7 +57,8 @@ import { FALLBACK_SUBJECT, RETRY_LATER, RETRY_LATER_OR_CONTACT } from '@/shared/
  *    imbalanced pairs are neither shown nor drawn on the radar.
  *  - **With deep analysis:** also the imbalanced pairs and the dimensions
  *    in critical state, the scaling roadmap and the portfolio
- *    recommendation.
+ *    recommendation; once it is complete (`deepAnalysisCompleted`), the
+ *    way to the full report.
  *
  * Accepting the deep analysis (RF-11) is a user action: the button lives
  * here and nothing is sent just by opening the page. The page composes
@@ -196,6 +198,10 @@ export default function ResultsPage(): JSX.Element {
               }}
               retrying={accept.isPending}
             />
+          )}
+
+          {diagnostic.data?.deepAnalysisCompleted === true && !accept.isPending && (
+            <FullReportCard diagnosticId={diagnosticId} subject={subject} />
           )}
         </div>
       )}
