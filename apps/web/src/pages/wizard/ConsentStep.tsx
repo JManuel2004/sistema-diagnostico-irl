@@ -45,8 +45,7 @@ export function ConsentStep({
     (registered
       ? initiatives.find((initiative) => initiative.id === registered.initiativeId)?.consent
       : null) ?? null;
-  const acceptedThisText =
-    terms.data !== undefined && acceptedTermsVersion === terms.data.version;
+  const acceptedThisText = acceptedTermsVersion === terms.data?.version;
   const alreadyAccepted = recorded !== null || acceptedThisText;
 
   function continueToInitiative(version: string): void {

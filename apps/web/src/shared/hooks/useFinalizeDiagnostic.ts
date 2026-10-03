@@ -9,11 +9,11 @@ import { paths } from '@/shared/lib/paths';
 export interface FinalizeAnswer {
   readonly statementId: string;
   readonly value: number;
-  readonly justification: string;
+  readonly justification: string | null;
 }
 
 /**
- * «Procesar diagnóstico»: sends the 48 answers with their justifications,
+ * «Procesar diagnóstico»: sends the 48 answers with their justifications, if any,
  * stores the computed profile in the cache and opens the results.
  */
 export function useFinalizeDiagnostic(diagnosticId: string) {

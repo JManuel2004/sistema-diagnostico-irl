@@ -2,7 +2,6 @@ import type { QuestionnaireStructure } from '@innlab/contracts';
 import {
   isStatementComplete,
   selectAnswers,
-  selectJustifications,
   useQuestionnaireDraftStore,
 } from '../store/questionnaire-draft.store';
 
@@ -11,7 +10,7 @@ import {
  * progress and the draft indicator.
  *
  * The aggregate (`X / 48 afirmaciones completas`, `% completado`, bar; a
- * statement is complete with its Likert answer and its justification)
+ * statement is complete with its Likert answer; the justification is optional)
  * lives at the top so progress is not hidden inside each dimension. The
  * chip says what really happens to the draft (HU-09): it is kept in this
  * tab (`sessionStorage`) and does not reach the server until «Procesar
@@ -29,12 +28,10 @@ interface Props {
 
 export function QuestionnaireProgress({ dimensions }: Props) {
   const answers = useQuestionnaireDraftStore(selectAnswers);
-  const justifications = useQuestionnaireDraftStore(selectJustifications);
 
   const total = dimensions.reduce((acc, d) => acc + d.statements.length, 0);
   const answered = dimensions.reduce(
-    (acc, d) =>
-      acc + d.statements.filter((s) => isStatementComplete(answers, justifications, s.id)).length,
+    (acc, d) => acc + d.statements.filter((s) => isStatementComplete(answers, s.id)).length,
     0,
   );
   const pct = total === 0 ? 0 : Math.round((answered / total) * 100);

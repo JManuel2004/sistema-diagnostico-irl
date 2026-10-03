@@ -15,8 +15,8 @@ import { useAnswerForStatement } from '../hooks/useAnswerForStatement';
  *    accessibility) and, on the right, whether it is complete or pending.
  *  - Body: the statement at 18px on mobile and 20px from `sm` — tuned to
  *    read 48 statements comfortably, ~60 characters per line.
- *  - The Likert selector (5 options) and, below, the justification: each
- *    answer is saved with the reason for the chosen level (mandatory).
+ *  - The Likert selector (5 options) and, below, the justification: the
+ *    reason for the chosen level, optional, saved with the answer when given.
  *
  * The accent color of the dimension code (TRL, CRL, ...) comes from the
  * parent (`DimensionPanel`) and never mixes with the answer input:
@@ -30,8 +30,8 @@ interface Props {
 
 export function StatementCard({ statement }: Props) {
   const { value, setAnswer, justification, setJustification } = useAnswerForStatement(statement.id);
-  // The same rule as `isStatementComplete`: an answer and a non-empty justification.
-  const complete = value !== null && justification.trim().length > 0;
+  // The same rule as `isStatementComplete`: the answer is what completes it.
+  const complete = value !== null;
   return (
     <Card className="rounded-2xl p-4 sm:p-8">
       <div className="flex items-center justify-between gap-3">
@@ -57,7 +57,7 @@ export function StatementCard({ statement }: Props) {
       <Field
         className="mt-5"
         label="¿Por qué elegiste este nivel?"
-        hint={`${String(justification.length)} / ${String(ANSWER_JUSTIFICATION_MAX)} caracteres · Obligatoria`}
+        hint={`${String(justification.length)} / ${String(ANSWER_JUSTIFICATION_MAX)} caracteres · Opcional`}
       >
         {(control) => (
           <Textarea

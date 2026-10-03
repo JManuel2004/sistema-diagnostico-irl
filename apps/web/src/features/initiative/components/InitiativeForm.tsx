@@ -1,11 +1,7 @@
 import { Suspense, useEffect, useRef, type JSX, type ReactNode } from 'react';
 import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  INITIATIVE_TEXT_MAX,
-  type InitiativeStage,
-  type Sector,
-} from '@innlab/contracts';
+import { INITIATIVE_TEXT_MAX, type InitiativeStage, type Sector } from '@innlab/contracts';
 import { Alert } from '@/shared/ui/alert';
 import { Button } from '@/shared/ui/button';
 import { Field, Input, Select, Textarea } from '@/shared/ui/field';
@@ -62,22 +58,26 @@ export function InitiativeForm({
     control,
     handleSubmit,
     reset,
-    watch,
+    subscribe,
     formState: { errors },
   } = useForm<Values, unknown, InitiativeProfileFields>({
     resolver: zodResolver(initiativeFormSchema),
     defaultValues: initial ?? EMPTY_INITIATIVE_FORM,
   });
   const onDraftChangeRef = useRef(onDraftChange);
-  onDraftChangeRef.current = onDraftChange;
+  useEffect(() => {
+    onDraftChangeRef.current = onDraftChange;
+  });
 
   useEffect(() => {
     if (!onDraftChange) return;
-    const subscription = watch((values) => {
-      onDraftChangeRef.current?.(values as Values);
+    return subscribe({
+      formState: { values: true },
+      callback: ({ values }) => {
+        onDraftChangeRef.current?.(values);
+      },
     });
-    return () => subscription.unsubscribe();
-  }, [onDraftChange, watch]);
+  }, [onDraftChange, subscribe]);
 
   const limit = `Máximo ${String(INITIATIVE_TEXT_MAX)} caracteres`;
 

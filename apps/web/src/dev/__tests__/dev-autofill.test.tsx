@@ -189,7 +189,8 @@ describe('QuestionnaireAutofill button', () => {
 
     const { answers, justifications } = useQuestionnaireDraftStore.getState();
     const statements = dimensions.flatMap((d) => d.statements);
-    expect(statements.every((s) => isStatementComplete(answers, justifications, s.id))).toBe(true);
+    expect(statements.every((s) => isStatementComplete(answers, s.id))).toBe(true);
+    expect(statements.every((s) => (justifications[s.id] ?? '').trim().length > 0)).toBe(true);
   });
 
   it('says it is for development only', () => {

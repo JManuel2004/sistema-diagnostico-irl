@@ -194,12 +194,11 @@ describe('DiagnosticWizardPage — el asistente', () => {
       renderWizard();
 
       const stepper = await screen.findByRole('navigation', { name: 'Pasos del diagnóstico' });
-      expect(within(stepper).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-        '1Consentimiento',
-        '2Iniciativa',
-        '3Cuestionario',
-        '4Resumen',
-      ]);
+      expect(
+        within(stepper)
+          .getAllByRole('listitem')
+          .map((li) => li.textContent),
+      ).toEqual(['1Consentimiento', '2Iniciativa', '3Cuestionario', '4Resumen']);
       expect(screen.queryByRole('navigation', { name: 'Principal' })).not.toBeInTheDocument();
     });
 
@@ -208,9 +207,10 @@ describe('DiagnosticWizardPage — el asistente', () => {
 
       renderWizard();
 
-      expect(
-        await screen.findByRole('link', { name: /Inicio · Diagnóstico IRL/ }),
-      ).toHaveAttribute('href', '/');
+      expect(await screen.findByRole('link', { name: /Inicio · Diagnóstico IRL/ })).toHaveAttribute(
+        'href',
+        '/',
+      );
     });
 
     it('marca el paso actual', async () => {
@@ -320,7 +320,10 @@ describe('DiagnosticWizardPage — el asistente', () => {
 
       expect(where()).toBe(step('iniciativa'));
       expect(api.calls).toEqual([]);
-      expect(screen.getByLabelText('Nombre de la iniciativa')).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByLabelText('Nombre de la iniciativa')).toHaveAttribute(
+        'aria-invalid',
+        'true',
+      );
       expect(screen.getByRole('alert')).toHaveTextContent('Revisa los campos marcados');
     });
 
@@ -411,7 +414,9 @@ describe('DiagnosticWizardPage — el asistente', () => {
       expect(api.profile?.name).toBe('AgroConecta');
       expect(api.profile?.initiativeId).toBe(NEW_INITIATIVE_ID);
       expect(toast.success).toHaveBeenCalledWith('Consentimiento registrado.');
-      expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Cuestionario IRL');
+      expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
+        'Cuestionario IRL',
+      );
     });
 
     it('vacía el borrador cuando la iniciativa quedó registrada', async () => {
@@ -477,8 +482,11 @@ describe('DiagnosticWizardPage — el asistente', () => {
           expect.stringContaining('El texto del consentimiento cambió'),
         );
       });
+      // The notice comes first and the navigation right after: wait for both.
+      await waitFor(() => {
+        expect(where()).toBe(step('consentimiento'));
+      });
       expect(api.calls).toEqual(['create']);
-      expect(where()).toBe(step('consentimiento'));
     });
 
     it('un error del servidor al aceptar no registra la iniciativa', async () => {
@@ -516,7 +524,9 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await openForm(user);
 
       expect(
-        await screen.findByRole('radiogroup', { name: '¿Sobre qué iniciativa es este diagnóstico?' }),
+        await screen.findByRole('radiogroup', {
+          name: '¿Sobre qué iniciativa es este diagnóstico?',
+        }),
       ).toBeInTheDocument();
       expect(screen.getByRole('radio', { name: /AgroConecta/ })).toBeChecked();
       expect(await screen.findByLabelText('Nombre de la iniciativa')).toHaveValue('AgroConecta');
@@ -573,7 +583,9 @@ describe('DiagnosticWizardPage — el asistente', () => {
 
       renderWizard();
 
-      expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Cuestionario IRL');
+      expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
+        'Cuestionario IRL',
+      );
       expect(where()).toBe(step('cuestionario'));
     });
 
@@ -647,9 +659,12 @@ describe('DiagnosticWizardPage — el asistente', () => {
       renderWizard();
       await screen.findByRole('heading', { level: 1, name: 'Cuestionario IRL' });
       await user.click(
-        within(screen.getByRole('navigation', { name: 'Pasos del diagnóstico' })).getByRole('link', {
-          name: /Consentimiento/,
-        }),
+        within(screen.getByRole('navigation', { name: 'Pasos del diagnóstico' })).getByRole(
+          'link',
+          {
+            name: /Consentimiento/,
+          },
+        ),
       );
 
       expect(await screen.findByText(/Ya aceptaste este texto/)).toBeInTheDocument();
@@ -678,7 +693,9 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await screen.findByRole('tablist', { name: 'Dimensiones IRL' });
       expect(scrollIntoView).not.toHaveBeenCalled();
       expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
-      expect(screen.getByRole('heading', { level: 1, name: 'Cuestionario IRL' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Cuestionario IRL' }),
+      ).toBeInTheDocument();
     });
 
     it('sigue volviendo hacia arriba al cambiar de dimensión', async () => {
@@ -709,7 +726,9 @@ describe('DiagnosticWizardPage — el asistente', () => {
     it('avisa si no se pudo abrir el diagnóstico', async () => {
       backend();
       server.use(
-        mswHttp.get('*/diagnostics/:id', () => HttpResponse.json({ message: 'x' }, { status: 500 })),
+        mswHttp.get('*/diagnostics/:id', () =>
+          HttpResponse.json({ message: 'x' }, { status: 500 }),
+        ),
       );
 
       renderWizard();

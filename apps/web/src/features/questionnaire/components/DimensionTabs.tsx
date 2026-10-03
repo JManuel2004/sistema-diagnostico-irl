@@ -9,7 +9,6 @@ import {
   selectActiveTab,
   isStatementComplete,
   selectAnswers,
-  selectJustifications,
   selectSetActiveTab,
   useQuestionnaireDraftStore,
 } from '../store/questionnaire-draft.store';
@@ -63,7 +62,6 @@ export function DimensionTabs({ dimensions }: Props) {
   const activeTab = useQuestionnaireDraftStore(selectActiveTab);
   const setActiveTab = useQuestionnaireDraftStore(selectSetActiveTab);
   const answers = useQuestionnaireDraftStore(selectAnswers);
-  const justifications = useQuestionnaireDraftStore(selectJustifications);
 
   const panelTopRef = useRef<HTMLDivElement | null>(null);
   // Tab that was already in view: the effect only scrolls when the tab
@@ -109,7 +107,7 @@ export function DimensionTabs({ dimensions }: Props) {
         >
           {dimensions.map((d) => {
             const answered = d.statements.filter((st) =>
-              isStatementComplete(answers, justifications, st.id),
+              isStatementComplete(answers, st.id),
             ).length;
             const total = d.statements.length;
             const isComplete = answered === total && total > 0;
