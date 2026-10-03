@@ -5,6 +5,7 @@ import {
   aRecommendation,
   aRoadmap,
   DIAGNOSTIC_ID,
+  someAnswers,
 } from './report-sections.js';
 
 /** The full AgroConecta report, gathered from the sections of `report-sections`. */
@@ -16,6 +17,7 @@ export function aReport(
     frameworkVersion: 'KTH-IRL-1.0',
     completedAt: '2026-01-02T10:00:01.000Z',
     initiative: anInitiative(),
+    answers: someAnswers(),
     profile: aProfile(),
     recommendation: aRecommendation(),
     roadmap: aRoadmap(),
