@@ -1,7 +1,7 @@
 # reporting
 
 ## Scope
-The full report of a diagnostic (RF-16), on screen and as a downloadable PDF: its initiative, its maturity profile with the gaps, the imbalanced pairs and the dimensions in critical state, the INNLAB recommendation with its justification, and the roadmap by phases, under the attribution of the KTH framework. **Does not cover** computing any of those results (`diagnosis/`, `routing/`, `roadmap/`), nor notifying INNLAB (HU-25, not built).
+The full report of a diagnostic (RF-16), on screen and as a downloadable PDF: its initiative, what the user answered to each of the 48 statements, its maturity profile with the gaps, the imbalanced pairs and the dimensions in critical state, the INNLAB recommendation with its justification, and the roadmap by phases, under the attribution of the KTH framework. **Does not cover** computing any of those results (`diagnosis/`, `routing/`, `roadmap/`), nor notifying INNLAB (HU-25, not built).
 
 ## Rules that must hold
 - **The report exists only once the deep analysis is complete** (`deepAnalysisCompleted`: both results saved, [ADR 0008](../../../../../docs/architecture/decisions/0008-deep-analysis-completes-from-its-results.md)). Before that `GetDiagnosticReportUseCase` answers `ReportNotAvailableError` (`REPORT_NOT_AVAILABLE`, 409) without reading any result.
@@ -11,6 +11,7 @@ The full report of a diagnostic (RF-16), on screen and as a downloadable PDF: it
 - **The attribution travels with the report** (RNF-09): `IRL_ATTRIBUTION` from `@innlab/contracts` (KTH Innovation, CC BY-NC-SA 4.0), the single source for the screen and the file.
 - A section missing from a complete diagnostic is propagated as its own error; a partial report is never served.
 - **The PDF is the same report, drawn** (HU-24): `DownloadDiagnosticReportUseCase` reads it through `GetDiagnosticReportUseCase` (same rules: 404, 409), `buildReportDocument` decides what the file says — Spanish, no dimension codes, every level with its meaning, the order of the screen — and `REPORT_RENDERER` (`PdfkitReportRenderer`) only lays those blocks out. Nothing is drawn before the report exists.
+- **The file has charts, not only text**: the profile as a radar of the six levels, the route as each dimension today and at its end on the 1–9 scale, and the 48 answers as five segments filled up to the value. Every mark carries the dimension's name and its number in text ink: the dimension tones of the brand do not separate TRL from CRL and the FRL yellow barely shows on white, so colour is never the only signal (the yellow gets an outline).
 - **The file carries the attribution on every page** (RNF-09): the `IRL_ATTRIBUTION` notice and the page number at the foot of each page, and a closing section with the framework, its version and the CC BY-NC-SA 4.0 license link.
 - **The file holds only the caller's diagnostic**: it is built from that one report, and named after its initiative and the day the analysis finished (`reporte-irl-<initiative>-<yyyy-mm-dd>.pdf`, `reportFileName`).
 - The PDF is drawn with Helvetica, one of the fonts every PDF reader carries: Plus Jakarta Sans is not shipped with the backend, and the brand manual names Arial (its metric twin) for documents generated outside the product. Brand colours from `DESIGN.md` (Azul Icesi headings, `#333333` text, critical red for the alerts).
@@ -29,7 +30,7 @@ None of its own: the report is a read model. `ReportNotAvailableError` is its on
 - No events, no exported queries.
 
 ## What it depends on
-`pdfkit` (only in `infrastructure/pdf/`; banned in `domain/` and `application/` by `eslint.config.mjs`). Through `ReportSourcesPort` (`ReportSourcesAdapter`), the read queries exported by: `diagnosis/` (`GetDiagnosisUseCase`, `GetMaturityProfileUseCase`), `initiative/` (`GetInitiativeProfileUseCase`), `routing/` (`GetRecommendationUseCase`) and `roadmap/` (`GetScalingRoadmapUseCase`). Never their repositories or ORM entities.
+`pdfkit` (only in `infrastructure/pdf/`; banned in `domain/` and `application/` by `eslint.config.mjs`). Through `ReportSourcesPort` (`ReportSourcesAdapter`), the read queries exported by: `diagnosis/` (`GetDiagnosisUseCase`, `GetDiagnosisAnswersQuery`, `GetMaturityProfileUseCase`), `initiative/` (`GetInitiativeProfileUseCase`), `routing/` (`GetRecommendationUseCase`) and `roadmap/` (`GetScalingRoadmapUseCase`). Never their repositories or ORM entities.
 
 ## Data it owns
 None.

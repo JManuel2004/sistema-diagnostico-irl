@@ -24,7 +24,7 @@ Deliberately short. Anything that can be derived from the code is **not** docume
 - **Exported read queries**: a module consumes another's exported query only for read-only data, behind a port declared in the consumer and implemented by an adapter in its `infrastructure/`:
   - `diagnosis` → `GetMaturityProfileUseCase` for `routing` and `roadmap`; `FindDiagnosisOwnerQuery` for `initiative`, `routing` and `roadmap` (each verifies the caller owns the diagnostic); `GetDiagnosisProgressQuery` (whether the deep analysis is accepted) and `ListUserDiagnosesQuery` for `initiative`.
   - `initiative` → `GetInitiativeCharacterizationUseCase` and `ListStagesUseCase` for `routing`.
-  - `reporting` reads the saved results of a diagnostic for the full report ([ADR 0018](../../../docs/architecture/decisions/0018-report-gathered-from-saved-results.md)): `GetDiagnosisUseCase` and `GetMaturityProfileUseCase` from `diagnosis`, `GetInitiativeProfileUseCase` from `initiative`, `GetRecommendationUseCase` from `routing`, `GetScalingRoadmapUseCase` from `roadmap`.
+  - `reporting` reads the saved results of a diagnostic for the full report ([ADR 0018](../../../docs/architecture/decisions/0018-report-gathered-from-saved-results.md)): `GetDiagnosisUseCase`, `GetDiagnosisAnswersQuery` and `GetMaturityProfileUseCase` from `diagnosis`, `GetInitiativeProfileUseCase` from `initiative`, `GetRecommendationUseCase` from `routing`, `GetScalingRoadmapUseCase` from `roadmap`.
   - `shared/irl-taxonomy` → `TAXONOMY_REPOSITORY` for everyone.
 - Never entity objects across a module boundary; never a direct call into another module's process.
 
