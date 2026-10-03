@@ -56,6 +56,7 @@ const IO_PACKAGES = [
   'node:https',
   'net',
   'node:net',
+  'pdfkit',
 ];
 
 export default [
