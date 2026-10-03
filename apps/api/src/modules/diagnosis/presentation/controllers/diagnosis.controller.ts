@@ -55,7 +55,8 @@ export class DiagnosisController {
   @ApiOperation({
     summary: 'Read one of the caller’s diagnostics',
     description:
-      'With `completed` and `deepAnalysisAccepted`, derived from the state. A foreign ' +
+      'With `completed`, `deepAnalysisAccepted` and `deepAnalysisCompleted`, derived from ' +
+      'the state. A foreign ' +
       'diagnostic answers 404, like a missing one, so its id does not leak.',
   })
   @ApiOkResponse({ type: DiagnosticResponseDto })

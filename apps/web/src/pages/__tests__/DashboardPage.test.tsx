@@ -32,6 +32,7 @@ function diagnostic(id: string, state = 'PROFILE_GENERATED') {
     state,
     completed: state === 'PROFILE_GENERATED',
     deepAnalysisAccepted: false,
+    deepAnalysisCompleted: false,
     createdAt: '2026-03-01T00:00:00.000Z',
     frameworkVersion: 'KTH-IRL-1.0',
   };

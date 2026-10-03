@@ -72,6 +72,7 @@ async function fakeBackend(page: Page): Promise<string[]> {
     state: completed ? 'PROFILE_GENERATED' : 'STARTED',
     completed,
     deepAnalysisAccepted: false,
+    deepAnalysisCompleted: false,
     frameworkVersion: 'KTH-IRL-1.0',
     createdAt: '2026-09-22T14:00:00.000Z',
   });

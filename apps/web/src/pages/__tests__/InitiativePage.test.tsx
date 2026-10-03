@@ -37,6 +37,7 @@ function diagnostic(deepAnalysisAccepted = false) {
       state: deepAnalysisAccepted ? 'DEEP_ANALYSIS_COMPLETE' : 'PROFILE_GENERATED',
       completed: true,
       deepAnalysisAccepted,
+      deepAnalysisCompleted: deepAnalysisAccepted,
       frameworkVersion: 'KTH-IRL-1.0',
       createdAt: '2026-03-01T00:00:00.000Z',
     }),

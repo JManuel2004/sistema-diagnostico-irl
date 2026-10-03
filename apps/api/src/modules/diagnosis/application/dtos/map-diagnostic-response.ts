@@ -12,6 +12,7 @@ export function toDiagnosticResponse(diagnosis: Diagnosis, frameworkVersionCode:
     state: diagnosis.state.value,
     completed: diagnosis.completed,
     deepAnalysisAccepted: diagnosis.deepAnalysisAccepted,
+    deepAnalysisCompleted: diagnosis.deepAnalysisCompleted,
     frameworkVersion: frameworkVersionCode,
     createdAt: diagnosis.createdAt.toISOString(),
   };

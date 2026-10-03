@@ -32,6 +32,10 @@ export class DiagnosticResponseDto implements Diagnostic {
   @ApiProperty({ description: 'The user accepted the deep analysis' })
   deepAnalysisAccepted!: boolean;
   @ApiProperty({
+    description: 'Both results of the deep analysis are saved: the full report exists',
+  })
+  deepAnalysisCompleted!: boolean;
+  @ApiProperty({
     example: 'KTH-IRL-1.0',
     description: 'IRL framework version it is answered with',
   })
