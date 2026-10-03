@@ -2,7 +2,12 @@ import type { JSX } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { UserMenu } from '@features/auth';
-import { ReportDocument, useDiagnosticReport } from '@features/report';
+import {
+  DownloadReportButton,
+  REPORT_NOT_AVAILABLE,
+  ReportDocument,
+  useDiagnosticReport,
+} from '@features/report';
 import { PageShell } from '@/shared/ui/page-shell';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
@@ -14,18 +19,18 @@ import { formatDateTime } from '@/shared/lib/format';
 import { paths } from '@/shared/lib/paths';
 import { RETRY_LATER } from '@/shared/lib/copy';
 
-/** Said when the report does not exist yet, by the diagnostic or by a 409. */
-const NOT_AVAILABLE =
-  'El reporte completo solo está disponible después de completar el análisis profundo.';
-
 /**
  * `/diagnosticos/:id/reporte` — the full report of a diagnostic (RF-16 /
- * HU-23), to review before downloading it.
+ * HU-23), to review before downloading it as a PDF (HU-24).
  *
  * It exists only once the deep analysis is complete: the page asks the
  * diagnostic first (`deepAnalysisCompleted`, derived by the backend) and
  * requests the report only then. A diagnostic without it is told so, with
  * the way back to its results; a 409 from the backend says the same.
+ *
+ * «Descargar reporte (PDF)» is the page's primary action and appears only
+ * with the report loaded: without the deep analysis complete there is no
+ * download option anywhere.
  */
 export default function ReportPage(): JSX.Element {
   const { id: diagnosticId } = useParams<{ id: string }>();
@@ -57,9 +62,14 @@ export default function ReportPage(): JSX.Element {
         description="Todo lo que generó el análisis profundo en un solo documento. Revísalo antes de descargarlo."
       >
         {report.data && (
-          <p className="text-muted-foreground mt-3 text-sm">
-            Análisis profundo completado el {formatDateTime(report.data.completedAt)}
-          </p>
+          <>
+            <p className="text-muted-foreground mt-3 text-sm">
+              Análisis profundo completado el {formatDateTime(report.data.completedAt)}
+            </p>
+            <div className="mt-6">
+              <DownloadReportButton diagnosticId={diagnosticId} />
+            </div>
+          </>
         )}
       </PageHeader>
 
@@ -74,7 +84,7 @@ export default function ReportPage(): JSX.Element {
       )}
 
       {notAvailable && (
-        <Alert tone="info" title={NOT_AVAILABLE}>
+        <Alert tone="info" title={REPORT_NOT_AVAILABLE}>
           Desde los resultados puedes adquirir el análisis profundo o esperar a que termine.
         </Alert>
       )}
