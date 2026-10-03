@@ -21,7 +21,7 @@ How a diagnostic moves through the product: the screens the user goes through, w
               how the route leaves each dimension and each pair against today
            └─ (deep analysis complete) «Ver reporte completo» → /diagnosticos/:id/reporte
               the full report: initiative, six dimensions, gaps and alerts, recommendation, roadmap,
-              KTH attribution
+              KTH attribution; «Descargar reporte (PDF)» saves it as a file
 /panel   the initiative of the latest diagnostic with results; «Continuar diagnóstico» if one is unfinished
 /diagnosticos/:id/iniciativa   correct an already registered initiative profile (not after the deep analysis)
 ```
@@ -60,7 +60,7 @@ STARTED ──InitiativeRegisteredEvent──▶ (WITH_CONSENT ▶) WITH_INITIAT
 | Process | `POST /diagnostics/:id/finalize-initial` | `diagnosis` | — | — |
 | Deep analysis | `POST /diagnostics/:id/deep-analysis` | `diagnosis` | `DeepAnalysisRequestedEvent` | `routing` saves the recommendation, `roadmap` saves the roadmap (asking `routing`'s exported `EvaluatePhaseServiceQuery` for each phase's service); each then publishes its "calculated" event |
 | Results saved | — | `routing`, `roadmap` | `PortfolioRecommendationCalculatedEvent`, `ScalingRoadmapCalculatedEvent` | `diagnosis` → `DEEP_ANALYSIS_COMPLETE` once both arrived |
-| Full report | `GET /diagnostics/:id/report` | `reporting` | — | — (reads the saved results; 409 before `DEEP_ANALYSIS_COMPLETE`, [ADR 0018](./decisions/0018-report-gathered-from-saved-results.md)) |
+| Full report | `GET /diagnostics/:id/report`, `GET /diagnostics/:id/report/pdf` | `reporting` | — | — (reads the saved results; 409 before `DEEP_ANALYSIS_COMPLETE`, [ADR 0018](./decisions/0018-report-gathered-from-saved-results.md)) |
 
 - Every endpoint that names a diagnostic first checks that it exists and belongs to the caller (RNF-04). `diagnosis`, `routing` and `roadmap` answer someone else's diagnostic as missing (404), so its id is not revealed; the initiative endpoints answer 404 for a missing diagnostic or initiative and 403 for someone else's (`initiative`'s `DiagnosticOwnershipPort` and the initiative's owner). The other modules reach the owner through `diagnosis`'s exported `FindDiagnosisOwnerQuery`.
 - `finalize-initial` validates the 48 answers and their optional justifications in the domain before storing anything, then stores them and computes the profile.
