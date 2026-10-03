@@ -1,4 +1,6 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { toast } from 'sonner';
+import userEvent from '@testing-library/user-event';
 import { screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { http as mswHttp, HttpResponse } from 'msw';
@@ -192,5 +194,92 @@ describe('ReportPage — sin el análisis profundo completo', () => {
         'El reporte completo solo está disponible después de completar el análisis profundo.',
       ),
     ).toBeInTheDocument();
+  });
+});
+
+const PDF_NAME = 'reporte-irl-agroconecta-2026-09-08.pdf';
+
+/** The PDF endpoint; `requests.pdf` counts the downloads. */
+function pdfEndpoint(answer: 'ok' | 'not-available') {
+  const requests = { pdf: 0 };
+  server.use(
+    mswHttp.get('*/diagnostics/:id/report/pdf', () => {
+      requests.pdf += 1;
+      return answer === 'not-available'
+        ? problem('REPORT_NOT_AVAILABLE', 409)
+        : new HttpResponse(new Blob(['%PDF-1.7'], { type: 'application/pdf' }), {
+            headers: {
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': `attachment; filename="${PDF_NAME}"`,
+            },
+          });
+    }),
+  );
+  return requests;
+}
+
+describe('ReportPage — descargar el reporte (HU-24)', () => {
+  it('con el análisis profundo completo ofrece descargarlo como PDF', async () => {
+    backend({ completed: true });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole('button', { name: 'Descargar reporte (PDF)' }, { timeout: 5000 }),
+    ).toBeEnabled();
+  });
+
+  it('descarga el archivo con el nombre que sugiere el servidor y lo confirma', async () => {
+    backend({ completed: true });
+    const requests = pdfEndpoint('ok');
+    const createObjectURL = vi.fn(() => 'blob:reporte');
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL, revokeObjectURL }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {
+      // jsdom cannot navigate to a blob: the click is only observed.
+    });
+
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Descargar reporte (PDF)' }, { timeout: 5000 }),
+    );
+
+    await vi.waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith('Reporte descargado.');
+    });
+    expect(requests.pdf).toBe(1);
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const link = click.mock.contexts[0] as HTMLAnchorElement;
+    expect(link.download).toBe(PDF_NAME);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:reporte');
+    click.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('si el servidor responde que aún no está disponible, lo dice', async () => {
+    backend({ completed: true });
+    pdfEndpoint('not-available');
+
+    renderPage();
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Descargar reporte (PDF)' }, { timeout: 5000 }),
+    );
+
+    await vi.waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'El reporte completo solo está disponible después de completar el análisis profundo.',
+      );
+    });
+  });
+
+  it('sin el análisis profundo completo no hay ninguna opción de descarga', async () => {
+    backend({ completed: false });
+
+    renderPage();
+
+    await screen.findByText(
+      'El reporte completo solo está disponible después de completar el análisis profundo.',
+    );
+    expect(screen.queryByRole('button', { name: /Descargar/ })).not.toBeInTheDocument();
   });
 });
