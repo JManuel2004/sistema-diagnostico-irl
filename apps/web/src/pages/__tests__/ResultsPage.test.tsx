@@ -10,7 +10,12 @@ import { clearSession } from '@/shared/auth/session';
 import type { DimensionCode } from '@innlab/contracts';
 import ResultsPage from '../ResultsPage';
 import { renderWithClient } from '@/test/render-with-client';
-import { dimensionResultFixture } from '@/test/fixtures/dimensions';
+import {
+  dimensionResultFixture,
+  globalLevelFixture,
+  levelScaleFixture,
+} from '@/test/fixtures/dimensions';
+import { serviceDetailFixture } from '@/test/fixtures/services';
 import { agroconectaRoadmapFixture } from '@/test/fixtures/roadmap';
 import { initiativeFixture } from '@/test/fixtures/initiative';
 import { questionnaireFixture } from '@/test/fixtures/questionnaire';
@@ -44,6 +49,8 @@ const PROFILE = {
   diagnosticId: ID,
   computedAt: '2026-03-05T15:30:00.000Z',
   globalAverage: 3.5,
+  globalLevel: globalLevelFixture(3.5),
+  levelScale: levelScaleFixture(),
   dimensionResults: CODES.map((c) => dimensionResultFixture(c, LEVELS[c])),
   bottleneck: { dimensions: ['IPRL'], level: 1 },
   strength: { dimensions: ['TRL'], level: 6 },
@@ -64,8 +71,7 @@ const RECOMMENDATION = {
   diagnosticId: ID,
   resultType: 'RECOMMENDATION' as const,
   primary: {
-    idService: 3,
-    name: 'Consultoría Experta',
+    ...serviceDetailFixture(3, 'Consultoría Experta'),
     description: 'Consultoría colaborativa con calidad lista para el mercado.',
     position: 1,
     score: 5.55,
@@ -75,8 +81,7 @@ const RECOMMENDATION = {
   noRecommendationReason: null,
   alternatives: [
     {
-      idService: 2,
-      name: 'Reto Express',
+      ...serviceDetailFixture(2, 'Reto Express'),
       description: null,
       position: 2,
       score: 3.8,
@@ -318,6 +323,26 @@ describe('ResultsPage — sin análisis profundo', () => {
 });
 
 describe('ResultsPage — con análisis profundo', () => {
+  it('muestra la recomendación del portafolio antes del roadmap, también en la barra de secciones', async () => {
+    backend({ accepted: true });
+
+    renderPage();
+
+    await screen.findByRole('heading', { name: 'Consultoría Experta' });
+    const order = ['desequilibrios', 'servicio', 'roadmap'].map((id) =>
+      Array.from(document.querySelectorAll<HTMLElement>('section[id]')).findIndex(
+        (el) => el.id === id,
+      ),
+    );
+    expect(order).toEqual([...order].sort((x, y) => x - y));
+    const bar = screen.getByRole('navigation', { name: 'Secciones del resultado' });
+    expect(
+      within(bar)
+        .getAllByRole('link')
+        .map((l) => l.textContent),
+    ).toEqual(['Perfil', 'Desequilibrios y alertas', 'Servicio INNLAB', 'Roadmap']);
+  });
+
   it('muestra, además del perfil, los pares desequilibrados, el estado crítico, el roadmap y la recomendación', async () => {
     backend({ accepted: true });
 
@@ -498,13 +523,15 @@ describe('ResultsPage — el radar explica cada dimensión en su punta', () => {
     expect(screen.queryByRole('list', { name: 'Leyenda del radar' })).not.toBeInTheDocument();
   });
 
-  it('avisa que se puede pasar el cursor por cada punta para ver qué mide la dimensión', async () => {
+  it('avisa que se puede pasar el cursor por cada punta para leerla', async () => {
     backend({ accepted: false });
 
     renderPage();
 
     expect(
-      await screen.findByText('Pasa el cursor por cada punta para ver qué mide esa dimensión.'),
+      await screen.findByText(
+        'Pasa el cursor por cada punta para ver qué mide esa dimensión y qué significa tu nivel.',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -545,6 +572,40 @@ describe('ResultsPage — la iniciativa como protagonista', () => {
     const level = (await screen.findByText('Nivel IRL global')).closest('div')!;
     expect(level).toHaveTextContent('3,5');
     expect(level).toHaveTextContent('de 9');
+    // 3,5 stands for level 4: the score itself says what it means, in a tooltip.
+    expect(screen.queryByRole('button', { name: 'Nivel 4' })).not.toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.hover(screen.getByRole('button', { name: '3,5 de 9: qué significa' }));
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Qué significa tu nivel. Qué significa el nivel global 4.',
+    );
+  });
+
+  it('el perfil no repite los niveles en una lista: los explica el radar', async () => {
+    backend({ accepted: false });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole('group', { name: 'Perfil IRL — gráfico radar' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Tu nivel en cada dimensión' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('al pasar por una señal, las demás señales y niveles se atenúan', async () => {
+    backend({ accepted: false });
+    const user = userEvent.setup();
+
+    renderPage();
+    const card = await screen.findByRole('group', { name: /Cuello de botella/ });
+    const others = screen.getByRole('group', { name: /Fortaleza clara/ });
+
+    await user.hover(card);
+
+    expect(others).toHaveClass('opacity-40');
+    expect(card).not.toHaveClass('opacity-40');
   });
 
   it('se dirige a la iniciativa por su nombre en la invitación al análisis profundo', async () => {
@@ -661,8 +722,19 @@ describe('ResultsPage — el análisis profundo se entiende sin conocer el siste
     await user.click(screen.getByRole('button', { name: /Cómo se armó este plan/ }));
     await screen.findByText('Se dejó Consultoría Experta como primera opción');
 
-    const deep = ['deep-imbalances', 'deep-roadmap', 'deep-recommendation'].map(
-      (id) => document.getElementById(id)!.closest('section')!.textContent,
+    // The portfolio's own texts are catalog data shown as they are: «Qué
+    // puede lograr» says «TRL 3–5». What must not appear is a code the page
+    // adds on its own.
+    const catalogTexts = [
+      ...agroconectaRoadmapFixture().phases.flatMap((p) => (p.service ? [p.service.scope] : [])),
+      RECOMMENDATION.primary.scope,
+      ...RECOMMENDATION.alternatives.map((a) => a.scope),
+    ];
+    const deep = ['deep-imbalances', 'deep-roadmap', 'deep-recommendation'].map((id) =>
+      catalogTexts.reduce(
+        (text, own) => text.split(own).join(''),
+        document.getElementById(id)!.closest('section')!.textContent ?? '',
+      ),
     );
     for (const text of deep) {
       expect(text).not.toMatch(/[→⇄⇔↔Δ≤≥]/);

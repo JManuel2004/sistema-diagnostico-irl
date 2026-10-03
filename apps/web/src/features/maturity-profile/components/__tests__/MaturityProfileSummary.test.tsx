@@ -258,18 +258,22 @@ describe('Gap card (server-provided gaps)', () => {
   };
 
   it('appears when the server reports at least one gap dimension', () => {
-    render(
-      <MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />,
-    );
+    render(<MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />);
     expect(screen.getByRole('group', { name: /Brecha/i })).toBeInTheDocument();
+  });
+
+  // A gap is negative but not an emergency: the brick red is kept for the
+  // critical state and critical imbalances.
+  it('uses the moderate tone, not the critical red', () => {
+    render(<MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />);
+    const card = screen.getByRole('group', { name: /Brecha/i });
+    expect(card.innerHTML).toContain('text-moderate');
+    expect(card.innerHTML).not.toContain('text-critical');
   });
 
   it('does not appear when the server reports no gaps, even if levels are ≤ 3', () => {
     render(
-      <MaturityProfileSummary
-        dimensionResults={PAYFLOW}
-        gaps={{ dimensions: [], threshold: 3 }}
-      />,
+      <MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ dimensions: [], threshold: 3 }} />,
     );
     expect(screen.queryByRole('group', { name: /Brecha/i })).not.toBeInTheDocument();
   });
@@ -280,17 +284,13 @@ describe('Gap card (server-provided gaps)', () => {
   });
 
   it('lists the Spanish names of gap dimensions from the server list', () => {
-    render(
-      <MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />,
-    );
+    render(<MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />);
     const card = screen.getByRole('group', { name: /Brecha/i });
     expect(within(card).getByText('Propiedad Intelectual')).toBeInTheDocument();
   });
 
   it('states the threshold supplied by the server in words, without symbols', () => {
-    render(
-      <MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />,
-    );
+    render(<MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />);
     expect(screen.getByText('4 dimensiones en nivel 3 o menos')).toBeInTheDocument();
     expect(screen.queryByText(/≤/)).not.toBeInTheDocument();
   });
@@ -302,7 +302,9 @@ describe('Gap card (server-provided gaps)', () => {
 
 describe('what the summary no longer shows (deep analysis only)', () => {
   it('has no imbalance pairs card, whatever the profile', () => {
-    render(<MaturityProfileSummary dimensionResults={EXTREME} gaps={{ dimensions: [], threshold: 3 }} />);
+    render(
+      <MaturityProfileSummary dimensionResults={EXTREME} gaps={{ dimensions: [], threshold: 3 }} />,
+    );
 
     expect(screen.queryByText(/Pares desequilibrados/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/pares/i)).not.toBeInTheDocument();

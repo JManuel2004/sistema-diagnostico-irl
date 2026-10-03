@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { Flag, Lightbulb, ListChecks, LockOpen } from 'lucide-react';
+import { Compass, Flag, Lightbulb, ListChecks, LockOpen } from 'lucide-react';
 import type { RoadmapResponse } from '@innlab/contracts';
 import { DimensionChip } from '@/shared/ui/dimension-chip';
 import { DisclosurePanel } from '@/shared/ui/disclosure-panel';
@@ -13,16 +13,23 @@ interface Props {
  * «Cómo se armó este plan» — the counterpart of the recommendation's
  * explanation, with the same collapsible pattern.
  *
- * Three steps in plain language (what goes in, which target is set, what
- * comes first) and the dimensions left out. What each dimension needs is
+ * Four steps in plain language (what goes in, which target is set, what
+ * comes first, which service each phase proposes) and the dimensions left
+ * out. What each dimension needs is
  * already on its card; here the logic of the whole is explained. Everything
  * comes from the response; the panel calculates nothing.
  */
 export function RoadmapExplanationPanel({ roadmap }: Props): JSX.Element {
   const dimensions = roadmap.phases.flatMap((phase) => phase.dimensions);
-  const dependencies = dimensions.flatMap((d) =>
-    d.enables.map((enabled) => ({ from: d.shortName, to: enabled.shortName })),
-  );
+  // A dimension whose rise spans several phases appears once per phase:
+  // each dependency is told once.
+  const dependencies = [
+    ...new Map(
+      dimensions
+        .flatMap((d) => d.enables.map((enabled) => ({ from: d.shortName, to: enabled.shortName })))
+        .map((dep) => [`${dep.from}-${dep.to}`, dep] as const),
+    ).values(),
+  ];
 
   return (
     <DisclosurePanel id="roadmap-explanation" title="Cómo se armó este plan" icon={Lightbulb}>
@@ -34,8 +41,9 @@ export function RoadmapExplanationPanel({ roadmap }: Props): JSX.Element {
           <div>
             <h3 className="text-foreground text-lg font-bold">1. Qué dimensiones entran</h3>
             <p className="text-muted-foreground mt-1 max-w-prose text-base leading-relaxed">
-              Entran las que están por debajo de lo que se espera de ellas y también las que otra
-              dimensión del plan necesita en un nivel más alto para poder avanzar.
+              Entran las que están por debajo de lo que se espera de ellas, las que otra dimensión
+              del plan necesita en un nivel más alto para poder avanzar y las que, sin subir,
+              quedarían muy lejos de otra con la que deben avanzar a la par.
             </p>
           </div>
         </li>
@@ -50,7 +58,8 @@ export function RoadmapExplanationPanel({ roadmap }: Props): JSX.Element {
             </h3>
             <p className="text-muted-foreground mt-1 max-w-prose text-base leading-relaxed">
               La meta es el nivel que se espera de la dimensión o, si es mayor, el que le exige la
-              dimensión que depende de ella.
+              dimensión que depende de ella o el que la deja a un nivel de su pareja. Así, al
+              terminar la ruta no queda ningún desequilibrio que genere alerta.
             </p>
           </div>
         </li>
@@ -63,7 +72,8 @@ export function RoadmapExplanationPanel({ roadmap }: Props): JSX.Element {
             <h3 className="text-foreground text-lg font-bold">3. Qué va primero</h3>
             <p className="text-muted-foreground mt-1 max-w-prose text-base leading-relaxed">
               Una dimensión espera a la fase siguiente cuando otra del plan tiene que llegar antes a
-              su meta.
+              su meta. Además, una fase sube cada dimensión solo unos pocos niveles: una subida
+              grande se reparte en varias fases.
             </p>
             {dependencies.length > 0 && (
               <ul className="mt-3 flex flex-col gap-2">
@@ -74,6 +84,20 @@ export function RoadmapExplanationPanel({ roadmap }: Props): JSX.Element {
                 ))}
               </ul>
             )}
+          </div>
+        </li>
+        <li className="flex gap-4">
+          <span className="bg-azul-icesi text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full">
+            <Compass className="size-5" aria-hidden="true" />
+          </span>
+          <div>
+            <h3 className="text-foreground text-lg font-bold">4. Qué servicio propone cada fase</h3>
+            <p className="text-muted-foreground mt-1 max-w-prose text-base leading-relaxed">
+              La primera fase empieza con el servicio que te recomendamos. Cada fase siguiente
+              propone el servicio del portafolio que mejor trabaja sus dimensiones, sin repetir uno
+              ya propuesto y sin volver a uno más liviano: la ruta va de lo más liviano a lo más
+              profundo.
+            </p>
           </div>
         </li>
       </ol>
@@ -89,7 +113,8 @@ export function RoadmapExplanationPanel({ roadmap }: Props): JSX.Element {
           <p className="text-muted-foreground mt-3 max-w-prose text-base leading-relaxed">
             {listNames(roadmap.dimensionsWithoutIntervention.map((d) => d.shortName))}{' '}
             {roadmap.dimensionsWithoutIntervention.length === 1 ? 'alcanza' : 'alcanzan'} el nivel
-            esperado y ninguna dimensión del plan las necesita en un nivel más alto.
+            esperado, ninguna dimensión del plan las necesita en un nivel más alto y no quedan lejos
+            de las demás.
           </p>
         </div>
       )}

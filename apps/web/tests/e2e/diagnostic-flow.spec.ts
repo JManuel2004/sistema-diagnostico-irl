@@ -9,7 +9,11 @@ import {
   initiativeFixture,
   initiativeSummaryFixture,
 } from '../../src/test/fixtures/initiative';
-import { dimensionResultFixture } from '../../src/test/fixtures/dimensions';
+import {
+  dimensionResultFixture,
+  globalLevelFixture,
+  levelScaleFixture,
+} from '../../src/test/fixtures/dimensions';
 import { ME_CONTEXT } from '../../src/test/fixtures/me-context';
 
 /**
@@ -32,6 +36,8 @@ const PROFILE: MaturityProfileResponse = {
     dimensionResultFixture('FRL', 2),
   ],
   globalAverage: 3.5,
+  globalLevel: globalLevelFixture(3.5),
+  levelScale: levelScaleFixture(),
   bottleneck: { dimensions: ['IPRL'], level: 1 },
   strength: { dimensions: ['TRL'], level: 6 },
   asymmetry: { difference: 5, classification: 'critical' },
@@ -139,7 +145,15 @@ test('from the landing to the results through the four wizard steps', async ({ p
   await page.goto('/');
   await page.getByRole('link', { name: 'Iniciar diagnóstico' }).first().click();
 
-  // Step 1 — the initiative: kept in the browser until the consent.
+  // Step 1 — the consent: accepted before any initiative data is asked for.
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Consentimiento para el tratamiento de datos' }),
+  ).toBeVisible();
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Aceptar y continuar' }).click();
+  expect(calls).toEqual(['start']);
+
+  // Step 2 — the initiative: continuing creates it with the acceptance, then records its profile.
   await expect(
     page.getByRole('heading', { level: 1, name: 'Cuéntanos de tu iniciativa' }),
   ).toBeVisible();
@@ -154,14 +168,6 @@ test('from the landing to the results through the four wizard steps', async ({ p
   await page.getByLabel('Mercado objetivo').fill('Productores de café');
   await page.getByLabel('Financiamiento actual').fill('Ahorros propios');
   await page.getByRole('button', { name: 'Continuar' }).click();
-  expect(calls).toEqual(['start']);
-
-  // Step 2 — the consent: accepting creates the initiative with it, then records its profile.
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Consentimiento para el tratamiento de datos' }),
-  ).toBeVisible();
-  await page.getByRole('checkbox').check();
-  await page.getByRole('button', { name: 'Aceptar y continuar' }).click();
   await expect(page.getByText('Consentimiento registrado.')).toBeVisible();
 
   // Step 3 — the questionnaire: 48 answers, each with its justification.

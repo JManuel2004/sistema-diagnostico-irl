@@ -83,7 +83,7 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
 
           {trace.adjustedByException && (
             <Alert
-              tone="moderate"
+              tone="info"
               title="Esta recomendación proviene de un ajuste puntual del centro, no del resultado del cálculo."
             />
           )}
@@ -142,7 +142,7 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
                         className="flex items-start gap-2.5 text-base leading-relaxed"
                       >
                         <SlidersHorizontal
-                          className="text-moderate mt-1 size-4 shrink-0"
+                          className="text-azul-icesi mt-1 size-4 shrink-0"
                           aria-hidden="true"
                         />
                         <div className="flex flex-col gap-1">
@@ -290,7 +290,7 @@ function ServiceRow({
           </span>
         )}
         {adjusted && (
-          <span className="border-moderate text-moderate border px-2 py-1 text-sm font-bold">
+          <span className="border-azul-icesi text-azul-icesi border px-2 py-1 text-sm font-bold">
             {entry.includedBy ? 'Lo incluyó el centro' : 'Lo movió un ajuste'}
           </span>
         )}
@@ -347,9 +347,10 @@ function Reasons({
  */
 function ReasonLabel({ reason }: { readonly reason: Reason }): JSX.Element {
   const Icon = reason.icon;
-  const className = `border-border bg-surface-muted inline-flex items-center gap-2 border px-2.5 py-1.5 text-base font-semibold ${
-    reason.tone === 'moderate' ? 'text-moderate' : 'text-foreground'
-  }`;
+  // Every reason is neutral: none of them is a problem of the initiative,
+  // so none borrows the warning hues.
+  const className =
+    'border-border bg-surface-muted text-foreground inline-flex items-center gap-2 border px-2.5 py-1.5 text-base font-semibold';
 
   if (reason.detail === undefined) {
     return (
@@ -376,7 +377,6 @@ interface Reason {
   readonly label: string;
   /** What is behind the count: the dimensions or the pairs, by name. */
   readonly detail?: string;
-  readonly tone?: 'moderate';
 }
 
 /** «Negocio, Propiedad Intelectual y Financiación». */
@@ -446,7 +446,6 @@ function contributionReasons(
       icon: TriangleAlert,
       label: 'Pesa menos por su nivel',
       detail: 'Suele usarse con iniciativas de otro nivel de madurez, por eso pesa menos.',
-      tone: 'moderate',
     });
   }
 

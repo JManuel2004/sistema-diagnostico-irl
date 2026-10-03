@@ -111,6 +111,7 @@ export default function ResultsPage(): JSX.Element {
           sectorName={initiative.data?.sector.name}
           stageName={initiative.data?.stage.name}
           globalAverage={profile.data.globalAverage}
+          globalLevel={profile.data.globalLevel}
           dimensionResults={profile.data.dimensionResults}
           strength={profile.data.strength}
           bottleneck={profile.data.bottleneck}
@@ -211,8 +212,8 @@ export default function ResultsPage(): JSX.Element {
 const RESULT_SECTIONS: readonly { id: string; label: string; icon: LucideIcon }[] = [
   { id: 'perfil', label: 'Perfil', icon: Layers },
   { id: 'desequilibrios', label: 'Desequilibrios y alertas', icon: Scale },
-  { id: 'roadmap', label: 'Roadmap', icon: Route },
   { id: 'servicio', label: 'Servicio INNLAB', icon: Compass },
+  { id: 'roadmap', label: 'Roadmap', icon: Route },
 ];
 
 const RESULT_SECTION_IDS = RESULT_SECTIONS.map((section) => section.id);
@@ -296,15 +297,19 @@ function DeepAnalysis({
   const dimensionNames = Object.fromEntries(
     profile.dimensionResults.map((r) => [r.dimensionCode, r.shortName]),
   );
-  // The goal and phase of each dimension in the plan, so the alerts can say what to do next.
-  const plan = Object.fromEntries(
-    (roadmap.data?.phases ?? []).flatMap((phase) =>
-      phase.dimensions.map((d) => [
-        d.dimensionCode,
-        { targetLevel: d.targetLevel, phase: phase.order },
-      ]),
-    ),
-  );
+  // The final goal of each dimension in the plan and the phase where its
+  // work starts, so the alerts can say what to do next. A rise may span
+  // several phases: the first one it appears in is where it starts.
+  const plan: Record<string, { targetLevel: number; phase: number }> = {};
+  for (const phase of roadmap.data?.phases ?? []) {
+    for (const d of phase.dimensions) {
+      plan[d.dimensionCode] ??= { targetLevel: d.finalTargetLevel, phase: phase.order };
+    }
+  }
+
+  // Retrying recalculates both results at once: one wait for the whole
+  // analysis, not one per missing result.
+  if (retrying) return <DeepAnalysisProcessing />;
 
   return (
     <div className="flex flex-col gap-16 sm:gap-24">
@@ -325,35 +330,6 @@ function DeepAnalysis({
         />
       </section>
 
-      <section id="roadmap" aria-labelledby="deep-roadmap" className="scroll-mt-40">
-        <SectionHeader
-          id="deep-roadmap"
-          overline="Roadmap de escalamiento"
-          icon={Route}
-          title={`El plan de escalamiento de ${who}`}
-          description="Las dimensiones que todavía tienen que avanzar, ordenadas según qué habilita qué: cada fase reúne lo que puede trabajarse a la vez y espera a que la anterior esté resuelta."
-        >
-          {roadmap.data && <ResultMeta savedAt={roadmap.data.generatedAt} />}
-        </SectionHeader>
-        {roadmap.isPending && <LoadingState label="Cargando roadmap…" />}
-        {roadmapMissing && (
-          <MissingResult what="el roadmap" onRetry={onRetry} retrying={retrying} />
-        )}
-        {roadmap.isError && !roadmapMissing && (
-          <Alert tone="critical" title="No fue posible construir el roadmap">
-            {isApiErrorWithCode(roadmap.error, 'ROADMAP_GRAPH_HAS_CYCLE')
-              ? 'El grafo de dependencias entre dimensiones está mal configurado. Contacta al equipo de INNLAB.'
-              : RETRY_LATER}
-          </Alert>
-        )}
-        {roadmap.data && (
-          <>
-            <RoadmapPhaseList roadmap={roadmap.data} />
-            {roadmap.data.phases.length > 0 && <RoadmapExplanationPanel roadmap={roadmap.data} />}
-          </>
-        )}
-      </section>
-
       <section id="servicio" aria-labelledby="deep-recommendation" className="scroll-mt-40">
         <SectionHeader
           id="deep-recommendation"
@@ -365,9 +341,7 @@ function DeepAnalysis({
           {recommendation.data && <ResultMeta savedAt={recommendation.data.generatedAt} />}
         </SectionHeader>
         {recommendation.isPending && <LoadingState label="Cargando recomendación…" />}
-        {recommendationMissing && (
-          <MissingResult what="la recomendación" onRetry={onRetry} retrying={retrying} />
-        )}
+        {recommendationMissing && <MissingResult what="la recomendación" onRetry={onRetry} />}
         {recommendation.isError && !recommendationMissing && (
           <Alert tone="critical" title="No fue posible obtener la recomendación">
             {isApiErrorWithCode(recommendation.error, 'ROUTING_CONFIGURATION_MISSING')
@@ -387,16 +361,62 @@ function DeepAnalysis({
           </>
         )}
       </section>
+
+      <section id="roadmap" aria-labelledby="deep-roadmap" className="scroll-mt-40">
+        <SectionHeader
+          id="deep-roadmap"
+          overline="Roadmap de escalamiento"
+          icon={Route}
+          title={`El plan de escalamiento de ${who}`}
+          description="Las dimensiones que todavía tienen que avanzar, ordenadas según qué habilita qué, y el servicio de INNLAB que podrías contratar en cada fase: de lo más liviano a lo más profundo, hasta dejar tus dimensiones parejas."
+        >
+          {roadmap.data && <ResultMeta savedAt={roadmap.data.generatedAt} />}
+        </SectionHeader>
+        {roadmap.isPending && <LoadingState label="Cargando roadmap…" />}
+        {roadmapMissing && <MissingResult what="el roadmap" onRetry={onRetry} />}
+        {roadmap.isError && !roadmapMissing && (
+          <Alert tone="critical" title="No fue posible construir el roadmap">
+            {isApiErrorWithCode(roadmap.error, 'ROADMAP_GRAPH_HAS_CYCLE')
+              ? 'El grafo de dependencias entre dimensiones está mal configurado. Contacta al equipo de INNLAB.'
+              : RETRY_LATER}
+          </Alert>
+        )}
+        {roadmap.data && (
+          <>
+            <RoadmapPhaseList
+              roadmap={roadmap.data}
+              profile={profile}
+              levelScale={profile.levelScale}
+              dimensionNames={dimensionNames}
+              subject={subject}
+            />
+            {roadmap.data.phases.length > 0 && <RoadmapExplanationPanel roadmap={roadmap.data} />}
+          </>
+        )}
+      </section>
     </div>
   );
 }
+
+/**
+ * The deep analysis while it is calculated: the same steps the backend
+ * runs, from the recommendation to the plan by phases.
+ */
+const DEEP_ANALYSIS_STEPS = [
+  'Revisamos qué servicios de INNLAB no aplican a tu iniciativa',
+  'Medimos la afinidad de cada servicio con tu perfil',
+  'Aplicamos los criterios del centro y elegimos tu servicio',
+  'Ordenamos las dimensiones según qué habilita qué',
+  'Asignamos a cada fase del plan un servicio que la atienda',
+] as const;
 
 function DeepAnalysisProcessing(): JSX.Element {
   return (
     <ProcessingState
       overline="Análisis profundo"
       title="Estamos preparando tu análisis"
-      description="Estamos cruzando tus seis áreas para recomendarte un servicio de INNLAB y un plan de fortalecimiento."
+      description="Cruzamos tus seis dimensiones para recomendarte un servicio de INNLAB y un plan de fortalecimiento."
+      steps={DEEP_ANALYSIS_STEPS}
     />
   );
 }
@@ -404,15 +424,11 @@ function DeepAnalysisProcessing(): JSX.Element {
 function MissingResult({
   what,
   onRetry,
-  retrying,
 }: {
   readonly what: string;
   readonly onRetry: () => void;
-  readonly retrying: boolean;
 }): JSX.Element {
-  return retrying ? (
-    <DeepAnalysisProcessing />
-  ) : (
+  return (
     <>
       <Alert
         tone="critical"

@@ -6,7 +6,11 @@ import type {
   ImbalancePairResult,
   MaturityProfileResponse,
 } from '@innlab/contracts';
-import { dimensionResultFixture } from '@/test/fixtures/dimensions';
+import {
+  dimensionResultFixture,
+  globalLevelFixture,
+  levelScaleFixture,
+} from '@/test/fixtures/dimensions';
 import { ImbalanceInsights } from '../ImbalanceInsights';
 
 const CODES: DimensionCode[] = ['TRL', 'CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'];
@@ -29,6 +33,8 @@ function profile(over: Partial<MaturityProfileResponse> = {}): MaturityProfileRe
     computedAt: '2026-01-01T00:00:00.000Z',
     dimensionResults: CODES.map((c) => dimensionResultFixture(c, LEVELS[c])),
     globalAverage: 4.8,
+    globalLevel: globalLevelFixture(4.8),
+    levelScale: levelScaleFixture(),
     bottleneck: { dimensions: ['IPRL', 'FRL'], level: 3 },
     strength: { dimensions: ['TRL'], level: 8 },
     asymmetry: { difference: 5, classification: 'critical' },
@@ -79,8 +85,12 @@ describe('ImbalanceInsights — pairs', () => {
     render(<ImbalanceInsights profile={profile()} />);
 
     const card = screen.getByRole('article', { name: /Tecnología y Negocio/ });
-    expect(within(card).getByText('Tecnología va 4 niveles por delante de Negocio.')).toBeInTheDocument();
-    expect(within(card).getByText(/Conviene atender Negocio antes de seguir avanzando en Tecnología/)).toBeInTheDocument();
+    expect(
+      within(card).getByText('Tecnología va 4 niveles por delante de Negocio.'),
+    ).toBeInTheDocument();
+    expect(
+      within(card).getByText(/Conviene atender Negocio antes de seguir avanzando en Tecnología/),
+    ).toBeInTheDocument();
     expect(within(card).getByText('Desequilibrio crítico')).toBeInTheDocument();
   });
 
@@ -195,15 +205,12 @@ describe('ImbalanceInsights — critical state (RF-13)', () => {
   });
 
   it('says the next step from the plan when the roadmap already has the dimension', () => {
-    render(
-      <ImbalanceInsights
-        profile={critical()}
-        plan={{ BRL: { targetLevel: 6, phase: 2 } }}
-      />,
-    );
+    render(<ImbalanceInsights profile={critical()} plan={{ BRL: { targetLevel: 6, phase: 2 } }} />);
 
     const card = screen.getByRole('article', { name: 'Negocio está en estado crítico' });
-    expect(card).toHaveTextContent('Siguiente paso: Subir del nivel 4 al nivel 6, en la fase 2 del plan.');
+    expect(card).toHaveTextContent(
+      'Siguiente paso: Subir del nivel 4 al nivel 6, desde la fase 2 del plan.',
+    );
   });
 
   it('still says what to do when the plan is not there yet', () => {
@@ -218,9 +225,9 @@ describe('ImbalanceInsights — critical state (RF-13)', () => {
 
     const heading = screen.getByRole('heading', { name: /Otras dimensiones en la parte baja/ });
     expect(heading).toHaveTextContent('Prioridad media');
-    const rows = within(alertsSection()).getAllByRole('listitem').filter((li) =>
-      /Propiedad Intelectual|Financiación/.test(li.textContent ?? ''),
-    );
+    const rows = within(alertsSection())
+      .getAllByRole('listitem')
+      .filter((li) => /Propiedad Intelectual|Financiación/.test(li.textContent ?? ''));
     expect(rows.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -242,7 +249,9 @@ describe('ImbalanceInsights — critical state (RF-13)', () => {
     );
 
     expect(screen.queryByText('Prioridad máxima')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Otras dimensiones en la parte baja/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /Otras dimensiones en la parte baja/ }),
+    ).toBeInTheDocument();
   });
 
   it('explains the threshold in words, without symbols', () => {
@@ -256,7 +265,9 @@ describe('ImbalanceInsights — critical state (RF-13)', () => {
   it('addresses the initiative by name', () => {
     render(<ImbalanceInsights profile={critical()} subject="AgroConecta" />);
 
-    expect(screen.getByRole('heading', { name: 'Qué atender primero en AgroConecta' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Qué atender primero en AgroConecta' }),
+    ).toBeInTheDocument();
   });
 
   it('explains "críticas" in plain words', async () => {

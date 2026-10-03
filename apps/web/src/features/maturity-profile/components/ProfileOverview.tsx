@@ -15,6 +15,12 @@ import { MaturityProfileSummary } from './MaturityProfileSummary';
  * tooltip, what it measures (`descriptions`, from the catalog). There is no
  * separate legend: the color and the name are on the point.
  *
+ * The radar names each point by its code (TRL, TmRL…) to stay light; its
+ * tooltip gives the dimension's name, what it measures and what the level
+ * means, so a score is never left without its explanation. The cards
+ * follow the highlight too: the ones it does not point at fade, as the
+ * radar points do.
+ *
  * The imbalanced pairs are only drawn on the radar when the deep analysis
  * was accepted (`showImbalances`): before that they are part of what is
  * not shown yet.
@@ -48,7 +54,7 @@ export function ProfileOverview({
           </h2>
           <p className="text-muted-foreground mt-2 flex items-center gap-2 text-base">
             <MousePointerClick className="text-azul-icesi size-5 shrink-0" aria-hidden="true" />
-            Pasa el cursor por cada punta para ver qué mide esa dimensión.
+            Pasa el cursor por cada punta para ver qué mide esa dimensión y qué significa tu nivel.
           </p>
         </div>
       </div>
@@ -70,6 +76,7 @@ export function ProfileOverview({
           strength={profile.strength}
           asymmetry={profile.asymmetry}
           gaps={profile.gaps}
+          highlighted={highlight.highlighted}
           onHighlight={highlight.setHovered}
         />
       </div>

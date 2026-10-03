@@ -11,6 +11,7 @@ import type {
 import { Card, CardContent } from '@/shared/ui/card';
 import { GlossaryTerm } from '@/shared/ui/glossary-term';
 import { DimensionChip } from '@/shared/ui/dimension-chip';
+import { cn } from '@/shared/lib/utils';
 import type { GlossaryKey } from '@/shared/lib/glossary';
 
 /**
@@ -38,9 +39,14 @@ interface SummaryCardProps {
   title: string;
   /** Dimensions this card points at: they are highlighted in the radar. */
   codes: readonly DimensionCode[];
+  /** Dimensions highlighted right now: the card that points at them stands out, the rest fade. */
+  highlighted?: readonly DimensionCode[];
   onHighlight?: HighlightHandler;
   children?: ReactNode;
 }
+
+const sameCodes = (a: readonly DimensionCode[], b: readonly DimensionCode[]): boolean =>
+  a.length === b.length && a.every((code) => b.includes(code));
 
 export function SummaryCard({
   icon: Icon,
@@ -49,10 +55,13 @@ export function SummaryCard({
   glossary,
   title,
   codes,
+  highlighted = [],
   onHighlight,
   children,
 }: SummaryCardProps): JSX.Element {
   const color = TONE_COLOR[tone];
+  const active = highlighted.length > 0 && sameCodes(codes, highlighted);
+  const faded = highlighted.length > 0 && !active;
   const highlight = onHighlight
     ? {
         tabIndex: 0,
@@ -74,7 +83,11 @@ export function SummaryCard({
     <Card
       role="group"
       aria-label={`${eyebrow}: ${title}`}
-      className="border-border bg-card"
+      className={cn(
+        'border-border bg-card transition-[opacity,box-shadow,border-color]',
+        active && 'border-azul-icesi ring-azul-icesi ring-1',
+        faded && 'opacity-40',
+      )}
       {...highlight}
     >
       <CardContent className="flex gap-4 p-4 sm:p-5">
@@ -101,6 +114,8 @@ interface MaturityProfileSummaryProps {
   strength?: Bottleneck;
   asymmetry?: Asymmetry;
   gaps?: Gaps;
+  /** Dimensions highlighted right now, by a card, a level or the radar itself. */
+  highlighted?: readonly DimensionCode[];
   /** Highlights in the radar the dimensions of the card under the cursor. */
   onHighlight?: HighlightHandler;
 }
@@ -122,6 +137,7 @@ export function MaturityProfileSummary({
   strength,
   asymmetry,
   gaps,
+  highlighted,
   onHighlight,
 }: MaturityProfileSummaryProps): JSX.Element {
   // The names come from the response itself (the six results carry them), not
@@ -163,6 +179,7 @@ export function MaturityProfileSummary({
           eyebrow="Fortaleza clara"
           glossary="strength"
           codes={strength.dimensions}
+          highlighted={highlighted}
           onHighlight={onHighlight}
           title={
             strengthNames.length === 1
@@ -185,6 +202,7 @@ export function MaturityProfileSummary({
           eyebrow="Cuello de botella"
           glossary="bottleneck"
           codes={bottleneck.dimensions}
+          highlighted={highlighted}
           onHighlight={onHighlight}
           title={
             bottleneck.dimensions.length === 1
@@ -208,6 +226,7 @@ export function MaturityProfileSummary({
           glossary="asymmetry"
           // The asymmetry is between the highest and the lowest dimension.
           codes={[...(strength?.dimensions ?? []), ...(bottleneck?.dimensions ?? [])]}
+          highlighted={highlighted}
           onHighlight={onHighlight}
           title={`${String(asymmetry.difference)} ${asymmetry.difference === 1 ? 'nivel' : 'niveles'} entre la dimensión más alta y la más baja`}
         >
@@ -218,10 +237,11 @@ export function MaturityProfileSummary({
       {gapNames.length > 0 && gapThreshold !== undefined && (
         <SummaryCard
           icon={TrendingDown}
-          tone="critical"
+          tone="moderate"
           eyebrow="Brecha"
           glossary="gap"
           codes={gaps?.dimensions ?? []}
+          highlighted={highlighted}
           onHighlight={onHighlight}
           title={`${String(gapNames.length)} ${gapNames.length === 1 ? 'dimensión en nivel' : 'dimensiones en nivel'} ${String(gapThreshold)} o menos`}
         >

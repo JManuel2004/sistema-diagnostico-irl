@@ -4,6 +4,8 @@ export interface RadarPoint {
   dimension: string;
   code: string;
   level: number;
+  /** What the level means for the dimension, from the profile response. */
+  readonly levelDescription?: string | null;
 }
 
 export function buildImbalancedVertices(

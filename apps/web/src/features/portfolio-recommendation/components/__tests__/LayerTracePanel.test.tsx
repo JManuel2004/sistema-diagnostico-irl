@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { LayerTraceResponse } from '@innlab/contracts';
 import { LayerTracePanel } from '../LayerTracePanel';
 import { RecommendationSummary } from '../RecommendationSummary';
+import { serviceDetailFixture } from '@/test/fixtures/services';
 
 const NAMES = {
   TRL: 'Tecnología',
@@ -457,6 +458,16 @@ describe('LayerTracePanel', () => {
     expect(screen.queryByText(/Evaluado el/)).not.toBeInTheDocument();
   });
 
+  // An adjustment of the center is a deliberate decision, not a problem: it
+  // is told in Azul Icesi, never with the warning hues.
+  it('los ajustes del centro no usan colores de advertencia', async () => {
+    const panel = await openPanel(
+      trace({ adjustedByException: true, rankingAfterExceptions: RANKING_AFTER }),
+    );
+
+    expect(panel.innerHTML).not.toMatch(/(text|border|bg)-(moderate|critical)/);
+  });
+
   it('no usa símbolos de código: ni flechas, ni puntos medios, ni siglas', async () => {
     const panel = await openPanel();
     // Some official service names carry a middle dot («Célula de Grado ·
@@ -486,8 +497,7 @@ describe('RecommendationSummary', () => {
     ...base,
     resultType: 'RECOMMENDATION' as const,
     primary: {
-      idService: 3,
-      name: 'Consultoría Experta',
+      ...serviceDetailFixture(3, 'Consultoría Experta'),
       description: 'Consultoría colaborativa con calidad lista para el mercado.',
       position: 1,
       score: 5.55,
@@ -497,8 +507,7 @@ describe('RecommendationSummary', () => {
     noRecommendationReason: null,
     alternatives: [
       {
-        idService: 2,
-        name: 'Reto Express',
+        ...serviceDetailFixture(2, 'Reto Express'),
         description: null,
         position: 2,
         score: 3.8,
@@ -553,8 +562,7 @@ describe('RecommendationSummary', () => {
         recommendation={{
           ...recommendation,
           primary: {
-            idService: 2,
-            name: 'Reto Express',
+            ...serviceDetailFixture(2, 'Reto Express'),
             description: null,
             position: 1,
             score: 3.3,
@@ -562,8 +570,7 @@ describe('RecommendationSummary', () => {
           },
           alternatives: [
             {
-              idService: 3,
-              name: 'Academia a la Medida',
+              ...serviceDetailFixture(3, 'Academia a la Medida'),
               description: null,
               position: 2,
               score: null,
@@ -605,6 +612,68 @@ describe('RecommendationSummary', () => {
     );
 
     expect(screen.queryByRole('heading', { name: '¿De qué se trata?' })).not.toBeInTheDocument();
+  });
+
+  it('muestra la ficha del servicio: subtítulo, nivel, banda y qué puede lograr', () => {
+    render(<RecommendationSummary recommendation={recommendation} />);
+
+    expect(screen.getByText('Consultoría colaborativa')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Nivel: Alíate' })[0]).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'IRL global 7 a 9' })).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: 'Qué puede lograr' })[0]).toBeInTheDocument();
+    expect(
+      screen.getByText('Desarrollo profesional listo para el mercado (TRL 7–9).'),
+    ).toBeInTheDocument();
+  });
+
+  it('explica la banda del servicio al pasar el cursor por su chip', async () => {
+    const user = userEvent.setup();
+    render(<RecommendationSummary recommendation={recommendation} />);
+
+    await user.hover(screen.getByRole('button', { name: 'IRL global 7 a 9' }));
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Para iniciativas con nivel IRL global entre 7 y 9.',
+    );
+  });
+
+  it('explica el nivel del servicio con lo que el portafolio dice de él', async () => {
+    const user = userEvent.setup();
+    render(<RecommendationSummary recommendation={recommendation} />);
+
+    await user.hover(screen.getAllByRole('button', { name: 'Nivel: Alíate' })[0]);
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Nivel Alíate: Vivamos juntos la innovación. Relaciones de largo plazo.',
+    );
+  });
+
+  it('cada alternativa trae su subtítulo y su ficha detrás de «Ver ficha»', () => {
+    render(<RecommendationSummary recommendation={recommendation} />);
+
+    expect(screen.getByText('Hackatón · Design Sprint · Challenge')).toBeInTheDocument();
+    const summary = screen.getByText('Ver ficha');
+    const details = summary.closest('details')!;
+    expect(details).toHaveTextContent('IRL global 3 a 5');
+    expect(details).toHaveTextContent('Banco de ideas, conceptos y prototipos tempranos');
+  });
+
+  it('un servicio sin banda en el portafolio sirve a cualquier nivel', () => {
+    render(
+      <RecommendationSummary
+        recommendation={{
+          ...recommendation,
+          primary: {
+            ...serviceDetailFixture(3, 'Academia a la Medida'),
+            position: 1,
+            score: null,
+            adjustmentReason: 'x',
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Cualquier nivel IRL' })).toBeInTheDocument();
   });
 
   it('sin flujo de solicitud, la acción se muestra deshabilitada y anunciada como próxima', () => {

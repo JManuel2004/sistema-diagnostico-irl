@@ -1,10 +1,11 @@
 import type { JSX } from 'react';
-import { Compass, Send, Sparkles } from 'lucide-react';
+import { ChevronDown, Compass, Send, Sparkles } from 'lucide-react';
 import type { RecommendationResponse } from '@innlab/contracts';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
 import { FALLBACK_SUBJECT } from '@/shared/lib/copy';
+import { ServiceDetails } from '@/shared/ui/service-details';
 
 interface Props {
   readonly recommendation: RecommendationResponse;
@@ -28,8 +29,11 @@ interface Props {
  * An alternative an adjustment of the center put into the ranking says so,
  * with the reason of the adjustment: it did not come from the calculation.
  *
- * The recommended service carries its catalog description, and an action to
- * request it from INNLAB, prepared for a request flow still to be defined.
+ * Every service carries its card from the catalog (`ServiceDetails`): what
+ * it is, what it can achieve and which initiatives it suits. The
+ * recommended one shows it whole; each alternative keeps it behind «Ver
+ * ficha». The recommended one also has an action to request it from
+ * INNLAB, prepared for a request flow still to be defined.
  */
 export function RecommendationSummary({
   recommendation,
@@ -80,15 +84,17 @@ export function RecommendationSummary({
               >
                 {primary?.name}
               </h2>
+              {primary && (
+                <p className="text-muted-foreground mt-1 text-base font-medium">
+                  {primary.subtitle}
+                </p>
+              )}
             </div>
           </div>
 
-          {primary?.description && (
+          {primary && (
             <div className="mt-5">
-              <h3 className="text-foreground text-lg font-bold">¿De qué se trata?</h3>
-              <p className="text-muted-foreground mt-2 max-w-prose text-lg leading-relaxed">
-                {primary.description}
-              </p>
+              <ServiceDetails service={primary} />
             </div>
           )}
 
@@ -118,19 +124,31 @@ export function RecommendationSummary({
           {recommendation.alternatives.length > 0 && (
             <div className="border-border mt-6 border-t pt-5">
               <h3 className="text-foreground text-lg font-bold">También podrían encajar</h3>
-              <ul className="mt-3 flex flex-wrap gap-3">
+              <ul className="mt-3 flex flex-col gap-3">
                 {recommendation.alternatives.map((alt) => (
                   <li
                     key={alt.idService}
-                    className="border-border bg-background text-foreground flex items-center gap-2 rounded-lg border px-4 py-2.5 text-base font-semibold"
+                    className="border-border bg-background rounded-lg border px-4 py-3"
                   >
-                    <span
-                      className="bg-azul-icesi/15 text-azul-icesi inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold"
-                      aria-hidden="true"
-                    >
-                      {alt.position}
-                    </span>
-                    {alt.name}
+                    <p className="text-foreground flex items-center gap-2 text-base font-semibold">
+                      <span
+                        className="bg-azul-icesi/15 text-azul-icesi inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold"
+                        aria-hidden="true"
+                      >
+                        {alt.position}
+                      </span>
+                      {alt.name}
+                    </p>
+                    <p className="text-muted-foreground mt-0.5 pl-9 text-base">{alt.subtitle}</p>
+                    <details className="mt-2 pl-9">
+                      <summary className="text-azul-icesi inline-flex cursor-pointer items-center gap-1 text-base font-semibold">
+                        Ver ficha
+                        <ChevronDown className="size-4" aria-hidden="true" />
+                      </summary>
+                      <div className="mt-3">
+                        <ServiceDetails service={alt} />
+                      </div>
+                    </details>
                   </li>
                 ))}
               </ul>

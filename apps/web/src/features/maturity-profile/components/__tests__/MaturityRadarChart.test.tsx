@@ -13,6 +13,7 @@ function dr(code: DimensionResult['dimensionCode'], level: number): DimensionRes
     shortName: `Corto ${code}`,
     averageLikert: level,
     irlLevel: level,
+    levelDescription: `Qué significa el nivel ${String(level)} en ${code}.`,
   };
 }
 
@@ -29,7 +30,10 @@ const ALL_SIX: readonly DimensionResult[] = [
 
 describe('buildImbalancedVertices', () => {
   function pointsMap(levels: Record<string, number>) {
-    const map = new Map<string, { dimension: string; code: string; level: number; averageLikert: number }>();
+    const map = new Map<
+      string,
+      { dimension: string; code: string; level: number; averageLikert: number }
+    >();
     for (const [code, level] of Object.entries(levels)) {
       map.set(code, { dimension: code, code, level, averageLikert: level });
     }
@@ -42,7 +46,12 @@ describe('buildImbalancedVertices', () => {
     difference: number,
     classification: ImbalancePairResult['classification'],
   ): ImbalancePairResult {
-    return { left: left as ImbalancePairResult['left'], right: right as ImbalancePairResult['right'], difference, classification };
+    return {
+      left: left as ImbalancePairResult['left'],
+      right: right as ImbalancePairResult['right'],
+      difference,
+      classification,
+    };
   }
 
   it('returns empty map when no imbalances supplied', () => {
@@ -78,10 +87,7 @@ describe('buildImbalancedVertices', () => {
 
   it('escalates from moderate to critical when a dimension appears in multiple flagged pairs', () => {
     const map = buildImbalancedVertices(
-      [
-        imbalance('TRL', 'CRL', 2, 'moderate'),
-        imbalance('TRL', 'BRL', 5, 'critical'),
-      ],
+      [imbalance('TRL', 'CRL', 2, 'moderate'), imbalance('TRL', 'BRL', 5, 'critical')],
       pointsMap({ TRL: 8, CRL: 6, BRL: 3 }),
     );
     expect(map.get('TRL')).toBe('critical');
@@ -89,10 +95,7 @@ describe('buildImbalancedVertices', () => {
 
   it('does not downgrade critical to moderate', () => {
     const map = buildImbalancedVertices(
-      [
-        imbalance('TRL', 'BRL', 5, 'critical'),
-        imbalance('TRL', 'CRL', 2, 'moderate'),
-      ],
+      [imbalance('TRL', 'BRL', 5, 'critical'), imbalance('TRL', 'CRL', 2, 'moderate')],
       pointsMap({ TRL: 8, BRL: 3, CRL: 6 }),
     );
     expect(map.get('TRL')).toBe('critical');
@@ -123,15 +126,11 @@ describe('MaturityRadarChart', () => {
   it('renders the accessible container with the correct role and label', () => {
     render(<MaturityRadarChart dimensionResults={ALL_SIX} />);
     // A group and not an image: an image role would hide the focusable points.
-    expect(
-      screen.getByRole('group', { name: 'Perfil IRL — gráfico radar' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Perfil IRL — gráfico radar' })).toBeInTheDocument();
   });
 
   it('renders without throwing when imbalances is undefined', () => {
-    expect(() =>
-      render(<MaturityRadarChart dimensionResults={ALL_SIX} />),
-    ).not.toThrow();
+    expect(() => render(<MaturityRadarChart dimensionResults={ALL_SIX} />)).not.toThrow();
   });
 
   it('renders without throwing when all imbalances are acceptable', () => {

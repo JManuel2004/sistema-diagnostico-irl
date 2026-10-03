@@ -1,8 +1,9 @@
 import type { JSX, ReactNode } from 'react';
-import { Gauge, Trophy, TriangleAlert } from 'lucide-react';
-import type { Bottleneck, DimensionResult } from '@innlab/contracts';
+import { Gauge, Info, Trophy, TriangleAlert } from 'lucide-react';
+import type { Bottleneck, DimensionResult, GlobalLevel } from '@innlab/contracts';
 import { Badge } from '@/shared/ui/badge';
 import { Card, CardContent } from '@/shared/ui/card';
+import { Tooltip } from '@/shared/ui/tooltip';
 import { GlossaryTerm } from '@/shared/ui/glossary-term';
 import { LevelBar } from '@/shared/ui/level-bar';
 import { formatOneDecimal } from '@/shared/lib/format';
@@ -11,8 +12,11 @@ import { formatOneDecimal } from '@/shared/lib/format';
  * Header of the results: the profile belongs to **an initiative**, so the
  * page opens with it — its name, a short description and the sector — and,
  * next to it, the global IRL level (RF-09: simple average of the six
- * levels, computed by the backend) with the strongest and the weakest part
- * of the profile.
+ * levels, computed by the backend) and the strongest and the weakest part
+ * of the profile. The average has decimals; its meaning is the one of the
+ * whole level the backend rounds it to (`globalLevel`, half up: 3,5 → 4),
+ * read in a tooltip over the score itself, so the card stays a number and
+ * not a paragraph.
  *
  * The name and the description arrive as text: this component does not
  * know where they come from (the initiative belongs to another feature and
@@ -25,6 +29,8 @@ interface Props {
   readonly sectorName?: string;
   readonly stageName?: string;
   readonly globalAverage: number;
+  /** The whole level the average stands for, and what it means. */
+  readonly globalLevel?: GlobalLevel;
   readonly dimensionResults: readonly DimensionResult[];
   readonly strength: Bottleneck;
   readonly bottleneck: Bottleneck;
@@ -38,6 +44,7 @@ export function ProfileHero({
   sectorName,
   stageName,
   globalAverage,
+  globalLevel,
   dimensionResults,
   strength,
   bottleneck,
@@ -78,12 +85,36 @@ export function ProfileHero({
             Nivel IRL global
           </p>
           <p className="mt-2 flex items-baseline gap-2">
-            <span className="text-azul-icesi text-6xl font-extrabold tabular-nums leading-none tracking-[-0.04em] sm:text-[4.75rem]">
-              {formatOneDecimal(globalAverage)}
-            </span>
+            {globalLevel?.description ? (
+              <Tooltip
+                content={
+                  <>
+                    <span className="font-bold">Qué significa tu nivel. </span>
+                    {globalLevel.description}
+                  </>
+                }
+              >
+                <button
+                  type="button"
+                  aria-label={`${formatOneDecimal(globalAverage)} de 9: qué significa`}
+                  className="text-azul-icesi inline-flex cursor-help items-start gap-1 text-6xl font-extrabold tabular-nums leading-none tracking-[-0.04em] sm:text-[4.75rem]"
+                >
+                  {formatOneDecimal(globalAverage)}
+                  <Info className="mt-1 size-5 shrink-0" aria-hidden="true" />
+                </button>
+              </Tooltip>
+            ) : (
+              <span className="text-azul-icesi text-6xl font-extrabold tabular-nums leading-none tracking-[-0.04em] sm:text-[4.75rem]">
+                {formatOneDecimal(globalAverage)}
+              </span>
+            )}
             <span className="text-muted-foreground text-xl font-semibold">de 9</span>
           </p>
-          <LevelBar level={Math.round(globalAverage)} fillClass="bg-azul-icesi" className="mt-4" />
+          <LevelBar
+            level={globalLevel?.level ?? Math.round(globalAverage)}
+            fillClass="bg-azul-icesi"
+            className="mt-4"
+          />
           <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
             Es el promedio de tus seis dimensiones en la escala de 1 a 9.
           </p>
@@ -102,7 +133,7 @@ export function ProfileHero({
               </dd>
             </div>
             <div>
-              <dt className="text-critical flex items-center gap-1.5 text-sm font-bold">
+              <dt className="text-moderate flex items-center gap-1.5 text-sm font-bold">
                 <TriangleAlert className="size-4" aria-hidden="true" />
                 <GlossaryTerm term="bottleneck">Más débil</GlossaryTerm>
               </dt>
