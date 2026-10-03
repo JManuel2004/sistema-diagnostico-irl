@@ -129,7 +129,8 @@ import { InitiativeModule } from '../initiative/initiative.module.js';
   ],
   controllers: [RecommendationController],
   // Read-only queries `roadmap/` reaches behind its own port: the service
-  // of each phase of the route, and the card of a service.
-  exports: [EvaluatePhaseServiceQuery, GetServiceDetailsQuery],
+  // of each phase of the route, and the card of a service. `reporting/`
+  // reads the saved recommendation for the report.
+  exports: [EvaluatePhaseServiceQuery, GetServiceDetailsQuery, GetRecommendationUseCase],
 })
 export class RoutingModule {}

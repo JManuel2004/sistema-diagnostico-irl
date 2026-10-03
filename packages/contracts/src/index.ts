@@ -44,3 +44,6 @@ export * from './routing/layer-trace.schema.js';
 
 // ── roadmap ───────────────────────────────────────────────────────────
 export * from './roadmap/roadmap-response.schema.js';
+
+// ── reporting ─────────────────────────────────────────────────────────
+export * from './reporting/report-response.schema.js';

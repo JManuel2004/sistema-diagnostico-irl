@@ -176,8 +176,11 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     ListUserDiagnosesQuery,
     // Consumed by RoutingModule/RoadmapModule: the recommendation and
     // roadmap engines read the profile through this read use case, never
-    // reaching the tables directly.
+    // reaching the tables directly. ReportingModule reads it for the report.
     GetMaturityProfileUseCase,
+    // Consumed by ReportingModule: the caller's diagnostic and whether its
+    // deep analysis is complete, before the report is gathered.
+    GetDiagnosisUseCase,
   ],
 })
 export class DiagnosisModule {}
