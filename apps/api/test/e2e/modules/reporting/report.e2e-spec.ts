@@ -110,6 +110,14 @@ describe('Reporte completo (e2e) — AgroConecta', () => {
     expect(diagnostic.deepAnalysisCompleted).toBe(false);
   });
 
+  it('antes del análisis profundo tampoco se descarga: 409 REPORT_NOT_AVAILABLE', async () => {
+    const res = await agent
+      .get(`/api/v1/diagnostics/${diagnosticId}/report/pdf`)
+      .expect(409);
+
+    expect(res.body).toMatchObject({ code: 'REPORT_NOT_AVAILABLE' });
+  });
+
   describe('con el análisis profundo completo', () => {
     beforeAll(async () => {
       await agent
@@ -163,6 +171,27 @@ describe('Reporte completo (e2e) — AgroConecta', () => {
         recommendationResponseSchema.parse(recommendation.body),
       );
       expect(parsed.roadmap).toEqual(roadmapResponseSchema.parse(roadmap.body));
+    });
+
+    it('descarga el reporte como un PDF adjunto, con el nombre de la iniciativa', async () => {
+      const res = await agent
+        .get(`/api/v1/diagnostics/${diagnosticId}/report/pdf`)
+        .buffer(true)
+        .parse((response, callback) => {
+          const chunks: Buffer[] = [];
+          response.on('data', (chunk: Buffer) => chunks.push(chunk));
+          response.on('end', () => {
+            callback(null, Buffer.concat(chunks));
+          });
+        })
+        .expect(200);
+
+      expect(res.headers['content-type']).toBe('application/pdf');
+      expect(res.headers['content-disposition']).toMatch(
+        /^attachment; filename="reporte-irl-agroconecta-\d{4}-\d{2}-\d{2}\.pdf"$/,
+      );
+      const body = res.body as Buffer;
+      expect(body.subarray(0, 5).toString('latin1')).toBe('%PDF-');
     });
   });
 
