@@ -4,6 +4,7 @@ import { initiativeSchema } from '../initiative/initiative.schema.js';
 import { maturityProfileResponseSchema } from '../diagnosis/profile-response.schema.js';
 import { recommendationResponseSchema } from '../routing/recommendation-response.schema.js';
 import { roadmapResponseSchema } from '../roadmap/roadmap-response.schema.js';
+import { dimensionAnswersSchema } from '../diagnosis/given-answers.schema.js';
 
 /**
  * The attribution every report carries (RNF-09): the IRL framework belongs
@@ -41,6 +42,8 @@ export type ReportAttribution = z.infer<typeof reportAttributionSchema>;
  * diagnostic — nothing is recalculated:
  *
  *   - `initiative`: the profile the diagnostic was answered with.
+ *   - `answers`: the 48 statements with the value and the justification the
+ *     user gave, by dimension.
  *   - `profile`: the six dimensions, their gaps, the imbalanced pairs and
  *     the dimensions in critical state.
  *   - `recommendation`: the INNLAB service and its justification.
@@ -59,6 +62,7 @@ export const diagnosticReportSchema = z
       .describe('Code of the IRL framework version the diagnostic was answered with'),
     completedAt: z.string().datetime().describe('When the deep analysis was completed'),
     initiative: initiativeSchema,
+    answers: z.array(dimensionAnswersSchema).describe('The answers, by dimension'),
     profile: maturityProfileResponseSchema,
     recommendation: recommendationResponseSchema,
     roadmap: roadmapResponseSchema,
