@@ -16,7 +16,8 @@ How a diagnostic moves through the product: the screens the user goes through, w
            4 resumen         review; «Procesar diagnóstico» sends the answers
       └─ /diagnosticos/:id/resultados   maturity profile; invitation to the deep analysis
            └─ «Solicitar análisis profundo» → imbalances, critical state, roadmap, recommendation
-/panel   the initiative of the latest diagnostic with results; «Continuar diagnóstico» if one is unfinished
+/panel   the initiative of the latest diagnostic with results; «Continuar diagnóstico» if one is unfinished;
+         «Iniciar un nuevo diagnóstico» when phase 1 is done and none is unfinished (the previous one stays)
 /diagnosticos/:id/iniciativa   correct an already registered initiative profile (not after the deep analysis)
 ```
 
@@ -61,4 +62,4 @@ STARTED ──InitiativeRegisteredEvent──▶ (WITH_CONSENT ▶) WITH_INITIAT
 
 ## The panel
 
-`/panel` is where the institutional descriptor leads once the user has navigation. It lists nothing by itself: it reads the user's diagnostics (`GET /diagnostics`, most recent first), shows the initiative of the latest one with results, links to correct it (while the deep analysis is not accepted) and to its results, and offers «Continuar diagnóstico» when the latest one is still in the wizard (a single primary button per screen: «Continuar» wins when both exist). The history of past diagnostics has its place reserved; it is a future user story.
+`/panel` is where the institutional descriptor leads once the user has navigation. It lists nothing by itself: it reads the user's diagnostics (`GET /diagnostics`, most recent first), shows the initiative of the latest one with results, links to correct it (while the deep analysis is not accepted) and to its results, and offers «Continuar diagnóstico» when one is still in the wizard (a single primary button per screen: «Continuar» wins when both exist). When phase 1 is already done and none is unfinished, «Iniciar un nuevo diagnóstico» asks for another one: `POST /diagnostics` creates it because the latest is complete, the previous diagnostic is not deleted, and the wizard opens on its first step. The history of past diagnostics has its place reserved; it is a future user story.
