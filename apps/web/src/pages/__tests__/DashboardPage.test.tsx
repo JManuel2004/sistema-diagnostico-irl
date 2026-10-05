@@ -1,7 +1,8 @@
+import type { JSX } from 'react';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
 import { http as mswHttp, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { meContextHandler, signIn } from '@/test/fixtures/me-context';
@@ -37,12 +38,17 @@ function diagnostic(id: string, state = 'PROFILE_GENERATED') {
   };
 }
 
+function WizardStub(): JSX.Element {
+  const { id } = useParams();
+  return <div>ASISTENTE_STUB:{id}</div>;
+}
+
 function renderPage() {
   return renderWithClient(
     <MemoryRouter initialEntries={['/panel']}>
       <Routes>
         <Route path="/panel" element={<DashboardPage />} />
-        <Route path="/diagnosticos/:id/asistente" element={<div>ASISTENTE_STUB</div>} />
+        <Route path="/diagnosticos/:id/asistente" element={<WizardStub />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -129,6 +135,9 @@ describe('DashboardPage — panel de iniciativa', () => {
         `/diagnosticos/${NEWEST}/asistente`,
       );
       expect(screen.queryByRole('link', { name: 'Ver resultados' })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Iniciar un nuevo diagnóstico' }),
+      ).not.toBeInTheDocument();
     });
 
     it('con uno anterior ya terminado, muestra la iniciativa de ese y ofrece continuar el otro', async () => {
@@ -153,7 +162,43 @@ describe('DashboardPage — panel de iniciativa', () => {
         'href',
         `/diagnosticos/${OLDER}/resultados`,
       );
+      // Starting again would resume the unfinished one, so the new-diagnostic action stays hidden.
+      expect(
+        screen.queryByRole('button', { name: 'Iniciar un nuevo diagnóstico' }),
+      ).not.toBeInTheDocument();
     });
+  });
+
+  it('con la fase 1 completa inicia otro diagnóstico y deja el anterior', async () => {
+    const calls: string[] = [];
+    server.use(
+      mswHttp.get('*/diagnostics', () => HttpResponse.json([diagnostic(OLDER)])),
+      mswHttp.get('*/diagnostics/:id/initiative', ({ params }) => {
+        expect(params.id).toBe(OLDER);
+        return HttpResponse.json(initiativeFixture());
+      }),
+      mswHttp.post('*/diagnostics', () => {
+        calls.push('POST');
+        return HttpResponse.json(diagnostic(NEWEST, 'STARTED'), { status: 201 });
+      }),
+      mswHttp.delete('*/diagnostics/:id', () => {
+        calls.push('DELETE');
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const user = userEvent.setup();
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'AgroConecta' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver resultados' })).toHaveAttribute(
+      'href',
+      `/diagnosticos/${OLDER}/resultados`,
+    );
+    await user.click(await screen.findByRole('button', { name: 'Iniciar un nuevo diagnóstico' }));
+
+    expect(await screen.findByText(`ASISTENTE_STUB:${NEWEST}`)).toBeInTheDocument();
+    expect(calls).toEqual(['POST']);
   });
 
   it('sin ningún diagnóstico ofrece iniciar uno, y al crearlo abre el asistente', async () => {
@@ -168,7 +213,7 @@ describe('DashboardPage — panel de iniciativa', () => {
     renderPage();
     await user.click(await screen.findByRole('button', { name: 'Iniciar diagnóstico' }));
 
-    expect(await screen.findByText('ASISTENTE_STUB')).toBeInTheDocument();
+    expect(await screen.findByText(`ASISTENTE_STUB:${NEWEST}`)).toBeInTheDocument();
   });
 
   describe('navegación', () => {
