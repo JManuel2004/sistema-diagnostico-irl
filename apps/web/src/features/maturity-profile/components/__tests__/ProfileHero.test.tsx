@@ -50,7 +50,12 @@ describe('ProfileHero — el perfil es de una iniciativa', () => {
   });
 
   it('sin el nombre todavía, habla de «tu iniciativa»', () => {
-    hero({ initiativeName: undefined, description: undefined, sectorName: undefined, stageName: undefined });
+    hero({
+      initiativeName: undefined,
+      description: undefined,
+      sectorName: undefined,
+      stageName: undefined,
+    });
 
     expect(screen.getByRole('heading', { level: 1, name: 'Tu iniciativa' })).toBeInTheDocument();
   });
@@ -80,6 +85,13 @@ describe('ProfileHero — el perfil es de una iniciativa', () => {
       const weak = screen.getByText('Más débil').closest('div') as HTMLElement;
       expect(weak).toHaveTextContent('Propiedad Intelectual');
       expect(weak).toHaveTextContent('Nivel 1');
+    });
+
+    it('marca lo más débil en el tono moderado, no en el rojo de emergencia', () => {
+      hero();
+      const label = screen.getByText('Más débil').closest('dt')!;
+      expect(label).toHaveClass('text-moderate');
+      expect(label).not.toHaveClass('text-critical');
     });
 
     it('nombra todas las dimensiones empatadas', () => {

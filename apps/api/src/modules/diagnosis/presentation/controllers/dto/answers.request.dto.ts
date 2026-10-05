@@ -4,6 +4,7 @@ import {
   IsArray,
   IsInt,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Max,
   Min,
@@ -13,8 +14,9 @@ import { ANSWER_JUSTIFICATION_MAX } from '@innlab/contracts';
 
 /**
  * One answer as it arrives over HTTP. The DTO checks the shape; whether the
- * justification is blank or too long, and whether there are exactly 48
- * answers, is decided by the domain (`Answer`, `AnswerSheet`).
+ * justification is too long (a blank one counts as missing), and whether
+ * there are exactly 48 answers, is decided by the domain (`Answer`,
+ * `AnswerSheet`).
  */
 export class AnswerRequestDto {
   @ApiProperty({ example: '1', description: 'Statement id (bigint as string)' })
@@ -36,10 +38,15 @@ export class AnswerRequestDto {
   @ApiProperty({
     example: 'Tenemos un prototipo probado con tres productores.',
     maxLength: ANSWER_JUSTIFICATION_MAX,
-    description: 'Why the user chose that level; mandatory',
+    description:
+      'Why the user chose that level; optional (null or absent when not given)',
+    required: false,
+    nullable: true,
+    type: String,
   })
+  @IsOptional()
   @IsString()
-  justification!: string;
+  justification?: string | null;
 }
 
 /** Body of `finalize-initial` and `questionnaire`: the 48 answers. */

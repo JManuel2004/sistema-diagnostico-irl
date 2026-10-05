@@ -23,20 +23,9 @@ import { z } from 'zod';
 export const BOOLEAN_OPERATORS = ['=', '!=', 'contains', 'not_contains'] as const;
 
 /** Operators that only the `WITH_DEGREE` mode allows. */
-export const DEGREE_OPERATORS = [
-  '>=',
-  '<=',
-  '>',
-  '<',
-  'count>=',
-  'count<=',
-  'count=',
-] as const;
+export const DEGREE_OPERATORS = ['>=', '<=', '>', '<', 'count>=', 'count<=', 'count='] as const;
 
-export const operatorSchema = z.enum([
-  ...BOOLEAN_OPERATORS,
-  ...DEGREE_OPERATORS,
-]);
+export const operatorSchema = z.enum([...BOOLEAN_OPERATORS, ...DEGREE_OPERATORS]);
 export type Operator = z.infer<typeof operatorSchema>;
 
 /**
@@ -60,7 +49,6 @@ export const QUERYABLE_FIELDS = [
   'characterization.stage',
   'characterization.sector',
   'characterization.teamSize',
-  'characterization.academicLinkage',
 ] as const;
 
 export const fieldSchema = z.enum(QUERYABLE_FIELDS);
@@ -76,9 +64,7 @@ export const predicateLeafSchema = z
 
 export type PredicateLeaf = z.infer<typeof predicateLeafSchema>;
 
-export type Predicate =
-  | PredicateLeaf
-  | { op: 'and' | 'or' | 'not'; operands: Predicate[] };
+export type Predicate = PredicateLeaf | { op: 'and' | 'or' | 'not'; operands: Predicate[] };
 
 export const predicateSchema: z.ZodType<Predicate> = z.lazy(() =>
   z.union([

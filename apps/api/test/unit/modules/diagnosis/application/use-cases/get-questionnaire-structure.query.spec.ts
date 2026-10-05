@@ -40,18 +40,24 @@ function buildFullCatalog(): {
   dimensions: Dimension[];
   statements: Statement[];
 } {
-  const dimensions = DIMENSION_CODES.map((code, i) => makeDimension(code, i + 1));
+  const dimensions = DIMENSION_CODES.map((code, i) =>
+    makeDimension(code, i + 1),
+  );
   const statements: Statement[] = [];
   let idCounter = 1;
   DIMENSION_CODES.forEach((code, dimIdx) => {
     for (let seq = 1; seq <= 8; seq++) {
-      statements.push(makeStatement(String(idCounter++), code, dimIdx + 1, seq));
+      statements.push(
+        makeStatement(String(idCounter++), code, dimIdx + 1, seq),
+      );
     }
   });
   return { dimensions, statements };
 }
 
-function unwrap<T>(result: { ok: true; value: T } | { ok: false; error: unknown }): T {
+function unwrap<T>(
+  result: { ok: true; value: T } | { ok: false; error: unknown },
+): T {
   if (!result.ok) throw new Error('expected ok result');
   return result.value;
 }
@@ -64,12 +70,17 @@ describe('GetQuestionnaireStructureQuery', () => {
   beforeEach(() => {
     taxonomy = {
       findAllDimensions: jest.fn(),
-      findCurrentFrameworkVersion: jest.fn(() => Promise.resolve(FRAMEWORK_VERSION)),
+      findCurrentFrameworkVersion: jest.fn(() =>
+        Promise.resolve(FRAMEWORK_VERSION),
+      ),
       findFrameworkVersionById: jest.fn(),
       findFrameworkVersionByCode: jest.fn((code: string) =>
-        Promise.resolve(code === FRAMEWORK_VERSION.code ? FRAMEWORK_VERSION : null),
+        Promise.resolve(
+          code === FRAMEWORK_VERSION.code ? FRAMEWORK_VERSION : null,
+        ),
       ),
       findConversionRanges: jest.fn(),
+      findLevelDescriptions: jest.fn(),
       findAllDimensionPairs: jest.fn(),
     };
     statementCatalog = {
@@ -87,7 +98,9 @@ describe('GetQuestionnaireStructureQuery', () => {
     const result = unwrap(await query.execute('KTH-IRL-1.0'));
 
     expect(result.frameworkVersion).toBe('KTH-IRL-1.0');
-    expect(statementCatalog.findStatements).toHaveBeenCalledWith(FRAMEWORK_VERSION.id);
+    expect(statementCatalog.findStatements).toHaveBeenCalledWith(
+      FRAMEWORK_VERSION.id,
+    );
   });
 
   it('answers NotFoundError for an unknown framework version', async () => {
@@ -173,7 +186,8 @@ describe('GetQuestionnaireStructureQuery', () => {
     statementCatalog.findStatements.mockResolvedValue(statements);
 
     const result = unwrap(await query.execute());
-    const firstTrlStatement = result.dimensions.find((d) => d.code === 'TRL')!.statements[0];
+    const firstTrlStatement = result.dimensions.find((d) => d.code === 'TRL')!
+      .statements[0];
 
     expect(firstTrlStatement).toMatchObject({
       id: '1',

@@ -45,6 +45,23 @@ describe('DimensionTooltipContent', () => {
     expect(screen.getByRole('img', { name: 'Nivel 3 de 9' })).toBeInTheDocument();
   });
 
+  it('says that the level text is what that level means', () => {
+    render(
+      <DimensionTooltipContent
+        code="TRL"
+        name="Tecnología"
+        level={6}
+        levelDescription="Prototipo validado en un entorno relevante."
+      />,
+    );
+
+    expect(
+      screen.getByText(/Prototipo validado en un entorno relevante\./).closest('p'),
+    ).toHaveTextContent(
+      'Estar en el nivel 6 significa: Prototipo validado en un entorno relevante.',
+    );
+  });
+
   it('still names the dimension and its level when the catalog description is not there', () => {
     render(<DimensionTooltipContent code="FRL" name="Financiación" level={7} />);
 

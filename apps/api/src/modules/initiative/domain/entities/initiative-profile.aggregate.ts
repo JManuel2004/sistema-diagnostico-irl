@@ -14,7 +14,6 @@ export interface InitiativeProfilePersistence {
   readonly declaredStage: string;
   readonly teamSize: number;
   readonly teamDescription: string;
-  readonly academicLinkage: boolean;
   readonly targetMarket: string;
   readonly currentFunding: string;
   readonly recordedAt: Date;
@@ -31,7 +30,6 @@ export interface RegisterInitiativeProfileInput {
   declaredStage: string;
   teamSize: number;
   teamDescription: string;
-  academicLinkage: boolean;
   targetMarket: string;
   currentFunding: string;
 }
@@ -45,7 +43,6 @@ export interface RegisterInitiativeProfileInput {
  * Registered before the questionnaire (HU-06); every field is required.
  * `stageId` (catalog) is what the portfolio router reads; `declaredStage` is
  * the user's own description of it and is only shown back.
- * `academicLinkage` is read by the router's eligibility rules.
  */
 export class InitiativeProfile {
   private constructor(
@@ -59,13 +56,15 @@ export class InitiativeProfile {
     public readonly declaredStage: string,
     public readonly teamSize: number,
     public readonly teamDescription: string,
-    public readonly academicLinkage: boolean,
     public readonly targetMarket: string,
     public readonly currentFunding: string,
     public readonly recordedAt: Date,
   ) {}
 
-  static register(input: RegisterInitiativeProfileInput, now: Date = new Date()): InitiativeProfile {
+  static register(
+    input: RegisterInitiativeProfileInput,
+    now: Date = new Date(),
+  ): InitiativeProfile {
     const name = input.name.trim();
     if (name.length < 3 || name.length > 120) {
       throw new InvariantViolationError(
@@ -88,7 +87,6 @@ export class InitiativeProfile {
       InitiativeProfile.requiredText('declared stage', input.declaredStage),
       input.teamSize,
       InitiativeProfile.requiredText('team description', input.teamDescription),
-      input.academicLinkage,
       InitiativeProfile.requiredText('target market', input.targetMarket),
       InitiativeProfile.requiredText('current funding', input.currentFunding),
       now,
@@ -107,7 +105,6 @@ export class InitiativeProfile {
       row.declaredStage,
       row.teamSize,
       row.teamDescription,
-      row.academicLinkage,
       row.targetMarket,
       row.currentFunding,
       row.recordedAt,
@@ -126,7 +123,6 @@ export class InitiativeProfile {
       declaredStage: this.declaredStage,
       teamSize: this.teamSize,
       teamDescription: this.teamDescription,
-      academicLinkage: this.academicLinkage,
       targetMarket: this.targetMarket,
       currentFunding: this.currentFunding,
       recordedAt: this.recordedAt,

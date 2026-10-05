@@ -6,7 +6,6 @@ const NO_CHARACTERIZATION: Characterization = {
   stage: null,
   sector: null,
   teamSize: null,
-  academicLinkage: null,
 };
 
 /**
@@ -39,7 +38,6 @@ export class GetInitiativeCharacterizationUseCase {
       stage: stage?.code ?? null,
       sector: sector?.name ?? null,
       teamSize: initiative.teamSize,
-      academicLinkage: initiative.academicLinkage,
     };
   }
 }

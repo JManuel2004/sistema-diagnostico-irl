@@ -1,5 +1,6 @@
 import type { EntityManager } from 'typeorm';
 import { DIMENSION_DEPENDENCIES } from './data/dimension-dependencies.js';
+import { ROADMAP_PARAMETERS } from './data/roadmap-parameters.js';
 
 /**
  * Seeds the dependency graph between dimensions (RF-14).
@@ -32,5 +33,13 @@ export async function seedRoadmapGraph(
       [edge.source, edge.target, edge.minimumRequiredLevel],
     );
   }
+  await manager.query(
+    `INSERT INTO irl_catalog.roadmap_parameters (id, max_levels_per_phase, balance_tolerance)
+     VALUES (1, $1, $2)
+     ON CONFLICT (id) DO UPDATE
+       SET max_levels_per_phase = EXCLUDED.max_levels_per_phase,
+           balance_tolerance = EXCLUDED.balance_tolerance`,
+    [ROADMAP_PARAMETERS.maxLevelsPerPhase, ROADMAP_PARAMETERS.balanceTolerance],
+  );
   return { edges: DIMENSION_DEPENDENCIES.length };
 }

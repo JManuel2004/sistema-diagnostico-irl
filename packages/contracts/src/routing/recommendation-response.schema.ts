@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { uuidSchema } from '../common/uuid.schema.js';
+import { serviceDetailSchema } from './service-detail.schema.js';
 
 /**
  * Portfolio recommendation as the API exposes it.
@@ -12,15 +13,22 @@ import { uuidSchema } from '../common/uuid.schema.js';
  *
  * `alternatives` are positions 2..N. It never includes the primary one.
  *
+ * Each service carries its card from the catalog (`serviceDetailSchema`).
+ * A service an adjustment of the center put into the ranking has no score
+ * (`score: null`) and carries the reason of that adjustment
+ * (`adjustmentReason`); it can be the primary service or an alternative.
+ *
  * It no longer carries `configurationVersion`: the configuration
  * versioning scheme was retired — there is a single live configuration,
  * with no version history to number.
  */
-export const recommendedServiceSchema = z.object({
-  idService: z.number().int().positive(),
-  name: z.string().min(1),
+export const recommendedServiceSchema = serviceDetailSchema.extend({
   position: z.number().int().positive(),
-  score: z.number(),
+  score: z.number().nullable(),
+  adjustmentReason: z
+    .string()
+    .nullable()
+    .describe('Reason of the adjustment that put the service into the ranking, if one did'),
 });
 
 export type RecommendedService = z.infer<typeof recommendedServiceSchema>;

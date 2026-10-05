@@ -1,4 +1,5 @@
 import type { DimensionCode } from '@innlab/contracts';
+import type { RoadmapParameters } from '../value-objects/roadmap-parameters.vo.js';
 
 /**
  * Read port for the dependency graph.
@@ -28,4 +29,6 @@ export interface DependencyGraphRepositoryPort {
   findEdges(): Promise<DependencyEdgeSnapshot[]>;
   /** One minimum for each of the six dimensions. */
   findExpectedMinimums(): Promise<DimensionMinimumSnapshot[]>;
+  /** How the route is paced and closed, or `null` if not seeded. */
+  findParameters(): Promise<RoadmapParameters | null>;
 }

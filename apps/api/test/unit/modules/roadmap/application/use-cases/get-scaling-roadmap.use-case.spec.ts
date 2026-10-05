@@ -8,6 +8,7 @@ import type { TaxonomyRepositoryPort } from '../../../../../../src/shared/irl-ta
 import { ScalingRoadmap } from '../../../../../../src/modules/roadmap/domain/entities/scaling-roadmap.aggregate.js';
 import { Uuid } from '../../../../../../src/shared/kernel/domain/value-objects/uuid.vo.js';
 import { aDimensionCatalog } from '../../../../support/dimension-catalog.js';
+import type { PhaseServiceAdvisorPort } from '../../../../../../src/modules/roadmap/domain/repositories/phase-service-advisor.port.js';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
@@ -23,21 +24,40 @@ function aRoadmap(): ScalingRoadmap {
             dimensionCode: 'BRL',
             currentLevel: 3,
             targetLevel: 4,
+            finalTargetLevel: 4,
             enables: ['FRL'],
             inclusionReason: 'BELOW_EXPECTED_MINIMUM',
             expectedMinimum: 4,
+            targetReason: 'EXPECTED_MINIMUM',
             targetDrivenBy: null,
           },
           {
             dimensionCode: 'IPRL',
             currentLevel: 1,
             targetLevel: 4,
+            finalTargetLevel: 4,
             enables: ['FRL'],
             inclusionReason: 'BELOW_EXPECTED_MINIMUM',
             expectedMinimum: 3,
+            targetReason: 'ENABLES',
             targetDrivenBy: 'FRL',
           },
         ],
+        service: {
+          idService: 2,
+          name: 'Reto Express',
+          tierOrder: 1,
+          approximate: false,
+        },
+        serviceTrace: {
+          mode: 'PHASE',
+          projectedLevels: { TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 },
+          averageLevel: 3.5,
+          excluded: [],
+          skipped: [],
+          ranking: [],
+          appliedAdjustments: [],
+        },
       },
       {
         order: 2,
@@ -46,29 +66,75 @@ function aRoadmap(): ScalingRoadmap {
             dimensionCode: 'FRL',
             currentLevel: 2,
             targetLevel: 4,
+            finalTargetLevel: 4,
             enables: [],
             inclusionReason: 'REQUIRED_ENABLER',
             expectedMinimum: 2,
+            targetReason: 'EXPECTED_MINIMUM',
             targetDrivenBy: null,
           },
         ],
+        service: null,
+        serviceTrace: {
+          mode: 'PHASE',
+          projectedLevels: { TRL: 6, CRL: 4, BRL: 3, IPRL: 1, TmRL: 5, FRL: 2 },
+          averageLevel: 3.5,
+          excluded: [],
+          skipped: [],
+          ranking: [],
+          appliedAdjustments: [],
+        },
       },
     ],
+    finalLevels: { TRL: 6, CRL: 4, BRL: 4, IPRL: 4, TmRL: 5, FRL: 4 },
+    balanced: false,
   });
 }
 
 describe('GetScalingRoadmapUseCase', () => {
-  let findByDiagnosticId: jest.Mock<RoadmapRepositoryPort['findByDiagnosticId']>;
+  let findByDiagnosticId: jest.Mock<
+    RoadmapRepositoryPort['findByDiagnosticId']
+  >;
   let useCase: GetScalingRoadmapUseCase;
 
   beforeEach(() => {
     findByDiagnosticId = jest.fn();
     useCase = new GetScalingRoadmapUseCase(
-      { findByDiagnosticId, save: jest.fn() } as unknown as RoadmapRepositoryPort,
+      {
+        findByDiagnosticId,
+        save: jest.fn(),
+      } as unknown as RoadmapRepositoryPort,
       {
         findAllDimensions: () => Promise.resolve(aDimensionCatalog()),
       } as unknown as TaxonomyRepositoryPort,
       { verify: () => Promise.resolve(Result.ok(undefined)) },
+      {
+        advise: jest.fn(),
+        describe: (ids: readonly number[]) =>
+          Promise.resolve(
+            new Map(
+              ids.map((id) => [
+                id,
+                {
+                  idService: id,
+                  name: 'Reto Express (catálogo)',
+                  subtitle: 'Hackatón · Design Sprint · Challenge',
+                  description: 'Un reto intensivo.',
+                  scope: 'Banco de ideas y prototipos tempranos.',
+                  band: { minLevel: 3, maxLevel: 5 },
+                  tier: {
+                    code: 'descubre',
+                    name: 'Descubre',
+                    order: 1,
+                    tagline: 'Conócenos jugando',
+                    description:
+                      'Formatos cortos y de baja inversión para encender la relación.',
+                  },
+                },
+              ]),
+            ),
+          ),
+      } as unknown as PhaseServiceAdvisorPort,
     );
   });
 
@@ -77,7 +143,10 @@ describe('GetScalingRoadmapUseCase', () => {
   it('names every dimension of the saved roadmap from the catalog', async () => {
     findByDiagnosticId.mockResolvedValueOnce(aRoadmap());
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'user-1' });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'user-1',
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error('expected ok result');
@@ -110,7 +179,10 @@ describe('GetScalingRoadmapUseCase', () => {
   it('explains the inclusion and the target of each dimension', async () => {
     findByDiagnosticId.mockResolvedValueOnce(aRoadmap());
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'user-1' });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'user-1',
+    });
 
     if (!result.ok) throw new Error('expected ok result');
     const [brl, iprl] = result.value.phases[0].dimensions;
@@ -129,10 +201,36 @@ describe('GetScalingRoadmapUseCase', () => {
     expect(frl.inclusionReason).toBe('REQUIRED_ENABLER');
   });
 
+  it('gives each phase its service with the catalog card, under the name it was calculated with', async () => {
+    findByDiagnosticId.mockResolvedValueOnce(aRoadmap());
+
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'user-1',
+    });
+
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.value.phases[0].service).toMatchObject({
+      idService: 2,
+      name: 'Reto Express',
+      subtitle: 'Hackatón · Design Sprint · Challenge',
+      scope: 'Banco de ideas y prototipos tempranos.',
+      band: { minLevel: 3, maxLevel: 5 },
+      tier: { name: 'Descubre', order: 1 },
+      approximate: false,
+    });
+    expect(result.value.phases[1].service).toBeNull();
+    expect(result.value.finalLevels).toMatchObject({ IPRL: 4 });
+    expect(result.value.balanced).toBe(false);
+  });
+
   it('returns ROADMAP_NOT_GENERATED when nothing was saved', async () => {
     findByDiagnosticId.mockResolvedValueOnce(null);
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'user-1' });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'user-1',
+    });
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('expected err result');

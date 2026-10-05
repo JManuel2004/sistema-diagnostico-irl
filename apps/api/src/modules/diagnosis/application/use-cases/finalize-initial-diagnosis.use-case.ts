@@ -16,7 +16,11 @@ export interface FinalizeInitialDiagnosticCommand {
   diagnosticId: string;
   /** The caller: someone else's diagnostic is answered as missing. */
   userId: string;
-  answers: { statementId: string; value: number; justification: string }[];
+  answers: {
+    statementId: string;
+    value: number;
+    justification?: string | null;
+  }[];
 }
 
 /**
@@ -46,7 +50,11 @@ export class FinalizeInitialDiagnosisUseCase {
       NotFoundError | ConflictError | InvariantViolationError
     >
   > {
-    const own = await findOwnDiagnosis(this.diagnostics, cmd.diagnosticId, cmd.userId);
+    const own = await findOwnDiagnosis(
+      this.diagnostics,
+      cmd.diagnosticId,
+      cmd.userId,
+    );
     if (!own.ok) return own;
     const diagnosis = own.value;
 
@@ -103,9 +111,12 @@ export class FinalizeInitialDiagnosisUseCase {
 
     await this.diagnostics.save(diagnosis);
 
-    const dimensions = await this.taxonomy.findAllDimensions();
+    const [dimensions, levels] = await Promise.all([
+      this.taxonomy.findAllDimensions(),
+      this.taxonomy.findLevelDescriptions(diagnosis.frameworkVersionId),
+    ]);
     return Result.ok(
-      toMaturityProfileResponse(profile, imbalances, dimensions),
+      toMaturityProfileResponse(profile, imbalances, dimensions, levels),
     );
   }
 }

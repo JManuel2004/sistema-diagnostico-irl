@@ -12,12 +12,18 @@ export class TypeOrmInitiativeProfileRepository implements InitiativeProfileRepo
     private readonly orm: Repository<InitiativeProfileOrm>,
   ) {}
 
-  async findByDiagnosticId(diagnosticId: string): Promise<InitiativeProfile | null> {
-    const row = await this.orm.findOne({ where: { idDiagnostic: diagnosticId } });
+  async findByDiagnosticId(
+    diagnosticId: string,
+  ): Promise<InitiativeProfile | null> {
+    const row = await this.orm.findOne({
+      where: { idDiagnostic: diagnosticId },
+    });
     return row ? this.toDomain(row) : null;
   }
 
-  async findLatestByInitiativeId(initiativeId: string): Promise<InitiativeProfile | null> {
+  async findLatestByInitiativeId(
+    initiativeId: string,
+  ): Promise<InitiativeProfile | null> {
     const [row] = await this.orm.find({
       where: { idInitiative: initiativeId },
       order: { recordedAt: 'DESC' },
@@ -49,7 +55,6 @@ export class TypeOrmInitiativeProfileRepository implements InitiativeProfileRepo
         declaredStage: s.declaredStage,
         teamSize: s.teamSize,
         teamDescription: s.teamDescription,
-        academicLinkage: s.academicLinkage,
         targetMarket: s.targetMarket,
         currentFunding: s.currentFunding,
         recordedAt: s.recordedAt,
@@ -64,7 +69,6 @@ export class TypeOrmInitiativeProfileRepository implements InitiativeProfileRepo
           'declared_stage',
           'team_size',
           'team_description',
-          'academic_linkage',
           'target_market',
           'current_funding',
           'recorded_at',
@@ -88,7 +92,6 @@ export class TypeOrmInitiativeProfileRepository implements InitiativeProfileRepo
       currentFunding: row.currentFunding,
       stageId: row.idStage,
       teamSize: row.teamSize,
-      academicLinkage: row.academicLinkage,
       recordedAt: row.recordedAt,
     });
   }

@@ -6,6 +6,19 @@ import { gapsSchema } from './gaps.schema.js';
 import { criticalStateSchema } from './critical-state.schema.js';
 import { asymmetrySchema } from './asymmetry.schema.js';
 import { imbalancePairResultSchema } from './imbalance.schema.js';
+import { dimensionCodeSchema } from '../irl-taxonomy/dimension.schema.js';
+
+/**
+ * The global level the average stands for, and what it means. The average
+ * has decimals and the texts are per whole level, so the average (to one
+ * decimal, as shown) is rounded half up: 3.5 → 4.
+ */
+export const globalLevelSchema = z.object({
+  level: z.number().int().min(1).max(9),
+  description: z.string().nullable().describe('What the global level means; null if not seeded'),
+});
+
+export type GlobalLevel = z.infer<typeof globalLevelSchema>;
 
 /**
  * Response of the initial maturity profile (RF-07 / HU-11–HU-15).
@@ -21,6 +34,9 @@ import { imbalancePairResultSchema } from './imbalance.schema.js';
  *   - `globalAverage` (RF-09) and `criticalState` (RF-13), computed by the
  *     backend.
  *   - `computedAt`, to show the date of the calculation.
+ *   - `globalLevel` (the rounded average and what it means) and
+ *     `levelScale` (what each of the nine levels means, per dimension),
+ *     so every score shown — current or a roadmap target — has its text.
  *
  * `imbalances` is `.optional()`: the response is valid when the pairs are
  * missing from the catalog, and the frontend renders them conditionally.
@@ -56,6 +72,10 @@ export const maturityProfileResponseSchema = z
     criticalState: criticalStateSchema.describe(
       'Dimensions in critical state (RF-13) — evaluated by the backend; do not recompute in the client',
     ),
+    globalLevel: globalLevelSchema,
+    levelScale: z
+      .record(dimensionCodeSchema, z.array(z.string().nullable()).length(9))
+      .describe('What each level 1–9 means, per dimension (index 0 is level 1)'),
     imbalances: z
       .array(imbalancePairResultSchema)
       .length(6)

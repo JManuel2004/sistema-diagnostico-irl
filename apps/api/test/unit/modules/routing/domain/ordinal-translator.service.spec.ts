@@ -12,7 +12,7 @@ const scale = CalibrationScale.create([
 
 const profile: OrdinalProfile = {
   idService: 1,
-  serviceName: 'Consultoría',
+  serviceName: 'Consultoría Experta',
   minLevel: 4,
   maxLevel: 9,
   relevantStages: ['validacion'],

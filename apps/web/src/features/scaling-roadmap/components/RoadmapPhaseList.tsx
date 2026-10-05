@@ -1,23 +1,43 @@
 import type { JSX } from 'react';
 import { CheckCircle2 } from 'lucide-react';
-import type { RoadmapResponse } from '@innlab/contracts';
+import type { MaturityProfileResponse, RoadmapResponse } from '@innlab/contracts';
 import { Card, CardContent } from '@/shared/ui/card';
 import { RoadmapPhaseCard } from './RoadmapPhaseCard';
+import { RoadmapEnding } from './RoadmapEnding';
 
 interface Props {
   readonly roadmap: RoadmapResponse;
+  /** The profile today, which the end of the route is compared against. */
+  readonly profile: Pick<
+    MaturityProfileResponse,
+    'dimensionResults' | 'globalAverage' | 'imbalances'
+  >;
+  /** What each level means, per dimension, to explain each phase's target. */
+  readonly levelScale?: MaturityProfileResponse['levelScale'];
+  /** Short name of each dimension, for the final profile. */
+  readonly dimensionNames?: Readonly<Record<string, string>>;
+  /** Name of the initiative, to address it. */
+  readonly subject?: string;
 }
 
 /**
- * The whole roadmap: the phases in order and, at the bottom, the dimensions
- * that need no intervention.
+ * The whole roadmap: the phases in order, each with its service, how the
+ * dimensions end up when the route is complete against how they are today
+ * (`RoadmapEnding`) and, at the bottom, the dimensions that need no
+ * intervention.
  *
  * That final list is not decorative. The roadmap covers only the
  * dimensions to intervene, not all six, so without saying explicitly which
  * ones were left out, a dimension's absence would read as an oversight of
  * the system instead of as a result.
  */
-export function RoadmapPhaseList({ roadmap }: Props): JSX.Element {
+export function RoadmapPhaseList({
+  roadmap,
+  profile,
+  levelScale,
+  dimensionNames,
+  subject,
+}: Props): JSX.Element {
   if (roadmap.phases.length === 0) {
     return (
       <Card className="bg-surface-muted rounded-2xl border-0">
@@ -47,9 +67,17 @@ export function RoadmapPhaseList({ roadmap }: Props): JSX.Element {
             key={phase.order}
             phase={phase}
             isLast={i === roadmap.phases.length - 1}
+            levelScale={levelScale}
           />
         ))}
       </ol>
+
+      <RoadmapEnding
+        roadmap={roadmap}
+        profile={profile}
+        dimensionNames={dimensionNames}
+        subject={subject}
+      />
 
       {roadmap.dimensionsWithoutIntervention.length > 0 && (
         <Card className="mt-2 border-dashed">

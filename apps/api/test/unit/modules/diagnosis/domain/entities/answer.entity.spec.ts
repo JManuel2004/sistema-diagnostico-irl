@@ -15,35 +15,61 @@ describe('Answer', () => {
     });
 
     it('trims the justification', () => {
-      expect(Answer.create('s', LikertValue.create(3), `  ${WHY}  `).justification).toBe(WHY);
+      expect(
+        Answer.create('s', LikertValue.create(3), `  ${WHY}  `).justification,
+      ).toBe(WHY);
     });
 
-    // The justification is mandatory.
-    it.each(['', '   ', '\n\t'])('rejects a blank justification (%j)', (blank) => {
-      expect(() => Answer.create('s', LikertValue.create(3), blank)).toThrow(
-        InvariantViolationError,
-      );
+    // The justification is optional: a blank one counts as missing.
+    it.each(['', '   ', '\n\t'])(
+      'normalizes a blank justification (%j) to null',
+      (blank) => {
+        expect(
+          Answer.create('s', LikertValue.create(3), blank).justification,
+        ).toBeNull();
+      },
+    );
+
+    it('accepts an answer without a justification', () => {
+      expect(
+        Answer.create('s', LikertValue.create(3), null).justification,
+      ).toBeNull();
     });
 
     it('rejects a justification above 1000 characters, accepts exactly 1000', () => {
-      expect(() => Answer.create('s', LikertValue.create(3), 'x'.repeat(1001))).toThrow(
-        InvariantViolationError,
-      );
-      expect(Answer.create('s', LikertValue.create(3), 'x'.repeat(1000)).justification).toHaveLength(
-        1000,
-      );
+      expect(() =>
+        Answer.create('s', LikertValue.create(3), 'x'.repeat(1001)),
+      ).toThrow(InvariantViolationError);
+      expect(
+        Answer.create('s', LikertValue.create(3), 'x'.repeat(1000))
+          .justification,
+      ).toHaveLength(1000);
     });
 
-    it('rejects a missing justification (undefined from an incomplete request body)', () => {
-      expect(() =>
-        Answer.create('s', LikertValue.create(3), undefined as unknown as string),
-      ).toThrow(InvariantViolationError);
+    it('treats an absent justification (undefined from a request body) as missing', () => {
+      expect(
+        Answer.create('s', LikertValue.create(3), undefined as unknown as null)
+          .justification,
+      ).toBeNull();
     });
   });
 
   describe('fromPersistence', () => {
+    it('reconstructs an answer saved without a justification', () => {
+      const answer = Answer.fromPersistence({
+        statementId: '42',
+        value: 4,
+        justification: null,
+      });
+      expect(answer.justification).toBeNull();
+    });
+
     it('reconstructs an answer from a persistence row', () => {
-      const answer = Answer.fromPersistence({ statementId: '42', value: 4, justification: WHY });
+      const answer = Answer.fromPersistence({
+        statementId: '42',
+        value: 4,
+        justification: WHY,
+      });
       expect(answer.statementId).toBe('42');
       expect(answer.value.value).toBe(4);
       expect(answer.justification).toBe(WHY);
@@ -53,7 +79,10 @@ describe('Answer', () => {
   describe('withResponse', () => {
     it('returns a new Answer with the new value and justification, preserving statementId', () => {
       const original = Answer.create('stmt-1', LikertValue.create(2), WHY);
-      const updated = original.withResponse(LikertValue.create(5), 'Cambió la evidencia.');
+      const updated = original.withResponse(
+        LikertValue.create(5),
+        'Cambió la evidencia.',
+      );
       expect(updated.statementId).toBe('stmt-1');
       expect(updated.value.value).toBe(5);
       expect(updated.justification).toBe('Cambió la evidencia.');
@@ -66,11 +95,11 @@ describe('Answer', () => {
       expect(original.justification).toBe(WHY);
     });
 
-    it('also requires a justification', () => {
+    it('can drop the justification: a blank one becomes null', () => {
       const original = Answer.create('stmt-1', LikertValue.create(2), WHY);
-      expect(() => original.withResponse(LikertValue.create(5), ' ')).toThrow(
-        InvariantViolationError,
-      );
+      expect(
+        original.withResponse(LikertValue.create(5), ' ').justification,
+      ).toBeNull();
     });
   });
 

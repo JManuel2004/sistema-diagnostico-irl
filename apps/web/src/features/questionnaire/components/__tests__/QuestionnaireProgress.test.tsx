@@ -39,15 +39,15 @@ describe('QuestionnaireProgress', () => {
     expect(screen.getByText('25% completado')).toBeInTheDocument();
   });
 
-  // An answer without its justification is not complete.
-  it('no cuenta una respuesta sin justificación', () => {
+  // The justification is optional: the answer alone completes a statement.
+  it('cuenta una respuesta aunque no tenga justificación', () => {
     render(<QuestionnaireProgress dimensions={dimensions} />);
     act(() => {
       useQuestionnaireDraftStore.getState().setAnswer('1', 3);
     });
 
     expect(
-      screen.getByRole('progressbar', { name: '0 de 8 afirmaciones completas' }),
+      screen.getByRole('progressbar', { name: '1 de 8 afirmaciones completas' }),
     ).toBeInTheDocument();
   });
 

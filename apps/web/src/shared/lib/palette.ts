@@ -36,14 +36,28 @@ export const PALETTE = {
     crl: '#865CF0',
     brl: '#4CB979',
     iprl: '#3D3D8C',
-    tmrl: '#E9683B',
+    // Amber, not Naranja Icesi: a red-orange read as a warning on data that
+    // is not negative, and collided with the `moderate` hue.
+    tmrl: '#D98E04',
     frl: '#E4EB60',
 
     'trl-ink': '#3737BD',
     'crl-ink': '#7C4FEA',
     'brl-ink': '#1F8550',
     'iprl-ink': '#3D3D8C',
-    'tmrl-ink': '#C2512A',
+    'tmrl-ink': '#8A5A00',
     'frl-ink': '#8C7818',
+  },
+
+  // How much the user agreed with a statement, 1 to 5: one hue (Azul
+  // Icesi), light to dark, each step visibly apart and the lightest still
+  // clear of white (checked as an ordinal ramp). A cell always shows its
+  // number too, so the shade is never the only signal.
+  likert: {
+    1: '#ADADF5',
+    2: '#8888F0',
+    3: '#5454E9',
+    4: '#3B3BC4',
+    5: '#25258A',
   },
 } as const;

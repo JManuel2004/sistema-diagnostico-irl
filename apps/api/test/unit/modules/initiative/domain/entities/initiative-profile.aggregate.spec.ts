@@ -17,7 +17,6 @@ function input(over: Record<string, unknown> = {}) {
     declaredStage: 'Piloto completado',
     teamSize: 3,
     teamDescription: 'Fundadora, coordinadora y desarrollador externo',
-    academicLinkage: false,
     targetMarket: 'Productores de café del suroccidente',
     currentFunding: 'Ahorros de la fundadora',
     ...over,
@@ -37,12 +36,15 @@ describe('InitiativeProfile', () => {
       expect(initiative.teamDescription).toContain('Fundadora');
       expect(initiative.targetMarket).toContain('café');
       expect(initiative.currentFunding).toBe('Ahorros de la fundadora');
-      expect(initiative.academicLinkage).toBe(false);
     });
 
     it('trims every text field', () => {
       const initiative = InitiativeProfile.register(
-        input({ name: '  AgroConecta  ', productType: '  App  ', currentFunding: '  Ahorros  ' }),
+        input({
+          name: '  AgroConecta  ',
+          productType: '  App  ',
+          currentFunding: '  Ahorros  ',
+        }),
       );
 
       expect(initiative.name).toBe('AgroConecta');
@@ -54,25 +56,37 @@ describe('InitiativeProfile', () => {
       ['too short', 'ab'],
       ['too long', 'x'.repeat(121)],
     ])('rejects a name that is %s', (_label, name) => {
-      expect(() => InitiativeProfile.register(input({ name }))).toThrow(InvariantViolationError);
+      expect(() => InitiativeProfile.register(input({ name }))).toThrow(
+        InvariantViolationError,
+      );
     });
 
-    it.each(['productType', 'declaredStage', 'teamDescription', 'targetMarket', 'currentFunding'])(
-      'requires %s: rejects blank and over 500 characters',
-      (field) => {
-        expect(() => InitiativeProfile.register(input({ [field]: '   ' }))).toThrow(
+    it.each([
+      'productType',
+      'declaredStage',
+      'teamDescription',
+      'targetMarket',
+      'currentFunding',
+    ])('requires %s: rejects blank and over 500 characters', (field) => {
+      expect(() =>
+        InitiativeProfile.register(input({ [field]: '   ' })),
+      ).toThrow(InvariantViolationError);
+      expect(() =>
+        InitiativeProfile.register(input({ [field]: 'x'.repeat(501) })),
+      ).toThrow(InvariantViolationError);
+      expect(
+        InitiativeProfile.register(input({ [field]: 'x'.repeat(500) })),
+      ).toBeDefined();
+    });
+
+    it.each([0, -1, 1.5, Number.NaN])(
+      'rejects a team size of %s',
+      (teamSize) => {
+        expect(() => InitiativeProfile.register(input({ teamSize }))).toThrow(
           InvariantViolationError,
         );
-        expect(() => InitiativeProfile.register(input({ [field]: 'x'.repeat(501) }))).toThrow(
-          InvariantViolationError,
-        );
-        expect(InitiativeProfile.register(input({ [field]: 'x'.repeat(500) }))).toBeDefined();
       },
     );
-
-    it.each([0, -1, 1.5, Number.NaN])('rejects a team size of %s', (teamSize) => {
-      expect(() => InitiativeProfile.register(input({ teamSize }))).toThrow(InvariantViolationError);
-    });
   });
 
   describe('fromPersistence / toPersistence', () => {
@@ -88,13 +102,14 @@ describe('InitiativeProfile', () => {
         declaredStage: 'Piloto completado',
         teamSize: 4,
         teamDescription: 'Fundadora y equipo',
-        academicLinkage: true,
         targetMarket: 'Productores',
         currentFunding: 'Ahorros',
         recordedAt: new Date('2026-09-25T00:00:00.000Z'),
       };
 
-      expect(InitiativeProfile.fromPersistence(row).toPersistence()).toEqual(row);
+      expect(InitiativeProfile.fromPersistence(row).toPersistence()).toEqual(
+        row,
+      );
     });
   });
 });

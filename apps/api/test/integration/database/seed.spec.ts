@@ -1,6 +1,7 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
+import { randomUUID } from 'node:crypto';
 import { InitialSchema1747526400001 } from '../../../src/shared/kernel/infrastructure/database/migrations/20260518001-InitialSchema.js';
 import { seedCatalog } from '../../../src/shared/kernel/infrastructure/database/seeds/seed-catalog.js';
 import { DIMENSIONS } from '../../../src/shared/kernel/infrastructure/database/seeds/data/dimensions.js';
@@ -76,7 +77,8 @@ describe('Catalog seed (integration)', () => {
 
     expect(await count('irl_catalog.dimension')).toBe('6');
     expect(await count('irl_catalog.statement')).toBe('48');
-    expect(await count('irl_catalog.ordinal_intensity')).toBe('36');
+    expect(await count('irl_catalog.ordinal_intensity')).toBe('72');
+    expect(await count('irl_catalog.portfolio_service')).toBe('12');
     expect(await count('irl_catalog.framework_version')).toBe('1');
     expect(await count('irl_catalog.consent_terms')).toBe('1');
   });
@@ -108,10 +110,74 @@ describe('Catalog seed (integration)', () => {
     expect(rows.map((r) => r.code)).toEqual(['BRL', 'CRL', 'TmRL']);
   });
 
+  it('seeds the four service tiers and gives every service its tier, subtitle and scope', async () => {
+    await runSeed();
+
+    const tiers = await dataSource.query<{ name: string; sequence: number }[]>(
+      `SELECT name, sequence FROM irl_catalog.service_tier ORDER BY sequence`,
+    );
+    expect(tiers.map((t) => t.name)).toEqual([
+      'Descubre',
+      'Co-crea',
+      'Profundiza',
+      'Alíate',
+    ]);
+    const [reto] = await dataSource.query<
+      { subtitle: string; scope: string; tier: string }[]
+    >(
+      `SELECT s.subtitle, s.scope, t.name AS tier
+         FROM irl_catalog.portfolio_service s
+         JOIN irl_catalog.service_tier t ON t.id = s.id_tier
+        WHERE s.name = 'Reto Express'`,
+    );
+    expect(reto).toEqual({
+      subtitle: 'Hackatón · Design Sprint · Challenge',
+      scope:
+        'Banco de ideas, conceptos y prototipos tempranos (TRL 3–5) + informe síntesis del sprint.',
+      tier: 'Descubre',
+    });
+  });
+
+  it('seeds what each level means: 54 dimension texts and 9 global ones for the version', async () => {
+    await runSeed();
+
+    expect(await count('irl_catalog.dimension_level_description')).toBe('54');
+    expect(await count('irl_catalog.global_level_description')).toBe('9');
+    const [trl1] = await dataSource.query<{ description: string }[]>(
+      `SELECT l.description
+         FROM irl_catalog.dimension_level_description l
+         JOIN irl_catalog.dimension d ON d.id_dimension = l.id_dimension
+        WHERE d.code = 'TRL' AND l.irl_level = 1`,
+    );
+    expect(trl1.description).toBe(
+      'Se han observado y reportado principios básicos científicos.',
+    );
+    await expect(
+      dataSource.query(
+        `UPDATE irl_catalog.global_level_description SET description = '   ' WHERE irl_level = 1`,
+      ),
+    ).rejects.toThrow(/ck_global_level_description_text/);
+  });
+
+  it('seeds how the roadmap paces and closes the route', async () => {
+    await runSeed();
+
+    const [row] = await dataSource.query<
+      { max_levels_per_phase: number; balance_tolerance: number }[]
+    >(
+      `SELECT max_levels_per_phase, balance_tolerance FROM irl_catalog.roadmap_parameters`,
+    );
+    expect(row).toEqual({ max_levels_per_phase: 2, balance_tolerance: 1 });
+  });
+
   it('applies a change of the routing configuration when seeding again', async () => {
     await runSeed();
-    await dataSource.query(`UPDATE irl_catalog.scoring_parameters SET gap_weight = 9`);
-    await dataSource.query(`DELETE FROM irl_catalog.eligibility_rule WHERE code = 'ELG-02'`);
+    await dataSource.query(
+      `UPDATE irl_catalog.scoring_parameters SET gap_weight = 9`,
+    );
+    await dataSource.query(
+      `DELETE FROM irl_catalog.eligibility_rule WHERE code = 'ELG-02'`,
+    );
 
     await runSeed();
 
@@ -119,7 +185,165 @@ describe('Catalog seed (integration)', () => {
       `SELECT gap_weight FROM irl_catalog.scoring_parameters`,
     );
     expect(Number(gap_weight)).toBe(1.5);
-    expect(await count('irl_catalog.eligibility_rule')).toBe('2');
+    expect(await count('irl_catalog.eligibility_rule')).toBe('1');
+  });
+
+  // The engine loads every service of the catalog: a service that left the
+  // seed must leave the database, or it would keep being recommended.
+  it('removes the services and rules that are no longer in the seed', async () => {
+    await runSeed();
+    const [{ id }] = await dataSource.query<{ id: number }[]>(
+      `INSERT INTO irl_catalog.portfolio_service
+         (name, subtitle, scope, id_tier, is_active, adjustment_only, min_level, max_level)
+       VALUES ('Mentoría', 'x', 'x', (SELECT id FROM irl_catalog.service_tier ORDER BY sequence LIMIT 1), true, false, 1, 6) RETURNING id`,
+    );
+    await dataSource.query(
+      `INSERT INTO irl_catalog.ordinal_intensity (id_service, id_dimension, id_calibration_label)
+       SELECT $1, d.id_dimension, c.id FROM irl_catalog.dimension d, irl_catalog.calibration_label_value c
+        WHERE c.label = 'primary'`,
+      [id],
+    );
+    await dataSource.query(
+      `INSERT INTO irl_catalog.exception_rule
+         (code, predicate, action, id_target_service, target_adjustment_only, positions, declared_reason, priority_order)
+       VALUES ('E-03-OLD', '{"field":"averageLevel","op":"<","value":3}', 'PROMOTE', $1, false, 1, 'x', 99)`,
+      [id],
+    );
+
+    await runSeed();
+
+    const names = await dataSource.query<{ name: string }[]>(
+      `SELECT name FROM irl_catalog.portfolio_service ORDER BY id`,
+    );
+    expect(names.map((n) => n.name)).not.toContain('Mentoría');
+    expect(await count('irl_catalog.portfolio_service')).toBe('12');
+    expect(await count('irl_catalog.ordinal_intensity')).toBe('72');
+    expect(await count('irl_catalog.exception_rule')).toBe('6');
+  });
+
+  it('refuses to remove a service a saved recommendation points to', async () => {
+    await runSeed();
+    const diagnosticId = randomUUID();
+    const [{ id }] = await dataSource.query<{ id: number }[]>(
+      `INSERT INTO irl_catalog.portfolio_service
+         (name, subtitle, scope, id_tier, is_active, adjustment_only, min_level, max_level)
+       VALUES ('Formación', 'x', 'x', (SELECT id FROM irl_catalog.service_tier ORDER BY sequence LIMIT 1), true, false, 1, 5) RETURNING id`,
+    );
+    await dataSource.query(
+      `INSERT INTO irl_diagnostic.diagnostic (id, cognito_user_id, state, id_framework_version)
+       VALUES ($1, 'u', 'DEEP_ANALYSIS_COMPLETE', (SELECT id FROM irl_catalog.framework_version LIMIT 1))`,
+      [diagnosticId],
+    );
+    const [{ id: idRecommendation }] = await dataSource.query<{ id: string }[]>(
+      `INSERT INTO irl_diagnostic.portfolio_recommendation
+         (id_diagnostic, result_type, criterion_justification, generated_at, layer_1_excluded,
+          ranking_before_exceptions, applied_exceptions, discarded_exceptions,
+          ranking_after_exceptions, incomplete_characterization, facts_hash)
+       VALUES ($1, 'RECOMMENDATION', 'x', now(), '[]', '[]', '[]', '[]', '[]', '[]', 'h') RETURNING id`,
+      [diagnosticId],
+    );
+    await dataSource.query(
+      `INSERT INTO irl_diagnostic.recommendation_rank (id_recommendation, id_service, service_snapshot, position, score)
+       VALUES ($1, $2, 'Formación', 1, 3)`,
+      [idRecommendation, id],
+    );
+
+    await expect(runSeed()).rejects.toThrow(
+      /'Formación' left the seed but saved recommendations/,
+    );
+
+    await dataSource.query(
+      `DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`,
+      [diagnosticId],
+    );
+    await runSeed();
+    expect(await count('irl_catalog.portfolio_service')).toBe('12');
+  });
+
+  describe('the database keeps each kind of service in its own layer', () => {
+    const serviceId = async (name: string): Promise<number> => {
+      const [{ id }] = await dataSource.query<{ id: number }[]>(
+        `SELECT id FROM irl_catalog.portfolio_service WHERE name = $1`,
+        [name],
+      );
+      return id;
+    };
+
+    it('a scored service needs a level band', async () => {
+      await runSeed();
+      await expect(
+        dataSource.query(
+          `INSERT INTO irl_catalog.portfolio_service (name, subtitle, scope, id_tier, is_active, adjustment_only)
+           VALUES ('Sin banda', 'x', 'x', (SELECT id FROM irl_catalog.service_tier ORDER BY sequence LIMIT 1), true, false)`,
+        ),
+      ).rejects.toThrow(/ck_portfolio_service_scored_band/);
+    });
+
+    it('INCLUDE cannot target a scored service, and needs the position to enter at', async () => {
+      await runSeed();
+      const scored = await serviceId('Reto Express');
+      const adjustmentOnly = await serviceId('Chispa');
+      await expect(
+        dataSource.query(
+          `INSERT INTO irl_catalog.exception_rule
+             (code, predicate, action, id_target_service, target_adjustment_only, positions, declared_reason, priority_order)
+           VALUES ('INC-X', '{}', 'INCLUDE', $1, false, 2, 'x', 90)`,
+          [scored],
+        ),
+      ).rejects.toThrow(/ck_exception_rule_include_target/);
+      await expect(
+        dataSource.query(
+          `INSERT INTO irl_catalog.exception_rule
+             (code, predicate, action, id_target_service, target_adjustment_only, positions, declared_reason, priority_order)
+           VALUES ('INC-X', '{}', 'INCLUDE', $1, true, NULL, 'x', 90)`,
+          [adjustmentOnly],
+        ),
+      ).rejects.toThrow(/ck_exception_rule_positions/);
+    });
+
+    it('a ranking action may target an adjustment-only service, with its real kind', async () => {
+      await runSeed();
+      const id = await serviceId('Chispa');
+      // Once included it is one more place of the ranking. Claiming it is
+      // scored still breaks the composite foreign key.
+      await expect(
+        dataSource.query(
+          `INSERT INTO irl_catalog.exception_rule
+             (code, predicate, action, id_target_service, target_adjustment_only, positions, declared_reason, priority_order)
+           VALUES ('E-X', '{}', 'FORCE', $1, false, NULL, 'x', 91)`,
+          [id],
+        ),
+      ).rejects.toThrow(/fk_exception_rule_service/);
+      await dataSource.query(
+        `INSERT INTO irl_catalog.exception_rule
+           (code, predicate, action, id_target_service, target_adjustment_only, positions, declared_reason, priority_order)
+         VALUES ('E-X', '{}', 'FORCE', $1, true, NULL, 'x', 91)`,
+        [id],
+      );
+      await dataSource.query(
+        `DELETE FROM irl_catalog.exception_rule WHERE code = 'E-X'`,
+      );
+    });
+
+    it('an exclusion cannot target an adjustment-only service', async () => {
+      await runSeed();
+      const id = await serviceId('Alianza Residente');
+      await expect(
+        dataSource.query(
+          `INSERT INTO irl_catalog.eligibility_rule (code, id_service, predicate, exclusion_message)
+           VALUES ('ELG-X', $1, '{}', 'x')`,
+          [id],
+        ),
+      ).rejects.toThrow(/fk_eligibility_rule_service/);
+      await expect(
+        dataSource.query(
+          `INSERT INTO irl_catalog.eligibility_rule
+             (code, id_service, predicate, exclusion_message, service_adjustment_only)
+           VALUES ('ELG-X', $1, '{}', 'x', true)`,
+          [id],
+        ),
+      ).rejects.toThrow(/ck_eligibility_rule_scored_service/);
+    });
   });
 
   it('refuses to rewrite the statements of a framework version a diagnostic uses', async () => {
@@ -138,7 +362,10 @@ describe('Catalog seed (integration)', () => {
     try {
       await expect(runSeed()).rejects.toThrow(/new framework version/);
     } finally {
-      await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`, [diagnosticId]);
+      await dataSource.query(
+        `DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`,
+        [diagnosticId],
+      );
       await runSeed();
     }
   });

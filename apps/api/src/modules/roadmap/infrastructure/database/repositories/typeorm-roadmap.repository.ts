@@ -32,17 +32,25 @@ export class TypeOrmRoadmapRepository implements RoadmapRepositoryPort {
       await manager.insert(ScalingRoadmapOrm, {
         idDiagnostic: roadmap.diagnosticId.value,
         phases: [...roadmap.phases],
+        finalLevels: { ...roadmap.finalLevels },
+        balanced: roadmap.balanced,
         generatedAt: roadmap.generatedAt,
       });
     });
   }
 
-  async findByDiagnosticId(diagnosticId: string): Promise<ScalingRoadmap | null> {
-    const row = await this.orm.findOne({ where: { idDiagnostic: diagnosticId } });
+  async findByDiagnosticId(
+    diagnosticId: string,
+  ): Promise<ScalingRoadmap | null> {
+    const row = await this.orm.findOne({
+      where: { idDiagnostic: diagnosticId },
+    });
     if (!row) return null;
     return ScalingRoadmap.create({
       diagnosticId: Uuid.create(row.idDiagnostic),
       phases: row.phases,
+      finalLevels: row.finalLevels,
+      balanced: row.balanced,
       generatedAt: row.generatedAt,
     });
   }

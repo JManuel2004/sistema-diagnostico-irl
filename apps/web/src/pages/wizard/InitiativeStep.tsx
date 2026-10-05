@@ -1,21 +1,27 @@
 import { useState, type JSX } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { Initiative, InitiativeSummary } from '@innlab/contracts';
+import { useRecordConsent } from '@features/consent';
 import {
   InitiativeChooser,
   InitiativeEditor,
   NEW_INITIATIVE,
   commandToFormValues,
   initiativeToFormValues,
+  profileFieldsFromForm,
+  selectClearAcceptance,
   selectDraftClear,
   selectDraftSave,
+  useCreateInitiative,
   useInitiativeDraftStore,
   useRegisterInitiative,
   type InitiativeDraft,
+  type InitiativeFormValues,
   type InitiativeProfileFields,
 } from '@features/initiative';
 import { PageHeader } from '@/shared/ui/page-header';
 import { notify } from '@/shared/ui/notify';
+import { buttonVariants } from '@/shared/ui/button';
 import { isApiErrorWithStatus } from '@/shared/api/http';
 import { RETRY_LATER } from '@/shared/lib/copy';
 import { wizardPath } from './wizard-steps';
@@ -28,6 +34,8 @@ interface Props {
   readonly draft: InitiativeDraft | null;
   /** The user's initiatives, with their latest consent and profile. */
   readonly initiatives: readonly InitiativeSummary[];
+  /** The consent text accepted on the previous step. */
+  readonly acceptedTermsVersion: string | null;
 }
 
 function initialChoice(
@@ -39,33 +47,34 @@ function initialChoice(
 }
 
 /**
- * Step 1 — which initiative the diagnostic is about and its information
+ * Step 2 — which initiative the diagnostic is about and its information
  * (HU-06 / RF-04).
  *
- * The user chooses one of their initiatives — its latest profile fills the
- * form — or a new one. The consent belongs to the initiative: if the chosen
- * one already accepted the current text, the profile is registered right
- * away and the consent step is not needed. Otherwise (a new initiative, or
- * a text published after the last acceptance) the form is kept as a browser
- * draft and registered on acceptance (step 2).
- *
- * When the diagnostic already has a profile the user came back to correct
- * it: the initiative is fixed and there is nothing to choose.
+ * The consent was accepted on the previous step. Continuing records that
+ * acceptance on the initiative — creating one when the user chose «new» —
+ * and then registers the profile. An initiative that already accepted the
+ * current text only registers the profile. Correcting a profile that is
+ * already registered does not ask for the consent again.
  */
 export function InitiativeStep({
   diagnosticId,
   registered,
   draft,
   initiatives,
+  acceptedTermsVersion,
 }: Props): JSX.Element {
   const navigate = useNavigate();
+  const createInitiative = useCreateInitiative();
+  const recordConsent = useRecordConsent();
   const register = useRegisterInitiative(diagnosticId);
   const saveDraft = useInitiativeDraftStore(selectDraftSave);
   const clearDraft = useInitiativeDraftStore(selectDraftClear);
+  const clearAcceptance = useInitiativeDraftStore(selectClearAcceptance);
   const [choice, setChoice] = useState(() => initialChoice(draft, initiatives));
 
   const initiativeId = registered?.initiativeId ?? (choice === NEW_INITIATIVE ? null : choice);
-  const chosen = initiatives.find((i) => i.id === initiativeId);
+  const chosen = initiatives.find((initiative) => initiative.id === initiativeId);
+  const busy = createInitiative.isPending || recordConsent.isPending || register.isPending;
 
   const initial = registered
     ? initiativeToFormValues(registered)
@@ -75,34 +84,62 @@ export function InitiativeStep({
         ? initiativeToFormValues(chosen.latestProfile)
         : undefined;
 
-  function toConsent(command: InitiativeProfileFields): void {
+  function remember(command: InitiativeProfileFields): void {
     saveDraft({ initiativeId, command });
-    void navigate(wizardPath(diagnosticId, 'consentimiento'));
   }
 
-  function handleSubmit(command: InitiativeProfileFields): void {
-    if (initiativeId === null || chosen?.consentCurrent !== true) {
-      toConsent(command);
+  function rememberForm(values: InitiativeFormValues): void {
+    const command = profileFieldsFromForm(values);
+    if (command) remember(command);
+  }
+
+  async function handleSubmit(command: InitiativeProfileFields): Promise<void> {
+    remember(command);
+    if (!registered && acceptedTermsVersion === null) {
+      void navigate(wizardPath(diagnosticId, 'consentimiento'), { replace: true });
       return;
     }
-    register.mutate(
-      { initiativeId, ...command },
-      {
-        onSuccess: () => {
-          clearDraft();
-          notify.success('Iniciativa guardada.');
-          void navigate(wizardPath(diagnosticId, 'cuestionario'));
-        },
-        onError: (error) => {
-          // The text changed since the list was read: the consent step asks for it.
-          if (isApiErrorWithStatus(error, 409)) {
-            toConsent(command);
-            return;
-          }
-          notify.error(`No fue posible guardar la iniciativa. ${RETRY_LATER}`);
-        },
-      },
-    );
+
+    const termsVersion = acceptedTermsVersion;
+    let id = initiativeId;
+    let acceptedNow = false;
+    try {
+      if (id === null) {
+        if (termsVersion === null) return;
+        const created = await createInitiative.mutateAsync(termsVersion);
+        id = created.id;
+        acceptedNow = true;
+        setChoice(id);
+        saveDraft({ initiativeId: id, command });
+      } else if (!registered && chosen?.consentCurrent !== true) {
+        if (termsVersion === null) return;
+        await recordConsent.mutateAsync({ initiativeId: id, version: termsVersion });
+        acceptedNow = true;
+      }
+      await register.mutateAsync({ initiativeId: id, ...command });
+    } catch (error) {
+      if (isApiErrorWithStatus(error, 409)) {
+        clearAcceptance();
+        notify.error(
+          'El texto del consentimiento cambió mientras lo leías. Recarga la página para ver la versión vigente.',
+        );
+        void navigate(wizardPath(diagnosticId, 'consentimiento'), { replace: true });
+        return;
+      }
+      const needsAcceptance = initiativeId === null || (!registered && chosen?.consentCurrent !== true);
+      notify.error(
+        acceptedNow
+          ? `Tu aceptación quedó registrada, pero no fue posible guardar la iniciativa. ${RETRY_LATER}`
+          : needsAcceptance
+            ? `No fue posible registrar tu aceptación. ${RETRY_LATER}`
+            : `No fue posible guardar la iniciativa. ${RETRY_LATER}`,
+      );
+      return;
+    }
+
+    clearDraft();
+    notify.success(acceptedNow ? 'Consentimiento registrado.' : 'Iniciativa guardada.');
+    void navigate(wizardPath(diagnosticId, 'cuestionario'));
   }
 
   return (
@@ -119,10 +156,24 @@ export function InitiativeStep({
       <InitiativeEditor
         formKey={registered?.id ?? initiativeId ?? NEW_INITIATIVE}
         initial={initial}
-        isSubmitting={register.isPending}
+        isSubmitting={busy}
         submitLabel="Continuar"
-        onSubmit={handleSubmit}
+        onDraftChange={registered ? undefined : rememberForm}
+        onSubmit={(command) => {
+          void handleSubmit(command);
+        }}
       />
+
+      {!registered && (
+        <div className="mt-6">
+          <Link
+            to={wizardPath(diagnosticId, 'consentimiento')}
+            className={buttonVariants({ variant: 'ghost' })}
+          >
+            Atrás
+          </Link>
+        </div>
+      )}
     </>
   );
 }

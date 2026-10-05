@@ -32,10 +32,17 @@ describe('StatementCard — justification', () => {
     expect(screen.getByLabelText('¿Por qué elegiste este nivel?')).toBeInTheDocument();
   });
 
-  it('says the justification is mandatory and shows the length limit', () => {
+  it('says the justification is optional and shows the length limit', () => {
     render(<StatementCard statement={statement} />);
 
-    expect(screen.getByText(/0 \/ 1000 caracteres · Obligatoria/)).toBeInTheDocument();
+    expect(screen.getByText(/0 \/ 1000 caracteres · Opcional/)).toBeInTheDocument();
+  });
+
+  it('marks the statement complete with the answer alone', () => {
+    store().setAnswer('7', 4);
+    render(<StatementCard statement={statement} />);
+
+    expect(screen.getByText('Completa')).toBeInTheDocument();
   });
 
   it('stores what the user writes, per statement, and counts the characters', async () => {
@@ -82,11 +89,9 @@ describe('StatementCard — justification', () => {
 });
 
 describe('isStatementComplete', () => {
-  it('needs both the answer and a non-blank justification', () => {
-    expect(isStatementComplete({ '1': 3 }, { '1': 'Porque sí' }, '1')).toBe(true);
-    expect(isStatementComplete({ '1': 3 }, {}, '1')).toBe(false);
-    expect(isStatementComplete({ '1': 3 }, { '1': '   ' }, '1')).toBe(false);
-    expect(isStatementComplete({}, { '1': 'Porque sí' }, '1')).toBe(false);
+  it('needs the answer; the justification is optional', () => {
+    expect(isStatementComplete({ '1': 3 }, '1')).toBe(true);
+    expect(isStatementComplete({}, '1')).toBe(false);
   });
 });
 

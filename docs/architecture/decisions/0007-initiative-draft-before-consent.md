@@ -1,6 +1,6 @@
 # 0007 — The wizard keeps the initiative in the browser until the consent
 
-**Status:** accepted — pending confirmation from legal that a browser-only draft before the consent is admissible.
+**Status:** superseded by [0015](./0015-consent-before-the-initiative.md): the consent step now goes first.
 
 ## Context
 

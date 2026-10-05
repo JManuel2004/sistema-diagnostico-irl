@@ -26,6 +26,7 @@ export * from './diagnosis/asymmetry.schema.js';
 export * from './diagnosis/imbalance.schema.js';
 export * from './diagnosis/profile-response.schema.js';
 export * from './diagnosis/diagnostic.schema.js';
+export * from './diagnosis/given-answers.schema.js';
 
 // ── identity (shared/identity) ────────────────────────────────────────
 export * from './identity/core-session.schema.js';
@@ -38,8 +39,12 @@ export * from './initiative/initiative.schema.js';
 // ── routing ───────────────────────────────────────────────────────────
 export * from './routing/predicate.schema.js';
 export * from './routing/diagnostic-facts.schema.js';
+export * from './routing/service-detail.schema.js';
 export * from './routing/recommendation-response.schema.js';
 export * from './routing/layer-trace.schema.js';
 
 // ── roadmap ───────────────────────────────────────────────────────────
 export * from './roadmap/roadmap-response.schema.js';
+
+// ── reporting ─────────────────────────────────────────────────────────
+export * from './reporting/report-response.schema.js';

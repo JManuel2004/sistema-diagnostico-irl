@@ -4,6 +4,7 @@ import { RecommendationNotGeneratedError } from '../../domain/exceptions/routing
 import { Result } from '../../../../shared/kernel/domain/result.js';
 import type { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
 import { type DiagnosticOwnershipPort } from '../../domain/repositories/diagnostic-ownership.port.js';
+import { type RoutingConfigurationRepositoryPort } from '../../domain/repositories/routing-configuration.repository.port.js';
 import { toRecommendationResponse } from '../dtos/map-recommendation-response.js';
 
 export interface GetRecommendationQuery {
@@ -24,11 +25,17 @@ export class GetRecommendationUseCase {
   constructor(
     private readonly recommendations: RecommendationRepositoryPort,
     private readonly ownership: DiagnosticOwnershipPort,
+    private readonly configuration: RoutingConfigurationRepositoryPort,
   ) {}
 
   async execute(
     query: GetRecommendationQuery,
-  ): Promise<Result<RecommendationResponse, NotFoundError | RecommendationNotGeneratedError>> {
+  ): Promise<
+    Result<
+      RecommendationResponse,
+      NotFoundError | RecommendationNotGeneratedError
+    >
+  > {
     const owned = await this.ownership.verify(query.diagnosticId, query.userId);
     if (!owned.ok) return owned;
 
@@ -41,6 +48,7 @@ export class GetRecommendationUseCase {
       );
     }
 
-    return Result.ok(toRecommendationResponse(recommendation));
+    const catalog = await this.configuration.findServiceCatalog();
+    return Result.ok(toRecommendationResponse(recommendation, catalog));
   }
 }

@@ -14,9 +14,14 @@ export {
 export {
   commandToFormValues,
   initiativeToFormValues,
+  profileFieldsFromForm,
   type InitiativeProfileFields,
 } from './lib/form-values';
+export type { InitiativeFormValues } from './lib/form-values';
 export {
+  selectAcceptTerms,
+  selectAcceptedTermsVersion,
+  selectClearAcceptance,
   selectDraft,
   selectDraftClear,
   selectDraftDiagnosticId,

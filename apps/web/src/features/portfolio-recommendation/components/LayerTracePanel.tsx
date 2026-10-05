@@ -34,7 +34,9 @@ interface Props {
  *
  *  1. Which services do not apply to the initiative.
  *  2. How the rest were ordered according to its profile.
- *  3. Whether the center had to adjust anything by hand.
+ *  3. Whether the center had to adjust anything by hand: each adjustment
+ *     with its reason, and the order it left, which is the one the
+ *     recommendation comes from.
  *
  * Four decisions carry the weight of this component:
  *
@@ -81,7 +83,7 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
 
           {trace.adjustedByException && (
             <Alert
-              tone="moderate"
+              tone="info"
               title="Esta recomendación proviene de un ajuste puntual del centro, no del resultado del cálculo."
             />
           )}
@@ -119,7 +121,11 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
             </Step>
 
             <Step number={2} title="El orden según tu perfil">
-              <Ranking ranking={trace.rankingBeforeExceptions} nameOf={nameOf} />
+              <Ranking
+                ranking={trace.rankingBeforeExceptions}
+                nameOf={nameOf}
+                recommendsFirst={!trace.adjustedByException}
+              />
             </Step>
 
             <Step number={3} title="Ajuste del centro">
@@ -128,33 +134,40 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
                   No hizo falta ningún ajuste: el orden es el que salió del cálculo.
                 </p>
               ) : (
-                <ul className="flex flex-col gap-3">
-                  {trace.appliedExceptions.map((e) => (
-                    <li key={e.code} className="flex flex-col gap-1.5">
-                      <p className="flex items-start gap-2.5 text-base leading-relaxed">
+                <>
+                  <ul className="flex flex-col gap-3">
+                    {trace.appliedExceptions.map((e) => (
+                      <li
+                        key={e.code}
+                        className="flex items-start gap-2.5 text-base leading-relaxed"
+                      >
                         <SlidersHorizontal
-                          className="text-moderate mt-1 size-4 shrink-0"
+                          className="text-azul-icesi mt-1 size-4 shrink-0"
                           aria-hidden="true"
                         />
-                        <span>
-                          <span className="text-foreground font-semibold">
-                            {adjustmentTitle(e)}
-                          </span>{' '}
-                          <span className="text-muted-foreground">{adjustmentPlace(e)}</span>
-                        </span>
-                      </p>
-                      <details className="text-base">
-                        <summary className="text-azul-icesi inline-flex cursor-pointer items-center gap-1 font-semibold">
-                          Ver motivo
-                          <ChevronDown className="size-4" aria-hidden="true" />
-                        </summary>
-                        <p className="text-muted-foreground mt-2 leading-relaxed">
-                          {e.declaredReason}
-                        </p>
-                      </details>
-                    </li>
-                  ))}
-                </ul>
+                        <div className="flex flex-col gap-1">
+                          <p>
+                            <span className="text-foreground font-semibold">
+                              {adjustmentTitle(e)}
+                            </span>{' '}
+                            <span className="text-muted-foreground">{adjustmentPlace(e)}</span>
+                          </p>
+                          <p className="text-muted-foreground">
+                            <span className="text-foreground font-semibold">Motivo: </span>
+                            {e.declaredReason}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <h4 className="text-foreground mt-2 text-base font-bold">Así queda el orden</h4>
+                  <Ranking
+                    ranking={trace.rankingAfterExceptions}
+                    nameOf={nameOf}
+                    adjusted={adjustedServices(trace)}
+                  />
+                </>
               )}
 
               {trace.discardedExceptions.length > 0 && (
@@ -189,27 +202,46 @@ function verdict(trace: LayerTraceResponse): string {
 }
 
 /**
- * The order of the calculation. The first shows its reasons; the rest keep
- * them behind «Ver motivos», and from the fourth on the whole list folds:
+ * An order of services. The first shows its reasons; the rest keep them
+ * behind «Ver motivos», and from the fourth on the whole list folds:
  * whoever wants to check the full calculation can, without anyone else
  * reading it.
+ *
+ * Step 2 draws the order of the calculation and step 3 the one the
+ * adjustments left. In the latter, the services an adjustment touched say
+ * so, and one an adjustment put into the order has no reasons of the
+ * calculation to show: it says the center included it.
  */
 function Ranking({
   ranking,
   nameOf,
+  recommendsFirst = true,
+  adjusted,
 }: {
   readonly ranking: readonly RankingEntry[];
   readonly nameOf: (code: string) => string;
+  /** False when an adjustment put another service first. */
+  readonly recommendsFirst?: boolean;
+  /** Services an adjustment moved, by id; only in the order after the adjustments. */
+  readonly adjusted?: ReadonlySet<number>;
 }): JSX.Element {
   const visible = ranking.slice(0, 3);
   const rest = ranking.slice(3);
+  const row = (r: RankingEntry, first: boolean): JSX.Element => (
+    <ServiceRow
+      key={r.idService}
+      entry={r}
+      nameOf={nameOf}
+      highlighted={first}
+      recommended={first && recommendsFirst}
+      adjusted={adjusted?.has(r.idService) ?? false}
+    />
+  );
 
   return (
     <div className="flex flex-col gap-2">
       <ol className="border-border flex flex-col border-t">
-        {visible.map((r, index) => (
-          <ServiceRow key={r.idService} entry={r} nameOf={nameOf} highlighted={index === 0} />
-        ))}
+        {visible.map((r, index) => row(r, index === 0))}
       </ol>
 
       {rest.length > 0 && (
@@ -219,9 +251,7 @@ function Ranking({
             {rest.length === 1 ? '1 servicio más' : `${String(rest.length)} servicios más`}
           </summary>
           <ol className="border-border mt-2 flex flex-col border-t">
-            {rest.map((r) => (
-              <ServiceRow key={r.idService} entry={r} nameOf={nameOf} highlighted={false} />
-            ))}
+            {rest.map((r) => row(r, false))}
           </ol>
         </details>
       )}
@@ -233,10 +263,14 @@ function ServiceRow({
   entry,
   nameOf,
   highlighted,
+  recommended,
+  adjusted,
 }: {
   readonly entry: RankingEntry;
   readonly nameOf: (code: string) => string;
   readonly highlighted: boolean;
+  readonly recommended: boolean;
+  readonly adjusted: boolean;
 }): JSX.Element {
   const reasons = contributionReasons(entry, nameOf);
 
@@ -250,14 +284,23 @@ function ServiceRow({
           <span className="sr-only">Puesto {entry.position}: </span>
           {entry.name}
         </span>
-        {highlighted && (
+        {recommended && (
           <span className="bg-azul-icesi text-primary-foreground px-2 py-1 text-sm font-bold uppercase tracking-[0.06em]">
             Recomendado
           </span>
         )}
+        {adjusted && (
+          <span className="border-azul-icesi text-azul-icesi border px-2 py-1 text-sm font-bold">
+            {entry.includedBy ? 'Lo incluyó el centro' : 'Lo movió un ajuste'}
+          </span>
+        )}
       </p>
 
-      {reasons.length === 0 ? (
+      {entry.includedBy ? (
+        <p className="text-muted-foreground pl-9 text-base">
+          No compite en el cálculo: entra al orden solo por el ajuste del centro.
+        </p>
+      ) : reasons.length === 0 ? (
         <p className="text-muted-foreground pl-9 text-base">
           No tiene una afinidad destacada con tu perfil.
         </p>
@@ -304,9 +347,10 @@ function Reasons({
  */
 function ReasonLabel({ reason }: { readonly reason: Reason }): JSX.Element {
   const Icon = reason.icon;
-  const className = `border-border bg-surface-muted inline-flex items-center gap-2 border px-2.5 py-1.5 text-base font-semibold ${
-    reason.tone === 'moderate' ? 'text-moderate' : 'text-foreground'
-  }`;
+  // Every reason is neutral: none of them is a problem of the initiative,
+  // so none borrows the warning hues.
+  const className =
+    'border-border bg-surface-muted text-foreground inline-flex items-center gap-2 border px-2.5 py-1.5 text-base font-semibold';
 
   if (reason.detail === undefined) {
     return (
@@ -333,7 +377,6 @@ interface Reason {
   readonly label: string;
   /** What is behind the count: the dimensions or the pairs, by name. */
   readonly detail?: string;
-  readonly tone?: 'moderate';
 }
 
 /** «Negocio, Propiedad Intelectual y Financiación». */
@@ -403,7 +446,6 @@ function contributionReasons(
       icon: TriangleAlert,
       label: 'Pesa menos por su nivel',
       detail: 'Suele usarse con iniciativas de otro nivel de madurez, por eso pesa menos.',
-      tone: 'moderate',
     });
   }
 
@@ -447,7 +489,6 @@ const READABLE_FIELDS: Readonly<Record<string, string>> = {
   stage: 'la etapa',
   sector: 'el sector',
   teamSize: 'el tamaño del equipo',
-  academicLinkage: 'la vinculación académica',
 };
 
 function readableField(field: string): string {
@@ -459,14 +500,32 @@ const ACTION_TITLE: Record<AppliedException['action'], (service: string) => stri
   PROMOTE: (s) => `Se subió ${s} en el orden`,
   DEMOTE: (s) => `Se bajó ${s} en el orden`,
   VETO: (s) => `Se retiró ${s} de las opciones`,
+  INCLUDE: (s) => `Se incluyó ${s} entre las opciones`,
 };
 
 function adjustmentTitle(e: AppliedException): string {
   return ACTION_TITLE[e.action](e.targetService);
 }
 
+/**
+ * The services an applied adjustment moved or put into the order, by id.
+ * A vetoed one is no longer in the order, so it needs no mark.
+ */
+function adjustedServices(trace: LayerTraceResponse): ReadonlySet<number> {
+  const targets = new Set(trace.appliedExceptions.map((e) => e.targetService));
+  return new Set(
+    trace.rankingAfterExceptions.filter((r) => targets.has(r.name)).map((r) => r.idService),
+  );
+}
+
 /** Where the service was before the adjustment and where it ended up. */
 function adjustmentPlace(e: AppliedException): string {
+  if (e.action === 'INCLUDE') {
+    const entered = e.rankingAfter.find((r) => r.name === e.targetService)?.position;
+    return entered === undefined
+      ? ''
+      : `Entró en el lugar ${String(entered)}, sin puntaje: no compite en el cálculo.`;
+  }
   const before = e.rankingBefore.find((r) => r.name === e.targetService)?.position;
   const after = e.rankingAfter.find((r) => r.name === e.targetService)?.position;
   if (before === undefined) return '';

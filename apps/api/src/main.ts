@@ -40,6 +40,9 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: cfg.webOrigin,
     credentials: true,
+    // The SPA reads the name of a downloaded report from it; a cross-origin
+    // response hides every header not listed here.
+    exposedHeaders: ['Content-Disposition'],
   });
 
   // Pipes, exception filters and the version prefix. Shared with the e2e

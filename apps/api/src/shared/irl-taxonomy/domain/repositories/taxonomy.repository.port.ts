@@ -2,6 +2,7 @@ import type { Dimension } from '../entities/dimension.js';
 import type { ConversionRange } from '../entities/conversion-range.js';
 import type { DimensionPair } from '../entities/dimension-pair.js';
 import type { FrameworkVersion } from '../entities/framework-version.js';
+import type { LevelDescriptions } from '../entities/level-descriptions.js';
 
 /**
  * Read-only port for the IRL taxonomy: the six dimensions, the SA-06
@@ -38,4 +39,7 @@ export interface TaxonomyRepositoryPort {
 
   /** The six dimension pairs (RF-10). */
   findAllDimensionPairs(): Promise<DimensionPair[]>;
+
+  /** What each level means, per dimension and global, for a framework version. */
+  findLevelDescriptions(frameworkVersionId: number): Promise<LevelDescriptions>;
 }

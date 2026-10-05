@@ -17,7 +17,7 @@ import { evaluateExpression } from './predicate-compiler.service.js';
  * Pure service, no IO and no decorators.
  */
 export interface CompiledEligibilityRule {
-  /** Stable code of the rule (`ELG-01`), recorded in the trace. */
+  /** Stable code of the rule (`ELG-02`), recorded in the trace. */
   readonly code: string;
   readonly idService: number;
   readonly expression: ExpressionTree;

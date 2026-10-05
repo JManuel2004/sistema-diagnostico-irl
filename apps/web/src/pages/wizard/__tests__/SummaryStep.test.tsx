@@ -8,7 +8,11 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createTestQueryClient } from '@/test/render-with-client';
 import { DIMENSION_CODES, questionnaireFixture } from '@/test/fixtures/questionnaire';
-import { dimensionResultFixture } from '@/test/fixtures/dimensions';
+import {
+  dimensionResultFixture,
+  globalLevelFixture,
+  levelScaleFixture,
+} from '@/test/fixtures/dimensions';
 import { initiativeFixture } from '@/test/fixtures/initiative';
 import { useQuestionnaireDraftStore } from '@features/questionnaire';
 import { SummaryStep } from '../SummaryStep';
@@ -25,6 +29,8 @@ function profile(): Record<string, unknown> {
     diagnosticId: DIAG_ID,
     computedAt: '2026-01-01T00:00:00.000Z',
     globalAverage: 6,
+    globalLevel: globalLevelFixture(6),
+    levelScale: levelScaleFixture(),
     dimensionResults: DIMENSION_CODES.map((code) => dimensionResultFixture(code, 6)),
     bottleneck: { dimensions: ['TRL'], level: 6 },
     strength: { dimensions: ['TRL'], level: 6 },
@@ -47,7 +53,10 @@ function renderStep(): ReturnType<typeof render> {
             path="/diagnosticos/:id/asistente/cuestionario"
             element={<div>CUESTIONARIO_STUB</div>}
           />
-          <Route path="/diagnosticos/:id/asistente/iniciativa" element={<div>INICIATIVA_STUB</div>} />
+          <Route
+            path="/diagnosticos/:id/asistente/iniciativa"
+            element={<div>INICIATIVA_STUB</div>}
+          />
           <Route path="/diagnosticos/:id/resultados" element={<div>RESULTADOS_STUB</div>} />
         </Routes>
       </MemoryRouter>
@@ -58,7 +67,7 @@ function renderStep(): ReturnType<typeof render> {
 function fill(count = 48): void {
   useQuestionnaireDraftStore.getState().initialize(DIAG_ID);
   for (let id = 1; id <= count; id += 1) {
-    useQuestionnaireDraftStore.getState().setAnswer(String(id), ((id % 5) + 1));
+    useQuestionnaireDraftStore.getState().setAnswer(String(id), (id % 5) + 1);
     useQuestionnaireDraftStore.getState().setJustification(String(id), `Porque sí ${String(id)}`);
   }
 }
@@ -76,6 +85,7 @@ function withBackend(): void {
         state: 'PROFILE_GENERATED',
         completed: true,
         deepAnalysisAccepted: false,
+        deepAnalysisCompleted: false,
         createdAt: '2026-01-01T00:00:00.000Z',
         frameworkVersion: 'KTH-IRL-1.0',
       }),
@@ -225,7 +235,9 @@ describe('SummaryStep — resumen antes de procesar', () => {
 
   describe('procesar el diagnóstico', () => {
     it('envía las 48 respuestas, cada una con su justificación, y abre los resultados', async () => {
-      let body: { answers: { statementId: string; value: number; justification: string }[] } | undefined;
+      let body:
+        | { answers: { statementId: string; value: number; justification: string }[] }
+        | undefined;
       server.use(
         mswHttp.post(`*/api/v1/diagnostics/${DIAG_ID}/finalize-initial`, async ({ request }) => {
           body = (await request.json()) as typeof body;
@@ -238,16 +250,41 @@ describe('SummaryStep — resumen antes de procesar', () => {
 
       await user.click(await screen.findByRole('button', { name: 'Procesar diagnóstico' }));
 
-      expect(await screen.findByText('RESULTADOS_STUB')).toBeInTheDocument();
+      expect(await screen.findByText('RESULTADOS_STUB', {}, { timeout: 5000 })).toBeInTheDocument();
       expect(body?.answers).toHaveLength(48);
-      expect(body?.answers.every((a) => a.justification === `Porque sí ${a.statementId}`)).toBe(true);
+      expect(body?.answers.every((a) => a.justification === `Porque sí ${a.statementId}`)).toBe(
+        true,
+      );
       // Saved on the server: the browser draft is emptied.
       await waitFor(() => {
         expect(useQuestionnaireDraftStore.getState().answers).toEqual({});
       });
     });
 
-    it('muestra «Procesando…» y bloquea el botón mientras espera', async () => {
+    it('envía como null las justificaciones que el usuario no escribió', async () => {
+      let body: { answers: { statementId: string; justification: string | null }[] } | undefined;
+      server.use(
+        mswHttp.post(`*/api/v1/diagnostics/${DIAG_ID}/finalize-initial`, async ({ request }) => {
+          body = (await request.json()) as typeof body;
+          return HttpResponse.json(profile(), { status: 201 });
+        }),
+      );
+      const user = userEvent.setup();
+      fill();
+      useQuestionnaireDraftStore.getState().setJustification('5', '   ');
+      useQuestionnaireDraftStore.getState().setJustification('6', '');
+      renderStep();
+
+      await user.click(await screen.findByRole('button', { name: 'Procesar diagnóstico' }));
+
+      expect(await screen.findByText('RESULTADOS_STUB', {}, { timeout: 5000 })).toBeInTheDocument();
+      const byId = new Map(body?.answers.map((a) => [a.statementId, a.justification]));
+      expect(byId.get('5')).toBeNull();
+      expect(byId.get('6')).toBeNull();
+      expect(byId.get('7')).toBe('Porque sí 7');
+    });
+
+    it('muestra la pantalla de carga y oculta el resumen mientras espera', async () => {
       let release!: () => void;
       server.use(
         mswHttp.post(
@@ -266,12 +303,15 @@ describe('SummaryStep — resumen antes de procesar', () => {
 
       await user.click(await screen.findByRole('button', { name: 'Procesar diagnóstico' }));
 
-      expect(await screen.findByRole('button', { name: 'Procesando…' })).toBeDisabled();
+      expect(await screen.findByRole('status')).toHaveTextContent('Estamos armando tu perfil');
+      expect(
+        screen.queryByRole('button', { name: 'Procesar diagnóstico' }),
+      ).not.toBeInTheDocument();
       await act(async () => {
         release();
         await Promise.resolve();
       });
-      await waitFor(() => screen.getByText('RESULTADOS_STUB'));
+      await waitFor(() => screen.getByText('RESULTADOS_STUB'), { timeout: 5000 });
     });
 
     it('avisa si el servidor falla y no abre los resultados', async () => {

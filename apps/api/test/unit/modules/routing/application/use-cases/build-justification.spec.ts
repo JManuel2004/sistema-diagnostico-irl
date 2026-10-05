@@ -7,7 +7,10 @@ const NAMES = new Map([
 ]);
 
 function winner(details: { dimension: string; sourceLabel: string }[]) {
-  return { serviceName: 'Mentoría', contributions: { bottleneck: { details } } };
+  return {
+    serviceName: 'Reto Express',
+    contributions: { bottleneck: { details } },
+  };
 }
 
 // The initiative leader reads this text: it must not carry framework codes or
@@ -21,7 +24,7 @@ describe('construirJustificacion', () => {
     );
 
     expect(text).toBe(
-      'Mentoría atiende de forma directa la dimensión más rezagada de tu iniciativa: Negocio.',
+      'Reto Express atiende de forma directa la dimensión más rezagada de tu iniciativa: Negocio.',
     );
     expect(text).not.toMatch(/BRL|primary|secondary/);
   });
@@ -66,21 +69,41 @@ describe('construirJustificacion', () => {
     );
 
     expect(text).toBe(
-      'Mentoría es el servicio con mayor afinidad global con el perfil de la iniciativa.',
+      'Reto Express es el servicio con mayor afinidad global con el perfil de la iniciativa.',
     );
   });
 
   it('cites the declared reason when an exception decided the first place', () => {
     const text = buildJustification(
       [winner([{ dimension: 'BRL', sourceLabel: 'primary' }])],
-      [{ targetService: 'Mentoría', declaredReason: 'Abre el diálogo antes que lo masivo.' }],
+      [
+        {
+          targetService: 'Reto Express',
+          declaredReason: 'Abre el diálogo antes que lo masivo.',
+        },
+      ],
       NAMES,
     );
 
-    expect(text).toBe('Mentoría — Abre el diálogo antes que lo masivo.');
+    expect(text).toBe('Reto Express — Abre el diálogo antes que lo masivo.');
   });
 
   it('returns null when there is no ranking', () => {
     expect(buildJustification([], [], NAMES)).toBeNull();
+  });
+
+  it('if an adjustment put the winner into the ranking, it quotes the adjustment', () => {
+    const text = buildJustification(
+      [
+        {
+          serviceName: 'Academia a la Medida',
+          includedBy: { declaredReason: 'Formar al propio equipo.' },
+        },
+      ],
+      [],
+      NAMES,
+    );
+
+    expect(text).toBe('Academia a la Medida — Formar al propio equipo.');
   });
 });

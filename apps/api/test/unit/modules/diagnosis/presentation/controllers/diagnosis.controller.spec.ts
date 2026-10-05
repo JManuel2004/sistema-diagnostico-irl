@@ -70,6 +70,7 @@ describe('DiagnosisController', () => {
       state: 'STARTED' as const,
       completed: false,
       deepAnalysisAccepted: false,
+      deepAnalysisCompleted: false,
       createdAt: '2026-01-01T00:00:00.000Z',
       frameworkVersion: 'KTH-IRL-1.0',
     };
@@ -88,6 +89,7 @@ describe('DiagnosisController', () => {
       state: 'DEEP_ANALYSIS_COMPLETE' as const,
       completed: true,
       deepAnalysisAccepted: true,
+      deepAnalysisCompleted: true,
       createdAt: '2026-01-01T00:00:00.000Z',
       frameworkVersion: 'KTH-IRL-1.0',
     };

@@ -1,4 +1,7 @@
-import type { ConsentRecord, Initiative as InitiativeProfileResponse } from '@innlab/contracts';
+import type {
+  ConsentRecord,
+  Initiative as InitiativeProfileResponse,
+} from '@innlab/contracts';
 import type { InitiativeProfile } from '../../domain/entities/initiative-profile.aggregate.js';
 import type { Consent } from '../../domain/entities/consent.entity.js';
 import type {
@@ -23,7 +26,6 @@ export function toInitiativeProfileResponse(
     declaredStage: profile.declaredStage,
     teamSize: profile.teamSize,
     teamDescription: profile.teamDescription,
-    academicLinkage: profile.academicLinkage,
     targetMarket: profile.targetMarket,
     currentFunding: profile.currentFunding,
     recordedAt: profile.recordedAt.toISOString(),

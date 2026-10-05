@@ -4,7 +4,10 @@ import type {
   AppliedException,
   DiscardedException,
 } from '../../../domain/services/exception-engine.service.js';
-import type { ScoredCandidate } from '../../../domain/value-objects/scored-candidate.vo.js';
+import type {
+  RankedCandidate,
+  ScoredCandidate,
+} from '../../../domain/value-objects/scored-candidate.vo.js';
 
 /**
  * The recommendation for a diagnostic, with its trace by layers.
@@ -48,7 +51,7 @@ export class PortfolioRecommendationOrm {
   discardedExceptions!: DiscardedException[];
 
   @Column({ name: 'ranking_after_exceptions', type: 'jsonb' })
-  rankingAfterExceptions!: ScoredCandidate[];
+  rankingAfterExceptions!: RankedCandidate[];
 
   @Column({ name: 'incomplete_characterization', type: 'jsonb' })
   incompleteCharacterization!: string[];

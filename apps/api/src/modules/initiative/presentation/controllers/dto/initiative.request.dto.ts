@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsBoolean,
   IsInt,
   IsUUID,
   IsNotEmpty,
@@ -35,7 +34,10 @@ export class RecordConsentRequestDto implements RegisterConsentCommand {
  * and the use case.
  */
 export class RegisterInitiativeRequestDto implements RegisterInitiativeCommand {
-  @ApiProperty({ format: 'uuid', description: 'The initiative whose profile this is' })
+  @ApiProperty({
+    format: 'uuid',
+    description: 'The initiative whose profile this is',
+  })
   @IsUUID()
   initiativeId!: string;
 
@@ -77,10 +79,6 @@ export class RegisterInitiativeRequestDto implements RegisterInitiativeCommand {
   @IsString()
   @MaxLength(INITIATIVE_TEXT_MAX)
   teamDescription!: string;
-
-  @ApiProperty({ description: 'Whether the initiative has a confirmed link with the university' })
-  @IsBoolean()
-  academicLinkage!: boolean;
 
   @ApiProperty({ maxLength: INITIATIVE_TEXT_MAX })
   @IsString()

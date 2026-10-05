@@ -15,7 +15,11 @@ export interface SubmitQuestionnaireCommand {
   diagnosticId: string;
   /** The caller: someone else's diagnostic is answered as missing. */
   userId: string;
-  answers: { statementId: string; value: number; justification: string }[];
+  answers: {
+    statementId: string;
+    value: number;
+    justification?: string | null;
+  }[];
 }
 
 /**
@@ -42,20 +46,29 @@ export class SubmitQuestionnaireUseCase {
       NotFoundError | ConflictError | InvariantViolationError
     >
   > {
-    const own = await findOwnDiagnosis(this.diagnoses, cmd.diagnosticId, cmd.userId);
+    const own = await findOwnDiagnosis(
+      this.diagnoses,
+      cmd.diagnosticId,
+      cmd.userId,
+    );
     if (!own.ok) return own;
     const diagnosis = own.value;
 
     if (!diagnosis.acceptsAnswers) {
       return Result.err(
-        new ConflictError(`Answers cannot change in state ${diagnosis.state.value}`, {
-          diagnosticId: cmd.diagnosticId,
-          state: diagnosis.state.value,
-        }),
+        new ConflictError(
+          `Answers cannot change in state ${diagnosis.state.value}`,
+          {
+            diagnosticId: cmd.diagnosticId,
+            state: diagnosis.state.value,
+          },
+        ),
       );
     }
 
-    const statements = await this.statementCatalog.findStatements(diagnosis.frameworkVersionId);
+    const statements = await this.statementCatalog.findStatements(
+      diagnosis.frameworkVersionId,
+    );
     const known = new Set(statements.map((s) => s.id));
     const foreign = cmd.answers.find((a) => !known.has(a.statementId));
     if (foreign) {
@@ -74,7 +87,7 @@ export class SubmitQuestionnaireUseCase {
       sheet.setAnswer(
         item.statementId,
         LikertValue.create(item.value),
-        item.justification,
+        item.justification ?? null,
       );
     }
 

@@ -7,7 +7,7 @@ export class EligibilityRuleOrm {
   @PrimaryGeneratedColumn({ type: 'bigint', name: 'id' })
   id!: string;
 
-  /** Stable code of the rule (`ELG-01`), the one the trace records. */
+  /** Stable code of the rule (`ELG-02`), the one the trace records. */
   @Column({ name: 'code', type: 'varchar', length: 16 })
   code!: string;
 
@@ -19,4 +19,11 @@ export class EligibilityRuleOrm {
 
   @Column({ name: 'exclusion_message', type: 'varchar', length: 500 })
   exclusionMessage!: string;
+
+  /**
+   * The target service's `adjustment_only`, carried by the composite foreign
+   * key; always `false`, since layer 1 only applies to scored services.
+   */
+  @Column({ name: 'service_adjustment_only', type: 'boolean', default: false })
+  serviceAdjustmentOnly!: boolean;
 }

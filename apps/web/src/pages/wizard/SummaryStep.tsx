@@ -13,6 +13,7 @@ import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
 import { Button, buttonVariants } from '@/shared/ui/button';
 import { LoadingState } from '@/shared/ui/loading-state';
+import { ProcessingState } from '@/shared/ui/processing-state';
 import { notify } from '@/shared/ui/notify';
 import { useFinalizeDiagnostic } from '@/shared/hooks/useFinalizeDiagnostic';
 import { RETRY_LATER } from '@/shared/lib/copy';
@@ -24,13 +25,21 @@ interface Props {
   readonly frameworkVersion: string;
 }
 
+/** What processing the diagnostic calculates, in order (shown while it runs). */
+const DIAGNOSTIC_STEPS = [
+  'Promediamos tus respuestas en cada una de las seis dimensiones',
+  'Convertimos cada promedio en un nivel IRL de 1 a 9',
+  'Comparamos las dimensiones para encontrar desequilibrios',
+  'Identificamos tu cuello de botella y tus brechas',
+] as const;
+
 /**
  * Summary of everything that is about to be processed: the initiative
  * (with the option to correct it) and the answers, with the justification
- * of each.
+ * of each one that has it.
  *
  * «Procesar diagnóstico» is what sends the questionnaire to the server
- * (with each answer's justification) and computes the profile; when done
+ * (with each justification the user wrote) and computes the profile; when done
  * the results open and the browser draft is emptied. If the draft is not
  * complete the user goes back to the questionnaire: this step cannot be
  * reached with missing answers.
@@ -47,14 +56,28 @@ export function SummaryStep({ diagnosticId, frameworkVersion }: Props): JSX.Elem
   if (!catalog) return <LoadingState label="Cargando tus respuestas…" />;
   // Once processed, the draft is emptied while the results open: that empty
   // draft must not send the user back to the questionnaire.
-  if (process.isSuccess) return <LoadingState label="Abriendo tus resultados…" />;
+  if (process.isPending || process.isSuccess) {
+    return (
+      <ProcessingState
+        overline="Diagnóstico"
+        title={process.isSuccess ? 'Abriendo tus resultados' : 'Estamos armando tu perfil'}
+        description={
+          process.isSuccess
+            ? 'Tu perfil ya está listo. Te llevamos a verlo.'
+            : 'Convertimos tus 48 respuestas en el nivel de cada dimensión. En un momento verás el resultado.'
+        }
+        steps={DIAGNOSTIC_STEPS}
+        done={process.isSuccess}
+      />
+    );
+  }
   if (!isComplete) return <Navigate to={wizardPath(diagnosticId, 'cuestionario')} replace />;
 
   return (
     <>
       <PageHeader
         title="Revisa lo que vamos a procesar"
-        description="Esta es tu iniciativa y tus 48 respuestas con la justificación de cada una. Al procesar el diagnóstico se envían y se calcula tu perfil de madurez; si quieres cambiar algo, vuelve al paso correspondiente."
+        description="Esta es tu iniciativa y tus 48 respuestas, con las justificaciones que escribiste. Al procesar el diagnóstico se envían y se calcula tu perfil de madurez; si quieres cambiar algo, vuelve al paso correspondiente."
       />
 
       <div className="flex flex-col gap-10">
@@ -104,7 +127,7 @@ export function SummaryStep({ diagnosticId, frameworkVersion }: Props): JSX.Elem
               Object.entries(answers).map(([statementId, value]) => ({
                 statementId,
                 value,
-                justification: (justifications[statementId] ?? '').trim(),
+                justification: (justifications[statementId] ?? '').trim() || null,
               })),
               {
                 onSuccess: () => {
@@ -119,9 +142,8 @@ export function SummaryStep({ diagnosticId, frameworkVersion }: Props): JSX.Elem
               },
             );
           }}
-          disabled={process.isPending}
         >
-          {process.isPending ? 'Procesando…' : 'Procesar diagnóstico'}
+          Procesar diagnóstico
         </Button>
       </div>
     </>

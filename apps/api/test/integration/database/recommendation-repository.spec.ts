@@ -27,6 +27,7 @@ describe('Recomendación — persistencia (integration)', () => {
   let repo: TypeOrmRecommendationRepository;
   let ormRepo: Repository<PortfolioRecommendationOrm>;
   let idService: number;
+  let idAdjustmentOnly: number;
   let diagnosticId: string;
 
   const candidate = (
@@ -56,10 +57,7 @@ describe('Recomendación — persistencia (integration)', () => {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
-      entities: [
-        PortfolioRecommendationOrm,
-        RecommendationRankOrm,
-      ],
+      entities: [PortfolioRecommendationOrm, RecommendationRankOrm],
       migrations: [InitialSchema1747526400001],
       migrationsTableName: 'typeorm_migrations',
     });
@@ -75,13 +73,22 @@ describe('Recomendación — persistencia (integration)', () => {
     repo = new TypeOrmRecommendationRepository(ormRepo);
 
     // Minimum configuration to satisfy the foreign keys.
+    await dataSource.query(
+      `INSERT INTO irl_catalog.service_tier (code, name, sequence) VALUES ('descubre', 'Descubre', 1)`,
+    );
     [{ id: idService }] = await dataSource.query(
-      `INSERT INTO irl_catalog.portfolio_service (name, is_active, min_level, max_level)
-       VALUES ('Consultoría', true, 1, 9) RETURNING id`,
+      `INSERT INTO irl_catalog.portfolio_service
+         (name, subtitle, scope, id_tier, is_active, adjustment_only, min_level, max_level)
+       VALUES ('Consultoría Experta', 'x', 'x', (SELECT id FROM irl_catalog.service_tier ORDER BY sequence LIMIT 1), true, false, 1, 9) RETURNING id`,
     );
     await dataSource.query(
-      `INSERT INTO irl_catalog.portfolio_service (name, is_active, min_level, max_level)
-       VALUES ('Mentoría', true, 1, 9)`,
+      `INSERT INTO irl_catalog.portfolio_service
+         (name, subtitle, scope, id_tier, is_active, adjustment_only, min_level, max_level)
+       VALUES ('Reto Express', 'x', 'x', (SELECT id FROM irl_catalog.service_tier ORDER BY sequence LIMIT 1), true, false, 1, 9)`,
+    );
+    [{ id: idAdjustmentOnly }] = await dataSource.query(
+      `INSERT INTO irl_catalog.portfolio_service (name, subtitle, scope, id_tier, is_active, adjustment_only)
+       VALUES ('Academia a la Medida', 'x', 'x', (SELECT id FROM irl_catalog.service_tier ORDER BY sequence LIMIT 1), true, true) RETURNING id`,
     );
   }, 120_000);
 
@@ -101,8 +108,8 @@ describe('Recomendación — persistencia (integration)', () => {
   });
 
   function recommendation(): Recommendation {
-    const primary = candidate(idService, 'Consultoría', 5.55);
-    const alternate = candidate(idService + 1, 'Mentoría', 3.8);
+    const primary = candidate(idService, 'Consultoría Experta', 5.55);
+    const alternate = candidate(idService + 1, 'Reto Express', 3.8);
     return Recommendation.create({
       diagnosticId: Uuid.create(diagnosticId),
       finalRanking: [primary, alternate],
@@ -127,16 +134,96 @@ describe('Recomendación — persistencia (integration)', () => {
     await repo.save(recommendation());
 
     const read = await repo.findByDiagnosticId(diagnosticId);
-    expect(read?.primary?.serviceName).toBe('Consultoría');
-    expect(read?.primary?.total).toBeCloseTo(5.55, 3);
-    expect(read?.alternatives.map((a) => a.serviceName)).toEqual(['Mentoría']);
+    expect(read?.primary?.serviceName).toBe('Consultoría Experta');
+    expect(
+      read?.primary && 'total' in read.primary ? read.primary.total : null,
+    ).toBeCloseTo(5.55, 3);
+    expect(read?.alternatives.map((a) => a.serviceName)).toEqual([
+      'Reto Express',
+    ]);
     expect(read?.trace.factsHash).toBe('a'.repeat(64));
+  });
+
+  it('guarda un servicio incluido por un ajuste sin puntaje, con su regla, y lo recupera', async () => {
+    const primary = candidate(idService, 'Consultoría Experta', 5.55);
+    const included = {
+      idService: idAdjustmentOnly,
+      serviceName: 'Academia a la Medida',
+      includedBy: {
+        ruleCode: 'INC-02',
+        declaredReason: 'formar al propio equipo',
+      },
+    };
+    await repo.save(
+      Recommendation.create({
+        diagnosticId: Uuid.create(diagnosticId),
+        finalRanking: [primary, included],
+        minimumThreshold: 2.5,
+        alternativesCount: 2,
+        justification: 'porque sí',
+        noRecommendationReason: null,
+        trace: {
+          layer1Excluded: [],
+          rankingBeforeExceptions: [primary],
+          appliedExceptions: [],
+          discardedExceptions: [],
+          rankingAfterExceptions: [primary, included],
+          incompleteCharacterization: [],
+          factsHash: 'a'.repeat(64),
+        },
+        generatedAt: new Date(),
+      }),
+    );
+
+    const ranks = await dataSource.query<
+      {
+        position: number;
+        score: string | null;
+        included_by_rule: string | null;
+      }[]
+    >(
+      `SELECT k.position, k.score, k.included_by_rule
+         FROM irl_diagnostic.recommendation_rank k
+         JOIN irl_diagnostic.portfolio_recommendation r ON r.id = k.id_recommendation
+        WHERE r.id_diagnostic = $1 ORDER BY k.position`,
+      [diagnosticId],
+    );
+    expect(ranks).toEqual([
+      { position: 1, score: '5.550', included_by_rule: null },
+      { position: 2, score: null, included_by_rule: 'INC-02' },
+    ]);
+    const read = await repo.findByDiagnosticId(diagnosticId);
+    expect(read?.alternatives).toEqual([included]);
+  });
+
+  it('la base exige que un puesto tenga puntaje o la regla que lo incluyó, no ambos ni ninguno', async () => {
+    await repo.save(recommendation());
+    const [{ id }] = await dataSource.query<{ id: string }[]>(
+      `SELECT id FROM irl_diagnostic.portfolio_recommendation WHERE id_diagnostic = $1`,
+      [diagnosticId],
+    );
+
+    for (const [score, rule] of [
+      [null, null],
+      [3, 'INC-02'],
+    ] as const) {
+      await expect(
+        dataSource.query(
+          `INSERT INTO irl_diagnostic.recommendation_rank
+             (id_recommendation, id_service, service_snapshot, position, score, included_by_rule)
+           VALUES ($1, $2, 'x', 9, $3, $4)`,
+          [id, idAdjustmentOnly, score, rule],
+        ),
+      ).rejects.toThrow(/ck_recommendation_rank_origin/);
+    }
   });
 
   it('guarda el ranking con el servicio recomendado en la posición 1', async () => {
     await repo.save(recommendation());
 
-    const ranks = await dataSource.query<{ position: number; service_snapshot: string }[]>(
+    const ranks = await dataSource.query<
+      { position: number; service_snapshot: string }[]
+    >(
       `SELECT k.position, k.service_snapshot
          FROM irl_diagnostic.recommendation_rank k
          JOIN irl_diagnostic.portfolio_recommendation r ON r.id = k.id_recommendation
@@ -145,8 +232,8 @@ describe('Recomendación — persistencia (integration)', () => {
       [diagnosticId],
     );
     expect(ranks).toEqual([
-      { position: 1, service_snapshot: 'Consultoría' },
-      { position: 2, service_snapshot: 'Mentoría' },
+      { position: 1, service_snapshot: 'Consultoría Experta' },
+      { position: 2, service_snapshot: 'Reto Express' },
     ]);
   });
 

@@ -27,7 +27,6 @@ export interface RegisterInitiativeProfileCommand {
   declaredStage: string;
   teamSize: number;
   teamDescription: string;
-  academicLinkage: boolean;
   targetMarket: string;
   currentFunding: string;
 }
@@ -64,12 +63,19 @@ export class RegisterInitiativeProfileUseCase {
   async execute(
     cmd: RegisterInitiativeProfileCommand,
   ): Promise<
-    Result<InitiativeProfileResponse, NotFoundError | ForbiddenError | ConflictError>
+    Result<
+      InitiativeProfileResponse,
+      NotFoundError | ForbiddenError | ConflictError
+    >
   > {
     const owned = await this.ownership.verify(cmd.diagnosticId, cmd.userId);
     if (!owned.ok) return owned;
 
-    const initiative = await findOwnInitiative(this.initiatives, cmd.initiativeId, cmd.userId);
+    const initiative = await findOwnInitiative(
+      this.initiatives,
+      cmd.initiativeId,
+      cmd.userId,
+    );
     if (!initiative.ok) return initiative;
 
     const [consent, current] = await Promise.all([
@@ -78,19 +84,25 @@ export class RegisterInitiativeProfileUseCase {
     ]);
     if (!consent || consent.termsVersion !== current?.version) {
       return Result.err(
-        new ConflictError('The consent of the initiative must be accepted at the current version', {
-          initiativeId: cmd.initiativeId,
-          acceptedVersion: consent?.termsVersion ?? null,
-          currentVersion: current?.version ?? null,
-        }),
+        new ConflictError(
+          'The consent of the initiative must be accepted at the current version',
+          {
+            initiativeId: cmd.initiativeId,
+            acceptedVersion: consent?.termsVersion ?? null,
+            currentVersion: current?.version ?? null,
+          },
+        ),
       );
     }
 
     if (await this.ownership.deepAnalysisAccepted(cmd.diagnosticId)) {
       return Result.err(
-        new ConflictError('The initiative profile is frozen once the deep analysis is accepted', {
-          diagnosticId: cmd.diagnosticId,
-        }),
+        new ConflictError(
+          'The initiative profile is frozen once the deep analysis is accepted',
+          {
+            diagnosticId: cmd.diagnosticId,
+          },
+        ),
       );
     }
 
@@ -114,7 +126,6 @@ export class RegisterInitiativeProfileUseCase {
       declaredStage: cmd.declaredStage,
       teamSize: cmd.teamSize,
       teamDescription: cmd.teamDescription,
-      academicLinkage: cmd.academicLinkage,
       targetMarket: cmd.targetMarket,
       currentFunding: cmd.currentFunding,
     });
@@ -123,7 +134,9 @@ export class RegisterInitiativeProfileUseCase {
 
     // Published once the profile is saved; `diagnosis/` reacts to it.
     await this.events.publish(
-      new InitiativeRegisteredEvent({ diagnosticId: profile.diagnosticId.value }),
+      new InitiativeRegisteredEvent({
+        diagnosticId: profile.diagnosticId.value,
+      }),
     );
 
     return Result.ok(toInitiativeProfileResponse(profile, sector, stage));

@@ -55,7 +55,8 @@ export class DiagnosisController {
   @ApiOperation({
     summary: 'Read one of the caller’s diagnostics',
     description:
-      'With `completed` and `deepAnalysisAccepted`, derived from the state. A foreign ' +
+      'With `completed`, `deepAnalysisAccepted` and `deepAnalysisCompleted`, derived from ' +
+      'the state. A foreign ' +
       'diagnostic answers 404, like a missing one, so its id does not leak.',
   })
   @ApiOkResponse({ type: DiagnosticResponseDto })
@@ -73,7 +74,7 @@ export class DiagnosisController {
   @ApiOperation({
     summary: 'Process the questionnaire',
     description:
-      'Saves the 48 answers with their justifications, computes the maturity profile and ' +
+      'Saves the 48 answers with their optional justifications, computes the maturity profile and ' +
       'moves the diagnostic to `PROFILE_GENERATED` (RF-06, RF-07). Requires the initiative.',
   })
   @ApiCreatedResponse({ type: MaturityProfileResponseDto })
@@ -108,7 +109,10 @@ export class DiagnosisController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<AcceptDeepAnalysisResponse> {
     return unwrapResult(
-      await this.requestDeepAnalysis.execute({ diagnosticId: id, userId: user.id }),
+      await this.requestDeepAnalysis.execute({
+        diagnosticId: id,
+        userId: user.id,
+      }),
     );
   }
 }

@@ -27,7 +27,6 @@ const FACTS: DiagnosticFacts = {
     stage: 'validacion',
     sector: null,
     teamSize: 3,
-    academicLinkage: false,
   },
 };
 
@@ -136,7 +135,7 @@ describe('PredicateCompilerService', () => {
       ).toThrow(/al menos un operando/);
     });
 
-it('rechaza un nodo que no es un objeto', () => {
+    it('rechaza un nodo que no es un objeto', () => {
       expect(() => compiler.compile('bottleneck', 'WITH_DEGREE')).toThrow(
         /se esperaba un objeto/,
       );
@@ -170,7 +169,10 @@ it('rechaza un nodo que no es un objeto', () => {
             op: 'and',
             operands: [
               { field: 'bottleneck', op: 'contains', value: 'IPRL' },
-              { op: 'or', operands: [{ field: 'inexistente', op: '=', value: 1 }] },
+              {
+                op: 'or',
+                operands: [{ field: 'inexistente', op: '=', value: 1 }],
+              },
             ],
           },
           'WITH_DEGREE',
@@ -185,10 +187,18 @@ it('rechaza un nodo que no es un objeto', () => {
 
     it('resuelve pertenencia sobre el cuello de botella', () => {
       expect(
-        compileAndEvaluate({ field: 'bottleneck', op: 'contains', value: 'IPRL' }),
+        compileAndEvaluate({
+          field: 'bottleneck',
+          op: 'contains',
+          value: 'IPRL',
+        }),
       ).toBe(true);
       expect(
-        compileAndEvaluate({ field: 'bottleneck', op: 'contains', value: 'TRL' }),
+        compileAndEvaluate({
+          field: 'bottleneck',
+          op: 'contains',
+          value: 'TRL',
+        }),
       ).toBe(false);
     });
 
@@ -220,7 +230,11 @@ it('rechaza un nodo que no es un objeto', () => {
 
     it('resuelve un nivel dimensional concreto', () => {
       expect(
-        compileAndEvaluate({ field: 'levelByDimension.IPRL', op: '<=', value: 2 }),
+        compileAndEvaluate({
+          field: 'levelByDimension.IPRL',
+          op: '<=',
+          value: 2,
+        }),
       ).toBe(true);
     });
 
@@ -248,7 +262,6 @@ it('rechaza un nodo que no es un objeto', () => {
         }),
       ).toBe(true);
     });
-
 
     describe('cobertura de todos los operadores', () => {
       // An untested operator in a DSL evaluator is exactly where a silent
@@ -305,7 +318,6 @@ it('rechaza un nodo que no es un objeto', () => {
           stage: null,
           sector: null,
           teamSize: null,
-          academicLinkage: null,
         },
       };
 
@@ -324,7 +336,7 @@ it('rechaza un nodo que no es un objeto', () => {
       it('una igualdad contra un dato ausente es falsa', () => {
         expect(
           compileAndEvaluate(
-            { field: 'characterization.academicLinkage', op: '=', value: false },
+            { field: 'characterization.stage', op: '=', value: 'validacion' },
             noCharacterization,
           ),
         ).toBe(false);
@@ -338,7 +350,9 @@ it('rechaza un nodo que no es un objeto', () => {
 // enforces it; this pins the same guarantee at runtime.
 describe('FIELD_KIND', () => {
   it('declares a kind for every queryable field and nothing else', () => {
-    expect(Object.keys(FIELD_KIND).sort()).toEqual([...QUERYABLE_FIELDS].sort());
+    expect(Object.keys(FIELD_KIND).sort()).toEqual(
+      [...QUERYABLE_FIELDS].sort(),
+    );
   });
 
   it.each(QUERYABLE_FIELDS.map((f) => [f, FIELD_KIND[f]] as const))(

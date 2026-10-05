@@ -14,7 +14,10 @@ import {
 } from '@innlab/contracts';
 import { AppModule } from '../../../../src/app.module.js';
 import { configureApp } from '../../../../src/shared/kernel/infrastructure/http/configure-app.js';
-import { authenticateAgainst, E2E_USER } from '../../support/authenticated-app.js';
+import {
+  authenticateAgainst,
+  E2E_USER,
+} from '../../support/authenticated-app.js';
 import { agroconectaAnswers } from '../../support/agroconecta-case.js';
 
 /**
@@ -149,140 +152,161 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
         .expect(201);
     });
 
-    it('GET /roadmap devuelve dos fases con el orden de dependencies esperado', async () => {
-      const res = await agent
-        .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
-        .expect(200);
+    const roadmapOf = async () =>
+      roadmapResponseSchema.parse(
+        (
+          await agent
+            .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
+            .expect(200)
+        ).body,
+      );
 
-      const roadmap = roadmapResponseSchema.parse(res.body);
+    it('GET /roadmap devuelve tres fases: equilibra al final y sube a lo sumo dos niveles por fase', async () => {
+      const roadmap = await roadmapOf();
 
-      expect(roadmap.phases).toHaveLength(2);
-
-      // Phase 1: BRL and IPRL, in parallel.
-      expect(roadmap.phases[0].order).toBe(1);
-      expect(roadmap.phases[0].dimensions.map((d) => d.dimensionCode)).toEqual([
-        'BRL',
-        'IPRL',
+      expect(
+        roadmap.phases.map((f) =>
+          f.dimensions.map(
+            (d) => `${d.dimensionCode} ${d.currentLevel}→${d.targetLevel}`,
+          ),
+        ),
+      ).toEqual([
+        ['CRL 4→5', 'IPRL 1→3'],
+        ['BRL 3→5', 'IPRL 3→5'],
+        ['FRL 2→4'],
       ]);
-
-      // Phase 2: FRL, which depended on both.
-      expect(roadmap.phases[1].order).toBe(2);
-      expect(roadmap.phases[1].dimensions.map((d) => d.dimensionCode)).toEqual([
-        'FRL',
-      ]);
+      expect(roadmap.phases.map((f) => f.order)).toEqual([1, 2, 3]);
     });
 
-    it('excluye Tecnología, Cliente y Equipo, y lo dice explícitamente', () => {
-      return agent
-        .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
-        .expect(200)
-        .expect((res) => {
-          const roadmap = roadmapResponseSchema.parse(res.body);
+    it('excluye Tecnología y Equipo, y lo dice explícitamente', async () => {
+      const roadmap = await roadmapOf();
 
-          expect(
-            roadmap.dimensionsWithoutIntervention.map((d) => d.code).sort(),
-          ).toEqual(['CRL', 'TRL', 'TmRL']);
-          // No intervention, but named from the catalog.
-          expect(
-            roadmap.dimensionsWithoutIntervention.map((d) => d.shortName).sort(),
-          ).toEqual(['Cliente', 'Equipo', 'Tecnología']);
-
-          const intervened = roadmap.phases.flatMap((f) =>
-            f.dimensions.map((d) => d.dimensionCode),
-          );
-          expect(intervened).not.toContain('TRL');
-          expect(intervened).not.toContain('CRL');
-          expect(intervened).not.toContain('TmRL');
-        });
+      expect(
+        roadmap.dimensionsWithoutIntervention.map((d) => d.code).sort(),
+      ).toEqual(['TRL', 'TmRL']);
+      expect(
+        roadmap.dimensionsWithoutIntervention.map((d) => d.shortName).sort(),
+      ).toEqual(['Equipo', 'Tecnología']);
     });
 
-    it('lleva las tres dimensions intervenidas hasta el nivel 4', async () => {
-      const res = await agent
-        .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
-        .expect(200);
-      const roadmap = roadmapResponseSchema.parse(res.body);
+    it('termina en un perfil sin desequilibrios con alerta', async () => {
+      const roadmap = await roadmapOf();
 
-      const targets = Object.fromEntries(
+      expect(roadmap.finalLevels).toEqual({
+        TRL: 6,
+        CRL: 5,
+        BRL: 5,
+        IPRL: 5,
+        TmRL: 5,
+        FRL: 4,
+      });
+      expect(roadmap.balanced).toBe(true);
+      const finals = Object.fromEntries(
+        roadmap.phases.flatMap((f) =>
+          f.dimensions.map((d) => [d.dimensionCode, d.finalTargetLevel]),
+        ),
+      );
+      expect(finals).toEqual({ CRL: 5, BRL: 5, IPRL: 5, FRL: 4 });
+    });
+
+    it('expone qué desbloquea cada dimensión, para que el orden sea refutable', async () => {
+      const roadmap = await roadmapOf();
+
+      const enablesByDimension = Object.fromEntries(
         roadmap.phases.flatMap((f) =>
           f.dimensions.map((d) => [
             d.dimensionCode,
-            { de: d.currentLevel, a: d.targetLevel },
+            d.enables.map((e) => e.code),
           ]),
         ),
       );
 
-      expect(targets).toEqual({
-        BRL: { de: 3, a: 4 },
-        IPRL: { de: 1, a: 4 },
-        FRL: { de: 2, a: 4 },
+      expect(enablesByDimension).toEqual({
+        CRL: ['BRL', 'FRL'],
+        IPRL: ['FRL'],
+        BRL: ['FRL'],
+        FRL: [],
       });
-    });
-
-    it('expone qué desbloquea cada dimensión, para que el orden sea refutable', async () => {
-      const res = await agent
-        .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
-        .expect(200);
-      const roadmap = roadmapResponseSchema.parse(res.body);
-
-      const enablesByDimension = Object.fromEntries(
-        roadmap.phases.flatMap((f) =>
-          f.dimensions.map((d) => [d.dimensionCode, d.enables.map((e) => e.code)]),
-        ),
-      );
-
-      expect(enablesByDimension).toEqual({ BRL: ['FRL'], IPRL: ['FRL'], FRL: [] });
     });
 
     it('nombra cada dimensión del roadmap con el catálogo', async () => {
-      const res = await agent
-        .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
-        .expect(200);
-      const roadmap = roadmapResponseSchema.parse(res.body);
+      const roadmap = await roadmapOf();
 
-      const brl = roadmap.phases[0].dimensions[0];
-      expect(brl).toMatchObject({
-        dimensionCode: 'BRL',
-        name: 'Nivel de Madurez del Modelo de Negocio',
-        shortName: 'Negocio',
+      const crl = roadmap.phases[0].dimensions[0];
+      expect(crl).toMatchObject({
+        dimensionCode: 'CRL',
+        name: 'Nivel de Madurez del Cliente',
+        shortName: 'Cliente',
       });
-      expect(brl.enables).toEqual([
-        {
-          code: 'FRL',
-          name: 'Nivel de Madurez de la Financiación',
-          shortName: 'Financiación',
-        },
+      expect(crl.enables.map((e) => e.shortName)).toEqual([
+        'Negocio',
+        'Financiación',
       ]);
     });
 
-    // The response says why each dimension is in the plan and
-    // what sets its target, and it is the roadmap saved at acceptance.
-    it('explica por qué cada dimensión está en el plan y qué fija su meta', async () => {
-      const res = await agent
-        .get(`/api/v1/diagnostics/${diagnosticId}/roadmap`)
-        .expect(200);
-      const roadmap = roadmapResponseSchema.parse(res.body);
+    // The response says why each dimension is in the plan and what sets
+    // its final target, and it is the roadmap saved at acceptance.
+    it('explica por qué cada dimensión está en el plan y qué fija su meta final', async () => {
+      const roadmap = await roadmapOf();
 
       const byDimension = Object.fromEntries(
         roadmap.phases.flatMap((f) =>
           f.dimensions.map((d) => [
             d.dimensionCode,
-            {
-              reason: d.inclusionReason,
-              minimum: d.expectedMinimum,
-              setBy: d.targetDrivenBy?.code ?? null,
-            },
+            [d.inclusionReason, d.targetReason, d.targetDrivenBy?.code ?? null],
           ]),
         ),
       );
 
-      // All three are below their minimum (4) and the target is that minimum:
-      // no requirement from another dimension raises it.
-      const own = {
-        reason: 'BELOW_EXPECTED_MINIMUM',
-        minimum: 4,
-        setBy: null,
-      };
-      expect(byDimension).toEqual({ BRL: own, IPRL: own, FRL: own });
+      expect(byDimension).toEqual({
+        // Meets its minimum, but would end two levels below Tecnología.
+        CRL: ['BALANCE', 'BALANCE', 'TRL'],
+        BRL: ['BELOW_EXPECTED_MINIMUM', 'BALANCE', 'TRL'],
+        IPRL: ['BELOW_EXPECTED_MINIMUM', 'BALANCE', 'TRL'],
+        FRL: ['BELOW_EXPECTED_MINIMUM', 'EXPECTED_MINIMUM', null],
+      });
+    });
+
+    it('propone un servicio por fase, de lo más liviano a lo más profundo, con su ficha', async () => {
+      const roadmap = await roadmapOf();
+      const recommendation = (
+        await agent
+          .get(`/api/v1/diagnostics/${diagnosticId}/recommendation`)
+          .expect(200)
+      ).body as { primary: { name: string } };
+
+      // This suite registers no initiative profile: no exclusion applies and
+      // no stage matches, so the recommendation is Célula de Grado · Posgrado
+      // (the case with its characterization is in `routing/`).
+      expect(
+        roadmap.phases.map((f) => [
+          f.service?.name,
+          f.service?.tier.order,
+          f.service?.approximate,
+        ]),
+      ).toEqual([
+        ['Célula de Grado · Posgrado', 3, false],
+        // Never lighter than Profundiza from here on, and none fits: approximate.
+        ['Consultoría Experta', 4, true],
+        ['Célula Dedicada · Co.LAB', 4, true],
+      ]);
+      // The route opens with the recommendation itself.
+      expect(roadmap.phases[0].service?.name).toBe(recommendation.primary.name);
+      expect(roadmap.phases[0].serviceTrace.mode).toBe('RECOMMENDATION');
+      expect(roadmap.phases[1].serviceTrace.mode).toBe('PHASE');
+      expect(roadmap.phases[1].service).toMatchObject({
+        subtitle: 'Consultoría colaborativa',
+        band: { minLevel: 7, maxLevel: 9 },
+        tier: { name: 'Alíate' },
+      });
+      expect(roadmap.phases[1].serviceTrace.skipped).toContainEqual({
+        name: 'Célula de Grado · Posgrado',
+        reason: 'ALREADY_IN_ROUTE',
+      });
+      expect(roadmap.phases[1].serviceTrace.skipped).toContainEqual({
+        name: 'Reto Express',
+        reason: 'LIGHTER_TIER',
+      });
     });
 
     it('es un resultado guardado: leerlo dos veces da la misma fecha', async () => {
@@ -309,10 +333,15 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
     );
 
     try {
-      const res = await agent.get(`/api/v1/diagnostics/${other}/roadmap`).expect(404);
+      const res = await agent
+        .get(`/api/v1/diagnostics/${other}/roadmap`)
+        .expect(404);
       expect((res.body as { code: string }).code).toBe('NOT_FOUND');
     } finally {
-      await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`, [other]);
+      await dataSource.query(
+        `DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`,
+        [other],
+      );
     }
   });
 

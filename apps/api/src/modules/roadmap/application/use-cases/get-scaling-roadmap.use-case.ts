@@ -6,6 +6,7 @@ import { toRoadmapResponse } from '../dtos/map-roadmap-response.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
 import type { NotFoundError } from '../../../../shared/kernel/domain/errors/not-found.error.js';
 import { type DiagnosticOwnershipPort } from '../../domain/repositories/diagnostic-ownership.port.js';
+import { type PhaseServiceAdvisorPort } from '../../domain/repositories/phase-service-advisor.port.js';
 
 export interface GetScalingRoadmapQuery {
   diagnosticId: string;
@@ -16,7 +17,7 @@ export interface GetScalingRoadmapQuery {
 /**
  * The saved roadmap as the API serves it: each dimension named from the
  * catalog (`name`, `shortName`), so the frontend keeps no name map of its
- * own.
+ * own, and each phase's service with its card from the portfolio catalog.
  *
  * A read of what `DeepAnalysisRequestedListener` saved; it does not
  * recalculate. "Not generated yet" is the normal state before the user
@@ -27,11 +28,14 @@ export class GetScalingRoadmapUseCase {
     private readonly roadmaps: RoadmapRepositoryPort,
     private readonly taxonomy: TaxonomyRepositoryPort,
     private readonly ownership: DiagnosticOwnershipPort,
+    private readonly portfolio: PhaseServiceAdvisorPort,
   ) {}
 
   async execute(
     query: GetScalingRoadmapQuery,
-  ): Promise<Result<RoadmapResponse, NotFoundError | RoadmapNotGeneratedError>> {
+  ): Promise<
+    Result<RoadmapResponse, NotFoundError | RoadmapNotGeneratedError>
+  > {
     const owned = await this.ownership.verify(query.diagnosticId, query.userId);
     if (!owned.ok) return owned;
 
@@ -40,7 +44,13 @@ export class GetScalingRoadmapUseCase {
       return Result.err(new RoadmapNotGeneratedError(query.diagnosticId));
     }
 
-    const dimensions = await this.taxonomy.findAllDimensions();
-    return Result.ok(toRoadmapResponse(roadmap, dimensions));
+    const serviceIds = roadmap.phases.flatMap((p) =>
+      p.service ? [p.service.idService] : [],
+    );
+    const [dimensions, services] = await Promise.all([
+      this.taxonomy.findAllDimensions(),
+      this.portfolio.describe(serviceIds),
+    ]);
+    return Result.ok(toRoadmapResponse(roadmap, dimensions, services));
   }
 }

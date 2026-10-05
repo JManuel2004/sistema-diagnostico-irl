@@ -33,12 +33,36 @@ describe('Roadmap — persistence (integration)', () => {
               dimensionCode: 'BRL',
               currentLevel: 3,
               targetLevel,
+              finalTargetLevel: targetLevel,
               enables: ['FRL'],
               inclusionReason: 'BELOW_EXPECTED_MINIMUM',
               expectedMinimum: 4,
+              targetReason: targetLevel > 4 ? 'ENABLES' : 'EXPECTED_MINIMUM',
               targetDrivenBy: targetLevel > 4 ? 'FRL' : null,
             },
           ],
+          service: {
+            idService: 2,
+            name: 'Reto Express',
+            tierOrder: 1,
+            approximate: false,
+          },
+          serviceTrace: {
+            mode: 'PHASE' as const,
+            projectedLevels: {
+              TRL: 6,
+              CRL: 4,
+              BRL: 3,
+              IPRL: 4,
+              TmRL: 5,
+              FRL: 2,
+            },
+            averageLevel: 4,
+            excluded: [],
+            skipped: [],
+            ranking: [],
+            appliedAdjustments: [],
+          },
         },
         {
           order: 2,
@@ -47,14 +71,42 @@ describe('Roadmap — persistence (integration)', () => {
               dimensionCode: 'FRL',
               currentLevel: 2,
               targetLevel: 4,
+              finalTargetLevel: 4,
               enables: [],
               inclusionReason: 'REQUIRED_ENABLER',
               expectedMinimum: 2,
+              targetReason: 'EXPECTED_MINIMUM',
               targetDrivenBy: null,
             },
           ],
+          service: null,
+          serviceTrace: {
+            mode: 'PHASE' as const,
+            projectedLevels: {
+              TRL: 6,
+              CRL: 4,
+              BRL: 3,
+              IPRL: 4,
+              TmRL: 5,
+              FRL: 2,
+            },
+            averageLevel: 4,
+            excluded: [],
+            skipped: [],
+            ranking: [],
+            appliedAdjustments: [],
+          },
         },
       ],
+      finalLevels: {
+        TRL: 6,
+        CRL: 4,
+        BRL: targetLevel,
+        IPRL: 4,
+        TmRL: 5,
+        FRL: 4,
+      },
+      balanced: false,
     });
   }
 
@@ -77,7 +129,9 @@ describe('Roadmap — persistence (integration)', () => {
     await dataSource.query(
       `INSERT INTO irl_catalog.framework_version (code, published_at) VALUES ('KTH-IRL-1.0', now())`,
     );
-    repo = new TypeOrmRoadmapRepository(dataSource.getRepository(ScalingRoadmapOrm));
+    repo = new TypeOrmRoadmapRepository(
+      dataSource.getRepository(ScalingRoadmapOrm),
+    );
   }, 120_000);
 
   afterAll(async () => {
@@ -108,7 +162,9 @@ describe('Roadmap — persistence (integration)', () => {
     expect(read).not.toBeNull();
     expect(read!.phases).toEqual(saved.phases);
     expect(read!.generatedAt.toISOString()).toBe('2026-03-01T10:00:00.000Z');
-    expect(read!.dimensionsWithoutIntervention).toEqual(saved.dimensionsWithoutIntervention);
+    expect(read!.dimensionsWithoutIntervention).toEqual(
+      saved.dimensionsWithoutIntervention,
+    );
   });
 
   it('replaces the previous roadmap instead of accumulating versions', async () => {
@@ -129,7 +185,10 @@ describe('Roadmap — persistence (integration)', () => {
   it('is removed with its diagnostic', async () => {
     await repo.save(roadmap(new Date('2026-03-01T10:00:00.000Z')));
 
-    await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`, [diagnosticId]);
+    await dataSource.query(
+      `DELETE FROM irl_diagnostic.diagnostic WHERE id = $1`,
+      [diagnosticId],
+    );
 
     expect(await repo.findByDiagnosticId(diagnosticId)).toBeNull();
   });
