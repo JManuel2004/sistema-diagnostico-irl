@@ -20,7 +20,7 @@ Deliberately short. Anything that can be derived from the code is **not** docume
 - **Events** (`shared/kernel/events/`), in-process through `@nestjs/event-emitter`. Use cases publish through the `EVENT_PUBLISHER` port; listeners live in `infrastructure/messaging/` ([ADR 0002](../../../docs/architecture/decisions/0002-domain-events-between-modules.md)):
   - `initiative` → `InitiativeRegisteredEvent` → `diagnosis`
   - `diagnosis` → `DeepAnalysisRequestedEvent` → `routing`, `roadmap`
-  - `routing` → `PortfolioRecommendationCalculatedEvent`, `roadmap` → `ScalingRoadmapCalculatedEvent` → `diagnosis`, which completes the deep analysis once both arrived ([ADR 0008](../../../docs/architecture/decisions/0008-deep-analysis-completes-from-its-results.md))
+  - `routing` → `PortfolioRecommendationCalculatedEvent`, `roadmap` → `ScalingRoadmapCalculatedEvent` → `diagnosis`, which completes the deep analysis once both arrived ([ADR 0008](../../../docs/architecture/decisions/0008-deep-analysis-completes-from-its-results.md)) and then publishes `DeepAnalysisCompletedEvent` → `reporting`, which mails the PDF to INNLAB
 - **Exported read queries**: a module consumes another's exported query only for read-only data, behind a port declared in the consumer and implemented by an adapter in its `infrastructure/`:
   - `diagnosis` → `GetMaturityProfileUseCase` for `routing` and `roadmap`; `FindDiagnosisOwnerQuery` for `initiative`, `routing` and `roadmap` (each verifies the caller owns the diagnostic); `GetDiagnosisProgressQuery` (whether the deep analysis is accepted) and `ListUserDiagnosesQuery` for `initiative`.
   - `initiative` → `GetInitiativeCharacterizationUseCase` and `ListStagesUseCase` for `routing`.
