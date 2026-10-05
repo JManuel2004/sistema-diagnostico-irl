@@ -7,7 +7,7 @@ How a diagnostic moves through the product: the screens the user goes through, w
 ```
 /  (landing, public)
  └─ «Iniciar diagnóstico» → /diagnosticos/nuevo   (protected: without a session, INNLAB sign-in first)
-      └─ POST /diagnostics  (starts or resumes)  → /diagnosticos/:id/asistente/:step
+      └─ POST /diagnostics  (starts a new one)  → /diagnosticos/:id/asistente/:step
            1 consentimiento  the current consent text; accepting keeps the accepted version in the
                              browser (nothing about the initiative is typed yet)
            2 iniciativa      choose one of the user's initiatives (its latest profile fills the form)
@@ -19,12 +19,13 @@ How a diagnostic moves through the product: the screens the user goes through, w
            └─ «Adquirir análisis profundo» → imbalances, critical state, recommendation, then the roadmap:
               balanced phases, each with the service that could be contracted, and «Al terminar la ruta»:
               how the route leaves each dimension and each pair against today
-/panel   the initiative of the latest diagnostic with results; «Continuar diagnóstico» if one is unfinished
+/panel   where the sign-in lands: the completed diagnostics to consult, «Continuar diagnóstico» only for
+         one this tab is filling in, and «Iniciar» a new one
 /diagnosticos/:id/iniciativa   correct an already registered initiative profile (not after the deep analysis)
 ```
 
-- **The wizard has no main navigation.** It decides the step from what the server already has (is the diagnostic's initiative profile registered?), never from a local flag: resuming lands on the first missing step, and a later step cannot be opened by URL. A diagnostic that already has results is never resumed; its results open.
-- **Starting is idempotent per user.** `POST /diagnostics` returns the user's last diagnostic while it is unfinished (`completed` false) and creates a new one only when there is none or the last one has its profile. Two simultaneous requests from two tabs can still create two (known limit).
+- **The wizard has no main navigation**, but «Volver al panel» and the institutional descriptor lead to the panel, where a diagnostic this tab is filling in can be continued. It decides the step from what the server already has (is the diagnostic's initiative profile registered?), never from a local flag: resuming lands on the first missing step, and a later step cannot be opened by URL. A diagnostic that already has results is never resumed; its results open.
+- **Starting is always from the beginning** (DIAGIRL-26). `POST /diagnostics` deletes the user's unfinished diagnostics and creates a new one; completed ones stay. The answers of a diagnostic in progress live only in the browser tab (`sessionStorage`): within that tab the panel offers to continue it, and once the tab is closed there is nothing to recover, so it is not offered. Two simultaneous starts from two tabs can each create one, and the second deletes the first (known limit).
 - **An initiative has its own identity and its consent is a history** ([ADR 0011](./decisions/0011-initiative-identity-and-consent-per-initiative.md)). The user diagnoses one of their initiatives again or creates a new one; each diagnostic keeps a snapshot of the profile it was computed with. Every acceptance is a new row; the text accepted is the current one of the `consent_terms` catalog, served by `GET /consent-terms/current`.
 - **The consent comes first** ([ADR 0015](./decisions/0015-consent-before-the-initiative.md)). Step 1 keeps only the accepted text version in `sessionStorage`. Step 2 creates the new initiative with its first acceptance (`POST /initiatives`) or records a new acceptance for an existing one (`POST /initiatives/:id/consent`), and then registers the profile. The backend refuses a profile whose initiative has not accepted the current text (409); the wizard then forgets the version and goes back to step 1.
 - **The questionnaire is answered with the diagnostic's framework version** ([ADR 0012](./decisions/0012-framework-content-versioned.md)): the wizard asks for `GET /catalog/questionnaire?version=<frameworkVersion>`, and the backend rejects answers to statements of another version.
@@ -64,4 +65,4 @@ STARTED ──InitiativeRegisteredEvent──▶ (WITH_CONSENT ▶) WITH_INITIAT
 
 ## The panel
 
-`/panel` is where the institutional descriptor leads once the user has navigation. It lists nothing by itself: it reads the user's diagnostics (`GET /diagnostics`, most recent first), shows the initiative of the latest one with results, links to correct it (while the deep analysis is not accepted) and to its results, and offers «Continuar diagnóstico» when the latest one is still in the wizard (a single primary button per screen: «Continuar» wins when both exist). The history of past diagnostics has its place reserved; it is a future user story.
+`/panel` is where the sign-in and the institutional descriptor lead (DIAGIRL-26). It reads the user's completed diagnostics (`GET /diagnostics`, most recent first) and shows the initiative of the latest one, with links to correct it (while the deep analysis is not accepted) and to its results; then «Tus diagnósticos», every completed one with its initiative, profile date, global level and whether the deep analysis was accepted, each opening its saved results, where the deep analysis can still be accepted. «Continuar diagnóstico» appears only for a diagnostic whose draft this tab holds and that is still unfinished. «Iniciar un diagnóstico nuevo» starts from the beginning. With nothing completed and nothing in progress, starting is the only action. A single primary button per screen: «Continuar», else «Ver resultados», else «Iniciar diagnóstico».
