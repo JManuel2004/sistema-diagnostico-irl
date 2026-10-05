@@ -37,6 +37,13 @@ export default function DashboardPage(): JSX.Element {
   const inProgress = list.find((d) => !d.completed);
   const initiative = useInitiative(completed?.id);
   const start = useStartDiagnostic();
+  const beginDiagnostic = (): void => {
+    start.mutate(undefined, {
+      onError: () => {
+        notify.error(`No fue posible iniciar el diagnóstico. ${RETRY_LATER}`);
+      },
+    });
+  };
 
   return (
     <PageShell width="standard" showAttribution showNavigation headerActions={<UserMenu />}>
@@ -68,13 +75,7 @@ export default function DashboardPage(): JSX.Element {
                   <Button
                     size="lg"
                     className="w-full sm:w-auto"
-                    onClick={() => {
-                      start.mutate(undefined, {
-                        onError: () => {
-                          notify.error(`No fue posible iniciar el diagnóstico. ${RETRY_LATER}`);
-                        },
-                      });
-                    }}
+                    onClick={beginDiagnostic}
                     disabled={start.isPending}
                   >
                     {start.isPending ? 'Preparando tu diagnóstico…' : 'Iniciar diagnóstico'}
