@@ -7,14 +7,19 @@ import {
   type EvaluationTrace,
   type ResultType,
 } from '../../../domain/entities/recommendation.aggregate.js';
-import type { ScoredCandidate } from '../../../domain/value-objects/scored-candidate.vo.js';
+import {
+  isIncluded,
+  type RankedCandidate,
+  type ScoredCandidate,
+} from '../../../domain/value-objects/scored-candidate.vo.js';
 import { PortfolioRecommendationOrm } from '../orm-entities/portfolio-recommendation.orm-entity.js';
 import { RecommendationRankOrm } from '../orm-entities/recommendation-rank.orm-entity.js';
 
 /**
  * A recommendation is its row (result, justification, trace) plus its
- * ranking (`recommendation_rank`, position 1 = the recommended service).
- * Saving replaces the diagnostic's previous recommendation in one
+ * ranking (`recommendation_rank`, position 1 = the recommended service). A
+ * place an `INCLUDE` adjustment added has no score and records the rule
+ * instead. Saving replaces the diagnostic's previous recommendation in one
  * transaction; the ranking goes with it by cascade.
  */
 @Injectable()
@@ -37,7 +42,9 @@ export class TypeOrmRecommendationRepository implements RecommendationRepository
           idDiagnostic: recommendation.diagnosticId.value,
           resultType: recommendation.resultType,
           criterionJustification:
-            recommendation.justification ?? recommendation.noRecommendationReason ?? '',
+            recommendation.justification ??
+            recommendation.noRecommendationReason ??
+            '',
           generatedAt: recommendation.generatedAt,
           layer1Excluded: [...t.layer1Excluded],
           rankingBeforeExceptions: [...t.rankingBeforeExceptions],
@@ -60,15 +67,22 @@ export class TypeOrmRecommendationRepository implements RecommendationRepository
             idService: candidate.idService,
             serviceSnapshot: candidate.serviceName,
             position: i + 1,
-            score: candidate.total,
+            score: isIncluded(candidate) ? null : candidate.total,
+            includedByRule: isIncluded(candidate)
+              ? candidate.includedBy.ruleCode
+              : null,
           })),
         );
       }
     });
   }
 
-  async findByDiagnosticId(diagnosticId: string): Promise<Recommendation | null> {
-    const row = await this.orm.findOne({ where: { idDiagnostic: diagnosticId } });
+  async findByDiagnosticId(
+    diagnosticId: string,
+  ): Promise<Recommendation | null> {
+    const row = await this.orm.findOne({
+      where: { idDiagnostic: diagnosticId },
+    });
     if (!row) return null;
 
     const ranks = await this.orm.manager.find(RecommendationRankOrm, {
@@ -87,17 +101,29 @@ export class TypeOrmRecommendationRepository implements RecommendationRepository
     };
 
     // The ranking table says which services and in which order; their
-    // contributions (what the explanation needs) are in the trace.
-    const candidates: ScoredCandidate[] = ranks.map((rank) => {
-      const traced = row.rankingAfterExceptions.find((c) => c.idService === rank.idService);
-      return (
-        traced ?? {
+    // contributions, or the adjustment that included them (what the
+    // explanation needs), are in the trace.
+    const candidates: RankedCandidate[] = ranks.map((rank) => {
+      const traced = row.rankingAfterExceptions.find(
+        (c) => c.idService === rank.idService,
+      );
+      if (traced) return traced;
+      if (rank.score === null) {
+        return {
           idService: rank.idService,
           serviceName: rank.serviceSnapshot,
-          total: rank.score,
-          contributions: emptyContributions(),
-        }
-      );
+          includedBy: {
+            ruleCode: rank.includedByRule ?? '',
+            declaredReason: '',
+          },
+        };
+      }
+      return {
+        idService: rank.idService,
+        serviceName: rank.serviceSnapshot,
+        total: rank.score,
+        contributions: emptyContributions(),
+      };
     });
 
     const resultType = row.resultType as ResultType;
@@ -106,7 +132,8 @@ export class TypeOrmRecommendationRepository implements RecommendationRepository
       resultType,
       primary: candidates[0] ?? null,
       alternatives: candidates.slice(1),
-      justification: resultType === 'RECOMMENDATION' ? row.criterionJustification : null,
+      justification:
+        resultType === 'RECOMMENDATION' ? row.criterionJustification : null,
       noRecommendationReason:
         resultType === 'NO_RECOMMENDATION' ? row.criterionJustification : null,
       trace,

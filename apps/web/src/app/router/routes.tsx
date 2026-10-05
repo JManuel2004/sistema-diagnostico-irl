@@ -5,6 +5,7 @@ import LandingPage from '@pages/LandingPage';
 import StartDiagnosticPage from '@pages/StartDiagnosticPage';
 import DiagnosticWizardPage from '@pages/DiagnosticWizardPage';
 import ResultsPage from '@pages/ResultsPage';
+import ReportPage from '@pages/ReportPage';
 import InitiativePage from '@pages/InitiativePage';
 import DashboardPage from '@pages/DashboardPage';
 import NotFoundPage from '@pages/NotFoundPage';
@@ -36,7 +37,7 @@ function RedirectToWizardStep({ step }: { readonly step: WizardStepKey }): JSX.E
  *
  * The user flow is: landing (`/`, public, no navigation) →
  * `/diagnosticos/nuevo` (resolves the session and the diagnostic) → wizard
- * (`/diagnosticos/:id/asistente/:step`: initiative, consent, questionnaire
+ * (`/diagnosticos/:id/asistente/:step`: consent, initiative, questionnaire
  * and summary, no navigation) → results (`/diagnosticos/:id/resultados`),
  * the first screen with navigation, from where the panel (`/panel`) is
  * reached.
@@ -95,6 +96,16 @@ export function AppRoutes(): JSX.Element {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* The full report: only once the deep analysis is complete. */}
+      <Route
+        path="/diagnosticos/:id/reporte"
+        element={
+          <ProtectedRoute>
+            <ReportPage />
           </ProtectedRoute>
         }
       />

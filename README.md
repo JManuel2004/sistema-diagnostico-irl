@@ -18,7 +18,7 @@ A pnpm monorepo with three packages:
 
 The architecture is a **modular monolith with DDD-lite**: one NestJS module per bounded context (`diagnosis`, `initiative`, `routing`, `roadmap`, plus `shared/irl-taxonomy` and `shared/identity`). Modules react to each other through in-process domain events and read from each other only through exported queries; the domain and application layers import no framework. The why of each of these choices is in [`docs/architecture/`](./docs/architecture/README.md).
 
-What is implemented: sign-in through the INNLAB SSO (HU-01/02), starting or resuming a diagnostic (HU-04), consent (HU-05), initiative profile (HU-06), the questionnaire with justifications (E-03), the maturity profile with its critical state (E-04), and the deep analysis — roadmap and portfolio recommendation (RF-11). Reporting and notifications are not built.
+What is implemented: sign-in through the INNLAB SSO (HU-01/02), starting or resuming a diagnostic (HU-04), consent (HU-05), initiative profile (HU-06), the questionnaire with optional justifications (E-03), the maturity profile with its critical state (E-04), and the deep analysis — roadmap and portfolio recommendation (RF-11). Reporting and notifications are not built.
 
 ## Prerequisites
 

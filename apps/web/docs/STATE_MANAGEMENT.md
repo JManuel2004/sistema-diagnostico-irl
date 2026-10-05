@@ -7,7 +7,7 @@ Which tool owns which kind of state on the frontend, and why. Getting state plac
 | Category of state                                           | Tool                                              | In this codebase                                                                    |
 | ----------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | **Server state** — anything read from the API               | **TanStack Query**                                | Catalogs, the diagnostic and the user's list, profile, recommendation, roadmap      |
-| **Browser drafts** — input that must survive a reload       | **Zustand** with `persist` to `sessionStorage`    | The 48 answers and justifications; the chosen initiative and its profile before the consent |
+| **Browser drafts** — input that must survive a reload       | **Zustand** with `persist` to `sessionStorage`    | The 48 answers and their optional justifications; the accepted consent version and the chosen initiative with its profile until it is registered |
 | **Form state**                                              | **React Hook Form** + `zodResolver`               | The initiative form (ten fields)                                                    |
 | **Local component state**                                   | `useState` / `useReducer`                         | The consent checkbox, the radar highlight, open panels                              |
 | **URL state**                                               | React Router params                               | The diagnostic id (`:id`) and the wizard step (`:step`)                             |

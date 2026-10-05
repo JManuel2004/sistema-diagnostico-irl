@@ -45,5 +45,12 @@ export default tseslint.config(
       'no-default-export': 'off',
     },
   },
+  {
+    // Same exception as apps/api/eslint.config.mjs: `unbound-method` fires on
+    // every `expect(mock.method).toHaveBeenCalled()`. The pre-commit hook lints
+    // staged files with this root config, so it needs it too. Tests only.
+    files: ['apps/api/test/**/*.ts'],
+    rules: { '@typescript-eslint/unbound-method': 'off' },
+  },
   prettier,
 );

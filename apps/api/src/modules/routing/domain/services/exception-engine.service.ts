@@ -1,5 +1,10 @@
 import type { DiagnosticFacts, EXCEPTION_ACTIONS } from '@innlab/contracts';
-import type { ScoredCandidate } from '../value-objects/scored-candidate.vo.js';
+import type {
+  IncludedCandidate,
+  RankedCandidate,
+  ScoredCandidate,
+} from '../value-objects/scored-candidate.vo.js';
+import type { AdjustmentOnlyService } from '../value-objects/adjustment-only-service.vo.js';
 import type { ExpressionTree } from './predicate-compiler.service.js';
 import { evaluateExpression } from './predicate-compiler.service.js';
 
@@ -9,6 +14,13 @@ import { evaluateExpression } from './predicate-compiler.service.js';
  * This is where the center deliberately steps in: forcing a service,
  * vetoing it, or promoting or demoting it a few positions when the
  * calculation, however correct, does not capture a judgement call.
+ *
+ * It is also the only way an adjustment-only service reaches the ranking:
+ * `INCLUDE` puts it at the position the rule sets (`positions`, 1 = first;
+ * past the end, it goes last), without a score. From then on it is one more
+ * place of the ranking, and later adjustments can move or veto it like any
+ * other. `INCLUDE` only targets adjustment-only services; the database
+ * enforces it, and a rule that still breaks it is discarded with the reason.
  *
  * Exceptions are walked in ascending `priorityOrder`. That order is unique
  * by database constraint, so the cascade is total and deterministic: there
@@ -36,6 +48,7 @@ export interface CompiledExceptionRule {
   readonly expression: ExpressionTree;
   readonly action: ExceptionAction;
   readonly idTargetService: number;
+  /** Positions to move (PROMOTE, DEMOTE) or the position to enter at (INCLUDE). */
   readonly positions: number | null;
   readonly declaredReason: string;
 }
@@ -46,8 +59,8 @@ export interface AppliedException {
   readonly action: ExceptionAction;
   readonly targetService: string;
   readonly declaredReason: string;
-  readonly rankingBefore: readonly ScoredCandidate[];
-  readonly rankingAfter: readonly ScoredCandidate[];
+  readonly rankingBefore: readonly RankedCandidate[];
+  readonly rankingAfter: readonly RankedCandidate[];
   readonly effect: string;
 }
 
@@ -58,7 +71,7 @@ export interface DiscardedException {
 }
 
 export interface ExceptionResult {
-  readonly finalRanking: readonly ScoredCandidate[];
+  readonly finalRanking: readonly RankedCandidate[];
   readonly applied: readonly AppliedException[];
   readonly discarded: readonly DiscardedException[];
 }
@@ -68,46 +81,78 @@ export class ExceptionEngineService {
     initialRanking: readonly ScoredCandidate[],
     exceptions: readonly CompiledExceptionRule[],
     facts: DiagnosticFacts,
+    adjustmentOnlyServices: readonly AdjustmentOnlyService[] = [],
   ): ExceptionResult {
     const applied: AppliedException[] = [];
     const discarded: DiscardedException[] = [];
-    let ranking: ScoredCandidate[] = [...initialRanking];
+    let ranking: RankedCandidate[] = [...initialRanking];
 
     const ordered = [...exceptions].sort(
       (a, b) => a.priorityOrder - b.priorityOrder,
     );
 
     for (const rule of ordered) {
+      const discard = (reason: string) =>
+        discarded.push({ code: rule.code, order: rule.priorityOrder, reason });
+
       if (!evaluateExpression(rule.expression, facts)) {
-        discarded.push({
-          code: rule.code,
-          order: rule.priorityOrder,
-          reason: 'La condición no se cumple para este diagnóstico',
-        });
+        discard('La condición no se cumple para este diagnóstico');
         continue;
       }
 
       const index = ranking.findIndex(
         (c) => c.idService === rule.idTargetService,
       );
+      const before = [...ranking];
 
-      if (index === -1) {
-        // The target is not in the ranking: it was excluded in layer 1 or
-        // vetoed by an earlier exception. It is discarded with an explicit
-        // reason instead of failing silently — exactly the conflict between
-        // layers that the validator must catch when configuring.
-        discarded.push({
+      if (rule.action === 'INCLUDE') {
+        const service = adjustmentOnlyServices.find(
+          (s) => s.idService === rule.idTargetService,
+        );
+        if (!service) {
+          discard(
+            'La condición se cumple, pero el servicio objetivo no es de los que solo entran ' +
+              'por ajuste',
+          );
+          continue;
+        }
+        if (index !== -1) {
+          discard(
+            'La condición se cumple, pero el servicio ya está en el ranking',
+          );
+          continue;
+        }
+        const { next, effect } = include(ranking, service, rule);
+        ranking = next;
+        applied.push({
           code: rule.code,
           order: rule.priorityOrder,
-          reason:
-            'La condición se cumple, pero el servicio objetivo no está en el ranking ' +
-            '(excluido por elegibilidad o vetado por una excepción anterior)',
+          action: rule.action,
+          targetService: service.serviceName,
+          declaredReason: rule.declaredReason,
+          rankingBefore: before,
+          rankingAfter: [...ranking],
+          effect,
         });
         continue;
       }
 
-      const before = [...ranking];
-      const { next, effect } = this.applyAction(ranking, index, rule);
+      if (index === -1) {
+        // The target is not in the ranking: it was excluded in layer 1, vetoed
+        // by an earlier exception, or it is an adjustment-only service no
+        // earlier adjustment included. It is discarded with an explicit reason
+        // instead of failing silently.
+        discard(
+          'La condición se cumple, pero el servicio objetivo no está en el ranking ' +
+            '(excluido por elegibilidad, vetado por un ajuste anterior o no incluido por ninguno)',
+        );
+        continue;
+      }
+
+      const { next, effect } = this.applyAction(ranking, index, {
+        ...rule,
+        action: rule.action,
+      });
       ranking = next;
 
       applied.push({
@@ -126,28 +171,54 @@ export class ExceptionEngineService {
   }
 
   private applyAction(
-    ranking: readonly ScoredCandidate[],
+    ranking: readonly RankedCandidate[],
     index: number,
-    rule: CompiledExceptionRule,
-  ): { next: ScoredCandidate[]; effect: string } {
+    rule: CompiledExceptionRule & { readonly action: RankingAction },
+  ): { next: RankedCandidate[]; effect: string } {
     const list = [...ranking];
     const [target] = list.splice(index, 1);
-    return ACTION_STRATEGIES[rule.action]({ list, target, index, rule });
+    return RANKING_STRATEGIES[rule.action]({ list, target, index, rule });
   }
+}
+
+/**
+ * Puts an adjustment-only service at the position the rule sets (1-based),
+ * or last if the ranking is shorter. It enters without a score.
+ */
+function include(
+  ranking: readonly RankedCandidate[],
+  service: AdjustmentOnlyService,
+  rule: CompiledExceptionRule,
+): { next: RankedCandidate[]; effect: string } {
+  const list = [...ranking];
+  const destination = Math.min(
+    Math.max((rule.positions ?? list.length + 1) - 1, 0),
+    list.length,
+  );
+  const candidate: IncludedCandidate = {
+    idService: service.idService,
+    serviceName: service.serviceName,
+    includedBy: { ruleCode: rule.code, declaredReason: rule.declaredReason },
+  };
+  list.splice(destination, 0, candidate);
+  return {
+    next: list,
+    effect: `${service.serviceName} entra al ranking en el puesto ${destination + 1}, sin puntaje`,
+  };
 }
 
 /** What a strategy receives: the ranking without the target, and the target. */
 interface ActionContext {
   /** The ranking with the target already removed. */
-  readonly list: ScoredCandidate[];
-  readonly target: ScoredCandidate;
+  readonly list: RankedCandidate[];
+  readonly target: RankedCandidate;
   /** Position (0-based) the target had before the action. */
   readonly index: number;
   readonly rule: CompiledExceptionRule;
 }
 
 type ActionStrategy = (ctx: ActionContext) => {
-  next: ScoredCandidate[];
+  next: RankedCandidate[];
   effect: string;
 };
 
@@ -171,17 +242,21 @@ function moveBy(direction: 'up' | 'down'): ActionStrategy {
   };
 }
 
+/** The actions that move a place of the ranking; `INCLUDE` adds one. */
+type RankingAction = Exclude<ExceptionAction, 'INCLUDE'>;
+
 /**
- * One strategy per action — the extension point of the exception layer.
+ * One strategy per ranking action — the extension point of the exception
+ * layer.
  *
- * Typed as `Record<ExceptionAction, …>`, so adding an action to
- * `EXCEPTION_ACTIONS` in `@innlab/contracts` fails to compile here until its
- * strategy exists; there is no switch to remember and no fallthrough that
- * silently ignores a new action. To add one: (1) the constant in the
- * contracts, (2) its strategy below, (3) a migration widening the
- * `ck_exception_rule_action` (and `_positions`) constraints.
+ * Typed as `Record<RankingAction, …>`, and `RankingAction` is every action
+ * of `EXCEPTION_ACTIONS` except `INCLUDE`: adding an action to the contracts
+ * fails to compile here until its strategy exists; there is no switch to
+ * remember and no fallthrough that silently ignores a new action. To add
+ * one: (1) the constant in the contracts, (2) its strategy below, (3) the
+ * migration's `ck_exception_rule_action` (and `_positions`) constraints.
  */
-const ACTION_STRATEGIES: Record<ExceptionAction, ActionStrategy> = {
+const RANKING_STRATEGIES: Record<RankingAction, ActionStrategy> = {
   FORCE: ({ list, target, index }) => {
     list.unshift(target);
     const name = target.serviceName;

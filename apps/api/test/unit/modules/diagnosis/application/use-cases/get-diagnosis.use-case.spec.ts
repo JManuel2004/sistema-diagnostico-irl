@@ -58,6 +58,22 @@ describe('GetDiagnosisUseCase', () => {
     expect(result.value.deepAnalysisAccepted).toBe(accepted);
   });
 
+  // The full report (RF-16) exists only once both results are saved: an
+  // accepted analysis still in progress has no report yet.
+  it.each([
+    ['PROFILE_GENERATED', false],
+    ['DEEP_ANALYSIS_DECLINED', false],
+    ['DEEP_ANALYSIS_IN_PROGRESS', false],
+    ['DEEP_ANALYSIS_COMPLETE', true],
+  ])('in %s the deep analysis completed flag is %s', async (state, completed) => {
+    findById.mockResolvedValueOnce(diagnosisIn(state));
+
+    const result = await useCase.execute({ diagnosticId: ID, userId: 'user-1' });
+
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.value.deepAnalysisCompleted).toBe(completed);
+  });
+
   // The client decides "resume the wizard or show the results" from this flag.
   it.each([
     ['STARTED', false],

@@ -253,7 +253,7 @@ Responses:
 - `422 VALIDATION_FAILED` if the id is not a UUID or an answer is malformed (DTO).
 - `404` if the diagnostic does not exist.
 - `409` if the diagnostic is not at the step that accepts the questionnaire (the initiative is missing, or it is already processed).
-- `422` if there are not exactly 48 answers or a justification is blank (domain invariant); nothing is stored.
+- `422` if there are not exactly 48 answers or a justification exceeds 1000 characters (domain invariant); nothing is stored. The justification is optional: send `null` or omit it.
 
 ### Retrieve the profile of an existing diagnostic
 

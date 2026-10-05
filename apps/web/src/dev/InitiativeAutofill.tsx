@@ -18,7 +18,6 @@ export default function InitiativeAutofill({
       declaredStage: AGROCONECTA_INITIATIVE.declaredStage,
       teamSize: String(AGROCONECTA_INITIATIVE.teamSize),
       teamDescription: AGROCONECTA_INITIATIVE.teamDescription,
-      academicLinkage: AGROCONECTA_INITIATIVE.academicLinkage ? 'true' : 'false',
       targetMarket: AGROCONECTA_INITIATIVE.targetMarket,
       currentFunding: AGROCONECTA_INITIATIVE.currentFunding,
     });

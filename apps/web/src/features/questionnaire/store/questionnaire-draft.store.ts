@@ -10,8 +10,8 @@ import type { DimensionCode, LikertValue } from '@innlab/contracts';
  * page reload (F5):
  *
  *   1. `answers`  — statementId → Likert 1..5
- *   2. `justifications` — statementId → why the user chose that level (mandatory
- *      to submit; a statement is complete only with both)
+ *   2. `justifications` — statementId → why the user chose that level
+ *      (optional; a statement is complete with its answer alone)
  *   3. `activeTab` — currently selected dimension code
  *   4. `diagnosticId` — guards against cross-diagnostic contamination
  *
@@ -120,18 +120,18 @@ export const selectJustifications = (s: DraftStore) => s.justifications;
 export const selectSetJustification = (s: DraftStore) => s.setJustification;
 export const selectFill = (s: DraftStore) => s.fill;
 export const selectClearDraft = (s: DraftStore) => s.clear;
-export const selectJustificationById = (id: string) => (s: DraftStore) => s.justifications[id] ?? '';
+export const selectJustificationById = (id: string) => (s: DraftStore) =>
+  s.justifications[id] ?? '';
 
 /**
- * A statement is complete when it has a Likert answer **and** a non-blank
- * justification: both are mandatory to process the diagnostic.
+ * A statement is complete when it has its Likert answer. The justification
+ * is optional: it travels with the answer when the user wrote one.
  */
 export function isStatementComplete(
   answers: Record<string, LikertValue>,
-  justifications: Record<string, string>,
   statementId: string,
 ): boolean {
-  return answers[statementId] !== undefined && (justifications[statementId] ?? '').trim().length > 0;
+  return answers[statementId] !== undefined;
 }
 export const selectSetAnswer = (s: DraftStore) => s.setAnswer;
 export const selectActiveTab = (s: DraftStore) => s.activeTab;

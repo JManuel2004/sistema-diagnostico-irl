@@ -3,6 +3,7 @@ import { paths } from '@/shared/lib/paths';
 import { Link } from 'react-router-dom';
 import {
   CalendarClock,
+  CircleDollarSign,
   Compass,
   Info,
   Route,
@@ -28,6 +29,11 @@ import { FALLBACK_SUBJECT } from '@/shared/lib/copy';
  * acceptance, so accepting is a user action and never an effect of opening
  * the screen. «Por ahora no» sends nothing: the profile is already saved
  * and the user can come back from their panel whenever they want.
+ *
+ * It is a paid feature, so its card is a solid brand block (the one place on
+ * the screen that costs), with a «De pago» badge, a dollar mark and a
+ * purchase verb on the button. It promises nothing about the payment itself
+ * (gateway, security, refunds): no payment flow exists yet.
  */
 interface AcceptDeepAnalysisCardProps {
   readonly onAccept: () => void;
@@ -72,14 +78,20 @@ export function AcceptDeepAnalysisCard({
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <Card className="border-border border-t-primary border-t-[3px]">
+        <Card className="bg-primary text-primary-foreground border-0">
           <CardContent className="flex flex-col gap-6 p-6 md:p-10">
             <div>
-              <Badge tone="info">
-                <Sparkles className="size-4" aria-hidden="true" />
-                Análisis profundo · Recomendado
-              </Badge>
-              <h3 className="text-foreground mt-4 text-2xl font-bold leading-tight">
+              <div className="flex flex-wrap gap-2">
+                <Badge tone="info" className="text-primary-foreground bg-white/15">
+                  <Sparkles className="size-4" aria-hidden="true" />
+                  Análisis profundo · Recomendado
+                </Badge>
+                <Badge tone="info" className="text-primary bg-white">
+                  <CircleDollarSign className="size-4" aria-hidden="true" />
+                  De pago
+                </Badge>
+              </div>
+              <h3 className="text-primary-foreground mt-4 text-2xl font-bold leading-tight">
                 Conecta {subject} con una ruta de acompañamiento
               </h3>
             </div>
@@ -88,11 +100,11 @@ export function AcceptDeepAnalysisCard({
               {INCLUDES.map((item) => (
                 <li
                   key={item.text}
-                  className="text-foreground flex items-center gap-3 text-base leading-normal"
+                  className="text-primary-foreground flex items-center gap-3 text-base leading-normal"
                 >
                   <span
                     aria-hidden="true"
-                    className="bg-azul-icesi text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full"
+                    className="text-primary flex size-8 shrink-0 items-center justify-center rounded-full bg-white"
                   >
                     <item.icon className="size-4" />
                   </span>
@@ -102,8 +114,14 @@ export function AcceptDeepAnalysisCard({
             </ul>
 
             <div>
-              <Button size="lg" className="w-full sm:w-auto" onClick={onAccept}>
-                {failed ? 'Intentar de nuevo' : 'Solicitar análisis profundo'}
+              <Button
+                variant="secondary"
+                size="lg"
+                className="text-primary w-full border-white hover:bg-white/85 active:bg-white/75 sm:w-auto"
+                onClick={onAccept}
+              >
+                {!failed && <CircleDollarSign className="size-5" aria-hidden="true" />}
+                {failed ? 'Intentar de nuevo' : 'Adquirir análisis profundo'}
               </Button>
             </div>
           </CardContent>

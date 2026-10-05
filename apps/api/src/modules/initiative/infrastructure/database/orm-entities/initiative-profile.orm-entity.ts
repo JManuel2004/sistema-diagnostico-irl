@@ -45,9 +45,6 @@ export class InitiativeProfileOrm {
   @Column({ name: 'team_size', type: 'integer' })
   teamSize!: number;
 
-  @Column({ name: 'academic_linkage', type: 'boolean' })
-  academicLinkage!: boolean;
-
   @Column({ name: 'recorded_at', type: 'timestamptz', default: () => 'now()' })
   recordedAt!: Date;
 }

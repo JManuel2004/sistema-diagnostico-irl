@@ -36,6 +36,17 @@ describe('palette', () => {
     }
   });
 
+  // Red-orange reads as a warning: the data colors stay away from the hues
+  // of the critical and moderate states.
+  it('Equipo (TmRL) es ámbar, no un naranja rojizo que se confunda con una alerta', () => {
+    expect(PALETTE.dimension.tmrl).toBe('#D98E04');
+    expect(PALETTE.dimension['tmrl-ink']).toBe('#8A5A00');
+    const colors = Object.values(PALETTE.dimension);
+    expect(colors).not.toContain(PALETTE.critical.DEFAULT);
+    expect(colors).not.toContain(PALETTE.moderate.DEFAULT);
+    expect(colors).not.toContain(PALETTE['naranja-icesi']);
+  });
+
   // Regression: the code used `var(--color-…, #hex)` for variables that no
   // stylesheet defines, so the fallback always won and the same dimension
   // ended up with different colors in different screens.

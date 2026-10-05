@@ -6,6 +6,7 @@ import { DiagnosisModule } from './modules/diagnosis/diagnosis.module.js';
 import { InitiativeModule } from './modules/initiative/initiative.module.js';
 import { RoutingModule } from './modules/routing/routing.module.js';
 import { RoadmapModule } from './modules/roadmap/roadmap.module.js';
+import { ReportingModule } from './modules/reporting/reporting.module.js';
 
 /**
  * Composition root for the HTTP surface.
@@ -26,6 +27,7 @@ import { RoadmapModule } from './modules/roadmap/roadmap.module.js';
     InitiativeModule,
     RoutingModule,
     RoadmapModule,
+    ReportingModule,
   ],
   controllers: [HealthController],
 })

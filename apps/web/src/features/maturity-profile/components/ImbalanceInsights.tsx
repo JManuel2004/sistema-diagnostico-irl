@@ -33,7 +33,10 @@ interface Props {
   readonly onHighlight?: HighlightHandler;
   /** What each dimension measures, from the questionnaire catalog. */
   readonly descriptions?: Readonly<Partial<Record<DimensionCode, string>>>;
-  /** Target and phase of each dimension in the roadmap, if already calculated. */
+  /**
+   * Final target of each dimension in the roadmap and the phase where its
+   * work starts (a rise may span several phases), if already calculated.
+   */
   readonly plan?: Readonly<Partial<Record<DimensionCode, PlanTarget>>>;
   /** Name of the initiative, to address it. */
   readonly subject?: string;
@@ -45,7 +48,7 @@ function nextStep(level: number, target: PlanTarget | undefined): string {
   if (target === undefined) {
     return `Está en el nivel ${String(level)}, en la parte baja de la escala. Conviene atenderla antes que el resto.`;
   }
-  return `Subir del nivel ${String(level)} al nivel ${String(target.targetLevel)}, en la fase ${String(target.phase)} del plan.`;
+  return `Subir del nivel ${String(level)} al nivel ${String(target.targetLevel)}, desde la fase ${String(target.phase)} del plan.`;
 }
 
 export function ImbalanceInsights({

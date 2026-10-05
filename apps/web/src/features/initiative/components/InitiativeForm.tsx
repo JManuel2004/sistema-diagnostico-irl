@@ -1,11 +1,7 @@
-import { Suspense, type JSX, type ReactNode } from 'react';
+import { Suspense, useEffect, useRef, type JSX, type ReactNode } from 'react';
 import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  INITIATIVE_TEXT_MAX,
-  type InitiativeStage,
-  type Sector,
-} from '@innlab/contracts';
+import { INITIATIVE_TEXT_MAX, type InitiativeStage, type Sector } from '@innlab/contracts';
 import { Alert } from '@/shared/ui/alert';
 import { Button } from '@/shared/ui/button';
 import { Field, Input, Select, Textarea } from '@/shared/ui/field';
@@ -19,10 +15,6 @@ import {
 
 type Values = InitiativeFormValues;
 
-const ACADEMIC_LINKAGE_OPTIONS = [
-  { id: 'true', name: 'Sí' },
-  { id: 'false', name: 'No' },
-] as const;
 type FormControl = Control<Values, unknown, InitiativeProfileFields>;
 
 export interface InitiativeFormProps {
@@ -33,6 +25,8 @@ export interface InitiativeFormProps {
   readonly onSubmit: (command: InitiativeProfileFields) => void;
   readonly isSubmitting: boolean;
   readonly submitLabel?: string;
+  /** Called with the current field values, so leaving the step keeps the draft. */
+  readonly onDraftChange?: (values: Values) => void;
 }
 
 /**
@@ -44,8 +38,8 @@ export interface InitiativeFormProps {
  * contract's. The fields hold text and `teamSize` becomes a number on
  * validation; `onSubmit` receives the profile fields ready to send.
  *
- * The ten fields are grouped in three blocks (the initiative, the team,
- * market and funding); sector, stage and academic linkage are native `<select>`s.
+ * The nine fields are grouped in three blocks (the initiative, the team,
+ * market and funding); sector and stage are native `<select>`s.
  */
 export function InitiativeForm({
   sectors,
@@ -54,16 +48,32 @@ export function InitiativeForm({
   onSubmit,
   isSubmitting,
   submitLabel = 'Guardar y continuar',
+  onDraftChange,
 }: InitiativeFormProps): JSX.Element {
   const {
     control,
     handleSubmit,
     reset,
+    subscribe,
     formState: { errors },
   } = useForm<Values, unknown, InitiativeProfileFields>({
     resolver: zodResolver(initiativeFormSchema),
     defaultValues: initial ?? EMPTY_INITIATIVE_FORM,
   });
+  const onDraftChangeRef = useRef(onDraftChange);
+  useEffect(() => {
+    onDraftChangeRef.current = onDraftChange;
+  });
+
+  useEffect(() => {
+    if (!onDraftChange) return;
+    return subscribe({
+      formState: { values: true },
+      callback: ({ values }) => {
+        onDraftChangeRef.current?.(values);
+      },
+    });
+  }, [onDraftChange, subscribe]);
 
   const limit = `Máximo ${String(INITIATIVE_TEXT_MAX)} caracteres`;
 
@@ -143,7 +153,7 @@ export function InitiativeForm({
       <FormSection
         id="initiative-group-team"
         title="El equipo"
-        description="Quiénes la impulsan hoy, con qué dedicación y si tiene vínculo con la universidad."
+        description="Quiénes la impulsan hoy y con qué dedicación."
       >
         <div className="grid gap-5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-start">
           <TextField
@@ -162,15 +172,6 @@ export function InitiativeForm({
             multiline
           />
         </div>
-        <SelectField
-          control={control}
-          name="academicLinkage"
-          label="Vinculación académica"
-          hint="¿La iniciativa tiene un vínculo confirmado con la universidad?"
-          error={errors.academicLinkage?.message}
-          placeholder="Selecciona una opción"
-          options={ACADEMIC_LINKAGE_OPTIONS}
-        />
       </FormSection>
 
       <FormSection

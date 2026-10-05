@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { Alert } from '../alert';
 import { LoadingState } from '../loading-state';
+import { ProcessingState } from '../processing-state';
 import { ResultMeta } from '../result-meta';
 import { PageHeader } from '../page-header';
 import { DisclosurePanel } from '../disclosure-panel';
@@ -47,6 +48,67 @@ describe('LoadingState', () => {
     render(<LoadingState label="Cargando perfil…" />);
 
     expect(screen.getByRole('status')).toHaveTextContent('Cargando perfil…');
+  });
+});
+
+describe('ProcessingState', () => {
+  const STEPS = [
+    'Promediamos tus respuestas',
+    'Convertimos cada promedio',
+    'Buscamos desequilibrios',
+  ];
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('anuncia qué se está calculando, con título y explicación', () => {
+    render(
+      <ProcessingState
+        overline="Diagnóstico"
+        title="Estamos armando tu perfil"
+        description="En un momento verás el resultado."
+        steps={STEPS}
+      />,
+    );
+
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Diagnóstico');
+    expect(status).toHaveTextContent('Estamos armando tu perfil');
+    expect(status).toHaveTextContent('En un momento verás el resultado.');
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Estamos armando tu perfil' }),
+    ).toBeInTheDocument();
+  });
+
+  it('cuenta el razonamiento paso a paso: empieza por el primero y avanza hasta el último', () => {
+    vi.useFakeTimers();
+    render(<ProcessingState overline="x" title="y" description="z" steps={STEPS} />);
+
+    const current = () => document.querySelector('[aria-current="step"]')?.textContent;
+    expect(current()).toContain('En curso: Promediamos tus respuestas');
+
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
+    // The last step stays in progress until the result arrives.
+    expect(current()).toContain('En curso: Buscamos desequilibrios');
+    expect(screen.getAllByText(/^Listo:\s*$/)).toHaveLength(2);
+  });
+
+  it('con el resultado listo, marca todos los pasos como terminados', () => {
+    render(<ProcessingState overline="x" title="y" description="z" steps={STEPS} done />);
+
+    expect(document.querySelector('[aria-current="step"]')).toBeNull();
+    expect(screen.getAllByText(/^Listo:\s*$/)).toHaveLength(3);
+  });
+
+  it('el icono del paso en curso solo gira si el usuario permite movimiento', () => {
+    render(<ProcessingState overline="x" title="y" description="z" steps={STEPS} />);
+
+    const icon = document.querySelector('[aria-current="step"] svg');
+    expect(icon).toHaveClass('motion-safe:animate-spin');
+    expect(icon).not.toHaveClass('animate-spin');
   });
 });
 
@@ -134,16 +196,24 @@ describe('AcceptDeepAnalysisCard', () => {
     renderCard({ onAccept });
     expect(onAccept).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Solicitar análisis profundo' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Adquirir análisis profundo' }));
 
     expect(onAccept).toHaveBeenCalledTimes(1);
+  });
+
+  it('dice que el análisis profundo es de pago antes de pedirlo', () => {
+    renderCard({});
+
+    expect(screen.getByText('De pago')).toBeInTheDocument();
   });
 
   it('tras un fallo el botón pasa a «Intentar de nuevo»', () => {
     renderCard({ failed: true });
 
     expect(screen.getByRole('button', { name: 'Intentar de nuevo' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Solicitar análisis profundo' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Adquirir análisis profundo' }),
+    ).not.toBeInTheDocument();
   });
 
   it('ofrece el otro camino, «por ahora no», sin ejecutar nada: lleva al panel', () => {

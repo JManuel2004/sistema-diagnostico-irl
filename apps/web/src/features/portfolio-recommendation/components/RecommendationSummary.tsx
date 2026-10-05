@@ -1,14 +1,21 @@
 import type { JSX } from 'react';
-import { Compass, Sparkles } from 'lucide-react';
+import { ChevronDown, Compass, Send, Sparkles } from 'lucide-react';
 import type { RecommendationResponse } from '@innlab/contracts';
 import { Badge } from '@/shared/ui/badge';
+import { Button } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
 import { FALLBACK_SUBJECT } from '@/shared/lib/copy';
+import { ServiceDetails } from '@/shared/ui/service-details';
 
 interface Props {
   readonly recommendation: RecommendationResponse;
   /** Name of the initiative, to address it. */
   readonly subject?: string;
+  /**
+   * Asks INNLAB for the recommended service. The request flow is not defined
+   * yet, so without it the action is shown but disabled, as coming soon.
+   */
+  readonly onRequestService?: () => void;
 }
 
 /**
@@ -18,10 +25,20 @@ interface Props {
  * internal detail of the calibration and showing it invites discussing the
  * number instead of the recommendation. Whoever wants the breakdown has it
  * in the explanation of how it was reached.
+ *
+ * An alternative an adjustment of the center put into the ranking says so,
+ * with the reason of the adjustment: it did not come from the calculation.
+ *
+ * Every service carries its card from the catalog (`ServiceDetails`): what
+ * it is, what it can achieve and which initiatives it suits. The
+ * recommended one shows it whole; each alternative keeps it behind «Ver
+ * ficha». The recommended one also has an action to request it from
+ * INNLAB, prepared for a request flow still to be defined.
  */
 export function RecommendationSummary({
   recommendation,
   subject = FALLBACK_SUBJECT,
+  onRequestService,
 }: Props): JSX.Element {
   if (recommendation.resultType === 'NO_RECOMMENDATION') {
     return (
@@ -67,8 +84,19 @@ export function RecommendationSummary({
               >
                 {primary?.name}
               </h2>
+              {primary && (
+                <p className="text-muted-foreground mt-1 text-base font-medium">
+                  {primary.subtitle}
+                </p>
+              )}
             </div>
           </div>
+
+          {primary && (
+            <div className="mt-5">
+              <ServiceDetails service={primary} />
+            </div>
+          )}
 
           {recommendation.justification !== null && (
             <p className="text-foreground mt-5 max-w-prose text-lg leading-relaxed">
@@ -76,25 +104,65 @@ export function RecommendationSummary({
             </p>
           )}
 
+          <div className="mt-6 flex flex-col items-start gap-2">
+            <Button
+              size="lg"
+              onClick={onRequestService}
+              disabled={onRequestService === undefined}
+              aria-describedby={onRequestService ? undefined : 'request-service-soon'}
+            >
+              <Send className="size-5" aria-hidden="true" />
+              Solicitar acompañamiento
+            </Button>
+            {onRequestService === undefined && (
+              <p id="request-service-soon" className="text-muted-foreground text-base">
+                Próximamente podrás pedirle este servicio a INNLAB desde aquí.
+              </p>
+            )}
+          </div>
+
           {recommendation.alternatives.length > 0 && (
             <div className="border-border mt-6 border-t pt-5">
               <h3 className="text-foreground text-lg font-bold">También podrían encajar</h3>
-              <ul className="mt-3 flex flex-wrap gap-3">
+              <ul className="mt-3 flex flex-col gap-3">
                 {recommendation.alternatives.map((alt) => (
                   <li
                     key={alt.idService}
-                    className="border-border bg-background text-foreground flex items-center gap-2 rounded-lg border px-4 py-2.5 text-base font-semibold"
+                    className="border-border bg-background rounded-lg border px-4 py-3"
                   >
-                    <span
-                      className="bg-azul-icesi/15 text-azul-icesi inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold"
-                      aria-hidden="true"
-                    >
-                      {alt.position}
-                    </span>
-                    {alt.name}
+                    <p className="text-foreground flex items-center gap-2 text-base font-semibold">
+                      <span
+                        className="bg-azul-icesi/15 text-azul-icesi inline-flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold"
+                        aria-hidden="true"
+                      >
+                        {alt.position}
+                      </span>
+                      {alt.name}
+                    </p>
+                    <p className="text-muted-foreground mt-0.5 pl-9 text-base">{alt.subtitle}</p>
+                    <details className="mt-2 pl-9">
+                      <summary className="text-azul-icesi inline-flex cursor-pointer items-center gap-1 text-base font-semibold">
+                        Ver ficha
+                        <ChevronDown className="size-4" aria-hidden="true" />
+                      </summary>
+                      <div className="mt-3">
+                        <ServiceDetails service={alt} />
+                      </div>
+                    </details>
                   </li>
                 ))}
               </ul>
+              {recommendation.alternatives
+                .filter((alt) => alt.adjustmentReason !== null)
+                .map((alt) => (
+                  <p
+                    key={alt.idService}
+                    className="text-muted-foreground mt-3 max-w-prose text-base leading-relaxed"
+                  >
+                    <span className="text-foreground font-semibold">{alt.name}</span> la sugiere el
+                    centro: {alt.adjustmentReason}
+                  </p>
+                ))}
             </div>
           )}
         </CardContent>

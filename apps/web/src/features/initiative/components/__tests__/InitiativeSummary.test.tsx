@@ -19,7 +19,6 @@ describe('InitiativeSummary', () => {
       ['Etapa', /Validación — Piloto completado/],
       ['Equipo', /3 personas — Fundadora, coordinadora/],
       ['Mercado objetivo', /Productores de café del suroccidente/],
-      ['Vinculación académica', /No tiene vínculo confirmado/],
       ['Financiamiento actual', /Ahorros de la fundadora/],
     ] as const) {
       expect(screen.getByText(label)).toBeInTheDocument();
@@ -34,7 +33,9 @@ describe('InitiativeSummary', () => {
   });
 
   it('deja lugar a una acción junto al nombre', () => {
-    render(<InitiativeSummary initiative={initiativeFixture()} action={<a href="/x">Corregir</a>} />);
+    render(
+      <InitiativeSummary initiative={initiativeFixture()} action={<a href="/x">Corregir</a>} />,
+    );
 
     expect(screen.getByRole('link', { name: 'Corregir' })).toBeInTheDocument();
   });

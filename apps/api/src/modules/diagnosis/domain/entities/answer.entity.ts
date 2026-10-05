@@ -6,32 +6,46 @@ export const MAX_JUSTIFICATION_LENGTH = 1000;
 export interface AnswerPersistence {
   readonly statementId: string;
   readonly value: number;
-  readonly justification: string;
+  readonly justification: string | null;
 }
 
 /**
- * An answer to one statement: the Likert value and the user's reason for it.
+ * An answer to one statement: the Likert value and, optionally, the user's
+ * reason for it.
  *
- * The justification is mandatory. It is checked here, not only in the
- * database, so a blank one is rejected as an invariant violation before the
- * sheet is built.
+ * The justification is optional. A blank one is normalized to `null` here,
+ * so the database never receives whitespace (`ck_answer_justification`), and
+ * one over the length limit is rejected as an invariant violation before
+ * the sheet is built.
  */
 export class Answer {
   private constructor(
     public readonly statementId: string,
     public readonly value: LikertValue,
-    public readonly justification: string,
+    public readonly justification: string | null,
   ) {}
 
-  static create(statementId: string, value: LikertValue, justification: string): Answer {
-    return new Answer(statementId, value, Answer.validJustification(statementId, justification));
+  static create(
+    statementId: string,
+    value: LikertValue,
+    justification: string | null,
+  ): Answer {
+    return new Answer(
+      statementId,
+      value,
+      Answer.validJustification(statementId, justification),
+    );
   }
 
   static fromPersistence(row: AnswerPersistence): Answer {
-    return new Answer(row.statementId, LikertValue.create(row.value), row.justification);
+    return new Answer(
+      row.statementId,
+      LikertValue.create(row.value),
+      row.justification,
+    );
   }
 
-  withResponse(value: LikertValue, justification: string): Answer {
+  withResponse(value: LikertValue, justification: string | null): Answer {
     return new Answer(
       this.statementId,
       value,
@@ -43,14 +57,12 @@ export class Answer {
     return this.statementId === other.statementId;
   }
 
-  private static validJustification(statementId: string, raw: string): string {
+  private static validJustification(
+    statementId: string,
+    raw: string | null,
+  ): string | null {
     const justification = typeof raw === 'string' ? raw.trim() : '';
-    if (justification.length === 0) {
-      throw new InvariantViolationError(
-        `The justification of statement '${statementId}' is required`,
-        { statementId },
-      );
-    }
+    if (justification.length === 0) return null;
     if (justification.length > MAX_JUSTIFICATION_LENGTH) {
       throw new InvariantViolationError(
         `The justification of statement '${statementId}' exceeds ${String(MAX_JUSTIFICATION_LENGTH)} characters`,

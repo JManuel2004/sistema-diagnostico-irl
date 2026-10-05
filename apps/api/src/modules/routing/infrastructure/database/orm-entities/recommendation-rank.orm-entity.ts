@@ -3,7 +3,9 @@ import { numericTransformer } from '../../../../../shared/kernel/infrastructure/
 
 /**
  * One place of a recommendation's ranking: position 1 is the recommended
- * service, the following ones its alternatives.
+ * service, the following ones its alternatives. A place an `INCLUDE`
+ * adjustment added has no score and records the rule instead
+ * (`ck_recommendation_rank_origin`).
  */
 @Entity({ schema: 'irl_diagnostic', name: 'recommendation_rank' })
 export class RecommendationRankOrm {
@@ -27,7 +29,16 @@ export class RecommendationRankOrm {
     type: 'numeric',
     precision: 8,
     scale: 3,
+    nullable: true,
     transformer: numericTransformer,
   })
-  score!: number;
+  score!: number | null;
+
+  @Column({
+    name: 'included_by_rule',
+    type: 'varchar',
+    length: 16,
+    nullable: true,
+  })
+  includedByRule!: string | null;
 }

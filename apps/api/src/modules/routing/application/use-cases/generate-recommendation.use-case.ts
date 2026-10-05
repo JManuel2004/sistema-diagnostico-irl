@@ -62,7 +62,9 @@ export class GenerateRecommendationUseCase {
     const config = await this.configuration.load();
     if (!config) {
       return Result.err(
-        new RoutingConfigurationMissingError({ diagnosticId: diagnosticId.value }),
+        new RoutingConfigurationMissingError({
+          diagnosticId: diagnosticId.value,
+        }),
       );
     }
 
@@ -90,10 +92,14 @@ export class GenerateRecommendationUseCase {
     const initialRanking = [...scored].sort(compareCandidates);
 
     // ── Layer 3: manual adjustments ──────────────────────────────────────
+    // Adjustment-only services never reached layers 1 and 2: the
+    // configuration keeps them apart, and only an INCLUDE here puts them
+    // into the ranking.
     const { finalRanking, applied, discarded } = this.exceptions.apply(
       initialRanking,
       config.exceptionRules,
       facts,
+      config.adjustmentOnlyServices,
     );
 
     const recommendation = Recommendation.create({
@@ -117,14 +123,16 @@ export class GenerateRecommendationUseCase {
 
     await this.recommendations.save(recommendation);
 
-    // Published once the recommendation is persisted. No listener yet.
+    // Published once the recommendation is persisted; `diagnosis/` hears it
+    // to complete the deep analysis.
     await this.events.publish(
       new PortfolioRecommendationCalculatedEvent({
         diagnosticId: diagnosticId.value,
       }),
     );
 
-    return Result.ok(toRecommendationResponse(recommendation));
+    const catalog = await this.configuration.findServiceCatalog();
+    return Result.ok(toRecommendationResponse(recommendation, catalog));
   }
 
   /**
@@ -212,7 +220,6 @@ function missingCharacterizationFields(facts: DiagnosticFacts): string[] {
   if (c.stage === null) missing.push('stage');
   if (c.sector === null) missing.push('sector');
   if (c.teamSize === null) missing.push('teamSize');
-  if (c.academicLinkage === null) missing.push('academicLinkage');
   return missing;
 }
 
@@ -235,15 +242,23 @@ function hashOf(facts: DiagnosticFacts): string {
  * Dimensions are named by their short catalog name: the text is read by
  * the initiative leader, who does not know the framework's acronyms.
  */
-export function buildJustification(
-  ranking: readonly {
-    serviceName: string;
-    contributions: {
-      bottleneck: {
-        details: readonly { dimension: string; sourceLabel: string }[];
+/** What the justification reads of a place: a calculated one or an included one. */
+type JustifiedPlace = { readonly serviceName: string } & (
+  | { readonly includedBy: { readonly declaredReason: string } }
+  | {
+      readonly contributions: {
+        readonly bottleneck: {
+          readonly details: readonly {
+            dimension: string;
+            sourceLabel: string;
+          }[];
+        };
       };
-    };
-  }[],
+    }
+);
+
+export function buildJustification(
+  ranking: readonly JustifiedPlace[],
   applied: readonly { targetService: string; declaredReason: string }[],
   dimensionNames: ReadonlyMap<string, string>,
 ): string | null {
@@ -253,6 +268,11 @@ export function buildJustification(
   const decisive = applied.find((e) => e.targetService === winner.serviceName);
   if (decisive) {
     return `${winner.serviceName} — ${decisive.declaredReason}`;
+  }
+  // An included service always has a decisive adjustment (the INCLUDE);
+  // this only narrows the type.
+  if ('includedBy' in winner) {
+    return `${winner.serviceName} — ${winner.includedBy.declaredReason}`;
   }
 
   const focus = winner.contributions.bottleneck.details

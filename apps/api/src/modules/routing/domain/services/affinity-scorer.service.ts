@@ -206,7 +206,7 @@ function labelOf(profile: NumericProfile, dim: DimensionCode): string {
 }
 
 /**
- * Scores are persisted as `numeric(6,3)`. Rounding to three decimals in the
+ * Scores are persisted as `numeric(8,3)`. Rounding to three decimals in the
  * domain keeps a floating-point residue from making the computed value and
  * the one read back from the database differ, which would break the
  * reproducibility check.

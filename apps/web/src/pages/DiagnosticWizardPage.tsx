@@ -2,6 +2,7 @@ import { useEffect, type JSX } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { UserMenu } from '@features/auth';
 import {
+  selectAcceptedTermsVersion,
   selectDraft,
   selectDraftDiagnosticId,
   selectDraftInitialize,
@@ -37,16 +38,14 @@ import {
 /**
  * `/diagnosticos/:id/asistente/:step` — the wizard of a diagnostic.
  *
- * Four steps — initiative, consent, questionnaire and summary — in a single
+ * Four steps — consent, initiative, questionnaire and summary — in a single
  * screen **without main navigation**: the user goes through the wizard and
  * only at the end reaches the results, which is where navigation appears.
  *
- * Which step applies is decided by what the server already has (the
- * initiative profile of the diagnostic, which is only registered once the
- * initiative's consent is accepted) and not by a local flag: resuming a diagnostic
- * lands on the first missing step, and a later one cannot be skipped to. If
- * the diagnostic already has results, there is nothing to resume and they
- * open instead.
+ * The consent comes first. Resuming a diagnostic lands on the first missing
+ * step, and a later one cannot be skipped to. The initiative profile is
+ * registered only after that acceptance. If the diagnostic already has
+ * results, there is nothing to resume and they open instead.
  */
 export default function DiagnosticWizardPage(): JSX.Element {
   const { id: diagnosticId, step } = useParams<{ id: string; step: string }>();
@@ -59,6 +58,7 @@ export default function DiagnosticWizardPage(): JSX.Element {
   const initializeInitiativeDraft = useInitiativeDraftStore(selectDraftInitialize);
   const initiativeDraftOwner = useInitiativeDraftStore(selectDraftDiagnosticId);
   const initiativeDraft = useInitiativeDraftStore(selectDraft);
+  const acceptedTermsVersion = useInitiativeDraftStore(selectAcceptedTermsVersion);
   const initializeQuestionnaireDraft = useQuestionnaireDraftStore(selectQuestionnaireInitialize);
   const questionnaireDraftOwner = useQuestionnaireDraftStore(selectQuestionnaireDiagnosticId);
 
@@ -90,8 +90,8 @@ export default function DiagnosticWizardPage(): JSX.Element {
     const frameworkVersion = diagnostic.data.frameworkVersion;
 
     const target = firstPendingStep({
-      initiativeReady: registered !== null || draft !== null,
-      consentDone: registered !== null,
+      consentAccepted: registered !== null || acceptedTermsVersion !== null,
+      initiativeRegistered: registered !== null,
     });
 
     if (!isWizardStep(step) || !isReachable(step, target)) {
@@ -120,14 +120,15 @@ export default function DiagnosticWizardPage(): JSX.Element {
             registered={registered}
             draft={draft}
             initiatives={initiatives.data}
+            acceptedTermsVersion={acceptedTermsVersion}
           />
         )}
         {step === 'consentimiento' && (
           <ConsentStep
             diagnosticId={diagnosticId}
             registered={registered}
-            draft={draft}
             initiatives={initiatives.data}
+            acceptedTermsVersion={acceptedTermsVersion}
           />
         )}
         {step === 'cuestionario' && (

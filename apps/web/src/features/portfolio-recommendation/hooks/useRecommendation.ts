@@ -4,6 +4,7 @@ import { STALE_TIME } from '@/shared/api/query-client';
 import { invalidateDiagnostic } from '@/shared/api/invalidate-diagnostic';
 import { acceptDeepAnalysis } from '@/shared/api/diagnostic.api';
 import { useDiagnosticQuery } from '@/shared/hooks/useDiagnosticQuery';
+import { holdForMinimum } from '@/shared/lib/hold-for-minimum';
 import { getRecommendation, getRecommendationTrace } from '../api/recommendation.api';
 
 /**
@@ -44,7 +45,12 @@ export function useRecommendationTrace(diagnosticId: string | undefined, enabled
 export function useAcceptDeepAnalysis(diagnosticId: string | undefined) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => acceptDeepAnalysis(diagnosticId ?? ''),
+    mutationFn: async () => {
+      const startedAt = Date.now();
+      const accepted = await acceptDeepAnalysis(diagnosticId ?? '');
+      await holdForMinimum(startedAt);
+      return accepted;
+    },
     onSuccess: async () => {
       if (!diagnosticId) return;
       await Promise.all([

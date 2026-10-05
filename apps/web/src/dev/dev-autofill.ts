@@ -36,7 +36,6 @@ export interface InitiativeAutofillValues {
   readonly declaredStage: string;
   readonly teamSize: string;
   readonly teamDescription: string;
-  readonly academicLinkage: 'true' | 'false';
   readonly targetMarket: string;
   readonly currentFunding: string;
 }

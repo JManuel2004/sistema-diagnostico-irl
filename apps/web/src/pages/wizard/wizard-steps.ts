@@ -2,15 +2,14 @@
  * The steps of the diagnostic wizard and the rules for which one the user
  * may be on.
  *
- * The order is the one the user sees: initiative, consent, questionnaire
- * and summary. The consent coming after the initiative does not change when
- * each thing is stored: the system does not store the initiative until the
- * consent is accepted (RF-03, RNF-06); until then the form is a browser
- * draft.
+ * The order is the one the user sees: consent, initiative, questionnaire
+ * and summary. The consent is accepted before any initiative data is asked
+ * for (RF-03, RNF-06). The acceptance is recorded when they choose or
+ * create the initiative on the next step.
  */
 import { paths } from '@/shared/lib/paths';
 
-export const WIZARD_STEP_KEYS = ['iniciativa', 'consentimiento', 'cuestionario', 'resumen'] as const;
+export const WIZARD_STEP_KEYS = ['consentimiento', 'iniciativa', 'cuestionario', 'resumen'] as const;
 
 export type WizardStepKey = (typeof WIZARD_STEP_KEYS)[number];
 
@@ -30,10 +29,10 @@ export function wizardPath(diagnosticId: string, step?: WizardStepKey): string {
 }
 
 export interface WizardProgress {
-  /** The initiative is already registered, or its draft is ready in the browser. */
-  readonly initiativeReady: boolean;
-  /** The consent is accepted **and** the initiative is registered on the server. */
-  readonly consentDone: boolean;
+  /** The current consent text was accepted, or the initiative is already registered. */
+  readonly consentAccepted: boolean;
+  /** The initiative profile is registered for this diagnostic. */
+  readonly initiativeRegistered: boolean;
 }
 
 /**
@@ -41,9 +40,12 @@ export interface WizardProgress {
  * reached from the questionnaire, and the questionnaire decides whether it
  * is complete.
  */
-export function firstPendingStep({ initiativeReady, consentDone }: WizardProgress): WizardStepKey {
-  if (!initiativeReady) return 'iniciativa';
-  if (!consentDone) return 'consentimiento';
+export function firstPendingStep({
+  consentAccepted,
+  initiativeRegistered,
+}: WizardProgress): WizardStepKey {
+  if (!consentAccepted) return 'consentimiento';
+  if (!initiativeRegistered) return 'iniciativa';
   return 'cuestionario';
 }
 

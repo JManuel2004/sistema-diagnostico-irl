@@ -34,11 +34,11 @@ export async function insertInitiativeWithProfile(
     `INSERT INTO irl_diagnostic.initiative_profile
        (id, id_initiative, id_diagnostic, id_sector, name, product_type,
         id_stage, declared_stage, team_size, team_description,
-        academic_linkage, target_market, current_funding)
+        target_market, current_funding)
      SELECT $1, $2, $3, s.id, 'AgroConecta',
             'Plataforma de trazabilidad y comercialización de café',
             e.id, 'Piloto completado', 3, 'Fundadora, coordinadora y desarrollador externo',
-            false, 'Productores de café del suroccidente', 'Ahorros de la fundadora'
+            'Productores de café del suroccidente', 'Ahorros de la fundadora'
        FROM irl_catalog.sector s, irl_catalog.initiative_stage e
       WHERE s.name = 'Agroindustria' AND e.code = 'validacion'`,
     [randomUUID(), initiativeId, diagnosticId],

@@ -39,7 +39,6 @@ const COMMAND = {
   declaredStage: 'Piloto completado',
   teamSize: 3,
   teamDescription: 'Fundadora y equipo',
-  academicLinkage: false,
   targetMarket: 'Productores de café',
   currentFunding: 'Ahorros',
 };
@@ -119,6 +118,7 @@ function backend(start: Partial<Backend> = {}): Backend {
         state: state.completed ? 'PROFILE_GENERATED' : 'STARTED',
         completed: state.completed,
         deepAnalysisAccepted: false,
+        deepAnalysisCompleted: false,
         frameworkVersion: 'KTH-IRL-1.0',
         createdAt: '2026-03-01T00:00:00.000Z',
       }),
@@ -164,7 +164,6 @@ async function fillInitiative(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Etapa declarada'), 'Piloto completado');
   await user.type(screen.getByLabelText('Personas en el equipo'), '3');
   await user.type(screen.getByLabelText('Equipo'), 'Fundadora y equipo');
-  await user.selectOptions(screen.getByLabelText('Vinculación académica'), 'false');
   await user.type(screen.getByLabelText('Mercado objetivo'), 'Productores de café');
   await user.type(screen.getByLabelText('Financiamiento actual'), 'Ahorros');
 }
@@ -194,12 +193,11 @@ describe('DiagnosticWizardPage — el asistente', () => {
       renderWizard();
 
       const stepper = await screen.findByRole('navigation', { name: 'Pasos del diagnóstico' });
-      expect(within(stepper).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-        '1Iniciativa',
-        '2Consentimiento',
-        '3Cuestionario',
-        '4Resumen',
-      ]);
+      expect(
+        within(stepper)
+          .getAllByRole('listitem')
+          .map((li) => li.textContent),
+      ).toEqual(['1Consentimiento', '2Iniciativa', '3Cuestionario', '4Resumen']);
       expect(screen.queryByRole('navigation', { name: 'Principal' })).not.toBeInTheDocument();
     });
 
@@ -208,9 +206,10 @@ describe('DiagnosticWizardPage — el asistente', () => {
 
       renderWizard();
 
-      expect(
-        await screen.findByRole('link', { name: /Inicio · Diagnóstico IRL/ }),
-      ).toHaveAttribute('href', '/');
+      expect(await screen.findByRole('link', { name: /Inicio · Diagnóstico IRL/ })).toHaveAttribute(
+        'href',
+        '/',
+      );
     });
 
     it('marca el paso actual', async () => {
@@ -219,7 +218,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
       renderWizard();
 
       const stepper = await screen.findByRole('navigation', { name: 'Pasos del diagnóstico' });
-      expect(within(stepper).getByText('Iniciativa').closest('[aria-current]')).toHaveAttribute(
+      expect(within(stepper).getByText('Consentimiento').closest('[aria-current]')).toHaveAttribute(
         'aria-current',
         'step',
       );
@@ -229,33 +228,41 @@ describe('DiagnosticWizardPage — el asistente', () => {
       backend();
 
       renderWizard();
-      await screen.findByLabelText('Nombre de la iniciativa');
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Consentimiento para el tratamiento de datos',
+      });
 
       expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
     });
   });
 
   describe('orden de los pasos', () => {
-    it('un diagnóstico nuevo entra por la iniciativa', async () => {
+    it('un diagnóstico nuevo entra por el consentimiento', async () => {
       backend();
 
       renderWizard();
 
       expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
-        'Cuéntanos de tu iniciativa',
+        'Consentimiento para el tratamiento de datos',
       );
-      expect(where()).toBe(step('iniciativa'));
+      expect(where()).toBe(step('consentimiento'));
     });
 
-    it.each(['consentimiento', 'cuestionario', 'resumen'])(
+    it.each(['iniciativa', 'cuestionario', 'resumen'])(
       'no se puede saltar al paso «%s» sin haber completado los anteriores',
       async (target) => {
         backend();
 
         renderWizard(step(target));
 
-        expect(await screen.findByLabelText('Nombre de la iniciativa')).toBeInTheDocument();
-        expect(where()).toBe(step('iniciativa'));
+        expect(
+          await screen.findByRole('heading', {
+            level: 1,
+            name: 'Consentimiento para el tratamiento de datos',
+          }),
+        ).toBeInTheDocument();
+        expect(where()).toBe(step('consentimiento'));
       },
     );
 
@@ -264,8 +271,11 @@ describe('DiagnosticWizardPage — el asistente', () => {
 
       renderWizard(step('inexistente'));
 
-      await screen.findByLabelText('Nombre de la iniciativa');
-      expect(where()).toBe(step('iniciativa'));
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Consentimiento para el tratamiento de datos',
+      });
+      expect(where()).toBe(step('consentimiento'));
     });
 
     it('un diagnóstico con resultados no se reanuda: abre los resultados', async () => {
@@ -277,24 +287,25 @@ describe('DiagnosticWizardPage — el asistente', () => {
     });
   });
 
-  // RF-03 / RNF-06: the initiative is asked first, but nothing is stored before the consent.
-  describe('paso 1 → 2: la iniciativa no se guarda antes del consentimiento', () => {
-    it('continuar con el formulario válido abre el consentimiento sin enviar nada al servidor', async () => {
+  // RF-03 / RNF-06: the consent is shown first, and nothing is stored before it is accepted.
+  describe('paso 1 → 2: el consentimiento va antes de pedir la iniciativa', () => {
+    async function acceptAndOpenForm(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(await screen.findByRole('checkbox'));
+      await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
+      await screen.findByLabelText('Nombre de la iniciativa');
+    }
+
+    it('aceptar el texto abre la iniciativa sin enviar nada al servidor', async () => {
       const api = backend();
       const user = userEvent.setup();
 
       renderWizard();
-      await fillInitiative(user);
-      await user.click(screen.getByRole('button', { name: 'Continuar' }));
+      await acceptAndOpenForm(user);
 
-      // The submission is asynchronous (the form validates before sending): wait for step 2.
-      expect(
-        await screen.findByRole('heading', {
-          level: 1,
-          name: 'Consentimiento para el tratamiento de datos',
-        }),
-      ).toBeInTheDocument();
-      expect(where()).toBe(step('consentimiento'));
+      expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
+        'Cuéntanos de tu iniciativa',
+      );
+      expect(where()).toBe(step('iniciativa'));
       expect(api.calls).toEqual([]);
     });
 
@@ -303,77 +314,79 @@ describe('DiagnosticWizardPage — el asistente', () => {
       const user = userEvent.setup();
 
       renderWizard();
-      await user.click(await screen.findByRole('button', { name: 'Continuar' }));
+      await acceptAndOpenForm(user);
+      await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
       expect(where()).toBe(step('iniciativa'));
       expect(api.calls).toEqual([]);
-      expect(screen.getByLabelText('Nombre de la iniciativa')).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByLabelText('Nombre de la iniciativa')).toHaveAttribute(
+        'aria-invalid',
+        'true',
+      );
       expect(screen.getByRole('alert')).toHaveTextContent('Revisa los campos marcados');
     });
 
-    it('lo escrito sobrevive a ir y volver entre el paso 1 y el 2', async () => {
+    it('lo escrito sobrevive a ir y volver entre la iniciativa y el consentimiento', async () => {
       backend();
       const user = userEvent.setup();
 
       renderWizard();
+      await acceptAndOpenForm(user);
       await fillInitiative(user);
-      await user.click(screen.getByRole('button', { name: 'Continuar' }));
-      await screen.findByText('Autorización para el tratamiento de datos personales');
       await user.click(screen.getByRole('link', { name: 'Atrás' }));
+      await screen.findByText('Puedes continuar y contarnos de tu iniciativa.');
+      await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
       expect(await screen.findByLabelText('Nombre de la iniciativa')).toHaveValue('AgroConecta');
       expect(screen.getByLabelText('Sector')).toHaveValue('1');
       expect(screen.getByLabelText('Personas en el equipo')).toHaveValue(3);
     });
 
-    it('recargar la página en el paso 2 no pierde el formulario del paso 1', async () => {
+    it('recargar la página en la iniciativa no pierde el formulario ni la aceptación', async () => {
       backend();
       const user = userEvent.setup();
 
       const first = renderWizard();
+      await acceptAndOpenForm(user);
       await fillInitiative(user);
-      await user.click(screen.getByRole('button', { name: 'Continuar' }));
-      await screen.findByText('Autorización para el tratamiento de datos personales');
+      await screen.findByDisplayValue('AgroConecta');
       first.unmount();
 
-      renderWizard(step('consentimiento'));
+      renderWizard(step('iniciativa'));
 
-      expect(
-        await screen.findByText('Autorización para el tratamiento de datos personales'),
-      ).toBeInTheDocument();
-      expect(where()).toBe(step('consentimiento'));
+      expect(await screen.findByLabelText('Nombre de la iniciativa')).toHaveValue('AgroConecta');
+      expect(where()).toBe(step('iniciativa'));
     });
 
     it('el borrador de otro diagnóstico no cuenta', async () => {
       backend();
       useInitiativeDraftStore.getState().initialize(OTHER_ID);
+      useInitiativeDraftStore.getState().acceptTerms('v1');
       useInitiativeDraftStore.getState().save({
         initiativeId: null,
         command: { ...COMMAND, name: 'Ajena' },
       });
 
-      renderWizard(step('consentimiento'));
+      renderWizard(step('iniciativa'));
 
-      expect(await screen.findByLabelText('Nombre de la iniciativa')).toHaveValue('');
-      expect(where()).toBe(step('iniciativa'));
+      expect(
+        await screen.findByRole('heading', {
+          level: 1,
+          name: 'Consentimiento para el tratamiento de datos',
+        }),
+      ).toBeInTheDocument();
+      expect(where()).toBe(step('consentimiento'));
     });
   });
 
-  describe('paso 2: consentimiento', () => {
-    async function toConsent(user: ReturnType<typeof userEvent.setup>) {
-      await fillInitiative(user);
-      await user.click(screen.getByRole('button', { name: 'Continuar' }));
-      await screen.findByText('Autorización para el tratamiento de datos personales');
-    }
-
+  describe('paso 1: consentimiento', () => {
     it('muestra el texto del consentimiento y no deja continuar sin aceptarlo', async () => {
       const api = backend();
       const user = userEvent.setup();
 
       renderWizard();
-      await toConsent(user);
 
-      expect(screen.getByText('Responsable del tratamiento')).toBeInTheDocument();
+      expect(await screen.findByText('Responsable del tratamiento')).toBeInTheDocument();
       expect(screen.getByText(CONSENT_TERMS.checkboxLabel)).toBeInTheDocument();
       const accept = screen.getByRole('button', { name: 'Aceptar y continuar' });
       expect(accept).toBeDisabled();
@@ -383,14 +396,15 @@ describe('DiagnosticWizardPage — el asistente', () => {
       expect(accept).toBeEnabled();
     });
 
-    it('al aceptar crea la iniciativa con su consentimiento, luego registra su información y abre el cuestionario', async () => {
+    it('al aceptar y completar la iniciativa la crea, registra su información y abre el cuestionario', async () => {
       const api = backend();
       const user = userEvent.setup();
 
       renderWizard();
-      await toConsent(user);
-      await user.click(screen.getByRole('checkbox'));
+      await user.click(await screen.findByRole('checkbox'));
       await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
+      await fillInitiative(user);
+      await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
       await waitFor(() => {
         expect(where()).toBe(step('cuestionario'));
@@ -399,7 +413,9 @@ describe('DiagnosticWizardPage — el asistente', () => {
       expect(api.profile?.name).toBe('AgroConecta');
       expect(api.profile?.initiativeId).toBe(NEW_INITIATIVE_ID);
       expect(toast.success).toHaveBeenCalledWith('Consentimiento registrado.');
-      expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Cuestionario IRL');
+      expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
+        'Cuestionario IRL',
+      );
     });
 
     it('vacía el borrador cuando la iniciativa quedó registrada', async () => {
@@ -407,42 +423,47 @@ describe('DiagnosticWizardPage — el asistente', () => {
       const user = userEvent.setup();
 
       renderWizard();
-      await toConsent(user);
-      await user.click(screen.getByRole('checkbox'));
+      await user.click(await screen.findByRole('checkbox'));
       await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
+      await fillInitiative(user);
+      await user.click(screen.getByRole('button', { name: 'Continuar' }));
       await waitFor(() => {
         expect(where()).toBe(step('cuestionario'));
       });
 
       expect(useInitiativeDraftStore.getState().draft).toBeNull();
+      expect(useInitiativeDraftStore.getState().acceptedTermsVersion).toBeNull();
     });
 
-    it('si la información falla tras aceptar, avisa y el reintento no crea otra iniciativa', async () => {
+    it('si la información falla tras crear la iniciativa, avisa y el reintento no crea otra', async () => {
       const api = backend({ failInitiative: true });
       const user = userEvent.setup();
 
       renderWizard();
-      await toConsent(user);
-      await user.click(screen.getByRole('checkbox'));
+      await user.click(await screen.findByRole('checkbox'));
       await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
+      await fillInitiative(user);
+      await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith(
           expect.stringContaining('Tu aceptación quedó registrada'),
         );
       });
-      expect(where()).toBe(step('consentimiento'));
+      expect(where()).toBe(step('iniciativa'));
 
       api.failInitiative = false;
-      await user.click(await screen.findByRole('button', { name: 'Guardar iniciativa y continuar' }));
+      await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
       await waitFor(() => {
         expect(where()).toBe(step('cuestionario'));
       });
       expect(api.calls).toEqual(['create', 'initiative', 'initiative']);
       expect(api.initiatives).toHaveLength(1);
-      // The consent was accepted on the first try: only that success is announced.
-      expect(toast.success).not.toHaveBeenCalled();
+      // The first try registered the acceptance and failed to save the profile.
+      // The retry only saves, so that is the success it announces.
+      expect(toast.success).toHaveBeenCalledTimes(1);
+      expect(toast.success).toHaveBeenCalledWith('Iniciativa guardada.');
     });
 
     it('si el texto cambió mientras se leía (409) pide recargar y no registra la iniciativa', async () => {
@@ -450,17 +471,21 @@ describe('DiagnosticWizardPage — el asistente', () => {
       const user = userEvent.setup();
 
       renderWizard();
-      await toConsent(user);
-      await user.click(screen.getByRole('checkbox'));
+      await user.click(await screen.findByRole('checkbox'));
       await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
+      await fillInitiative(user);
+      await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith(
           expect.stringContaining('El texto del consentimiento cambió'),
         );
       });
+      // The notice comes first and the navigation right after: wait for both.
+      await waitFor(() => {
+        expect(where()).toBe(step('consentimiento'));
+      });
       expect(api.calls).toEqual(['create']);
-      expect(where()).toBe(step('consentimiento'));
     });
 
     it('un error del servidor al aceptar no registra la iniciativa', async () => {
@@ -468,9 +493,10 @@ describe('DiagnosticWizardPage — el asistente', () => {
       const user = userEvent.setup();
 
       renderWizard();
-      await toConsent(user);
-      await user.click(screen.getByRole('checkbox'));
+      await user.click(await screen.findByRole('checkbox'));
       await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
+      await fillInitiative(user);
+      await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith(
@@ -478,18 +504,28 @@ describe('DiagnosticWizardPage — el asistente', () => {
         );
       });
       expect(api.calls).toEqual(['create']);
+      expect(where()).toBe(step('iniciativa'));
     });
   });
 
   // The consent belongs to the initiative: an initiative that accepted the current text needs no second one.
   describe('elegir una iniciativa existente', () => {
+    async function openForm(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(await screen.findByRole('checkbox'));
+      await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
+    }
+
     it('ofrece las iniciativas del usuario y precarga la información de la más reciente', async () => {
       backend({ initiatives: [initiativeSummaryFixture()] });
+      const user = userEvent.setup();
 
       renderWizard();
+      await openForm(user);
 
       expect(
-        await screen.findByRole('radiogroup', { name: '¿Sobre qué iniciativa es este diagnóstico?' }),
+        await screen.findByRole('radiogroup', {
+          name: '¿Sobre qué iniciativa es este diagnóstico?',
+        }),
       ).toBeInTheDocument();
       expect(screen.getByRole('radio', { name: /AgroConecta/ })).toBeChecked();
       expect(await screen.findByLabelText('Nombre de la iniciativa')).toHaveValue('AgroConecta');
@@ -500,6 +536,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
       const user = userEvent.setup();
 
       renderWizard();
+      await openForm(user);
       await user.click(await screen.findByRole('radio', { name: 'Nueva iniciativa' }));
 
       expect(await screen.findByLabelText('Nombre de la iniciativa')).toHaveValue('');
@@ -510,6 +547,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
       const user = userEvent.setup();
 
       renderWizard();
+      await openForm(user);
       await screen.findByDisplayValue('AgroConecta');
       await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
@@ -520,18 +558,15 @@ describe('DiagnosticWizardPage — el asistente', () => {
       expect(api.profile?.initiativeId).toBe(INITIATIVE_ID);
     });
 
-    it('con un consentimiento de un texto anterior pide aceptar el vigente para esa iniciativa', async () => {
+    it('con un consentimiento de un texto anterior registra la aceptación de ese texto al guardar', async () => {
       const api = backend({ initiatives: [initiativeSummaryFixture({ consentCurrent: false })] });
       const user = userEvent.setup();
 
       renderWizard();
+      await openForm(user);
       await screen.findByDisplayValue('AgroConecta');
-      await user.click(screen.getByRole('button', { name: 'Continuar' }));
-      await screen.findByText('Autorización para el tratamiento de datos personales');
       expect(api.calls).toEqual([]);
-
-      await user.click(screen.getByRole('checkbox'));
-      await user.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
+      await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
       await waitFor(() => {
         expect(where()).toBe(step('cuestionario'));
@@ -547,20 +582,23 @@ describe('DiagnosticWizardPage — el asistente', () => {
 
       renderWizard();
 
-      expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Cuestionario IRL');
+      expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
+        'Cuestionario IRL',
+      );
       expect(where()).toBe(step('cuestionario'));
     });
 
     it('con el borrador de una iniciativa que ya aceptó el texto vigente, ofrece guardarla', async () => {
       const api = backend({ initiatives: [initiativeSummaryFixture()] });
       useInitiativeDraftStore.getState().initialize(ID);
+      useInitiativeDraftStore.getState().acceptTerms('v1');
       useInitiativeDraftStore.getState().save({ initiativeId: INITIATIVE_ID, command: COMMAND });
       const user = userEvent.setup();
 
       renderWizard();
 
-      expect(await screen.findByText(/Ya aceptaste este texto/)).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Guardar iniciativa y continuar' }));
+      expect(await screen.findByLabelText('Nombre de la iniciativa')).toHaveValue('AgroConecta');
+      await user.click(screen.getByRole('button', { name: 'Continuar' }));
       await waitFor(() => {
         expect(where()).toBe(step('cuestionario'));
       });
@@ -620,9 +658,12 @@ describe('DiagnosticWizardPage — el asistente', () => {
       renderWizard();
       await screen.findByRole('heading', { level: 1, name: 'Cuestionario IRL' });
       await user.click(
-        within(screen.getByRole('navigation', { name: 'Pasos del diagnóstico' })).getByRole('link', {
-          name: /Consentimiento/,
-        }),
+        within(screen.getByRole('navigation', { name: 'Pasos del diagnóstico' })).getByRole(
+          'link',
+          {
+            name: /Consentimiento/,
+          },
+        ),
       );
 
       expect(await screen.findByText(/Ya aceptaste este texto/)).toBeInTheDocument();
@@ -651,7 +692,9 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await screen.findByRole('tablist', { name: 'Dimensiones IRL' });
       expect(scrollIntoView).not.toHaveBeenCalled();
       expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
-      expect(screen.getByRole('heading', { level: 1, name: 'Cuestionario IRL' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Cuestionario IRL' }),
+      ).toBeInTheDocument();
     });
 
     it('sigue volviendo hacia arriba al cambiar de dimensión', async () => {
@@ -682,7 +725,9 @@ describe('DiagnosticWizardPage — el asistente', () => {
     it('avisa si no se pudo abrir el diagnóstico', async () => {
       backend();
       server.use(
-        mswHttp.get('*/diagnostics/:id', () => HttpResponse.json({ message: 'x' }, { status: 500 })),
+        mswHttp.get('*/diagnostics/:id', () =>
+          HttpResponse.json({ message: 'x' }, { status: 500 }),
+        ),
       );
 
       renderWizard();

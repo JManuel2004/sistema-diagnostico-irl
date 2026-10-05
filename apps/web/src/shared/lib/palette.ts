@@ -36,14 +36,16 @@ export const PALETTE = {
     crl: '#865CF0',
     brl: '#4CB979',
     iprl: '#3D3D8C',
-    tmrl: '#E9683B',
+    // Amber, not Naranja Icesi: a red-orange read as a warning on data that
+    // is not negative, and collided with the `moderate` hue.
+    tmrl: '#D98E04',
     frl: '#E4EB60',
 
     'trl-ink': '#3737BD',
     'crl-ink': '#7C4FEA',
     'brl-ink': '#1F8550',
     'iprl-ink': '#3D3D8C',
-    'tmrl-ink': '#C2512A',
+    'tmrl-ink': '#8A5A00',
     'frl-ink': '#8C7818',
   },
 } as const;

@@ -1,5 +1,5 @@
 import type { JSX, ReactNode } from 'react';
-import { GraduationCap, Milestone, Package, Target, Users, Wallet } from 'lucide-react';
+import { Milestone, Package, Target, Users, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Initiative } from '@innlab/contracts';
 import { Badge } from '@/shared/ui/badge';
@@ -38,13 +38,6 @@ export function InitiativeSummary({ initiative, action }: Props): JSX.Element {
       label: 'Equipo',
       value: `${String(initiative.teamSize)} ${initiative.teamSize === 1 ? 'persona' : 'personas'} — ${initiative.teamDescription}`,
       icon: Users,
-    },
-    {
-      label: 'Vinculación académica',
-      value: initiative.academicLinkage
-        ? 'Sí, con vínculo confirmado con la universidad'
-        : 'No tiene vínculo confirmado con la universidad',
-      icon: GraduationCap,
     },
     { label: 'Mercado objetivo', value: initiative.targetMarket, icon: Target },
     { label: 'Financiamiento actual', value: initiative.currentFunding, icon: Wallet },

@@ -47,6 +47,7 @@ function asRadarPoints(results: readonly DimensionResult[]): readonly RadarPoint
     dimension: r.shortName,
     code: r.dimensionCode,
     level: r.irlLevel,
+    levelDescription: r.levelDescription,
   }));
 }
 
@@ -74,6 +75,7 @@ function DimensionTip({ point, description, onHover, focusable, children }: TipP
           name={point.dimension}
           level={point.level}
           description={description}
+          levelDescription={point.levelDescription ?? null}
         />
       }
     >
@@ -145,7 +147,7 @@ function AxisLabel({
           fill={visual.color}
           className="radar-label-name text-base font-bold"
         >
-          {dimensionName}
+          {point.code}
         </text>
         <text
           x={px}

@@ -2,6 +2,8 @@ import type { MaturityProfileResponse } from '@innlab/contracts';
 import { type MaturityProfileRepositoryPort } from '../../domain/repositories/maturity-profile.repository.port.js';
 import { type ImbalanceRepositoryPort } from '../../domain/repositories/imbalance.repository.port.js';
 import { type TaxonomyRepositoryPort } from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
+import { type DiagnosisRepositoryPort } from '../../domain/repositories/diagnosis.repository.port.js';
+import { LevelDescriptions } from '../../../../shared/irl-taxonomy/domain/entities/level-descriptions.js';
 import { ConflictError } from '../../../../shared/kernel/domain/errors/conflict.error.js';
 import { Result } from '../../../../shared/kernel/domain/result.js';
 import { toMaturityProfileResponse } from '../dtos/map-maturity-profile-response.js';
@@ -22,6 +24,7 @@ export class GetMaturityProfileUseCase {
     private readonly profiles: MaturityProfileRepositoryPort,
     private readonly imbalances: ImbalanceRepositoryPort,
     private readonly taxonomy: TaxonomyRepositoryPort,
+    private readonly diagnostics: DiagnosisRepositoryPort,
   ) {}
 
   async execute(
@@ -39,9 +42,16 @@ export class GetMaturityProfileUseCase {
     const storedImbalances = await this.imbalances.findByDiagnosticId(
       query.diagnosticId,
     );
-    const dimensions = await this.taxonomy.findAllDimensions();
+    // The texts are those of the version the diagnostic was answered with.
+    const [dimensions, diagnosis] = await Promise.all([
+      this.taxonomy.findAllDimensions(),
+      this.diagnostics.findById(query.diagnosticId),
+    ]);
+    const levels = diagnosis
+      ? await this.taxonomy.findLevelDescriptions(diagnosis.frameworkVersionId)
+      : LevelDescriptions.empty();
     return Result.ok(
-      toMaturityProfileResponse(profile, storedImbalances, dimensions),
+      toMaturityProfileResponse(profile, storedImbalances, dimensions, levels),
     );
   }
 }

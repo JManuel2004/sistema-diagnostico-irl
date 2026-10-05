@@ -8,7 +8,12 @@ import { ConflictError } from '../../../../../../src/shared/kernel/domain/errors
 import { ForbiddenError } from '../../../../../../src/shared/kernel/domain/errors/forbidden.error.js';
 import { NotFoundError } from '../../../../../../src/shared/kernel/domain/errors/not-found.error.js';
 import { Result } from '../../../../../../src/shared/kernel/domain/result.js';
-import { CATALOG, FakeInitiatives, FakeProfiles, termsAt } from '../../support/fakes.js';
+import {
+  CATALOG,
+  FakeInitiatives,
+  FakeProfiles,
+  termsAt,
+} from '../../support/fakes.js';
 
 const DIAGNOSTIC_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
@@ -24,7 +29,6 @@ function profileOf(initiativeId: string) {
     declaredStage: 'Piloto completado',
     teamSize: 3,
     teamDescription: 'Fundadora y equipo',
-    academicLinkage: false,
     targetMarket: 'Productores de café',
     currentFunding: 'Ahorros',
   };
@@ -58,7 +62,10 @@ describe('RegisterInitiativeProfileUseCase', () => {
       verify: () => Promise.resolve(Result.ok(undefined)),
       deepAnalysisAccepted: () => Promise.resolve(deepAnalysisAccepted),
     };
-    const created = await new CreateInitiativeUseCase(store, termsAt('v1')).execute({
+    const created = await new CreateInitiativeUseCase(
+      store,
+      termsAt('v1'),
+    ).execute({
       userId: 'user-1',
       termsVersion: 'v1',
     });
@@ -70,7 +77,10 @@ describe('RegisterInitiativeProfileUseCase', () => {
     const result = await useCase().execute(profileOf(initiativeId));
 
     if (!result.ok) throw new Error('expected ok result');
-    expect(result.value).toMatchObject({ initiativeId, diagnosticId: DIAGNOSTIC_ID });
+    expect(result.value).toMatchObject({
+      initiativeId,
+      diagnosticId: DIAGNOSTIC_ID,
+    });
     expect(profiles.profiles).toHaveLength(1);
     const [event] = publish.mock.calls[0] as [InitiativeRegisteredEvent];
     expect(event.payload).toEqual({ diagnosticId: DIAGNOSTIC_ID });
@@ -94,8 +104,13 @@ describe('RegisterInitiativeProfileUseCase', () => {
   });
 
   it("refuses someone else's initiative and a missing one", async () => {
-    const foreign = await useCase().execute({ ...profileOf(initiativeId), userId: 'user-2' });
-    const missing = await useCase().execute(profileOf('d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14'));
+    const foreign = await useCase().execute({
+      ...profileOf(initiativeId),
+      userId: 'user-2',
+    });
+    const missing = await useCase().execute(
+      profileOf('d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14'),
+    );
 
     expect(!foreign.ok && foreign.error).toBeInstanceOf(ForbiddenError);
     expect(!missing.ok && missing.error).toBeInstanceOf(NotFoundError);
@@ -103,7 +118,10 @@ describe('RegisterInitiativeProfileUseCase', () => {
   });
 
   it('checks the diagnostic ownership first', async () => {
-    ownership.verify = () => Promise.resolve(Result.err(new NotFoundError('Diagnosis', DIAGNOSTIC_ID)));
+    ownership.verify = () =>
+      Promise.resolve(
+        Result.err(new NotFoundError('Diagnosis', DIAGNOSTIC_ID)),
+      );
 
     const result = await useCase().execute(profileOf(initiativeId));
 
@@ -113,7 +131,10 @@ describe('RegisterInitiativeProfileUseCase', () => {
 
   it('replaces the snapshot of the same diagnostic when registered again', async () => {
     await useCase().execute(profileOf(initiativeId));
-    await useCase().execute({ ...profileOf(initiativeId), name: 'AgroConecta 2' });
+    await useCase().execute({
+      ...profileOf(initiativeId),
+      name: 'AgroConecta 2',
+    });
 
     expect(profiles.profiles.map((p) => p.name)).toEqual(['AgroConecta 2']);
   });

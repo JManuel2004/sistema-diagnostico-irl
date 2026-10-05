@@ -45,7 +45,6 @@ import { StartDiagnosisUseCase } from './application/use-cases/start-diagnosis.u
 import { RequestDeepAnalysisUseCase } from './application/use-cases/request-deep-analysis.use-case.js';
 import { GetQuestionnaireStructureQuery } from './application/use-cases/get-questionnaire-structure.query.js';
 
-
 import { DiagnosisController } from './presentation/controllers/diagnosis.controller.js';
 import { QuestionnaireController } from './presentation/controllers/questionnaire.controller.js';
 import { MaturityProfileController } from './presentation/controllers/maturity-profile.controller.js';
@@ -78,11 +77,17 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     IrlTaxonomyModule,
   ],
   providers: [
-    applicationProvider(ListUserDiagnosesQuery, [DIAGNOSIS_REPOSITORY, TAXONOMY_REPOSITORY]),
+    applicationProvider(ListUserDiagnosesQuery, [
+      DIAGNOSIS_REPOSITORY,
+      TAXONOMY_REPOSITORY,
+    ]),
     applicationProvider(FindDiagnosisOwnerQuery, [DIAGNOSIS_REPOSITORY]),
     applicationProvider(GetDiagnosisProgressQuery, [DIAGNOSIS_REPOSITORY]),
     { provide: DIAGNOSIS_REPOSITORY, useClass: TypeOrmDiagnosisRepository },
-    { provide: ANSWER_SHEET_REPOSITORY, useClass: TypeOrmAnswerSheetRepository },
+    {
+      provide: ANSWER_SHEET_REPOSITORY,
+      useClass: TypeOrmAnswerSheetRepository,
+    },
     {
       provide: STATEMENT_CATALOG_REPOSITORY,
       useClass: TypeOrmStatementCatalogRepository,
@@ -94,17 +99,55 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     { provide: IMBALANCE_REPOSITORY, useClass: TypeOrmImbalanceRepository },
     IrlCalculatorService,
     ImbalanceEvaluatorService,
-    applicationProvider(FinalizeInitialDiagnosisUseCase, [DIAGNOSIS_REPOSITORY, ANSWER_SHEET_REPOSITORY, SubmitQuestionnaireUseCase, ComputeMaturityProfileUseCase, TAXONOMY_REPOSITORY]),
-    applicationProvider(SubmitQuestionnaireUseCase, [ANSWER_SHEET_REPOSITORY, DIAGNOSIS_REPOSITORY, STATEMENT_CATALOG_REPOSITORY]),
-    applicationProvider(ComputeMaturityProfileUseCase, [STATEMENT_CATALOG_REPOSITORY, TAXONOMY_REPOSITORY, MATURITY_PROFILE_REPOSITORY, IMBALANCE_REPOSITORY, IrlCalculatorService, ImbalanceEvaluatorService]),
-    applicationProvider(GetMaturityProfileUseCase, [MATURITY_PROFILE_REPOSITORY, IMBALANCE_REPOSITORY, TAXONOMY_REPOSITORY]),
-    applicationProvider(GetOwnMaturityProfileUseCase, [DIAGNOSIS_REPOSITORY, GetMaturityProfileUseCase]),
-    applicationProvider(RequestDeepAnalysisUseCase, [DIAGNOSIS_REPOSITORY, EVENT_PUBLISHER]),
-    applicationProvider(StartDiagnosisUseCase, [DIAGNOSIS_REPOSITORY, TAXONOMY_REPOSITORY]),
-    applicationProvider(GetDiagnosisUseCase, [DIAGNOSIS_REPOSITORY, TAXONOMY_REPOSITORY]),
-    applicationProvider(ApplyInitiativeToDiagnosisUseCase, [DIAGNOSIS_REPOSITORY]),
+    applicationProvider(FinalizeInitialDiagnosisUseCase, [
+      DIAGNOSIS_REPOSITORY,
+      ANSWER_SHEET_REPOSITORY,
+      SubmitQuestionnaireUseCase,
+      ComputeMaturityProfileUseCase,
+      TAXONOMY_REPOSITORY,
+    ]),
+    applicationProvider(SubmitQuestionnaireUseCase, [
+      ANSWER_SHEET_REPOSITORY,
+      DIAGNOSIS_REPOSITORY,
+      STATEMENT_CATALOG_REPOSITORY,
+    ]),
+    applicationProvider(ComputeMaturityProfileUseCase, [
+      STATEMENT_CATALOG_REPOSITORY,
+      TAXONOMY_REPOSITORY,
+      MATURITY_PROFILE_REPOSITORY,
+      IMBALANCE_REPOSITORY,
+      IrlCalculatorService,
+      ImbalanceEvaluatorService,
+    ]),
+    applicationProvider(GetMaturityProfileUseCase, [
+      MATURITY_PROFILE_REPOSITORY,
+      IMBALANCE_REPOSITORY,
+      TAXONOMY_REPOSITORY,
+      DIAGNOSIS_REPOSITORY,
+    ]),
+    applicationProvider(GetOwnMaturityProfileUseCase, [
+      DIAGNOSIS_REPOSITORY,
+      GetMaturityProfileUseCase,
+    ]),
+    applicationProvider(RequestDeepAnalysisUseCase, [
+      DIAGNOSIS_REPOSITORY,
+      EVENT_PUBLISHER,
+    ]),
+    applicationProvider(StartDiagnosisUseCase, [
+      DIAGNOSIS_REPOSITORY,
+      TAXONOMY_REPOSITORY,
+    ]),
+    applicationProvider(GetDiagnosisUseCase, [
+      DIAGNOSIS_REPOSITORY,
+      TAXONOMY_REPOSITORY,
+    ]),
+    applicationProvider(ApplyInitiativeToDiagnosisUseCase, [
+      DIAGNOSIS_REPOSITORY,
+    ]),
     InitiativeRegisteredListener,
-    applicationProvider(RecordDeepAnalysisResultUseCase, [DIAGNOSIS_REPOSITORY]),
+    applicationProvider(RecordDeepAnalysisResultUseCase, [
+      DIAGNOSIS_REPOSITORY,
+    ]),
     DeepAnalysisResultListener,
     {
       provide: GetQuestionnaireStructureQuery,
@@ -133,8 +176,11 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     ListUserDiagnosesQuery,
     // Consumed by RoutingModule/RoadmapModule: the recommendation and
     // roadmap engines read the profile through this read use case, never
-    // reaching the tables directly.
+    // reaching the tables directly. ReportingModule reads it for the report.
     GetMaturityProfileUseCase,
+    // Consumed by ReportingModule: the caller's diagnostic and whether its
+    // deep analysis is complete, before the report is gathered.
+    GetDiagnosisUseCase,
   ],
 })
 export class DiagnosisModule {}

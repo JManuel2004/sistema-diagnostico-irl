@@ -38,8 +38,12 @@ export * from './initiative/initiative.schema.js';
 // ── routing ───────────────────────────────────────────────────────────
 export * from './routing/predicate.schema.js';
 export * from './routing/diagnostic-facts.schema.js';
+export * from './routing/service-detail.schema.js';
 export * from './routing/recommendation-response.schema.js';
 export * from './routing/layer-trace.schema.js';
 
 // ── roadmap ───────────────────────────────────────────────────────────
 export * from './roadmap/roadmap-response.schema.js';
+
+// ── reporting ─────────────────────────────────────────────────────────
+export * from './reporting/report-response.schema.js';

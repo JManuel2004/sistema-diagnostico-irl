@@ -25,7 +25,6 @@ export function initiativeFixture(over: Partial<Initiative> = {}): Initiative {
     declaredStage: 'Piloto completado',
     teamSize: 3,
     teamDescription: 'Fundadora, coordinadora y desarrollador externo',
-    academicLinkage: false,
     targetMarket: 'Productores de café del suroccidente',
     currentFunding: 'Ahorros de la fundadora',
     recordedAt: '2026-05-10T15:00:00.000Z',

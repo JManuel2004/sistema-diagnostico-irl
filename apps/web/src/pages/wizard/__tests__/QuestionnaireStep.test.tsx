@@ -36,8 +36,8 @@ function renderStep(): ReturnType<typeof render> {
           />
           <Route path="/diagnosticos/:id/asistente/resumen" element={<div>RESUMEN_STUB</div>} />
           <Route
-            path="/diagnosticos/:id/asistente/consentimiento"
-            element={<div>CONSENTIMIENTO_STUB</div>}
+            path="/diagnosticos/:id/asistente/iniciativa"
+            element={<div>INICIATIVA_STUB</div>}
           />
         </Routes>
       </MemoryRouter>
@@ -64,7 +64,9 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
     useQuestionnaireDraftStore.getState().clear();
     sessionStorage.clear();
     server.use(
-      mswHttp.get('*/api/v1/catalog/questionnaire', () => HttpResponse.json(questionnaireFixture())),
+      mswHttp.get('*/api/v1/catalog/questionnaire', () =>
+        HttpResponse.json(questionnaireFixture()),
+      ),
     );
   });
 
@@ -84,7 +86,7 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
       await user.click(await screen.findByRole('button', { name: ADVANCE }));
 
       expect(screen.getByRole('alert')).toHaveTextContent(
-        'Hay afirmaciones sin completar. Cada una necesita su respuesta y su justificación antes de continuar.',
+        'Hay afirmaciones sin responder. Cada una necesita su respuesta antes de continuar; la justificación es opcional.',
       );
       expect(screen.queryByText('RESUMEN_STUB')).not.toBeInTheDocument();
     });
@@ -119,7 +121,8 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
 
       const alert = screen.getByRole('alert');
       expect(alert).not.toHaveTextContent('TRL');
-      for (const code of ['CRL', 'BRL', 'IPRL', 'TmRL', 'FRL']) expect(alert).toHaveTextContent(code);
+      for (const code of ['CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'])
+        expect(alert).toHaveTextContent(code);
     });
 
     // The warning used to disappear as soon as ANY answer changed.
@@ -151,7 +154,7 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
       populate(range(1, 8));
       renderStep();
 
-      await screen.findByText(/Faltan respuestas o justificaciones en 5 dimensión\(es\)/);
+      await screen.findByText(/Faltan respuestas en 5 dimensión\(es\)/);
     });
   });
 
@@ -175,11 +178,11 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
   });
 
   // The justification of each answer is mandatory.
-  describe('Escenario: justificación obligatoria', () => {
+  describe('Escenario: justificación opcional', () => {
     it.each([
-      ['empty', '', '3', 'TRL — Nombre (7/8)'],
-      ['spaces only', '    ', '9', 'CRL — Nombre (7/8)'],
-    ])('a statement with a %s justification does not count as complete', async (_l, text, id, expected) => {
+      ['empty', '', '3'],
+      ['spaces only', '    ', '9'],
+    ])('a statement with a %s justification still counts as complete', async (_l, text, id) => {
       populate(range(1, 48));
       act(() => {
         useQuestionnaireDraftStore.getState().setJustification(id, text);
@@ -189,30 +192,8 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
 
       await user.click(await screen.findByRole('button', { name: ADVANCE }));
 
-      expect(screen.getByRole('alert')).toHaveTextContent(expected);
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'Cada una necesita su respuesta y su justificación',
-      );
-      expect(screen.queryByText('RESUMEN_STUB')).not.toBeInTheDocument();
-    });
-
-    it('lets the user advance once the missing justification is written', async () => {
-      populate(range(1, 48));
-      act(() => {
-        useQuestionnaireDraftStore.getState().setJustification('48', '');
-      });
-      const user = userEvent.setup();
-      renderStep();
-
-      await user.click(await screen.findByRole('button', { name: ADVANCE }));
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-
-      act(() => {
-        useQuestionnaireDraftStore.getState().setJustification('48', 'Ahora sí, con su razón.');
-      });
-      await user.click(screen.getByRole('button', { name: ADVANCE }));
-
       expect(await screen.findByText('RESUMEN_STUB')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
   });
 
@@ -227,13 +208,13 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
     expect(await screen.findByText('RESUMEN_STUB')).toBeInTheDocument();
   });
 
-  it('«Atrás» goes back to the consent step', async () => {
+  it('«Atrás» goes back to the initiative step', async () => {
     const user = userEvent.setup();
     renderStep();
 
     await user.click(await screen.findByRole('link', { name: 'Atrás' }));
 
-    expect(screen.getByText('CONSENTIMIENTO_STUB')).toBeInTheDocument();
+    expect(screen.getByText('INICIATIVA_STUB')).toBeInTheDocument();
   });
 
   // The autofill exists only in development builds.

@@ -80,6 +80,14 @@ export class Diagnosis {
   }
 
   /**
+   * Both results of the deep analysis are saved (ADR 0008): the full report
+   * (RF-16) exists from here on.
+   */
+  get deepAnalysisCompleted(): boolean {
+    return this._state.value === 'DEEP_ANALYSIS_COMPLETE';
+  }
+
+  /**
    * The questionnaire was processed and the maturity profile exists (RF-07):
    * the results can be read. Until then the diagnostic is still being filled
    * in and can be resumed.

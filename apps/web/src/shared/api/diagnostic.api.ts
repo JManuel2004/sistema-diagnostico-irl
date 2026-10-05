@@ -30,7 +30,7 @@ export function listMyDiagnostics(): Promise<DiagnosticSummary[]> {
 
 export function finalizeInitialDiagnostic(
   diagnosticId: string,
-  answers: { statementId: string; value: number; justification: string }[],
+  answers: { statementId: string; value: number; justification: string | null }[],
 ): Promise<MaturityProfileResponse> {
   return postParsed(
     `/diagnostics/${diagnosticId}/finalize-initial`,

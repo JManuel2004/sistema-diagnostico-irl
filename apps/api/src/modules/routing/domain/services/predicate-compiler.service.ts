@@ -32,8 +32,16 @@ import { PredicateCompilationError } from '../exceptions/routing.errors.js';
  */
 
 export type ExpressionTree =
-  | { readonly type: 'leaf'; readonly field: Field; readonly op: Operator; readonly value: unknown }
-  | { readonly type: 'and' | 'or' | 'not'; readonly operands: readonly ExpressionTree[] };
+  | {
+      readonly type: 'leaf';
+      readonly field: Field;
+      readonly op: Operator;
+      readonly value: unknown;
+    }
+  | {
+      readonly type: 'and' | 'or' | 'not';
+      readonly operands: readonly ExpressionTree[];
+    };
 
 const QUERYABLE = new Set<string>(QUERYABLE_FIELDS);
 const BOOLEAN_OPS = new Set<string>(BOOLEAN_OPERATORS);
@@ -68,7 +76,6 @@ export const FIELD_KIND: Record<Field, FieldKind> = {
   'characterization.stage': 'scalar',
   'characterization.sector': 'scalar',
   'characterization.teamSize': 'numeric',
-  'characterization.academicLinkage': 'scalar',
 };
 
 export class PredicateCompilerService {
@@ -159,7 +166,12 @@ export class PredicateCompilerService {
 
     this.checkCompatibility(field, op, obj.value, path);
 
-    return { type: 'leaf', field: field as Field, op: op as Operator, value: obj.value };
+    return {
+      type: 'leaf',
+      field: field as Field,
+      op: op as Operator,
+      value: obj.value,
+    };
   }
 
   private isKnownDegreeOperator(op: string): boolean {
@@ -257,8 +269,6 @@ function resolveField(field: Field, facts: DiagnosticFacts): unknown {
       return facts.characterization.sector;
     case 'characterization.teamSize':
       return facts.characterization.teamSize;
-    case 'characterization.academicLinkage':
-      return facts.characterization.academicLinkage;
     default:
       return null;
   }
