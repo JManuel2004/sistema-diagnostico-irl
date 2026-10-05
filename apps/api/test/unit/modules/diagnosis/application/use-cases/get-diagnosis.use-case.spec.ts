@@ -33,7 +33,10 @@ describe('GetDiagnosisUseCase', () => {
   it("returns the caller's diagnostic as the contract describes it", async () => {
     findById.mockResolvedValueOnce(diagnosisIn('PROFILE_GENERATED'));
 
-    const result = await useCase.execute({ diagnosticId: ID, userId: 'user-1' });
+    const result = await useCase.execute({
+      diagnosticId: ID,
+      userId: 'user-1',
+    });
 
     if (!result.ok) throw new Error('expected ok result');
     expect(() => diagnosticSchema.parse(result.value)).not.toThrow();
@@ -52,7 +55,10 @@ describe('GetDiagnosisUseCase', () => {
   ])('in %s the deep analysis accepted flag is %s', async (state, accepted) => {
     findById.mockResolvedValueOnce(diagnosisIn(state));
 
-    const result = await useCase.execute({ diagnosticId: ID, userId: 'user-1' });
+    const result = await useCase.execute({
+      diagnosticId: ID,
+      userId: 'user-1',
+    });
 
     if (!result.ok) throw new Error('expected ok result');
     expect(result.value.deepAnalysisAccepted).toBe(accepted);
@@ -65,14 +71,20 @@ describe('GetDiagnosisUseCase', () => {
     ['DEEP_ANALYSIS_DECLINED', false],
     ['DEEP_ANALYSIS_IN_PROGRESS', false],
     ['DEEP_ANALYSIS_COMPLETE', true],
-  ])('in %s the deep analysis completed flag is %s', async (state, completed) => {
-    findById.mockResolvedValueOnce(diagnosisIn(state));
+  ])(
+    'in %s the deep analysis completed flag is %s',
+    async (state, completed) => {
+      findById.mockResolvedValueOnce(diagnosisIn(state));
 
-    const result = await useCase.execute({ diagnosticId: ID, userId: 'user-1' });
+      const result = await useCase.execute({
+        diagnosticId: ID,
+        userId: 'user-1',
+      });
 
-    if (!result.ok) throw new Error('expected ok result');
-    expect(result.value.deepAnalysisCompleted).toBe(completed);
-  });
+      if (!result.ok) throw new Error('expected ok result');
+      expect(result.value.deepAnalysisCompleted).toBe(completed);
+    },
+  );
 
   // The client decides "resume the wizard or show the results" from this flag.
   it.each([
@@ -88,7 +100,10 @@ describe('GetDiagnosisUseCase', () => {
   ])('in %s the completed flag is %s', async (state, completed) => {
     findById.mockResolvedValueOnce(diagnosisIn(state));
 
-    const result = await useCase.execute({ diagnosticId: ID, userId: 'user-1' });
+    const result = await useCase.execute({
+      diagnosticId: ID,
+      userId: 'user-1',
+    });
 
     if (!result.ok) throw new Error('expected ok result');
     expect(result.value.completed).toBe(completed);
@@ -97,16 +112,24 @@ describe('GetDiagnosisUseCase', () => {
   it('answers not found for a diagnostic that does not exist', async () => {
     findById.mockResolvedValueOnce(null);
 
-    const result = await useCase.execute({ diagnosticId: ID, userId: 'user-1' });
+    const result = await useCase.execute({
+      diagnosticId: ID,
+      userId: 'user-1',
+    });
 
     if (result.ok) throw new Error('expected err result');
     expect(result.error).toBeInstanceOf(NotFoundError);
   });
 
   it("answers not found, not forbidden, for someone else's diagnostic", async () => {
-    findById.mockResolvedValueOnce(diagnosisIn('PROFILE_GENERATED', 'someone-else'));
+    findById.mockResolvedValueOnce(
+      diagnosisIn('PROFILE_GENERATED', 'someone-else'),
+    );
 
-    const result = await useCase.execute({ diagnosticId: ID, userId: 'user-1' });
+    const result = await useCase.execute({
+      diagnosticId: ID,
+      userId: 'user-1',
+    });
 
     if (result.ok) throw new Error('expected err result');
     expect(result.error).toBeInstanceOf(NotFoundError);

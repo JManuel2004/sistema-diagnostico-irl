@@ -1,8 +1,7 @@
-import type { JSX } from 'react';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { http as mswHttp, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { meContextHandler, signIn } from '@/test/fixtures/me-context';
@@ -10,6 +9,8 @@ import { clearSession } from '@/shared/auth/session';
 import DashboardPage from '../DashboardPage';
 import { renderWithClient } from '@/test/render-with-client';
 import { initiativeFixture } from '@/test/fixtures/initiative';
+import { useQuestionnaireDraftStore } from '@features/questionnaire';
+import { useInitiativeDraftStore } from '@features/initiative';
 
 const NEWEST = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 const OLDER = 'c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33';
@@ -23,25 +24,42 @@ beforeEach(() => {
 afterEach(() => {
   server.resetHandlers();
   clearSession();
+  useQuestionnaireDraftStore.getState().clear();
+  useInitiativeDraftStore.getState().clear();
+  sessionStorage.clear();
 });
 afterAll(() => server.close());
 
+const UNFINISHED = 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22';
+
 function diagnostic(id: string, state = 'PROFILE_GENERATED') {
+  const deep = state === 'DEEP_ANALYSIS_COMPLETE';
   return {
     id,
     userId: 'user-1',
     state,
-    completed: state === 'PROFILE_GENERATED',
-    deepAnalysisAccepted: false,
-    deepAnalysisCompleted: false,
+    completed: state === 'PROFILE_GENERATED' || deep,
+    deepAnalysisAccepted: deep,
+    deepAnalysisCompleted: deep,
     createdAt: '2026-03-01T00:00:00.000Z',
     frameworkVersion: 'KTH-IRL-1.0',
   };
 }
 
-function WizardStub(): JSX.Element {
-  const { id } = useParams();
-  return <div>ASISTENTE_STUB:{id}</div>;
+/** A completed diagnostic as `GET /diagnostics` lists it. */
+function summary(id: string, overrides: Record<string, unknown> = {}) {
+  return {
+    ...diagnostic(id),
+    initiativeName: 'AgroConecta',
+    profileComputedAt: '2026-09-30T15:00:00.000Z',
+    globalAverage: 3.5,
+    ...overrides,
+  };
+}
+
+/** This tab is filling in `id`: its questionnaire draft names it. */
+function draftInThisTab(id: string): void {
+  useQuestionnaireDraftStore.getState().initialize(id);
 }
 
 function renderPage() {
@@ -49,18 +67,16 @@ function renderPage() {
     <MemoryRouter initialEntries={['/panel']}>
       <Routes>
         <Route path="/panel" element={<DashboardPage />} />
-        <Route path="/diagnosticos/:id/asistente" element={<WizardStub />} />
+        <Route path="/diagnosticos/:id/asistente" element={<div>ASISTENTE_STUB</div>} />
       </Routes>
     </MemoryRouter>,
   );
 }
 
 describe('DashboardPage — panel de iniciativa', () => {
-  it('muestra la información de la iniciativa del diagnóstico más reciente con resultados', async () => {
+  it('muestra la iniciativa del diagnóstico completado más reciente', async () => {
     server.use(
-      mswHttp.get('*/diagnostics', () =>
-        HttpResponse.json([diagnostic(NEWEST), diagnostic(OLDER)]),
-      ),
+      mswHttp.get('*/diagnostics', () => HttpResponse.json([summary(NEWEST), summary(OLDER)])),
       mswHttp.get('*/diagnostics/:id/initiative', ({ params }) => {
         expect(params.id).toBe(NEWEST);
         return HttpResponse.json(initiativeFixture());
@@ -71,59 +87,99 @@ describe('DashboardPage — panel de iniciativa', () => {
 
     expect(await screen.findByRole('heading', { name: 'AgroConecta' })).toBeInTheDocument();
     expect(screen.getByText('Agroindustria / AgriTech')).toBeInTheDocument();
-    expect(screen.getByText(/Aplicación web y módulo de trazabilidad/)).toBeInTheDocument();
     expect(screen.getByText(/Validación — Piloto completado/)).toBeInTheDocument();
-    expect(screen.getByText(/3 personas — Fundadora, coordinadora/)).toBeInTheDocument();
-    expect(screen.getByText('Productores de café del suroccidente')).toBeInTheDocument();
     expect(screen.getByText('Ahorros de la fundadora')).toBeInTheDocument();
   });
 
-  it('deja reservado el espacio del historial de diagnósticos, sin construirlo', async () => {
+  it('ofrece editar la iniciativa y ver los resultados del más reciente, no el cuestionario', async () => {
     server.use(
-      mswHttp.get('*/diagnostics', () =>
-        HttpResponse.json([diagnostic(NEWEST), diagnostic(OLDER)]),
-      ),
-      mswHttp.get('*/diagnostics/:id/initiative', () => HttpResponse.json(initiativeFixture())),
-    );
-
-    renderPage();
-
-    expect(
-      await screen.findByRole('heading', { name: 'Historial de diagnósticos' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Próximamente/)).toBeInTheDocument();
-    // The list of past diagnostics is a future story: the older one is not listed.
-    expect(screen.queryByText(OLDER)).not.toBeInTheDocument();
-  });
-
-  it('ofrece editar la iniciativa y ver los resultados del diagnóstico, no el cuestionario', async () => {
-    server.use(
-      mswHttp.get('*/diagnostics', () => HttpResponse.json([diagnostic(NEWEST)])),
+      mswHttp.get('*/diagnostics', () => HttpResponse.json([summary(NEWEST)])),
       mswHttp.get('*/diagnostics/:id/initiative', () => HttpResponse.json(initiativeFixture())),
     );
 
     renderPage();
 
     const access = await screen.findByRole('navigation', { name: 'Accesos del diagnóstico' });
-    expect(access).toHaveTextContent('Editar iniciativa');
-    expect(screen.getByRole('link', { name: 'Editar iniciativa' })).toHaveAttribute(
+    expect(within(access).getByRole('link', { name: 'Editar iniciativa' })).toHaveAttribute(
       'href',
       `/diagnosticos/${NEWEST}/iniciativa`,
     );
-    // The questionnaire is a wizard step: once the diagnostic is processed there is no way back to it.
-    expect(screen.queryByRole('link', { name: 'Ir al cuestionario' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ver resultados' })).toHaveAttribute(
+    expect(within(access).getByRole('link', { name: 'Ver resultados' })).toHaveAttribute(
       'href',
       `/diagnosticos/${NEWEST}/resultados`,
     );
+    expect(screen.queryByRole('link', { name: 'Ir al cuestionario' })).not.toBeInTheDocument();
   });
 
-  describe('un diagnóstico que sigue en el asistente', () => {
-    it('ofrece continuarlo, sin mostrar sus resultados', async () => {
+  // Escenario 1: con diagnósticos de fase 1 completada.
+  describe('con diagnósticos completados', () => {
+    it('lista todos, del más reciente al más antiguo, con su iniciativa, fecha y nivel global', async () => {
       server.use(
         mswHttp.get('*/diagnostics', () =>
-          HttpResponse.json([diagnostic(NEWEST, 'WITH_INITIATIVE')]),
+          HttpResponse.json([
+            summary(NEWEST, {
+              state: 'DEEP_ANALYSIS_COMPLETE',
+              deepAnalysisAccepted: true,
+              deepAnalysisCompleted: true,
+            }),
+            summary(OLDER, {
+              initiativeName: 'Café Andino',
+              profileComputedAt: '2026-08-12T15:00:00.000Z',
+              globalAverage: 2,
+            }),
+          ]),
         ),
+        mswHttp.get('*/diagnostics/:id/initiative', () => HttpResponse.json(initiativeFixture())),
+      );
+
+      renderPage();
+
+      const history = (await screen.findByRole('heading', { name: 'Tus diagnósticos' })).closest(
+        'section',
+      )!;
+      const rows = within(history).getAllByRole('listitem');
+      expect(rows).toHaveLength(2);
+      expect(rows[0]).toHaveTextContent('AgroConecta');
+      expect(rows[0]).toHaveTextContent('Perfil del 30 de septiembre de 2026');
+      expect(rows[0]).toHaveTextContent('Nivel IRL global 3,5');
+      expect(rows[0]).toHaveTextContent('Con análisis profundo');
+      expect(rows[1]).toHaveTextContent('Café Andino');
+      expect(rows[1]).toHaveTextContent('Perfil del 12 de agosto de 2026');
+      expect(rows[1]).toHaveTextContent('Nivel IRL global 2');
+      expect(rows[1]).toHaveTextContent('Perfil inicial');
+      expect(
+        within(rows[1]).getByRole('link', { name: /Ver resultados de Café Andino/ }),
+      ).toHaveAttribute('href', `/diagnosticos/${OLDER}/resultados`);
+    });
+
+    it('ofrece también iniciar uno nuevo, que conserva los anteriores', async () => {
+      server.use(
+        mswHttp.get('*/diagnostics', () => HttpResponse.json([summary(NEWEST)])),
+        mswHttp.get('*/diagnostics/:id/initiative', () => HttpResponse.json(initiativeFixture())),
+        mswHttp.post('*/diagnostics', () =>
+          HttpResponse.json(diagnostic(UNFINISHED, 'STARTED'), { status: 201 }),
+        ),
+      );
+      const user = userEvent.setup();
+
+      renderPage();
+
+      expect(await screen.findByText(/los anteriores se conservan/)).toBeInTheDocument();
+      await user.click(await screen.findByRole('button', { name: 'Iniciar un diagnóstico nuevo' }));
+      expect(await screen.findByText('ASISTENTE_STUB')).toBeInTheDocument();
+    });
+  });
+
+  // Escenario 2: cuestionario en curso en esta misma pestaña.
+  describe('con un diagnóstico en curso en esta pestaña', () => {
+    it('ofrece continuarlo donde quedó', async () => {
+      draftInThisTab(UNFINISHED);
+      server.use(
+        mswHttp.get('*/diagnostics', () => HttpResponse.json([])),
+        mswHttp.get('*/diagnostics/:id', ({ params }) => {
+          expect(params.id).toBe(UNFINISHED);
+          return HttpResponse.json(diagnostic(UNFINISHED, 'WITH_INITIATIVE'));
+        }),
       );
 
       renderPage();
@@ -133,76 +189,68 @@ describe('DashboardPage — panel de iniciativa', () => {
       ).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Continuar diagnóstico' })).toHaveAttribute(
         'href',
-        `/diagnosticos/${NEWEST}/asistente`,
+        `/diagnosticos/${UNFINISHED}/asistente`,
       );
-      expect(screen.queryByRole('link', { name: 'Ver resultados' })).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', { name: 'Iniciar un nuevo diagnóstico' }),
-      ).not.toBeInTheDocument();
+      expect(screen.getByText(/descarta el que tienes en curso/)).toBeInTheDocument();
     });
 
-    it('con uno anterior ya terminado, muestra la iniciativa de ese y ofrece continuar el otro', async () => {
+    it('no lo ofrece si ese diagnóstico ya tiene resultados', async () => {
+      draftInThisTab(NEWEST);
       server.use(
-        mswHttp.get('*/diagnostics', () =>
-          HttpResponse.json([diagnostic(NEWEST, 'STARTED'), diagnostic(OLDER)]),
-        ),
-        mswHttp.get('*/diagnostics/:id/initiative', ({ params }) => {
-          expect(params.id).toBe(OLDER);
-          return HttpResponse.json(initiativeFixture());
-        }),
+        mswHttp.get('*/diagnostics', () => HttpResponse.json([summary(NEWEST)])),
+        mswHttp.get('*/diagnostics/:id/initiative', () => HttpResponse.json(initiativeFixture())),
+        mswHttp.get('*/diagnostics/:id', () => HttpResponse.json(diagnostic(NEWEST))),
       );
 
       renderPage();
 
-      expect(await screen.findByRole('heading', { name: 'AgroConecta' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Continuar diagnóstico' })).toHaveAttribute(
-        'href',
-        `/diagnosticos/${NEWEST}/asistente`,
-      );
-      expect(screen.getByRole('link', { name: 'Ver resultados' })).toHaveAttribute(
-        'href',
-        `/diagnosticos/${OLDER}/resultados`,
-      );
-      // Starting again would resume the unfinished one, so the new-diagnostic action stays hidden.
-      expect(
-        screen.queryByRole('button', { name: 'Iniciar un nuevo diagnóstico' }),
-      ).not.toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: 'Tus diagnósticos' })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Continuar diagnóstico' })).not.toBeInTheDocument();
     });
   });
 
-  it('con la fase 1 completa inicia otro diagnóstico y deja el anterior', async () => {
-    const calls: string[] = [];
-    server.use(
-      mswHttp.get('*/diagnostics', () => HttpResponse.json([diagnostic(OLDER)])),
-      mswHttp.get('*/diagnostics/:id/initiative', ({ params }) => {
-        expect(params.id).toBe(OLDER);
-        return HttpResponse.json(initiativeFixture());
-      }),
-      mswHttp.post('*/diagnostics', () => {
-        calls.push('POST');
-        return HttpResponse.json(diagnostic(NEWEST, 'STARTED'), { status: 201 });
-      }),
-      mswHttp.delete('*/diagnostics/:id', () => {
-        calls.push('DELETE');
-        return new HttpResponse(null, { status: 204 });
-      }),
-    );
-    const user = userEvent.setup();
+  // Escenario 3: cuestionario incompleto de una sesión anterior.
+  describe('con un cuestionario incompleto de una sesión anterior', () => {
+    it('no lo ofrece: sin borrador en esta pestaña, solo queda iniciar uno nuevo', async () => {
+      // The backend keeps the unfinished one, but lists only completed diagnostics.
+      server.use(
+        mswHttp.get('*/diagnostics', () => HttpResponse.json([])),
+        mswHttp.post('*/diagnostics', () =>
+          HttpResponse.json(diagnostic(UNFINISHED, 'STARTED'), { status: 201 }),
+        ),
+      );
+      const user = userEvent.setup();
 
-    renderPage();
+      renderPage();
 
-    expect(await screen.findByRole('heading', { name: 'AgroConecta' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ver resultados' })).toHaveAttribute(
-      'href',
-      `/diagnosticos/${OLDER}/resultados`,
-    );
-    await user.click(await screen.findByRole('button', { name: 'Iniciar un nuevo diagnóstico' }));
+      expect(
+        await screen.findByRole('heading', { name: 'Aún no tienes un diagnóstico' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Continuar diagnóstico' })).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Iniciar diagnóstico' }));
+      expect(await screen.findByText('ASISTENTE_STUB')).toBeInTheDocument();
+    });
 
-    expect(await screen.findByText(`ASISTENTE_STUB:${NEWEST}`)).toBeInTheDocument();
-    expect(calls).toEqual(['POST']);
+    it('tampoco si el borrador de la pestaña es de un diagnóstico que ya se eliminó', async () => {
+      draftInThisTab(UNFINISHED);
+      server.use(
+        mswHttp.get('*/diagnostics', () => HttpResponse.json([])),
+        mswHttp.get('*/diagnostics/:id', () =>
+          HttpResponse.json({ code: 'NOT_FOUND', message: 'x' }, { status: 404 }),
+        ),
+      );
+
+      renderPage();
+
+      expect(
+        await screen.findByRole('heading', { name: 'Aún no tienes un diagnóstico' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Continuar diagnóstico' })).not.toBeInTheDocument();
+    });
   });
 
-  it('sin ningún diagnóstico ofrece iniciar uno, y al crearlo abre el asistente', async () => {
+  // Escenario 4: sin diagnósticos completados.
+  it('sin ningún diagnóstico, la única acción es iniciar uno, y al crearlo abre el asistente', async () => {
     server.use(
       mswHttp.get('*/diagnostics', () => HttpResponse.json([])),
       mswHttp.post('*/diagnostics', () =>
@@ -214,13 +262,14 @@ describe('DashboardPage — panel de iniciativa', () => {
     renderPage();
     await user.click(await screen.findByRole('button', { name: 'Iniciar diagnóstico' }));
 
-    expect(await screen.findByText(`ASISTENTE_STUB:${NEWEST}`)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Tus diagnósticos' })).not.toBeInTheDocument();
+    expect(await screen.findByText('ASISTENTE_STUB')).toBeInTheDocument();
   });
 
   describe('navegación', () => {
     it('lleva la navegación principal y el descriptor institucional lleva al panel', async () => {
-      server.use(mswHttp.get('*/diagnostics', () => HttpResponse.json([diagnostic(NEWEST)])));
       server.use(
+        mswHttp.get('*/diagnostics', () => HttpResponse.json([summary(NEWEST)])),
         mswHttp.get('*/diagnostics/:id/initiative', () => HttpResponse.json(initiativeFixture())),
       );
 

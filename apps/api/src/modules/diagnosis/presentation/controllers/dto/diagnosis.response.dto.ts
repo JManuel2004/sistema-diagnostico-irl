@@ -32,7 +32,8 @@ export class DiagnosticResponseDto implements Diagnostic {
   @ApiProperty({ description: 'The user accepted the deep analysis' })
   deepAnalysisAccepted!: boolean;
   @ApiProperty({
-    description: 'Both results of the deep analysis are saved: the full report exists',
+    description:
+      'Both results of the deep analysis are saved: the full report exists',
   })
   deepAnalysisCompleted!: boolean;
   @ApiProperty({
