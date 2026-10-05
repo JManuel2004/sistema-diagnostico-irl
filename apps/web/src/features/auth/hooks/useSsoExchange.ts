@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { consumeReturnTo, saveSession } from '@/shared/auth/session';
+import { paths } from '@/shared/lib/paths';
 import { exchangeSsoCode } from '../api/core-auth.api';
 
 export type SsoExchangeStatus = 'exchanging' | 'done' | 'error';
@@ -7,7 +8,11 @@ export type SsoExchangeStatus = 'exchanging' | 'done' | 'error';
 export interface SsoExchangeResult {
   readonly status: SsoExchangeStatus;
   readonly error: string | null;
-  /** The user's original route, available when `status === 'done'`. */
+  /**
+   * The user's original route, available when `status === 'done'`; the
+   * panel when there is none, since it is where the user is offered their
+   * completed diagnostics or a new one (DIAGIRL-26).
+   */
   readonly returnTo: string;
 }
 
@@ -29,13 +34,11 @@ export function useSsoExchange(code: string | null): SsoExchangeResult {
   // setState in an effect causes a cascading render.
   const missingCode = code === null || code === '';
 
-  const [status, setStatus] = useState<SsoExchangeStatus>(
-    missingCode ? 'error' : 'exchanging',
-  );
+  const [status, setStatus] = useState<SsoExchangeStatus>(missingCode ? 'error' : 'exchanging');
   const [error, setError] = useState<string | null>(
     missingCode ? 'No se recibió el código de autenticación de INNLAB.' : null,
   );
-  const [returnTo, setReturnTo] = useState<string>('/');
+  const [returnTo, setReturnTo] = useState<string>(paths.panel);
   const alreadyExchanged = useRef(false);
 
   useEffect(() => {
@@ -51,15 +54,13 @@ export function useSsoExchange(code: string | null): SsoExchangeResult {
     exchangeSsoCode(code)
       .then((session) => {
         saveSession(session);
-        setReturnTo(consumeReturnTo() ?? '/');
+        setReturnTo(consumeReturnTo() ?? paths.panel);
         setStatus('done');
       })
       .catch((cause: unknown) => {
         setStatus('error');
         setError(
-          cause instanceof Error
-            ? cause.message
-            : 'No se pudo completar el inicio de sesión.',
+          cause instanceof Error ? cause.message : 'No se pudo completar el inicio de sesión.',
         );
       });
   }, [code, missingCode]);

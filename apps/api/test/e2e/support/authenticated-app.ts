@@ -53,8 +53,9 @@ export const E2E_USER = {
  *   await request(server).get(url).set('Authorization', auth);
  *
  * `subject` changes the token's `sub`. The suites run in parallel over the
- * same database and `POST /diagnostics` is idempotent per user, so a suite
- * that starts diagnostics needs its own user so it never resumes another's.
+ * same database and `POST /diagnostics` deletes the user's unfinished
+ * diagnostics, so a suite that starts diagnostics needs its own user so it
+ * never deletes another suite's.
  *
  * Remember `nock.cleanAll()` in the suite's `afterAll`.
  */
@@ -78,7 +79,13 @@ export function authenticateAgainst(
   );
   const now = Math.floor(Date.now() / 1000);
   const payload = base64url(
-    JSON.stringify({ iss: issuer, iat: now, exp: now + 3600, ...E2E_USER, sub: subject }),
+    JSON.stringify({
+      iss: issuer,
+      iat: now,
+      exp: now + 3600,
+      ...E2E_USER,
+      sub: subject,
+    }),
   );
   const signature = sign(
     'RSA-SHA256',

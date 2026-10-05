@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import type { DiagnosisRepositoryPort } from '../../../domain/repositories/diagnosis.repository.port.js';
 import {
   Diagnosis,
@@ -27,20 +27,24 @@ export class TypeOrmDiagnosisRepository implements DiagnosisRepositoryPort {
     return row ? this.toDomain(row) : null;
   }
 
-  async findLatestByUserId(userId: string): Promise<Diagnosis | null> {
-    const row = await this.orm.findOne({
-      where: { cognitoUserId: userId },
-      order: { startedAt: 'DESC' },
-    });
-    return row ? this.toDomain(row) : null;
-  }
-
   async findAllByUserId(userId: string): Promise<Diagnosis[]> {
     const rows = await this.orm.find({
       where: { cognitoUserId: userId },
       order: { startedAt: 'DESC' },
     });
     return rows.map((r) => this.toDomain(r));
+  }
+
+  async deleteIncompleteByUserId(userId: string): Promise<number> {
+    // Which diagnostics are incomplete is the aggregate's rule (`completed`),
+    // not a list of states repeated here.
+    const incomplete = (await this.findAllByUserId(userId))
+      .filter((d) => !d.completed)
+      .map((d) => d.id.value);
+    if (incomplete.length === 0) return 0;
+    // The rows that hang from a diagnostic go with it (`ON DELETE CASCADE`).
+    await this.orm.delete({ id: In(incomplete), cognitoUserId: userId });
+    return incomplete.length;
   }
 
   async save(diagnostic: Diagnosis): Promise<void> {
@@ -89,7 +93,8 @@ export class TypeOrmDiagnosisRepository implements DiagnosisRepositoryPort {
     if (snapshot.state === 'PROFILE_GENERATED' && row.completedAt === null) {
       row.completedAt = new Date();
     }
-    row.recommendationCalculatedAt = snapshot.recommendationCalculatedAt ?? null;
+    row.recommendationCalculatedAt =
+      snapshot.recommendationCalculatedAt ?? null;
     row.roadmapCalculatedAt = snapshot.roadmapCalculatedAt ?? null;
   }
 

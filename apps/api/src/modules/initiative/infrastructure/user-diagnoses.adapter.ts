@@ -8,7 +8,9 @@ import type { UserDiagnosesPort } from '../application/ports/user-diagnoses.port
 export class UserDiagnosesAdapter implements UserDiagnosesPort {
   constructor(private readonly listUserDiagnoses: ListUserDiagnosesQuery) {}
 
-  listByUser(userId: string): Promise<DiagnosticSummary[]> {
+  listByUser(
+    userId: string,
+  ): Promise<Omit<DiagnosticSummary, 'initiativeName'>[]> {
     return this.listUserDiagnoses.execute(userId);
   }
 }

@@ -5,9 +5,10 @@ import { startDiagnostic } from '@/shared/api/diagnostic.api';
 import { paths } from '@/shared/lib/paths';
 
 /**
- * Starts a diagnostic (HU-04) and opens the wizard. If the user already has
- * an unfinished one, the backend returns it and it is resumed: a new one is
- * never created on top. The wizard decides which step the user lands on.
+ * Starts a new diagnostic (HU-04) and opens the wizard at its first step.
+ * The backend deletes the user's unfinished diagnostics first (DIAGIRL-26):
+ * one still open in this tab is continued from the panel instead, which goes
+ * straight to the wizard without calling this.
  *
  * Used by the start screen (`/diagnosticos/nuevo`) and the panel.
  */

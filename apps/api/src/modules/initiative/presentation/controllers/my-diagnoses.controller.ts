@@ -10,10 +10,10 @@ import { CurrentUser } from '../../../../shared/identity/presentation/decorators
 import type { AuthenticatedUser } from '../../../../shared/identity/application/dtos/authenticated-user.js';
 import { ListMyDiagnosesUseCase } from '../../application/use-cases/list-my-diagnoses.use-case.js';
 import { ApiErrors } from '../../../../shared/kernel/presentation/api-errors.decorator.js';
-import { DiagnosticResponseDto } from '../../../diagnosis/presentation/controllers/dto/diagnosis.response.dto.js';
+import { DiagnosticSummaryResponseDto } from './dto/diagnostic-summary.response.dto.js';
 
 /**
- * `GET /api/v1/diagnostics` (HU-03).
+ * `GET /api/v1/diagnostics` (HU-03, DIAGIRL-26): the caller's completed diagnostics.
  *
  * Kept as its own controller in `initiative/` rather than added to
  * `DiagnosisController` (which owns the rest of `/diagnostics`) to
@@ -29,10 +29,13 @@ export class MyDiagnosesController {
 
   @Get()
   @ApiOperation({
-    summary: 'List the caller’s diagnostics',
-    description: 'Most recent first (HU-03).',
+    summary: 'List the caller’s completed diagnostics',
+    description:
+      'Only diagnostics with a maturity profile, most recent first, each with its initiative, ' +
+      'when the profile was computed and its global level (HU-03, DIAGIRL-26). A diagnostic ' +
+      'still being filled in is not listed.',
   })
-  @ApiOkResponse({ type: [DiagnosticResponseDto] })
+  @ApiOkResponse({ type: [DiagnosticSummaryResponseDto] })
   @ApiErrors()
   listMyDiagnoses(
     @CurrentUser() user: AuthenticatedUser,

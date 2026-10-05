@@ -133,7 +133,7 @@ Each feature owns its API module under `features/<name>/api/`; calls several pag
 ```
 /                                       LandingPage (public, no navigation)
 /auth/callback                          AuthCallbackPage (public: exchanges ?code=)
-/diagnosticos/nuevo                     StartDiagnosticPage (starts or resumes, opens the wizard)
+/diagnosticos/nuevo                     StartDiagnosticPage (starts a new one, opens the wizard)
 /diagnosticos/:id/asistente/:step?      DiagnosticWizardPage (iniciativa, consentimiento, cuestionario, resumen)
 /diagnosticos/:id/resultados            ResultsPage (profile + deep analysis; first screen with navigation)
 /panel                                  DashboardPage

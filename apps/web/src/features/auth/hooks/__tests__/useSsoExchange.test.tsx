@@ -53,6 +53,17 @@ describe('useSsoExchange', () => {
     });
   });
 
+  it('sin una ruta recordada, lleva al panel: ahí se elige un diagnóstico anterior o uno nuevo', async () => {
+    exchangeSsoCode.mockResolvedValue(SESSION);
+
+    const { result } = renderHook(() => useSsoExchange('code-123'));
+
+    await waitFor(() => {
+      expect(result.current.status).toBe('done');
+    });
+    expect(result.current.returnTo).toBe('/panel');
+  });
+
   it('reporta error sin guardar sesión cuando el código ya expiró', async () => {
     exchangeSsoCode.mockRejectedValue(new Error('code expired'));
 

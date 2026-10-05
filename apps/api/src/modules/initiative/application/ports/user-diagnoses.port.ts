@@ -9,5 +9,8 @@ export const USER_DIAGNOSES = Symbol('USER_DIAGNOSES');
  * aggregate.
  */
 export interface UserDiagnosesPort {
-  listByUser(userId: string): Promise<DiagnosticSummary[]>;
+  /** The user's completed diagnostics, most recent first; the initiative's name is added here. */
+  listByUser(
+    userId: string,
+  ): Promise<Omit<DiagnosticSummary, 'initiativeName'>[]>;
 }

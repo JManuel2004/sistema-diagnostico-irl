@@ -1,5 +1,5 @@
 import { useEffect, type JSX } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { UserMenu } from '@features/auth';
 import {
   selectAcceptedTermsVersion,
@@ -16,6 +16,7 @@ import {
   useQuestionnaireDraftStore,
 } from '@features/questionnaire';
 import { PageShell } from '@/shared/ui/page-shell';
+import { buttonVariants } from '@/shared/ui/button';
 import { WizardStepper } from '@/shared/ui/wizard-stepper';
 import { Alert } from '@/shared/ui/alert';
 import { LoadingState } from '@/shared/ui/loading-state';
@@ -102,7 +103,7 @@ export default function DiagnosticWizardPage(): JSX.Element {
       <PageShell
         width={step === 'consentimiento' ? 'reading' : 'standard'}
         showAttribution
-        headerActions={<UserMenu />}
+        headerActions={<WizardHeaderActions />}
       >
         <WizardStepper
           className="mb-8"
@@ -142,7 +143,7 @@ export default function DiagnosticWizardPage(): JSX.Element {
   }
 
   return (
-    <PageShell width="reading" showAttribution headerActions={<UserMenu />}>
+    <PageShell width="reading" showAttribution headerActions={<WizardHeaderActions />}>
       {failed ? (
         <Alert tone="critical" title="No fue posible abrir tu diagnóstico">
           {RETRY_LATER}
@@ -151,5 +152,26 @@ export default function DiagnosticWizardPage(): JSX.Element {
         <LoadingState label="Cargando tu diagnóstico…" />
       )}
     </PageShell>
+  );
+}
+
+/**
+ * The wizard has no main navigation, but the user can always go back to the
+ * panel: the drafts stay in this tab, so the panel offers to continue.
+ */
+function WizardHeaderActions(): JSX.Element {
+  return (
+    <>
+      {/* Short on phones: the descriptor, this link and the account menu share one row. */}
+      <Link
+        to={paths.panel}
+        aria-label="Volver al panel"
+        className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+      >
+        <span className="sm:hidden">Panel</span>
+        <span className="hidden sm:inline">Volver al panel</span>
+      </Link>
+      <UserMenu />
+    </>
   );
 }

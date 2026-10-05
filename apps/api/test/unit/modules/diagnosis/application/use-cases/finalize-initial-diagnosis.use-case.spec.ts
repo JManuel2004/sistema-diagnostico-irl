@@ -79,7 +79,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   beforeEach(() => {
     diagnostics = {
       findById: jest.fn(),
-      findLatestByUserId: jest.fn(),
+      deleteIncompleteByUserId: jest.fn(),
       findAllByUserId: jest.fn(),
       save: jest.fn(() => Promise.resolve(undefined)),
       modify: jest.fn(),

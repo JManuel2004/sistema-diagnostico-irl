@@ -80,6 +80,7 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
   providers: [
     applicationProvider(ListUserDiagnosesQuery, [
       DIAGNOSIS_REPOSITORY,
+      MATURITY_PROFILE_REPOSITORY,
       TAXONOMY_REPOSITORY,
     ]),
     applicationProvider(FindDiagnosisOwnerQuery, [DIAGNOSIS_REPOSITORY]),

@@ -40,10 +40,10 @@ export class DiagnosisController {
 
   @Post()
   @ApiOperation({
-    summary: 'Start (or resume) a diagnostic',
+    summary: 'Start a new diagnostic',
     description:
-      'Idempotent per user: returns the caller’s unfinished diagnostic if there is one; ' +
-      'otherwise creates one in `STARTED` (HU-04).',
+      'Deletes the caller’s unfinished diagnostics (an unfinished one is not resumed from a ' +
+      'later session) and creates a new one in `STARTED`; completed ones stay (HU-04, DIAGIRL-26).',
   })
   @ApiCreatedResponse({ type: DiagnosticResponseDto })
   @ApiErrors()

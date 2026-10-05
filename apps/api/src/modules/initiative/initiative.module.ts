@@ -79,20 +79,57 @@ import { InitiativeCatalogController } from './presentation/controllers/initiati
   ],
   providers: [
     { provide: INITIATIVE_REPOSITORY, useClass: TypeOrmInitiativeRepository },
-    { provide: INITIATIVE_PROFILE_REPOSITORY, useClass: TypeOrmInitiativeProfileRepository },
+    {
+      provide: INITIATIVE_PROFILE_REPOSITORY,
+      useClass: TypeOrmInitiativeProfileRepository,
+    },
     { provide: CONSENT_REPOSITORY, useClass: TypeOrmConsentRepository },
     { provide: CONSENT_TERMS_CATALOG, useClass: TypeOrmConsentTermsRepository },
-    { provide: INITIATIVE_CATALOG_REPOSITORY, useClass: TypeOrmInitiativeCatalogRepository },
+    {
+      provide: INITIATIVE_CATALOG_REPOSITORY,
+      useClass: TypeOrmInitiativeCatalogRepository,
+    },
     { provide: DIAGNOSTIC_OWNERSHIP, useClass: DiagnosisOwnershipAdapter },
     { provide: USER_DIAGNOSES, useClass: UserDiagnosesAdapter },
-    applicationProvider(ListMyInitiativesUseCase, [INITIATIVE_REPOSITORY, INITIATIVE_PROFILE_REPOSITORY, CONSENT_REPOSITORY, CONSENT_TERMS_CATALOG, INITIATIVE_CATALOG_REPOSITORY]),
-    applicationProvider(CreateInitiativeUseCase, [INITIATIVE_REPOSITORY, CONSENT_TERMS_CATALOG]),
-    applicationProvider(RecordConsentUseCase, [INITIATIVE_REPOSITORY, CONSENT_REPOSITORY, CONSENT_TERMS_CATALOG]),
+    applicationProvider(ListMyInitiativesUseCase, [
+      INITIATIVE_REPOSITORY,
+      INITIATIVE_PROFILE_REPOSITORY,
+      CONSENT_REPOSITORY,
+      CONSENT_TERMS_CATALOG,
+      INITIATIVE_CATALOG_REPOSITORY,
+    ]),
+    applicationProvider(CreateInitiativeUseCase, [
+      INITIATIVE_REPOSITORY,
+      CONSENT_TERMS_CATALOG,
+    ]),
+    applicationProvider(RecordConsentUseCase, [
+      INITIATIVE_REPOSITORY,
+      CONSENT_REPOSITORY,
+      CONSENT_TERMS_CATALOG,
+    ]),
     applicationProvider(GetCurrentConsentTermsUseCase, [CONSENT_TERMS_CATALOG]),
-    applicationProvider(RegisterInitiativeProfileUseCase, [INITIATIVE_REPOSITORY, INITIATIVE_PROFILE_REPOSITORY, INITIATIVE_CATALOG_REPOSITORY, CONSENT_REPOSITORY, CONSENT_TERMS_CATALOG, DIAGNOSTIC_OWNERSHIP, EVENT_PUBLISHER]),
-    applicationProvider(GetInitiativeProfileUseCase, [INITIATIVE_PROFILE_REPOSITORY, INITIATIVE_CATALOG_REPOSITORY, DIAGNOSTIC_OWNERSHIP]),
-    applicationProvider(GetInitiativeCharacterizationUseCase, [INITIATIVE_PROFILE_REPOSITORY, INITIATIVE_CATALOG_REPOSITORY]),
-    applicationProvider(ListMyDiagnosesUseCase, [USER_DIAGNOSES]),
+    applicationProvider(RegisterInitiativeProfileUseCase, [
+      INITIATIVE_REPOSITORY,
+      INITIATIVE_PROFILE_REPOSITORY,
+      INITIATIVE_CATALOG_REPOSITORY,
+      CONSENT_REPOSITORY,
+      CONSENT_TERMS_CATALOG,
+      DIAGNOSTIC_OWNERSHIP,
+      EVENT_PUBLISHER,
+    ]),
+    applicationProvider(GetInitiativeProfileUseCase, [
+      INITIATIVE_PROFILE_REPOSITORY,
+      INITIATIVE_CATALOG_REPOSITORY,
+      DIAGNOSTIC_OWNERSHIP,
+    ]),
+    applicationProvider(GetInitiativeCharacterizationUseCase, [
+      INITIATIVE_PROFILE_REPOSITORY,
+      INITIATIVE_CATALOG_REPOSITORY,
+    ]),
+    applicationProvider(ListMyDiagnosesUseCase, [
+      USER_DIAGNOSES,
+      INITIATIVE_PROFILE_REPOSITORY,
+    ]),
     applicationProvider(ListSectorsUseCase, [INITIATIVE_CATALOG_REPOSITORY]),
     applicationProvider(ListStagesUseCase, [INITIATIVE_CATALOG_REPOSITORY]),
   ],
@@ -106,6 +143,10 @@ import { InitiativeCatalogController } from './presentation/controllers/initiati
   // Consumed by RoutingModule: the characterization it scores against, and
   // the stage codes of the services' ordinal profiles. ReportingModule reads
   // the initiative profile of a diagnostic for the report.
-  exports: [GetInitiativeCharacterizationUseCase, ListStagesUseCase, GetInitiativeProfileUseCase],
+  exports: [
+    GetInitiativeCharacterizationUseCase,
+    ListStagesUseCase,
+    GetInitiativeProfileUseCase,
+  ],
 })
 export class InitiativeModule {}

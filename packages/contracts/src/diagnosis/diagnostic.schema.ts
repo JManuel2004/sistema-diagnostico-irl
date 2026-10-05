@@ -77,14 +77,31 @@ export const diagnosticSchema = z
 export type Diagnostic = z.infer<typeof diagnosticSchema>;
 
 /**
- * Lightweight summary to list the user's diagnostics (HU-03).
- * Same shape as `diagnosticSchema` but documented as a list item — keeping
- * it apart makes it easier to evolve the summary without touching the
- * detail.
+ * A completed diagnostic of the user, as the panel lists it (HU-03,
+ * DIAGIRL-26): the diagnostic plus what tells one apart from another —
+ * the initiative it was answered for, when its profile was computed and
+ * its global IRL level. Only diagnostics with a maturity profile are
+ * listed: one still in the wizard is not offered from a later session.
  */
-export const diagnosticSummarySchema = diagnosticSchema.describe(
-  'Summary of a diagnostic for the "my diagnostics" list',
-);
+export const diagnosticSummarySchema = diagnosticSchema
+  .extend({
+    initiativeName: z
+      .string()
+      .nullable()
+      .describe('Name of the initiative profile the diagnostic was answered with'),
+    profileComputedAt: z
+      .string()
+      .datetime()
+      .nullable()
+      .describe('When the maturity profile was computed'),
+    globalAverage: z
+      .number()
+      .min(1)
+      .max(9)
+      .nullable()
+      .describe('Global IRL level: simple average of the six dimension levels'),
+  })
+  .describe('Summary of a completed diagnostic for the "my diagnostics" list');
 
 export type DiagnosticSummary = z.infer<typeof diagnosticSummarySchema>;
 
@@ -107,6 +124,4 @@ export const acceptDeepAnalysisResponseSchema = z
   })
   .describe('Response to accepting the deep analysis (RF-11)');
 
-export type AcceptDeepAnalysisResponse = z.infer<
-  typeof acceptDeepAnalysisResponseSchema
->;
+export type AcceptDeepAnalysisResponse = z.infer<typeof acceptDeepAnalysisResponseSchema>;

@@ -45,7 +45,11 @@ export class Diagnosis {
    * Start a fresh diagnostic with the current framework version — the first
    * state is `STARTED`.
    */
-  static start(userId: string, frameworkVersionId: number, now: Date = new Date()): Diagnosis {
+  static start(
+    userId: string,
+    frameworkVersionId: number,
+    now: Date = new Date(),
+  ): Diagnosis {
     return new Diagnosis(
       Uuid.generate(),
       userId,
@@ -127,7 +131,10 @@ export class Diagnosis {
    * progress is complete. Recording a result again (a retried calculation)
    * only refreshes its date.
    */
-  recordDeepAnalysisResult(result: DeepAnalysisResult, now: Date = new Date()): void {
+  recordDeepAnalysisResult(
+    result: DeepAnalysisResult,
+    now: Date = new Date(),
+  ): void {
     if (result === 'recommendation') {
       this._recommendationCalculatedAt = now;
     } else {

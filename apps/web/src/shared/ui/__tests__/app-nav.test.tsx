@@ -24,6 +24,9 @@ function diagnostic(id: string, completed = true) {
     deepAnalysisCompleted: false,
     createdAt: '2026-03-01T00:00:00.000Z',
     frameworkVersion: 'KTH-IRL-1.0',
+    initiativeName: 'AgroConecta',
+    profileComputedAt: completed ? '2026-03-02T00:00:00.000Z' : null,
+    globalAverage: completed ? 3.5 : null,
   };
 }
 
@@ -81,7 +84,10 @@ describe('AppNav — navegación de las pantallas posteriores al asistente', () 
   it('marca la página actual con aria-current', () => {
     renderAt(`/diagnosticos/${CURRENT}/resultados`);
 
-    expect(screen.getByRole('link', { name: 'Resultados' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Resultados' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     expect(screen.getByRole('link', { name: 'Panel' })).not.toHaveAttribute('aria-current');
   });
 

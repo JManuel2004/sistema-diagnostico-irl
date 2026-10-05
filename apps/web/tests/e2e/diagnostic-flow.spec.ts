@@ -90,7 +90,20 @@ async function fakeBackend(page: Page): Promise<string[]> {
         calls.push('start');
         return json(route, diagnostic(), 201);
       case 'GET /diagnostics':
-        return json(route, [diagnostic()]);
+        // Only completed diagnostics are listed (DIAGIRL-26).
+        return json(
+          route,
+          completed
+            ? [
+                {
+                  ...diagnostic(),
+                  initiativeName: 'AgroConecta',
+                  profileComputedAt: '2026-09-22T15:00:00.000Z',
+                  globalAverage: 3.5,
+                },
+              ]
+            : [],
+        );
       case 'GET /diagnostics/:id':
         return json(route, diagnostic());
       case 'GET /initiative-catalog/sectors':
@@ -145,6 +158,10 @@ test('from the landing to the results through the four wizard steps', async ({ p
 
   await page.goto('/');
   await page.getByRole('link', { name: 'Iniciar diagnóstico' }).first().click();
+
+  // The panel: with no completed diagnostic, starting one is its only action.
+  await expect(page.getByRole('heading', { name: 'Aún no tienes un diagnóstico' })).toBeVisible();
+  await page.getByRole('button', { name: 'Iniciar diagnóstico' }).click();
 
   // Step 1 — the consent: accepted before any initiative data is asked for.
   await expect(

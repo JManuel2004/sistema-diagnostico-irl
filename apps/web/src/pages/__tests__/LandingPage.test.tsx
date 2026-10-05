@@ -22,30 +22,30 @@ function renderPage() {
     <MemoryRouter initialEntries={['/']}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/diagnosticos/nuevo" element={<div>INICIO_STUB</div>} />
+        <Route path="/panel" element={<div>PANEL_STUB</div>} />
       </Routes>
     </MemoryRouter>,
   );
 }
 
 describe('LandingPage — portada pública', () => {
-  it('tiene un único botón, «Iniciar diagnóstico», que lleva a /diagnosticos/nuevo', () => {
+  it('tiene un único botón, «Iniciar diagnóstico», que lleva al panel', () => {
     renderPage();
 
     const cta = screen.getAllByRole('link', { name: 'Iniciar diagnóstico' });
     expect(cta).toHaveLength(1);
-    expect(cta[0]).toHaveAttribute('href', '/diagnosticos/nuevo');
+    expect(cta[0]).toHaveAttribute('href', '/panel');
     // There is no competing action: neither «Conocer INNLAB» nor any other button.
     expect(screen.queryByRole('link', { name: 'Conocer INNLAB' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('el botón abre la pantalla de inicio, que resuelve la sesión y el diagnóstico', async () => {
+  it('el botón abre el panel, donde se elige un diagnóstico anterior o uno nuevo', async () => {
     renderPage();
 
     await userEvent.click(screen.getByRole('link', { name: 'Iniciar diagnóstico' }));
 
-    expect(screen.getByText('INICIO_STUB')).toBeInTheDocument();
+    expect(screen.getByText('PANEL_STUB')).toBeInTheDocument();
   });
 
   it('se ve sin sesión y no pide nada al servidor al montarse', () => {

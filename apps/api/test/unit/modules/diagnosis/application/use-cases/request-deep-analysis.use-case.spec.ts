@@ -27,7 +27,7 @@ describe('RequestDeepAnalysisUseCase', () => {
   beforeEach(() => {
     diagnostics = {
       findById: jest.fn(),
-      findLatestByUserId: jest.fn(),
+      deleteIncompleteByUserId: jest.fn(),
       findAllByUserId: jest.fn(),
       save: jest.fn(() => Promise.resolve(undefined)),
       modify: jest.fn(),
@@ -39,9 +39,14 @@ describe('RequestDeepAnalysisUseCase', () => {
   });
 
   it('transitions PROFILE_GENERATED to DEEP_ANALYSIS_IN_PROGRESS and publishes the event after saving', async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('PROFILE_GENERATED'));
+    diagnostics.findById.mockResolvedValueOnce(
+      diagnosisIn('PROFILE_GENERATED'),
+    );
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'usuario-demo' });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'usuario-demo',
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error('expected ok result');
@@ -49,7 +54,9 @@ describe('RequestDeepAnalysisUseCase', () => {
       diagnosticId: DIAGNOSTIC_ID,
       state: 'DEEP_ANALYSIS_IN_PROGRESS',
     });
-    expect(diagnostics.save.mock.calls[0][0].state.value).toBe('DEEP_ANALYSIS_IN_PROGRESS');
+    expect(diagnostics.save.mock.calls[0][0].state.value).toBe(
+      'DEEP_ANALYSIS_IN_PROGRESS',
+    );
 
     expect(publish).toHaveBeenCalledTimes(1);
     const [event] = publish.mock.calls[0] as [DeepAnalysisRequestedEvent];
@@ -64,9 +71,14 @@ describe('RequestDeepAnalysisUseCase', () => {
   });
 
   it("answers someone else's diagnostic as missing, without saving or publishing", async () => {
-    diagnostics.findById.mockResolvedValueOnce(diagnosisIn('PROFILE_GENERATED'));
+    diagnostics.findById.mockResolvedValueOnce(
+      diagnosisIn('PROFILE_GENERATED'),
+    );
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'otro-usuario' });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'otro-usuario',
+    });
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('expected err result');
@@ -80,7 +92,10 @@ describe('RequestDeepAnalysisUseCase', () => {
     async (state) => {
       diagnostics.findById.mockResolvedValueOnce(diagnosisIn(state));
 
-      const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'usuario-demo' });
+      const result = await useCase.execute({
+        diagnosticId: DIAGNOSTIC_ID,
+        userId: 'usuario-demo',
+      });
 
       expect(result.ok).toBe(true);
       if (!result.ok) throw new Error('expected ok result');
@@ -95,7 +110,10 @@ describe('RequestDeepAnalysisUseCase', () => {
     async (state) => {
       diagnostics.findById.mockResolvedValueOnce(diagnosisIn(state));
 
-      const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'usuario-demo' });
+      const result = await useCase.execute({
+        diagnosticId: DIAGNOSTIC_ID,
+        userId: 'usuario-demo',
+      });
 
       expect(result.ok).toBe(false);
       if (result.ok) throw new Error('expected err result');
@@ -108,7 +126,10 @@ describe('RequestDeepAnalysisUseCase', () => {
   it('returns a NotFoundError when the diagnostic does not exist', async () => {
     diagnostics.findById.mockResolvedValueOnce(null);
 
-    const result = await useCase.execute({ diagnosticId: DIAGNOSTIC_ID, userId: 'usuario-demo' });
+    const result = await useCase.execute({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'usuario-demo',
+    });
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('expected err result');

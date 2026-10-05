@@ -1,11 +1,9 @@
 import type {
   DimensionCode,
   ImbalanceClassification,
-  RoadmapDimensionTarget} from '@innlab/contracts';
-import {
-  LIKERT_LABELS,
-  type DiagnosticReport
+  RoadmapDimensionTarget,
 } from '@innlab/contracts';
+import { LIKERT_LABELS, type DiagnosticReport } from '@innlab/contracts';
 
 /**
  * What the downloadable report says, block by block, before anyone draws
