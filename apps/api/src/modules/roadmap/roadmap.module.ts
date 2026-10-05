@@ -89,5 +89,7 @@ import { IrlTaxonomyModule } from '../../shared/irl-taxonomy/irl-taxonomy.module
     },
   ],
   controllers: [RoadmapController],
+  // Consumed by ReportingModule: the saved roadmap, for the report.
+  exports: [GetScalingRoadmapUseCase],
 })
 export class RoadmapModule {}

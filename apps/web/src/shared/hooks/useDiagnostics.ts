@@ -6,9 +6,10 @@ import { useDiagnosticQuery } from './useDiagnosticQuery';
 import { getDiagnostic, listMyDiagnostics } from '@/shared/api/diagnostic.api';
 
 /**
- * One diagnostic of the user. It carries `state` and `deepAnalysisAccepted`,
- * which the backend derives: the results screen decides what to show from
- * that flag and infers nothing from the state.
+ * One diagnostic of the user. It carries `state`, `deepAnalysisAccepted` and
+ * `deepAnalysisCompleted`, which the backend derives: the results and the
+ * report decide what to show from those flags and infer nothing from the
+ * state.
  */
 export function useDiagnostic(diagnosticId: string | undefined) {
   return useDiagnosticQuery(diagnosticId, queryKeys.diagnostic.detail, getDiagnostic, {

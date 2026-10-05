@@ -141,7 +141,12 @@ import { InitiativeCatalogController } from './presentation/controllers/initiati
     InitiativeCatalogController,
   ],
   // Consumed by RoutingModule: the characterization it scores against, and
-  // the stage codes of the services' ordinal profiles.
-  exports: [GetInitiativeCharacterizationUseCase, ListStagesUseCase],
+  // the stage codes of the services' ordinal profiles. ReportingModule reads
+  // the initiative profile of a diagnostic for the report.
+  exports: [
+    GetInitiativeCharacterizationUseCase,
+    ListStagesUseCase,
+    GetInitiativeProfileUseCase,
+  ],
 })
 export class InitiativeModule {}

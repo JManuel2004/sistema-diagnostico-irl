@@ -33,7 +33,7 @@ Implemented: three-layer engine with adjustment-only services, trace, idempotent
 
 ## What it exposes
 
-- **Exported read queries** (`routing.module.ts`), consumed by `roadmap/` behind its `PhaseServiceAdvisorPort`: `EvaluatePhaseServiceQuery` (the service of a phase) and `GetServiceDetailsQuery` (the card of services by id).
+- **Exported read queries** (`routing.module.ts`), consumed by `roadmap/` behind its `PhaseServiceAdvisorPort`: `EvaluatePhaseServiceQuery` (the service of a phase) and `GetServiceDetailsQuery` (the card of services by id); and `GetRecommendationUseCase`, consumed by `reporting/` for the full report.
 - **Events it publishes:** `PortfolioRecommendationCalculatedEvent` (`shared/kernel/events/`); `diagnosis/` hears it to complete the deep analysis.
 - **Events it listens to:** `DeepAnalysisRequestedEvent`.
 - **HTTP (read only):** `GET diagnostics/:id/recommendation` and `GET diagnostics/:id/recommendation/trace`. Contracts in Swagger (`/api/docs`). Each recommended service carries its card — `subtitle`, `description`, `scope`, `band` and `tier` — read live from `portfolio_service` and `service_tier` (not snapshotted into the recommendation: it describes the service, not the result).

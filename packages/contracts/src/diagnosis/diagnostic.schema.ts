@@ -61,6 +61,11 @@ export const diagnosticSchema = z
       .describe(
         'Whether the user already accepted the deep analysis — derived from the state by the backend',
       ),
+    deepAnalysisCompleted: z
+      .boolean()
+      .describe(
+        'Whether both results of the deep analysis are saved (DEEP_ANALYSIS_COMPLETE): the full report can be read and downloaded — derived from the state by the backend',
+      ),
     frameworkVersion: z
       .string()
       .min(1)

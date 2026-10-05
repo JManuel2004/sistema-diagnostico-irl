@@ -91,17 +91,20 @@ const RECOMMENDATION = {
   generatedAt: '2026-03-06T09:00:00.000Z',
 };
 
-function diagnostic(accepted: boolean, completed = true) {
+function diagnostic(accepted: boolean, completed = true, analysisCompleted = false) {
   return {
     id: ID,
     userId: 'user-1',
-    state: accepted
-      ? 'DEEP_ANALYSIS_IN_PROGRESS'
-      : completed
-        ? 'PROFILE_GENERATED'
-        : 'WITH_INITIATIVE',
+    state: analysisCompleted
+      ? 'DEEP_ANALYSIS_COMPLETE'
+      : accepted
+        ? 'DEEP_ANALYSIS_IN_PROGRESS'
+        : completed
+          ? 'PROFILE_GENERATED'
+          : 'WITH_INITIATIVE',
     completed,
     deepAnalysisAccepted: accepted,
+    deepAnalysisCompleted: analysisCompleted,
     createdAt: '2026-03-01T00:00:00.000Z',
     frameworkVersion: 'KTH-IRL-1.0',
   };
@@ -123,13 +126,17 @@ function problem(code: string, status: number) {
 /** Backend handlers; `requests` counts the calls to the deep-analysis endpoints. */
 function backend(opts: {
   accepted: boolean;
+  /** Both results saved: the full report exists. */
+  analysisCompleted?: boolean;
   roadmap?: 'ok' | 'missing';
   recommendation?: 'ok' | 'missing';
 }) {
   const requests = { roadmap: 0, recommendation: 0, deepAnalysis: 0 };
   server.use(
     mswHttp.get('*/diagnostics/:id/profile', () => HttpResponse.json(PROFILE)),
-    mswHttp.get('*/diagnostics/:id', () => HttpResponse.json(diagnostic(opts.accepted))),
+    mswHttp.get('*/diagnostics/:id', () =>
+      HttpResponse.json(diagnostic(opts.accepted, true, opts.analysisCompleted ?? false)),
+    ),
     mswHttp.get('*/diagnostics/:id/roadmap', () => {
       requests.roadmap += 1;
       return opts.roadmap === 'missing'
@@ -234,6 +241,15 @@ describe('ResultsPage — sin análisis profundo', () => {
     expect(
       screen.queryByRole('heading', { name: /Desequilibrios y alertas/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it('no ofrece el reporte completo', async () => {
+    backend({ accepted: false });
+
+    renderPage();
+
+    await screen.findByRole('group', { name: /Cuello de botella/ });
+    expect(screen.queryByRole('link', { name: 'Ver reporte completo' })).not.toBeInTheDocument();
   });
 
   it('no muestra el roadmap ni la recomendación, y ni siquiera los pide', async () => {
@@ -394,6 +410,27 @@ describe('ResultsPage — con análisis profundo', () => {
     // exactly one is marked, with the same blue underline as the header.
     expect(current).toHaveLength(1);
     expect(current[0]).toHaveClass('aria-[current=location]:border-primary');
+  });
+
+  it('con el análisis profundo completo, lleva al reporte completo', async () => {
+    backend({ accepted: true, analysisCompleted: true });
+
+    renderPage();
+
+    const card = await screen.findByRole('region', { name: 'El reporte completo' });
+    expect(within(card).getByRole('link', { name: 'Ver reporte completo' })).toHaveAttribute(
+      'href',
+      `/diagnosticos/${ID}/reporte`,
+    );
+  });
+
+  it('mientras el análisis profundo no está completo, no ofrece el reporte', async () => {
+    backend({ accepted: true });
+
+    renderPage();
+
+    await screen.findByRole('heading', { name: 'Consultoría Experta' });
+    expect(screen.queryByRole('link', { name: 'Ver reporte completo' })).not.toBeInTheDocument();
   });
 
   it('ya no ofrece aceptar el análisis profundo', async () => {

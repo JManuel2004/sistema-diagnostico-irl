@@ -37,6 +37,7 @@ import { FindDiagnosisOwnerQuery } from './application/use-cases/find-diagnosis-
 import { GetDiagnosisProgressQuery } from './application/use-cases/get-diagnosis-progress.query.js';
 import { ListUserDiagnosesQuery } from './application/use-cases/list-user-diagnoses.query.js';
 import { GetDiagnosisUseCase } from './application/use-cases/get-diagnosis.use-case.js';
+import { GetDiagnosisAnswersQuery } from './application/use-cases/get-diagnosis-answers.query.js';
 import { ApplyInitiativeToDiagnosisUseCase } from './application/use-cases/apply-initiative-to-diagnosis.use-case.js';
 import { InitiativeRegisteredListener } from './infrastructure/messaging/initiative-registered.listener.js';
 import { RecordDeepAnalysisResultUseCase } from './application/use-cases/record-deep-analysis-result.use-case.js';
@@ -142,6 +143,12 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
       DIAGNOSIS_REPOSITORY,
       TAXONOMY_REPOSITORY,
     ]),
+    applicationProvider(GetDiagnosisAnswersQuery, [
+      DIAGNOSIS_REPOSITORY,
+      ANSWER_SHEET_REPOSITORY,
+      STATEMENT_CATALOG_REPOSITORY,
+      TAXONOMY_REPOSITORY,
+    ]),
     applicationProvider(ApplyInitiativeToDiagnosisUseCase, [
       DIAGNOSIS_REPOSITORY,
     ]),
@@ -177,8 +184,13 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     ListUserDiagnosesQuery,
     // Consumed by RoutingModule/RoadmapModule: the recommendation and
     // roadmap engines read the profile through this read use case, never
-    // reaching the tables directly.
+    // reaching the tables directly. ReportingModule reads it for the report.
     GetMaturityProfileUseCase,
+    // Consumed by ReportingModule: the caller's diagnostic and whether its
+    // deep analysis is complete, before the report is gathered.
+    GetDiagnosisUseCase,
+    // Consumed by ReportingModule: what the user answered, by dimension.
+    GetDiagnosisAnswersQuery,
   ],
 })
 export class DiagnosisModule {}

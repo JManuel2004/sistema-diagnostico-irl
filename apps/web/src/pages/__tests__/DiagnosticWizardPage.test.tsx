@@ -120,6 +120,7 @@ function backend(start: Partial<Backend> = {}): Backend {
         state: state.completed ? 'PROFILE_GENERATED' : 'STARTED',
         completed: state.completed,
         deepAnalysisAccepted: false,
+        deepAnalysisCompleted: false,
         frameworkVersion: 'KTH-IRL-1.0',
         createdAt: '2026-03-01T00:00:00.000Z',
       }),

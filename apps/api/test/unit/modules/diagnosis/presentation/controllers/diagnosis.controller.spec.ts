@@ -60,7 +60,11 @@ describe('DiagnosisController', () => {
     mockUseCase.execute.mockResolvedValueOnce(Result.err(error));
 
     await expect(
-      controller.finalize({ id: DIAGNOSTIC_ID }, { answers: [] }, { id: 'user-1' }),
+      controller.finalize(
+        { id: DIAGNOSTIC_ID },
+        { answers: [] },
+        { id: 'user-1' },
+      ),
     ).rejects.toThrow(error);
   });
   it('starts a diagnostic owned by the authenticated user', async () => {
@@ -70,6 +74,7 @@ describe('DiagnosisController', () => {
       state: 'STARTED' as const,
       completed: false,
       deepAnalysisAccepted: false,
+      deepAnalysisCompleted: false,
       createdAt: '2026-01-01T00:00:00.000Z',
       frameworkVersion: 'KTH-IRL-1.0',
     };
@@ -88,6 +93,7 @@ describe('DiagnosisController', () => {
       state: 'DEEP_ANALYSIS_COMPLETE' as const,
       completed: true,
       deepAnalysisAccepted: true,
+      deepAnalysisCompleted: true,
       createdAt: '2026-01-01T00:00:00.000Z',
       frameworkVersion: 'KTH-IRL-1.0',
     };
@@ -139,7 +145,10 @@ describe('DiagnosisController', () => {
       mockDeepAnalysis.execute.mockResolvedValueOnce(Result.err(error));
 
       await expect(
-        controller.requestDeepAnalysisFor({ id: DIAGNOSTIC_ID }, { id: 'user-1' }),
+        controller.requestDeepAnalysisFor(
+          { id: DIAGNOSTIC_ID },
+          { id: 'user-1' },
+        ),
       ).rejects.toThrow(error);
     });
   });

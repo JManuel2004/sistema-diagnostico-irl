@@ -13,5 +13,7 @@ export const paths = {
       ? `/diagnosticos/${diagnosticId}/asistente`
       : `/diagnosticos/${diagnosticId}/asistente/${step}`,
   results: (diagnosticId: string): string => `/diagnosticos/${diagnosticId}/resultados`,
+  /** The full report; only once the deep analysis is complete. */
+  report: (diagnosticId: string): string => `/diagnosticos/${diagnosticId}/reporte`,
   initiative: (diagnosticId: string): string => `/diagnosticos/${diagnosticId}/iniciativa`,
 } as const;

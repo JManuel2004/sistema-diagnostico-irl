@@ -21,6 +21,7 @@ function diagnostic(id: string, completed = true) {
     state: completed ? 'PROFILE_GENERATED' : 'WITH_INITIATIVE',
     completed,
     deepAnalysisAccepted: false,
+    deepAnalysisCompleted: false,
     createdAt: '2026-03-01T00:00:00.000Z',
     frameworkVersion: 'KTH-IRL-1.0',
     initiativeName: 'AgroConecta',

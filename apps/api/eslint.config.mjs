@@ -29,7 +29,7 @@ import boundaries from 'eslint-plugin-boundaries';
  */
 
 /** Modules on the definitive four-layer naming. */
-const DEFINITIVE_LAYER_CONTEXTS = 'modules/diagnosis,modules/initiative,modules/routing,modules/roadmap,shared/irl-taxonomy,shared/identity';
+const DEFINITIVE_LAYER_CONTEXTS = 'modules/diagnosis,modules/initiative,modules/routing,modules/roadmap,modules/reporting,shared/irl-taxonomy,shared/identity';
 
 /** Framework packages. Banned outright in `domain/`. */
 const FRAMEWORK_PACKAGES = [
@@ -56,6 +56,7 @@ const IO_PACKAGES = [
   'node:https',
   'net',
   'node:net',
+  'pdfkit',
 ];
 
 export default [

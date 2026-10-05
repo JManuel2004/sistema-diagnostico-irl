@@ -23,6 +23,7 @@ Implemented: transitive closure, targets with their explanation, balance, phases
 `ScalingRoadmap` (aggregate), `DependencyGraph`, `RoadmapParameters`; services `RoadmapClosureService`, `TargetLevelCalculatorService` (including `demandedBy`), `RoadmapBalancingService`, `PhasePlannerService`, `TopologicalLayeringService` (reference order).
 
 ## What it exposes
+- **Exported read query:** `GetScalingRoadmapUseCase`, consumed by `reporting/` for the full report.
 - **Events it publishes:** `ScalingRoadmapCalculatedEvent` (`shared/kernel/events/`); `diagnosis/` hears it to complete the deep analysis.
 - **Events it listens to:** `DeepAnalysisRequestedEvent`.
 - **HTTP:** `GET diagnostics/:id/roadmap` (reads the stored roadmap). Contract in Swagger (`/api/docs`). Each dimension is named with the catalog's `name` and `shortName`, and each phase's service carries its card from the portfolio catalog, its tier's tagline and description included (`GetScalingRoadmapUseCase`); the frontend keeps no names of its own. `finalLevels` and `balanced` describe the end of the route: the interface compares them with the profile of today (the global level, each dimension, each pair) and classifies nothing on its own.

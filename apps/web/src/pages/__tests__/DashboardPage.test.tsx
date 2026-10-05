@@ -40,6 +40,7 @@ function diagnostic(id: string, state = 'PROFILE_GENERATED') {
     state,
     completed: state === 'PROFILE_GENERATED' || deep,
     deepAnalysisAccepted: deep,
+    deepAnalysisCompleted: deep,
     createdAt: '2026-03-01T00:00:00.000Z',
     frameworkVersion: 'KTH-IRL-1.0',
   };
@@ -116,7 +117,11 @@ describe('DashboardPage — panel de iniciativa', () => {
       server.use(
         mswHttp.get('*/diagnostics', () =>
           HttpResponse.json([
-            summary(NEWEST, { state: 'DEEP_ANALYSIS_COMPLETE', deepAnalysisAccepted: true }),
+            summary(NEWEST, {
+              state: 'DEEP_ANALYSIS_COMPLETE',
+              deepAnalysisAccepted: true,
+              deepAnalysisCompleted: true,
+            }),
             summary(OLDER, {
               initiativeName: 'Café Andino',
               profileComputedAt: '2026-08-12T15:00:00.000Z',

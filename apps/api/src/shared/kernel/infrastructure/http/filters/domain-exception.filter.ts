@@ -107,4 +107,6 @@ const STATUS_BY_CODE: Readonly<Record<string, number>> = {
   ROADMAP_NOT_GENERATED: HttpStatus.CONFLICT,
   ROADMAP_CALCULATION_FAILED: HttpStatus.INTERNAL_SERVER_ERROR,
   ROADMAP_GRAPH_HAS_CYCLE: HttpStatus.INTERNAL_SERVER_ERROR,
+  // Full report: it exists only once the deep analysis is complete.
+  REPORT_NOT_AVAILABLE: HttpStatus.CONFLICT,
 };
