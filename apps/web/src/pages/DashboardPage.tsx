@@ -21,13 +21,16 @@ import { RETRY_LATER } from '@/shared/lib/copy';
  * It is where the institutional descriptor leads on the screens with
  * navigation. It shows the initiative of the latest diagnostic with results
  * and the links to correct it and to see those results. If the user left a
- * diagnostic halfway, it offers to continue it in the wizard. The history
+ * diagnostic halfway, it offers to continue it in the wizard. When phase 1
+ * is already done and nothing is unfinished, it offers a new diagnostic:
+ * the previous one stays, and the new one starts at the first step of the wizard. The history
  * of past diagnostics has its space reserved but is not built here: it is a
  * future user story.
  *
  * Hierarchy: a single primary button per screen. With a diagnostic in
  * progress it is «Continuar diagnóstico» and «Ver resultados» drops to
- * secondary; without one, «Ver resultados» is the main action.
+ * secondary; without one, «Ver resultados» is the main action and «Iniciar
+ * un nuevo diagnóstico» stays secondary.
  */
 export default function DashboardPage(): JSX.Element {
   const diagnostics = useMyDiagnostics();
@@ -149,6 +152,36 @@ export default function DashboardPage(): JSX.Element {
               </Link>
             </nav>
           </>
+        )}
+
+        {completed && !inProgress && (
+          <section
+            aria-labelledby="dashboard-new-diagnostic"
+            className="border-border flex flex-col gap-5 rounded-2xl border p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:p-8"
+          >
+            <div>
+              <h2
+                id="dashboard-new-diagnostic"
+                className="text-foreground text-xl font-bold sm:text-[1.375rem]"
+              >
+                Un diagnóstico nuevo
+              </h2>
+              <p className="text-muted-foreground mt-1.5 max-w-prose text-base leading-relaxed">
+                Evalúa otra iniciativa, o una nueva versión de la misma. El anterior se conserva.
+              </p>
+            </div>
+            <UserContextGate>
+              <Button
+                variant="secondary"
+                size="lg"
+                className="w-full shrink-0 sm:w-auto"
+                onClick={beginDiagnostic}
+                disabled={start.isPending}
+              >
+                {start.isPending ? 'Preparando tu diagnóstico…' : 'Iniciar un nuevo diagnóstico'}
+              </Button>
+            </UserContextGate>
+          </section>
         )}
 
         {/*
