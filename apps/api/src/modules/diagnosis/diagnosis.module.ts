@@ -154,6 +154,7 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
     InitiativeRegisteredListener,
     applicationProvider(RecordDeepAnalysisResultUseCase, [
       DIAGNOSIS_REPOSITORY,
+      EVENT_PUBLISHER,
     ]),
     DeepAnalysisResultListener,
     {
