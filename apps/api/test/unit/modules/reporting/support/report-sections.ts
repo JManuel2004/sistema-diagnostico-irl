@@ -1,5 +1,6 @@
 import type {
   Diagnostic,
+  DimensionAnswers,
   Initiative,
   MaturityProfileResponse,
   RecommendationResponse,
@@ -186,4 +187,19 @@ export function aRoadmap(
       { code: 'TRL', name: NAMES.TRL[0], shortName: NAMES.TRL[1] },
     ],
   };
+}
+
+/** The 48 answers: each dimension's statements, its value and a justification on the first. */
+export function someAnswers(): DimensionAnswers[] {
+  return CODES.map((code, d) => ({
+    dimensionCode: code,
+    name: NAMES[code][0],
+    answers: Array.from({ length: 8 }, (_, i) => ({
+      statementId: String(d * 8 + i + 1),
+      sequence: i + 1,
+      text: `Afirmación ${String(i + 1)} de ${NAMES[code][1]}`,
+      value: ((i + d) % 5) + 1,
+      justification: i === 0 ? `Justificación de ${NAMES[code][1]}` : null,
+    })),
+  }));
 }

@@ -1,5 +1,6 @@
 import type {
   Diagnostic,
+  DiagnosticAnswers,
   Initiative,
   MaturityProfileResponse,
   RecommendationResponse,
@@ -28,6 +29,10 @@ export interface ReportSourcesPort {
     diagnosticId: string,
     userId: string,
   ): Promise<Result<Initiative, DomainError>>;
+  answers(
+    diagnosticId: string,
+    userId: string,
+  ): Promise<Result<DiagnosticAnswers, DomainError>>;
   profile(
     diagnosticId: string,
   ): Promise<Result<MaturityProfileResponse, DomainError>>;

@@ -131,3 +131,23 @@ export async function postParsed<T>(
   const { data } = await http.post<unknown>(url, body);
   return schema.parse(data);
 }
+
+/** A file served by our backend, with the name it suggests saving it under. */
+export interface DownloadedFile {
+  readonly blob: Blob;
+  /** From `Content-Disposition`; `null` when the response does not say. */
+  readonly fileName: string | null;
+}
+
+/**
+ * GET a binary file of our backend (a report), with the session's token
+ * like every other call: a plain link could not carry it. An error answer
+ * arrives as a blob, not as the problem document, so it keeps its status
+ * but not its `code`.
+ */
+export async function getFile(url: string): Promise<DownloadedFile> {
+  const response = await http.get<Blob>(url, { responseType: 'blob' });
+  const disposition: unknown = response.headers['content-disposition'];
+  const match = typeof disposition === 'string' ? /filename="?([^";]+)"?/.exec(disposition) : null;
+  return { blob: response.data, fileName: match?.[1] ?? null };
+}

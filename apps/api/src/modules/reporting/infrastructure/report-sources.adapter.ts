@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import type {
   Diagnostic,
+  DiagnosticAnswers,
   Initiative,
   MaturityProfileResponse,
   RecommendationResponse,
   RoadmapResponse,
 } from '@innlab/contracts';
 import { GetDiagnosisUseCase } from '../../diagnosis/application/use-cases/get-diagnosis.use-case.js';
+import { GetDiagnosisAnswersQuery } from '../../diagnosis/application/use-cases/get-diagnosis-answers.query.js';
 import { GetMaturityProfileUseCase } from '../../diagnosis/application/use-cases/get-maturity-profile.use-case.js';
 import { GetInitiativeProfileUseCase } from '../../initiative/application/use-cases/get-initiative-profile.use-case.js';
 import { GetRecommendationUseCase } from '../../routing/application/use-cases/get-recommendation.use-case.js';
@@ -25,6 +27,7 @@ export class ReportSourcesAdapter implements ReportSourcesPort {
   constructor(
     private readonly getDiagnosis: GetDiagnosisUseCase,
     private readonly getInitiativeProfile: GetInitiativeProfileUseCase,
+    private readonly getAnswers: GetDiagnosisAnswersQuery,
     private readonly getMaturityProfile: GetMaturityProfileUseCase,
     private readonly getRecommendation: GetRecommendationUseCase,
     private readonly getRoadmap: GetScalingRoadmapUseCase,
@@ -42,6 +45,13 @@ export class ReportSourcesAdapter implements ReportSourcesPort {
     userId: string,
   ): Promise<Result<Initiative, DomainError>> {
     return this.getInitiativeProfile.execute(diagnosticId, userId);
+  }
+
+  answers(
+    diagnosticId: string,
+    userId: string,
+  ): Promise<Result<DiagnosticAnswers, DomainError>> {
+    return this.getAnswers.execute({ diagnosticId, userId });
   }
 
   profile(

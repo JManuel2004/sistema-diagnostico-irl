@@ -7,6 +7,7 @@ import { NotFoundError } from '../../../../../../src/shared/kernel/domain/errors
 import { Result } from '../../../../../../src/shared/kernel/domain/result.js';
 import {
   aDiagnostic,
+  someAnswers,
   anInitiative,
   aProfile,
   aRecommendation,
@@ -30,6 +31,12 @@ describe('GetDiagnosticReportUseCase', () => {
       initiative: () => {
         reads.push('initiative');
         return Promise.resolve(Result.ok(anInitiative()));
+      },
+      answers: () => {
+        reads.push('answers');
+        return Promise.resolve(
+          Result.ok({ diagnosticId: DIAGNOSTIC_ID, dimensions: someAnswers() }),
+        );
       },
       profile: () => {
         reads.push('profile');
@@ -58,6 +65,21 @@ describe('GetDiagnosticReportUseCase', () => {
     );
     expect(report.roadmap.phases).toHaveLength(1);
     expect(report.frameworkVersion).toBe('KTH-IRL-1.0');
+  });
+
+  it('carries what the user answered to each statement, by dimension', async () => {
+    const result = await new GetDiagnosticReportUseCase(sources).execute(QUERY);
+
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.value.answers.map((d) => d.dimensionCode)).toEqual([
+      'TRL',
+      'CRL',
+      'BRL',
+      'IPRL',
+      'TmRL',
+      'FRL',
+    ]);
+    expect(result.value.answers.flatMap((d) => d.answers)).toHaveLength(48);
   });
 
   it('carries the attribution of the KTH framework and its license (RNF-09)', async () => {

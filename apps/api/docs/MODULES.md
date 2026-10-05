@@ -10,7 +10,7 @@ Deliberately short. Anything that can be derived from the code is **not** docume
 | `modules/initiative` | Supporting — initiatives, their consent history, the profile of each diagnostic | [README](../src/modules/initiative/README.md) |
 | `modules/routing` | Core — portfolio recommendation engine | [README](../src/modules/routing/README.md) |
 | `modules/roadmap` | Core — scaling roadmap | [README](../src/modules/roadmap/README.md) |
-| `modules/reporting` | Supporting — the full report of a diagnostic, gathered from the saved results | [README](../src/modules/reporting/README.md) |
+| `modules/reporting` | Supporting — the full report of a diagnostic, gathered from the saved results, on screen and as a PDF | [README](../src/modules/reporting/README.md) |
 | `shared/irl-taxonomy` | Shared Kernel — read-only IRL framework catalog | [README](../src/shared/irl-taxonomy/README.md) |
 | `shared/identity` | Anticorruption Layer — Cognito + INNLAB Core | [README](../src/shared/identity/README.md) |
 | `shared/kernel` | Generic primitives, cross-module events, global technical layers | — |
@@ -24,7 +24,7 @@ Deliberately short. Anything that can be derived from the code is **not** docume
 - **Exported read queries**: a module consumes another's exported query only for read-only data, behind a port declared in the consumer and implemented by an adapter in its `infrastructure/`:
   - `diagnosis` → `GetMaturityProfileUseCase` for `routing` and `roadmap`; `FindDiagnosisOwnerQuery` for `initiative`, `routing` and `roadmap` (each verifies the caller owns the diagnostic); `GetDiagnosisProgressQuery` (whether the deep analysis is accepted) and `ListUserDiagnosesQuery` for `initiative`.
   - `initiative` → `GetInitiativeCharacterizationUseCase` and `ListStagesUseCase` for `routing`.
-  - `reporting` reads the saved results of a diagnostic for the full report ([ADR 0018](../../../docs/architecture/decisions/0018-report-gathered-from-saved-results.md)): `GetDiagnosisUseCase` and `GetMaturityProfileUseCase` from `diagnosis`, `GetInitiativeProfileUseCase` from `initiative`, `GetRecommendationUseCase` from `routing`, `GetScalingRoadmapUseCase` from `roadmap`.
+  - `reporting` reads the saved results of a diagnostic for the full report ([ADR 0018](../../../docs/architecture/decisions/0018-report-gathered-from-saved-results.md)): `GetDiagnosisUseCase`, `GetDiagnosisAnswersQuery` and `GetMaturityProfileUseCase` from `diagnosis`, `GetInitiativeProfileUseCase` from `initiative`, `GetRecommendationUseCase` from `routing`, `GetScalingRoadmapUseCase` from `roadmap`.
   - `shared/irl-taxonomy` → `TAXONOMY_REPOSITORY` for everyone.
 - Never entity objects across a module boundary; never a direct call into another module's process.
 

@@ -11,7 +11,8 @@ export interface GetDiagnosticReportQuery {
 }
 
 /**
- * The full report of a diagnostic (RF-16 / HU-23): its initiative, its
+ * The full report of a diagnostic (RF-16 / HU-23): its initiative, what the
+ * user answered to each statement, its
  * maturity profile with gaps, imbalances and critical state, the INNLAB
  * recommendation and the roadmap, with the attribution of the KTH framework.
  *
@@ -37,13 +38,16 @@ export class GetDiagnosticReportUseCase {
       return Result.err(new ReportNotAvailableError(diagnosticId));
     }
 
-    const [initiative, profile, recommendation, roadmap] = await Promise.all([
-      this.sources.initiative(diagnosticId, userId),
-      this.sources.profile(diagnosticId),
-      this.sources.recommendation(diagnosticId, userId),
-      this.sources.roadmap(diagnosticId, userId),
-    ]);
+    const [initiative, answers, profile, recommendation, roadmap] =
+      await Promise.all([
+        this.sources.initiative(diagnosticId, userId),
+        this.sources.answers(diagnosticId, userId),
+        this.sources.profile(diagnosticId),
+        this.sources.recommendation(diagnosticId, userId),
+        this.sources.roadmap(diagnosticId, userId),
+      ]);
     if (!initiative.ok) return initiative;
+    if (!answers.ok) return answers;
     if (!profile.ok) return profile;
     if (!recommendation.ok) return recommendation;
     if (!roadmap.ok) return roadmap;
@@ -56,6 +60,7 @@ export class GetDiagnosticReportUseCase {
         roadmap.value.generatedAt,
       ),
       initiative: initiative.value,
+      answers: answers.value.dimensions,
       profile: profile.value,
       recommendation: recommendation.value,
       roadmap: roadmap.value,

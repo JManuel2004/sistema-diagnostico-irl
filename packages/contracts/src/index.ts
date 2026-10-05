@@ -26,6 +26,7 @@ export * from './diagnosis/asymmetry.schema.js';
 export * from './diagnosis/imbalance.schema.js';
 export * from './diagnosis/profile-response.schema.js';
 export * from './diagnosis/diagnostic.schema.js';
+export * from './diagnosis/given-answers.schema.js';
 
 // ── identity (shared/identity) ────────────────────────────────────────
 export * from './identity/core-session.schema.js';

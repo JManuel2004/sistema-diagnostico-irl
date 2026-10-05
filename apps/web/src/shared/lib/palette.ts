@@ -48,4 +48,16 @@ export const PALETTE = {
     'tmrl-ink': '#8A5A00',
     'frl-ink': '#8C7818',
   },
+
+  // How much the user agreed with a statement, 1 to 5: one hue (Azul
+  // Icesi), light to dark, each step visibly apart and the lightest still
+  // clear of white (checked as an ordinal ramp). A cell always shows its
+  // number too, so the shade is never the only signal.
+  likert: {
+    1: '#ADADF5',
+    2: '#8888F0',
+    3: '#5454E9',
+    4: '#3B3BC4',
+    5: '#25258A',
+  },
 } as const;

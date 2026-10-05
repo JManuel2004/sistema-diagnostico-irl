@@ -1,9 +1,30 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { DiagnosticReport, ReportAttribution } from '@innlab/contracts';
+import {
+  DIMENSION_CODES,
+  type DiagnosticReport,
+  type DimensionAnswers,
+  type DimensionCode,
+  type GivenAnswer,
+  type ReportAttribution,
+} from '@innlab/contracts';
 import { InitiativeResponseDto } from '../../../../initiative/presentation/controllers/dto/initiative.response.dto.js';
 import { MaturityProfileResponseDto } from '../../../../diagnosis/presentation/controllers/dto/diagnosis.response.dto.js';
 import { RecommendationResponseDto } from '../../../../routing/presentation/controllers/dto/recommendation.response.dto.js';
 import { RoadmapResponseDto } from '../../../../roadmap/presentation/controllers/dto/roadmap.response.dto.js';
+
+class GivenAnswerDto implements GivenAnswer {
+  @ApiProperty({ example: '12' }) statementId!: string;
+  @ApiProperty({ minimum: 1, maximum: 8 }) sequence!: number;
+  @ApiProperty() text!: string;
+  @ApiProperty({ minimum: 1, maximum: 5 }) value!: number;
+  @ApiProperty({ type: String, nullable: true }) justification!: string | null;
+}
+
+class DimensionAnswersDto implements DimensionAnswers {
+  @ApiProperty({ enum: DIMENSION_CODES }) dimensionCode!: DimensionCode;
+  @ApiProperty() name!: string;
+  @ApiProperty({ type: [GivenAnswerDto] }) answers!: GivenAnswerDto[];
+}
 
 class ReportAttributionDto implements ReportAttribution {
   @ApiProperty({ example: 'KTH Innovation Readiness Level (IRL)' })
@@ -35,6 +56,11 @@ export class DiagnosticReportResponseDto implements DiagnosticReport {
   completedAt!: string;
   @ApiProperty({ type: InitiativeResponseDto })
   initiative!: InitiativeResponseDto;
+  @ApiProperty({
+    type: [DimensionAnswersDto],
+    description: 'What the user answered to each statement, by dimension',
+  })
+  answers!: DimensionAnswersDto[];
   @ApiProperty({ type: MaturityProfileResponseDto })
   profile!: MaturityProfileResponseDto;
   @ApiProperty({ type: RecommendationResponseDto })
