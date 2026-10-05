@@ -53,6 +53,21 @@ export interface InnLabCoreConfig {
   readonly internalKey: string;
 }
 
+/**
+ * Mail of the finished report to INNLAB. Empty destination or host means
+ * the notification is off: the analysis and the on-screen report do not
+ * depend on a mail server.
+ */
+export interface MailConfig {
+  readonly enabled: boolean;
+  readonly to: string;
+  readonly from: string;
+  readonly host: string;
+  readonly port: number;
+  readonly user: string;
+  readonly password: string;
+}
+
 export interface AppConfig {
   readonly nodeEnv: NodeEnv;
   readonly isProduction: boolean;
@@ -62,6 +77,7 @@ export interface AppConfig {
   readonly database: DatabaseConfig;
   readonly cognito: CognitoConfig;
   readonly innlabCore: InnLabCoreConfig;
+  readonly mail: MailConfig;
   /** `AUTH_BYPASS=true` opens a local session so a deploy can skip INNLAB login. */
   readonly authBypass: boolean;
   /** Signs that local session. Ignored while `authBypass` is false. */
@@ -99,11 +115,26 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       timeoutMs: Number(env.INNLAB_API_TIMEOUT ?? 5000),
       internalKey: requireString(env.CORE_INTERNAL_KEY, 'CORE_INTERNAL_KEY'),
     },
+    mail: mailConfig(env),
     authBypass: env.AUTH_BYPASS === 'true',
     authBypassSecret:
       env.AUTH_BYPASS_SECRET !== undefined && env.AUTH_BYPASS_SECRET !== ''
         ? env.AUTH_BYPASS_SECRET
         : 'irl-diagnostic-bypass-signing-key',
+  };
+}
+
+function mailConfig(env: NodeJS.ProcessEnv): MailConfig {
+  const to = env.REPORT_NOTIFY_TO ?? '';
+  const host = env.SMTP_HOST ?? '';
+  return {
+    enabled: to !== '' && host !== '',
+    to,
+    from: env.SMTP_FROM ?? 'noreply@innlab.icesi.edu.co',
+    host,
+    port: Number(env.SMTP_PORT ?? 1025),
+    user: env.SMTP_USER ?? '',
+    password: env.SMTP_PASS ?? '',
   };
 }
 

@@ -26,6 +26,15 @@ export const envValidationSchema = Joi.object({
     .valid('trace', 'debug', 'info', 'warn', 'error')
     .default('info'),
 
+  // Where the finished report is mailed. Both empty disables the
+  // notification; the report stays available on screen.
+  REPORT_NOTIFY_TO: Joi.string().email().allow('').optional(),
+  SMTP_HOST: Joi.string().allow('').optional(),
+  SMTP_PORT: Joi.number().default(1025),
+  SMTP_USER: Joi.string().allow('').optional(),
+  SMTP_PASS: Joi.string().allow('').optional(),
+  SMTP_FROM: Joi.string().allow('').optional(),
+
   // Local session for when INNLAB login is down. Off unless the value is
   // exactly `true`. The secret only signs that session; leave it empty to
   // use the built-in one.
