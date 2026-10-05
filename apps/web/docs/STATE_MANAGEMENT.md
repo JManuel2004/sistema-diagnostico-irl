@@ -66,6 +66,7 @@ Rules that hold for both:
 - **`partialize` lists what is persisted**; derived values are not stored.
 - **`sessionStorage`, not `localStorage`:** the draft must survive a reload within the session, and must not leak to the next person on a shared computer. Long-lived drafts would be server-side.
 - **Lifetime:** each draft is cleared once what it holds is saved on the server (the initiative once registered, the questionnaire once processed), and dies with the tab.
+- **They also say which diagnostic this tab is filling in** (DIAGIRL-26). The panel reads the owner of the two drafts and offers «Continuar diagnóstico» only while that diagnostic is unfinished. A diagnostic whose tab was closed has no draft anywhere, so it is not offered, and starting a new one deletes it in the backend.
 - **Subscribe to a slice**, never to the whole store: `useQuestionnaireDraftStore((s) => s.answers[statementId])`.
 
 Adding a third store needs a reason that fits none of the other rows of the matrix.
