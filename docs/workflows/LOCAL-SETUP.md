@@ -121,10 +121,10 @@ Open `apps/web/.env.local`:
 
 ### 5a. Database
 
-The repo ships a single `docker-compose.yml` at the root, with one service (`postgres`). The root scripts wrap it:
+The repo ships a single `docker-compose.yml` at the root, with Postgres and a local mail inbox. The root scripts wrap it:
 
 ```bash
-pnpm db:up          # docker compose up -d postgres
+pnpm db:up          # docker compose up -d postgres mailpit
 pnpm db:down        # docker compose down
 ```
 
@@ -134,7 +134,26 @@ Check they're healthy:
 docker compose ps
 ```
 
-You should see `irl-postgres` with status `running` (and `healthy` after ~10s). There is no mail catcher: the system sends no email.
+You should see `irl-postgres` with status `running` (and `healthy` after ~10s) and `irl-mailpit` on ports 1025 (SMTP) and 8025 (its web inbox).
+
+### 5a-bis. The report mail
+
+When a leader finishes the deep analysis, the API mails the full PDF. Locally that mail stays on this machine: open <http://localhost:8025>. It does not reach Gmail or INNLAB.
+
+`apps/api/.env.local` needs the catcher, or the API boots with mail disabled and sends nothing:
+
+```dotenv
+REPORT_NOTIFY_TO=prueba@innlab.local
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=noreply@innlab.icesi.edu.co
+```
+
+`REPORT_NOTIFY_TO` is only the label shown in Mailpit. Any address works. Leaving it or `SMTP_HOST` empty turns the mail off; the report still opens on screen. A deployed server replaces these six lines with its real SMTP and the INNLAB inbox. Do not commit that file.
+
+To see one message: sign in at <http://localhost:5173>, finish phase 1, accept the deep analysis, and when the report is ready refresh <http://localhost:8025>. Phase 1 alone sends nothing. A mail failure leaves the report on screen.
 
 ### 5b. Cognito credentials — first-time only
 
@@ -230,6 +249,7 @@ Open the apps:
 - API docs: <http://localhost:3000/api/docs> should render Swagger UI (JSON at `/api/docs/json`).
 - Frontend: <http://localhost:5173> shows the public landing page. «Iniciar diagnóstico» sends you to the INNLAB Hub for SSO; sign in with an account of the shared INNLAB Cognito pool.
 - After sign-in you come back to the wizard of a new (or resumed) diagnostic.
+- Mail inbox: <http://localhost:8025> lists the PDF sent when a deep analysis finishes. It stays empty after phase 1 alone.
 
 ## Day-to-day after first setup
 
