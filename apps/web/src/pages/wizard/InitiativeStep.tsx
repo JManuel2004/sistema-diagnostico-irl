@@ -126,7 +126,8 @@ export function InitiativeStep({
         void navigate(wizardPath(diagnosticId, 'consentimiento'), { replace: true });
         return;
       }
-      const needsAcceptance = initiativeId === null || (!registered && chosen?.consentCurrent !== true);
+      const needsAcceptance =
+        initiativeId === null || (!registered && chosen?.consentCurrent !== true);
       notify.error(
         acceptedNow
           ? `Tu aceptación quedó registrada, pero no fue posible guardar la iniciativa. ${RETRY_LATER}`
@@ -162,18 +163,17 @@ export function InitiativeStep({
         onSubmit={(command) => {
           void handleSubmit(command);
         }}
+        secondaryAction={
+          registered ? undefined : (
+            <Link
+              to={wizardPath(diagnosticId, 'consentimiento')}
+              className={buttonVariants({ variant: 'ghost' })}
+            >
+              Atrás
+            </Link>
+          )
+        }
       />
-
-      {!registered && (
-        <div className="mt-6">
-          <Link
-            to={wizardPath(diagnosticId, 'consentimiento')}
-            className={buttonVariants({ variant: 'ghost' })}
-          >
-            Atrás
-          </Link>
-        </div>
-      )}
     </>
   );
 }

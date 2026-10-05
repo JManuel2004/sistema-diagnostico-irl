@@ -8,6 +8,8 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import type { Initiative, InitiativeSummary } from '@innlab/contracts';
 import { createTestQueryClient } from '@/test/render-with-client';
+import { clearSession, saveSession } from '@/shared/auth/session';
+import { meContextHandler } from '@/test/fixtures/me-context';
 import {
   CONSENT_TERMS,
   INITIATIVE_ID,
@@ -200,14 +202,31 @@ describe('DiagnosticWizardPage — el asistente', () => {
       expect(screen.queryByRole('navigation', { name: 'Principal' })).not.toBeInTheDocument();
     });
 
-    it('el descriptor institucional lleva a la portada, no al panel', async () => {
+    it('con la sesión iniciada, el descriptor institucional lleva al panel, no a la portada', async () => {
+      backend();
+      // With a session the account menu asks for the user's context.
+      server.use(meContextHandler());
+      saveSession({ token: 'id-token', accessToken: 'access-token' });
+
+      try {
+        renderWizard();
+
+        expect(
+          await screen.findByRole('link', { name: /Inicio · Diagnóstico IRL/ }),
+        ).toHaveAttribute('href', '/panel');
+      } finally {
+        clearSession();
+      }
+    });
+
+    it('ofrece volver al panel desde cualquier paso', async () => {
       backend();
 
       renderWizard();
 
-      expect(await screen.findByRole('link', { name: /Inicio · Diagnóstico IRL/ })).toHaveAttribute(
+      expect(await screen.findByRole('link', { name: 'Volver al panel' })).toHaveAttribute(
         'href',
-        '/',
+        '/panel',
       );
     });
 
@@ -323,6 +342,19 @@ describe('DiagnosticWizardPage — el asistente', () => {
         'true',
       );
       expect(screen.getByRole('alert')).toHaveTextContent('Revisa los campos marcados');
+    });
+
+    it('«Atrás» y «Continuar» van en la misma fila, como en los demás pasos', async () => {
+      backend();
+      const user = userEvent.setup();
+
+      renderWizard();
+      await acceptAndOpenForm(user);
+
+      const back = screen.getByRole('link', { name: 'Atrás' });
+      const next = screen.getByRole('button', { name: 'Continuar' });
+      expect(back.parentElement).toBe(next.parentElement);
+      expect(back.parentElement).toHaveClass('sm:justify-between');
     });
 
     it('lo escrito sobrevive a ir y volver entre la iniciativa y el consentimiento', async () => {

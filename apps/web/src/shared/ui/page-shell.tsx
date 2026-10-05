@@ -1,5 +1,6 @@
 import type { JSX, ReactNode } from 'react';
 import { paths } from '@/shared/lib/paths';
+import { hasStoredSession } from '@/shared/auth/session';
 import { AppNav } from './app-nav';
 import { BrandDescriptor } from './brand-descriptor';
 import { cn } from '@/shared/lib/utils';
@@ -11,8 +12,8 @@ import { cn } from '@/shared/lib/utils';
  *  - A header with the INNLAB institutional descriptor (Icesi lock-up),
  *    the main navigation right after it (`showNavigation`, only on results
  *    and panel) and an optional slot for actions (profile, session). With
- *    navigation the descriptor leads to the panel; without it, to the
- *    landing. Under `md` the navigation drops to a tab row of its own:
+ *    a session the descriptor leads to the panel, wizard included; without
+ *    one, to the landing. Under `md` the navigation drops to a tab row of its own:
  *    descriptor, links and actions do not fit in one row at 360–390px.
  *  - A main container with the widths defined by `DESIGN.md`:
  *      reading  → max-w-3xl (~768px), questions and long text.
@@ -63,7 +64,10 @@ export function PageShell({
           )}
         >
           <div className="flex h-16 items-center md:h-full">
-            <BrandDescriptor to={showNavigation ? paths.panel : paths.landing} />
+            {/* With a session, «home» is the panel — also inside the wizard. */}
+            <BrandDescriptor
+              to={showNavigation || hasStoredSession() ? paths.panel : paths.landing}
+            />
           </div>
           {showNavigation ? (
             <AppNav className="border-border order-last -mx-4 basis-[calc(100%+2rem)] border-t px-4 sm:-mx-8 sm:basis-[calc(100%+4rem)] sm:px-8 md:order-none md:mx-0 md:mr-auto md:basis-auto md:self-stretch md:border-t-0 md:px-0" />
