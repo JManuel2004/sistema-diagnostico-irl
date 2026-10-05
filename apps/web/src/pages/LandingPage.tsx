@@ -13,10 +13,11 @@ import { hasStoredSession } from '@/shared/auth/session';
  * Institutional landing.
  *
  * It is public and carries no navigation: it is seen without a session, and
- * its only button, «Iniciar diagnóstico», leads to `/diagnosticos/nuevo`.
- * That route is protected: with a session it goes straight to the wizard,
- * and without one it goes through the INNLAB sign-in and continues on
- * return, without the user pressing again.
+ * its only button, «Iniciar diagnóstico», leads to the panel (`/panel`).
+ * That route is protected: without a session it goes through the INNLAB
+ * sign-in and continues on return, without the user pressing again. The
+ * panel is where the user chooses between a completed diagnostic and a new
+ * one (DIAGIRL-26); with none completed, starting is its only action.
  *
  * Composition:
  *  - A left-aligned hero (the manual's alignment rule), with the headline
@@ -110,10 +111,7 @@ export default function LandingPage(): JSX.Element {
           </p>
 
           <div className="pt-2">
-            <Link
-              to={paths.startDiagnostic}
-              className={`${buttonVariants({ size: 'lg' })} w-full sm:w-auto`}
-            >
+            <Link to={paths.panel} className={`${buttonVariants({ size: 'lg' })} w-full sm:w-auto`}>
               Iniciar diagnóstico
               <ArrowRight className="size-5" aria-hidden="true" />
             </Link>

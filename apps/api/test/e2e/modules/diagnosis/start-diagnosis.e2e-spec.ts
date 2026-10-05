@@ -1,6 +1,16 @@
-import { beforeAll, beforeEach, afterAll, describe, expect, it } from '@jest/globals';
+import {
+  beforeAll,
+  beforeEach,
+  afterAll,
+  describe,
+  expect,
+  it,
+} from '@jest/globals';
 import { Test } from '@nestjs/testing';
-import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  type NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { DataSource } from 'typeorm';
 import request from 'supertest';
 import nock from 'nock';
@@ -13,13 +23,13 @@ import { authenticateAgainst } from '../../support/authenticated-app.js';
 /**
  * E2E — start a diagnostic (HU-04).
  *
- * `POST /api/v1/diagnostics` hands the authenticated user a diagnostic in
- * `STARTED` (consent and initiative are the next steps) and is idempotent
- * while one is unfinished: it resumes it instead of creating another. Needs
- * the migrated database.
+ * `POST /api/v1/diagnostics` hands the authenticated user a new diagnostic
+ * in `STARTED` (consent and initiative are the next steps). An unfinished
+ * one from before is not resumed: it is deleted (DIAGIRL-26). Completed
+ * diagnostics stay. Needs the migrated database.
  *
  * The e2e suites run in parallel over the same database: this one uses its
- * own user so it never resumes another suite's diagnostic.
+ * own user so it never touches another suite's diagnostic.
  */
 describe('Iniciar diagnóstico (e2e)', () => {
   const userId = randomUUID();
@@ -28,9 +38,10 @@ describe('Iniciar diagnóstico (e2e)', () => {
   let agent: ReturnType<typeof request.agent>;
 
   async function cleanUp(): Promise<void> {
-    await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE cognito_user_id = $1`, [
-      userId,
-    ]);
+    await dataSource.query(
+      `DELETE FROM irl_diagnostic.diagnostic WHERE cognito_user_id = $1`,
+      [userId],
+    );
   }
 
   async function start() {
@@ -57,7 +68,9 @@ describe('Iniciar diagnóstico (e2e)', () => {
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
 
-    agent = request.agent(app.getHttpServer()).set('Authorization', authenticateAgainst(app, userId));
+    agent = request
+      .agent(app.getHttpServer())
+      .set('Authorization', authenticateAgainst(app, userId));
     dataSource = app.get(DataSource);
   }, 60_000);
 
@@ -79,49 +92,44 @@ describe('Iniciar diagnóstico (e2e)', () => {
     expect(diagnostic.completed).toBe(false);
   });
 
-  it('el diagnóstico queda guardado y aparece en el listado del usuario', async () => {
+  it('el diagnóstico queda guardado, pero no se lista mientras no tenga perfil', async () => {
     const { id } = await start();
 
     const list = await agent.get('/api/v1/diagnostics').expect(200);
 
-    expect((list.body as { id: string }[]).map((d) => d.id)).toContain(id);
+    expect(await countDiagnostics()).toBe(1);
+    expect((list.body as { id: string }[]).map((d) => d.id)).not.toContain(id);
   });
 
-  // Bug: each click created a new diagnostic and orphaned the previous one.
-  describe('mientras haya un diagnóstico sin terminar', () => {
-    it('lo reanuda en lugar de crear otro', async () => {
-      const a = await start();
-      const b = await start();
-      const c = await start();
-
-      expect(b.id).toBe(a.id);
-      expect(c.id).toBe(a.id);
-      expect(await countDiagnostics()).toBe(1);
-    });
-
-    it('lo devuelve en el estado en que quedó, no lo reinicia', async () => {
-      const { id } = await start();
-      await dataSource.query(
-        `UPDATE irl_diagnostic.diagnostic SET state = 'WITH_INITIATIVE' WHERE id = $1`,
-        [id],
-      );
-
-      const resumed = await start();
-
-      expect(resumed.id).toBe(id);
-      expect(resumed.state).toBe('WITH_INITIATIVE');
-    });
-  });
-
-  describe('cuando el último diagnóstico ya tiene sus resultados', () => {
-    it.each(['PROFILE_GENERATED', 'DEEP_ANALYSIS_COMPLETE'])(
-      'crea uno nuevo si el anterior está en %s',
+  // DIAGIRL-26: an unfinished diagnostic of an earlier session is not offered.
+  describe('si hay un diagnóstico sin terminar', () => {
+    it.each(['STARTED', 'WITH_INITIATIVE'])(
+      'lo elimina y crea uno nuevo desde el comienzo (estaba en %s)',
       async (state) => {
         const previous = await start();
-        await dataSource.query(`UPDATE irl_diagnostic.diagnostic SET state = $2 WHERE id = $1`, [
-          previous.id,
-          state,
-        ]);
+        await dataSource.query(
+          `UPDATE irl_diagnostic.diagnostic SET state = $2 WHERE id = $1`,
+          [previous.id, state],
+        );
+
+        const fresh = await start();
+
+        expect(fresh.id).not.toBe(previous.id);
+        expect(fresh.state).toBe('STARTED');
+        expect(await countDiagnostics()).toBe(1);
+      },
+    );
+  });
+
+  describe('cuando ya tiene diagnósticos con resultados', () => {
+    it.each(['PROFILE_GENERATED', 'DEEP_ANALYSIS_COMPLETE'])(
+      'crea uno nuevo y conserva el anterior en %s',
+      async (state) => {
+        const previous = await start();
+        await dataSource.query(
+          `UPDATE irl_diagnostic.diagnostic SET state = $2 WHERE id = $1`,
+          [previous.id, state],
+        );
 
         const fresh = await start();
 
@@ -132,7 +140,7 @@ describe('Iniciar diagnóstico (e2e)', () => {
     );
   });
 
-  it('cada usuario reanuda el suyo', async () => {
+  it('iniciar uno nuevo no elimina el diagnóstico sin terminar de otro usuario', async () => {
     const other = randomUUID();
     const otherAgent = request
       .agent(app.getHttpServer())
@@ -142,10 +150,12 @@ describe('Iniciar diagnóstico (e2e)', () => {
     try {
       const res = await otherAgent.post('/api/v1/diagnostics').expect(201);
       expect(diagnosticSchema.parse(res.body).id).not.toBe(mine.id);
+      expect(await countDiagnostics()).toBe(1);
     } finally {
-      await dataSource.query(`DELETE FROM irl_diagnostic.diagnostic WHERE cognito_user_id = $1`, [
-        other,
-      ]);
+      await dataSource.query(
+        `DELETE FROM irl_diagnostic.diagnostic WHERE cognito_user_id = $1`,
+        [other],
+      );
     }
   });
 

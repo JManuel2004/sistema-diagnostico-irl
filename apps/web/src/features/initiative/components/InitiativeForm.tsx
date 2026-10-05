@@ -25,6 +25,11 @@ export interface InitiativeFormProps {
   readonly onSubmit: (command: InitiativeProfileFields) => void;
   readonly isSubmitting: boolean;
   readonly submitLabel?: string;
+  /**
+   * A secondary action shown at the other end of the submit row (the
+   * wizard's «Atrás»), so the form's footer reads like every other step's.
+   */
+  readonly secondaryAction?: ReactNode;
   /** Called with the current field values, so leaving the step keeps the draft. */
   readonly onDraftChange?: (values: Values) => void;
 }
@@ -49,6 +54,7 @@ export function InitiativeForm({
   isSubmitting,
   submitLabel = 'Guardar y continuar',
   onDraftChange,
+  secondaryAction,
 }: InitiativeFormProps): JSX.Element {
   const {
     control,
@@ -201,8 +207,14 @@ export function InitiativeForm({
         <Alert tone="critical" title="Revisa los campos marcados antes de continuar." />
       )}
 
-      <div className="border-border border-t pt-8">
-        <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={isSubmitting}>
+      <div className="border-border flex flex-col-reverse gap-4 border-t pt-8 sm:flex-row sm:items-center sm:justify-between">
+        {secondaryAction}
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full sm:ml-auto sm:w-auto"
+          disabled={isSubmitting}
+        >
           {isSubmitting ? 'Guardando…' : submitLabel}
         </Button>
       </div>

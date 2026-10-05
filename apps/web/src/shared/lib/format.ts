@@ -6,6 +6,11 @@ export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString(LOCALE, { dateStyle: 'long', timeStyle: 'short' });
 }
 
+/** «22 de septiembre de 2026»: the day of a result, in a list. */
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(LOCALE, { dateStyle: 'long' });
+}
+
 /** «3,5»: one decimal with a comma; an exact integer goes without decimals. */
 export function formatOneDecimal(value: number): string {
   return Number.isInteger(value)

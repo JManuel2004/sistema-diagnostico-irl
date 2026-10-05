@@ -15,8 +15,8 @@ import { RETRY_LATER } from '@/shared/lib/copy';
  * **continue on their own**, without pressing the landing's button again.
  * With a session it passes straight through.
  *
- * On opening it asks the backend for the diagnostic, which resumes the
- * user's unfinished one or creates one, and opens the wizard. That this
+ * On opening it asks the backend for a new diagnostic (the user's
+ * unfinished ones are deleted: DIAGIRL-26) and opens the wizard. That this
  * action happens on entry is what is wanted here (it is what the user just
  * asked for with their click), unlike accepting the deep analysis, which
  * never fires on its own. The `ref` prevents StrictMode's double firing in
