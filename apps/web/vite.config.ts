@@ -1,10 +1,27 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { copyFileSync } from 'node:fs';
 import path from 'node:path';
+import { defineConfig, type Plugin } from 'vite';
+import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 
+/** Vercel serves this file when a route has no static asset, so /panel and the rest open the app. */
+function spaFallback404(): Plugin {
+  return {
+    name: 'spa-fallback-404',
+    apply: 'build',
+    closeBundle() {
+      const dist = path.resolve(__dirname, 'dist');
+      copyFileSync(path.join(dist, 'index.html'), path.join(dist, '404.html'));
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), visualizer({ filename: 'dist/stats.html', gzipSize: true, brotliSize: true })],
+  plugins: [
+    react(),
+    spaFallback404(),
+    visualizer({ filename: 'dist/stats.html', gzipSize: true, brotliSize: true }),
+  ],
   resolve: {
     alias: {
       '@innlab/contracts': path.resolve(__dirname, '../../packages/contracts/src/index.ts'),
