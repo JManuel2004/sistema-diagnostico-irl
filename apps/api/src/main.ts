@@ -12,11 +12,21 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module.js';
 import {
   APP_CONFIG_NAMESPACE,
+  loadAppConfig,
   type AppConfig,
 } from './config/configuration.js';
+import { prepareDatabase } from './shared/kernel/infrastructure/database/prepare-database.js';
 import { configureApp } from './shared/kernel/infrastructure/http/configure-app.js';
 
 async function bootstrap(): Promise<void> {
+  // Render's free plan has no Shell. Production applies the schema and
+  // the catalog here, before the process listens. Local and test boots
+  // keep using `db:migration:run` and `db:seed`.
+  const bootConfig = loadAppConfig();
+  if (bootConfig.isProduction) {
+    await prepareDatabase(bootConfig.database.url);
+  }
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ logger: false }),
