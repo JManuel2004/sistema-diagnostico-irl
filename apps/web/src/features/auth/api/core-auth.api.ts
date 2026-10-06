@@ -1,16 +1,17 @@
 import axios from 'axios';
 import { coreSessionSchema, type CoreSession } from '@innlab/contracts';
+import { ApiError, http } from '@/shared/api/http';
 
 /**
  * Client for the INNLAB Core API (`innlab-core-api`).
  *
- * Its own instance, separate from `shared/api/http`: it points at another
- * host (Core, not our backend) and must not carry the 401 interceptor,
- * which would trigger a redirect loop exactly while the session is being
- * established.
+ * Introspection and logout still go straight to Core. The code exchange
+ * does not: Core refuses the deployed site's origin, so the SPA asks our
+ * API and the API calls Core from the server.
  *
- * The code exchange is done by the FRONTEND directly against Core. Our
- * backend never sees the `code`.
+ * This instance stays free of the 401 interceptor. The exchange uses
+ * `http` but treats every failure itself, before a dead session could
+ * send the callback screen back to the Hub.
  */
 const coreApi = axios.create({
   baseURL: String(import.meta.env.VITE_CORE_API_URL ?? ''),
@@ -28,26 +29,25 @@ export async function exchangeSsoCode(code: string): Promise<CoreSession> {
   let data: unknown;
 
   try {
-    ({ data } = await coreApi.get<unknown>('/auth/sso/exchange', {
+    ({ data } = await http.get<unknown>('/auth/sso/exchange', {
       params: { code },
     }));
   } catch (cause) {
-    // axios's raw message ("Request failed with status code 404") ends up
-    // printed on the screen the user sees, and says nothing actionable.
-    // The cases Core really distinguishes are translated.
-    if (axios.isAxiosError(cause)) {
-      if (cause.response === undefined) {
+    // The raw axios message ends up on the screen and says nothing
+    // actionable. The cases Core really distinguishes are translated.
+    if (cause instanceof ApiError) {
+      if (cause.status === undefined || cause.status === 502 || cause.status === 503) {
         throw new Error(
           'No pudimos contactar con INNLAB. Revisa tu conexión e inténtalo de nuevo.',
         );
       }
-      if (cause.response.status === 404) {
+      if (cause.status === 404) {
         throw new Error(
           'El enlace de acceso ya se usó o caducó (son válidos 30 segundos). Inicia sesión de nuevo.',
         );
       }
       throw new Error(
-        `INNLAB rechazó el inicio de sesión (error ${String(cause.response.status)}).`,
+        `INNLAB rechazó el inicio de sesión (error ${String(cause.status)}).`,
       );
     }
     throw cause;

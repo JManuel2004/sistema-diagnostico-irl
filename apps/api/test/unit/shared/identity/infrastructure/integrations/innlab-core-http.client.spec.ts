@@ -81,4 +81,27 @@ describe('InnlabCoreHttpClient', () => {
       'INNLAB Core no respondio',
     );
   });
+
+  it('exchanges an SSO code without sending the internal key', async () => {
+    const fetchMock = mockFetch({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ token: 'id-token', accessToken: 'access-token' }),
+    });
+
+    await expect(client.exchange('code-123')).resolves.toEqual({
+      token: 'id-token',
+      accessToken: 'access-token',
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://core.innlab.test/auth/sso/exchange?code=code-123');
+    expect(init.headers).toEqual({ accept: 'application/json' });
+  });
+
+  it('turns a spent SSO code into a not-found error', async () => {
+    mockFetch({ ok: false, status: 404 });
+
+    await expect(client.exchange('spent')).rejects.toThrow(NotFoundError);
+  });
 });

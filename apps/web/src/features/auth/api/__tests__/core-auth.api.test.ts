@@ -7,6 +7,7 @@ import { exchangeSsoCode, isSessionAlive, logoutFromCore } from '../core-auth.ap
 // file the tests would inherit the real Core URL of whoever runs them and
 // would go out to the internet.
 const CORE = 'https://core-api.test';
+const API = 'http://localhost:3000/api/v1';
 
 const server = setupServer();
 
@@ -23,7 +24,7 @@ afterAll(() => {
 describe('exchangeSsoCode', () => {
   it('canjea el código por ambos tokens', async () => {
     server.use(
-      http.get(`${CORE}/auth/sso/exchange`, ({ request }) => {
+      http.get(`${API}/auth/sso/exchange`, ({ request }) => {
         expect(new URL(request.url).searchParams.get('code')).toBe('code-123');
         return HttpResponse.json({ token: 'id-token', accessToken: 'access-token' });
       }),
@@ -37,7 +38,7 @@ describe('exchangeSsoCode', () => {
 
   it('rechaza una respuesta sin accessToken', async () => {
     server.use(
-      http.get(`${CORE}/auth/sso/exchange`, () => HttpResponse.json({ token: 'solo-id' })),
+      http.get(`${API}/auth/sso/exchange`, () => HttpResponse.json({ token: 'solo-id' })),
     );
 
     await expect(exchangeSsoCode('code-123')).rejects.toThrow('sin accessToken');
@@ -49,14 +50,14 @@ describe('exchangeSsoCode', () => {
     ['un cuerpo que no es un objeto', 'ok'],
     ['un cuerpo nulo', null],
   ])('rechaza una respuesta con %s en vez de fiarse del tipo', async (_case, body) => {
-    server.use(http.get(`${CORE}/auth/sso/exchange`, () => HttpResponse.json(body)));
+    server.use(http.get(`${API}/auth/sso/exchange`, () => HttpResponse.json(body)));
 
     await expect(exchangeSsoCode('code-123')).rejects.toThrow(/sin accessToken|inválido/);
   });
 
   it('acepta una respuesta sin id_token y devuelve solo los campos del contrato', async () => {
     server.use(
-      http.get(`${CORE}/auth/sso/exchange`, () =>
+      http.get(`${API}/auth/sso/exchange`, () =>
         HttpResponse.json({ accessToken: 'access-token', extra: 'ignorado' }),
       ),
     );
@@ -69,7 +70,7 @@ describe('exchangeSsoCode', () => {
 
   it('explica en claro que el código ya se usó o caducó', async () => {
     server.use(
-      http.get(`${CORE}/auth/sso/exchange`, () => new HttpResponse(null, { status: 404 })),
+      http.get(`${API}/auth/sso/exchange`, () => new HttpResponse(null, { status: 404 })),
     );
 
     // This text ends up on screen: it cannot be the "Request failed with
@@ -78,14 +79,14 @@ describe('exchangeSsoCode', () => {
   });
 
   it('distingue un fallo de red de un rechazo de Core', async () => {
-    server.use(http.get(`${CORE}/auth/sso/exchange`, () => HttpResponse.error()));
+    server.use(http.get(`${API}/auth/sso/exchange`, () => HttpResponse.error()));
 
     await expect(exchangeSsoCode('code-123')).rejects.toThrow(/No pudimos contactar/);
   });
 
   it('reporta el status cuando Core rechaza por otra razón', async () => {
     server.use(
-      http.get(`${CORE}/auth/sso/exchange`, () => new HttpResponse(null, { status: 500 })),
+      http.get(`${API}/auth/sso/exchange`, () => new HttpResponse(null, { status: 500 })),
     );
 
     await expect(exchangeSsoCode('code-123')).rejects.toThrow(/error 500/);

@@ -14,7 +14,7 @@ export type { CoreSession };
  *   app without session → {CORE_URL}/auth/sso?redirect=<our callback url>
  *     → the Hub authenticates against Cognito if needed
  *     → comes back to our app with ?code=xxxx  (single use, TTL 30s)
- *     → GET {CORE_API_URL}/auth/sso/exchange?code=xxxx
+ *     → GET {API}/auth/sso/exchange?code=xxxx  (our API calls Core)
  *     → { token: <id_token>, accessToken: <access_token> }
  *
  * `token` is the id_token and does NOT authenticate: Core requires

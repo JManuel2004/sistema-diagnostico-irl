@@ -1,7 +1,9 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { HttpException, Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
+import { coreSessionSchema, type CoreSession } from '@innlab/contracts';
 import { appConfig } from '../../../../config/configuration.js';
 import { NotFoundError } from '../../../../shared/kernel/domain/errors/index.js';
+import type { SsoExchangePort } from '../../application/ports/sso-exchange.port.js';
 import type { UserContext } from '../../domain/entities/user-context.vo.js';
 import type { UserContextPort } from '../../domain/repositories/user-context.repository.port.js';
 
@@ -27,12 +29,57 @@ import type { UserContextPort } from '../../domain/repositories/user-context.rep
  * timeout is all the machinery they need.
  */
 @Injectable()
-export class InnlabCoreHttpClient implements UserContextPort {
+export class InnlabCoreHttpClient implements UserContextPort, SsoExchangePort {
   private readonly logger = new Logger(InnlabCoreHttpClient.name);
 
   constructor(
     @Inject(appConfig.KEY) private readonly config: ConfigType<typeof appConfig>,
   ) {}
+
+  /**
+   * Public SSO exchange. No internal key: Core authenticates the one-time
+   * code itself. A cold Core on Render can take longer than the context
+   * calls, so this wait is at least 20 seconds.
+   */
+  async exchange(code: string): Promise<CoreSession> {
+    const url = `${this.config.innlabCore.baseUrl}/auth/sso/exchange?code=${encodeURIComponent(code)}`;
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'GET',
+        headers: { accept: 'application/json' },
+        signal: AbortSignal.timeout(Math.max(this.config.innlabCore.timeoutMs, 20_000)),
+      });
+    } catch (cause) {
+      this.logger.error('INNLAB Core unreachable while exchanging an SSO code');
+      throw new HttpException('INNLAB Core no respondio al canje del codigo', 502, {
+        cause,
+      });
+    }
+
+    if (response.status === 404) {
+      throw new NotFoundError('sso code');
+    }
+
+    if (!response.ok) {
+      this.logger.error(
+        `INNLAB Core answered ${String(response.status)} for the SSO exchange`,
+      );
+      throw new HttpException(
+        `INNLAB Core respondio ${String(response.status)} al canje del codigo`,
+        response.status,
+      );
+    }
+
+    const body: unknown = await response.json();
+    const session = coreSessionSchema.safeParse(body);
+    if (!session.success) {
+      throw new HttpException('INNLAB Core devolvio una sesion invalida', 502);
+    }
+
+    return session.data;
+  }
 
   async getUserContext(userId: string): Promise<UserContext> {
     return this.get<UserContext>(

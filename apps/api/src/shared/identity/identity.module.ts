@@ -1,6 +1,9 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
+import { SSO_EXCHANGE_PORT } from './application/ports/sso-exchange.port.js';
+import type { SsoExchangePort } from './application/ports/sso-exchange.port.js';
+import { ExchangeSsoCodeUseCase } from './application/use-cases/exchange-sso-code.use-case.js';
 import { ResolveUserContextUseCase } from './application/use-cases/resolve-user-context.use-case.js';
 import { USER_CONTEXT_CACHE } from './domain/repositories/user-context.cache.port.js';
 import type { UserContextCachePort } from './domain/repositories/user-context.cache.port.js';
@@ -11,6 +14,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard.js';
 import { InnlabCoreHttpClient } from './infrastructure/integrations/innlab-core-http.client.js';
 import { CognitoJwtStrategy } from './infrastructure/strategies/cognito-jwt.strategy.js';
 import { MeController } from './presentation/controllers/me.controller.js';
+import { SsoExchangeController } from './presentation/controllers/sso-exchange.controller.js';
 
 /**
  * Identity bounded context — the ecosystem session (HU-01 / RF-00).
@@ -31,7 +35,14 @@ import { MeController } from './presentation/controllers/me.controller.js';
   imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
   providers: [
     CognitoJwtStrategy,
-    { provide: USER_CONTEXT_PORT, useClass: InnlabCoreHttpClient },
+    InnlabCoreHttpClient,
+    { provide: USER_CONTEXT_PORT, useExisting: InnlabCoreHttpClient },
+    { provide: SSO_EXCHANGE_PORT, useExisting: InnlabCoreHttpClient },
+    {
+      provide: ExchangeSsoCodeUseCase,
+      useFactory: (core: SsoExchangePort) => new ExchangeSsoCodeUseCase(core),
+      inject: [SSO_EXCHANGE_PORT],
+    },
     { provide: USER_CONTEXT_CACHE, useClass: InMemoryUserContextCache },
     {
       provide: ResolveUserContextUseCase,
@@ -41,6 +52,6 @@ import { MeController } from './presentation/controllers/me.controller.js';
     },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
-  controllers: [MeController],
+  controllers: [MeController, SsoExchangeController],
 })
 export class IdentityModule {}
