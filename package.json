@@ -20,7 +20,7 @@
     "typecheck": "pnpm -r typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
-    "db:up": "docker compose -f docker-compose.yml up -d postgres",
+    "db:up": "docker compose -f docker-compose.yml up -d postgres mailpit",
     "db:down": "docker compose -f docker-compose.yml down",
     "prepare": "husky"
   },

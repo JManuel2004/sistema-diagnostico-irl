@@ -47,7 +47,7 @@ pnpm --filter @innlab/contracts build         # build shared contracts first
 cp apps/api/.env.example apps/api/.env.local  # fill in real values
 cp apps/web/.env.example apps/web/.env.local
 
-pnpm db:up                                    # start postgres in docker (port 5433)
+pnpm db:up                                    # postgres (port 5433) and the local mail inbox (1025, http://localhost:8025)
 
 pnpm --filter @innlab/api db:migration:run    # the single schema migration
 pnpm --filter @innlab/api db:seed             # IRL catalogs and routing configuration
