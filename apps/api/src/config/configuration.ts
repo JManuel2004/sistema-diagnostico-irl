@@ -62,6 +62,10 @@ export interface AppConfig {
   readonly database: DatabaseConfig;
   readonly cognito: CognitoConfig;
   readonly innlabCore: InnLabCoreConfig;
+  /** `AUTH_BYPASS=true` opens a local session so a deploy can skip INNLAB login. */
+  readonly authBypass: boolean;
+  /** Signs that local session. Ignored while `authBypass` is false. */
+  readonly authBypassSecret: string;
 }
 
 /**
@@ -95,6 +99,11 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       timeoutMs: Number(env.INNLAB_API_TIMEOUT ?? 5000),
       internalKey: requireString(env.CORE_INTERNAL_KEY, 'CORE_INTERNAL_KEY'),
     },
+    authBypass: env.AUTH_BYPASS === 'true',
+    authBypassSecret:
+      env.AUTH_BYPASS_SECRET !== undefined && env.AUTH_BYPASS_SECRET !== ''
+        ? env.AUTH_BYPASS_SECRET
+        : 'irl-diagnostic-bypass-signing-key',
   };
 }
 

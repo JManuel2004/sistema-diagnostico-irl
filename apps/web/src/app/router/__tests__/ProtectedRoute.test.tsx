@@ -22,7 +22,12 @@ function renderGuarded(): void {
 }
 
 const redirectToSso = vi.hoisted(() => vi.fn());
+const fetchAuthBypass = vi.hoisted(() => vi.fn());
 vi.mock('@features/auth', () => ({ useSessionLiveness: () => undefined }));
+vi.mock('@features/auth/api/auth-mode.api', () => ({
+  fetchAuthBypass,
+  openBypassSession: vi.fn(),
+}));
 
 vi.mock('@/shared/auth/session', async (importOriginal) => {
   const actual = await importOriginal<typeof SessionModule>();
@@ -33,6 +38,8 @@ describe('ProtectedRoute', () => {
   beforeEach(() => {
     window.localStorage.clear();
     redirectToSso.mockReset();
+    fetchAuthBypass.mockReset();
+    fetchAuthBypass.mockResolvedValue(false);
   });
 
   it('renderiza la pantalla protegida cuando hay sesión', () => {
@@ -61,5 +68,16 @@ describe('ProtectedRoute', () => {
     await waitFor(() => {
       expect(redirectToSso).toHaveBeenCalledWith('/diagnosticos/42/cuestionario');
     });
+  });
+
+  it('con el interruptor encendido ofrece continuar sin INNLAB y no redirige solo', async () => {
+    fetchAuthBypass.mockResolvedValue(true);
+
+    renderGuarded();
+
+    expect(await screen.findByRole('button', { name: 'Continuar sin INNLAB' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Entrar con INNLAB' })).toBeInTheDocument();
+    expect(redirectToSso).not.toHaveBeenCalled();
+    expect(screen.queryByText('contenido protegido')).not.toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import type * as SessionModule from '@/shared/auth/session';
 import { AppRoutes } from '../routes';
@@ -22,6 +22,10 @@ vi.mock('@features/auth', () => ({
   useSessionLiveness: () => undefined,
   UserMenu: () => null,
   UserContextGate: ({ children }: { children: React.ReactNode }) => children,
+}));
+vi.mock('@features/auth/api/auth-mode.api', () => ({
+  fetchAuthBypass: () => Promise.resolve(false),
+  openBypassSession: () => Promise.resolve(),
 }));
 
 const ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
@@ -72,7 +76,7 @@ describe('AppRoutes — el flujo de diagnóstico', () => {
       expect(session.redirectToSso).not.toHaveBeenCalled();
     });
 
-    it('sin sesión manda al inicio de sesión recordando /diagnosticos/nuevo para continuar al volver', () => {
+    it('sin sesión manda al inicio de sesión recordando /diagnosticos/nuevo para continuar al volver', async () => {
       session.active = false;
       // `ProtectedRoute` remembers the route of `window.location`, not the router's.
       window.history.pushState({}, '', '/diagnosticos/nuevo');
@@ -80,7 +84,9 @@ describe('AppRoutes — el flujo de diagnóstico', () => {
       open('/diagnosticos/nuevo');
 
       expect(screen.queryByText('INICIO_PAGE')).not.toBeInTheDocument();
-      expect(session.redirectToSso).toHaveBeenCalledTimes(1);
+      await waitFor(() => {
+        expect(session.redirectToSso).toHaveBeenCalledTimes(1);
+      });
       expect(session.redirectToSso).toHaveBeenCalledWith(
         expect.stringContaining('/diagnosticos/nuevo'),
       );
@@ -97,13 +103,15 @@ describe('AppRoutes — el flujo de diagnóstico', () => {
       },
     );
 
-    it('exige sesión', () => {
+    it('exige sesión', async () => {
       session.active = false;
 
       open(`/diagnosticos/${ID}/asistente/cuestionario`);
 
       expect(screen.queryByText('ASISTENTE_PAGE')).not.toBeInTheDocument();
-      expect(session.redirectToSso).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(session.redirectToSso).toHaveBeenCalled();
+      });
     });
 
     it.each(['consentimiento', 'cuestionario'])(
@@ -150,12 +158,14 @@ describe('AppRoutes — el flujo de diagnóstico', () => {
 
     it.each(['/panel', '/diagnosticos/x/resultados', '/diagnosticos/x/iniciativa'])(
       '%s exige sesión',
-      (path) => {
+      async (path) => {
         session.active = false;
 
         open(path);
 
-        expect(session.redirectToSso).toHaveBeenCalled();
+        await waitFor(() => {
+          expect(session.redirectToSso).toHaveBeenCalled();
+        });
       },
     );
   });

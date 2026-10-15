@@ -27,6 +27,13 @@ export type { CoreSession };
  */
 const STORAGE_KEY = 'innlab.session.v1';
 
+/**
+ * Issuer of a session opened with `AUTH_BYPASS` on the API.
+ * Must match `BYPASS_ISSUER` in the API. Used only to avoid calling
+ * INNLAB with a token Core does not know.
+ */
+const BYPASS_ISSUER = 'irl-diagnostic-bypass';
+
 /** Route to return to once the code exchange completes. */
 const RETURN_TO_KEY = 'innlab.session.return-to';
 
@@ -68,6 +75,22 @@ export function hasStoredSession(): boolean {
 
 export function getAccessToken(): string | null {
   return readSession()?.accessToken ?? null;
+}
+
+/** True when the stored access token was issued by this API, not by Cognito. */
+export function isBypassSession(): boolean {
+  const accessToken = getAccessToken();
+  if (accessToken === null) return false;
+
+  try {
+    const payload = accessToken.split('.')[1];
+    if (payload === undefined) return false;
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    const claims = JSON.parse(json) as { iss?: string };
+    return claims.iss === BYPASS_ISSUER;
+  } catch {
+    return false;
+  }
 }
 
 /**

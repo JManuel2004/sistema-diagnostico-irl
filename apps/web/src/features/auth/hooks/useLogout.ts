@@ -1,5 +1,10 @@
 import { useCallback, useState } from 'react';
-import { clearSession, getAccessToken, redirectToSso } from '@/shared/auth/session';
+import {
+  clearSession,
+  getAccessToken,
+  isBypassSession,
+  redirectToSso,
+} from '@/shared/auth/session';
 import { logoutFromCore } from '../api/core-auth.api';
 
 export interface LogoutController {
@@ -29,6 +34,14 @@ export function useLogout(): LogoutController {
 
     if (accessToken === null) {
       done();
+      return;
+    }
+
+    // A bypass session is not an INNLAB session. Sending it to Core, or
+    // back to the Hub, is what this switch exists to avoid.
+    if (isBypassSession()) {
+      clearSession();
+      window.location.assign('/');
       return;
     }
 

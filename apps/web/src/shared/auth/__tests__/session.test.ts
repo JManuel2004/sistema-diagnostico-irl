@@ -4,6 +4,7 @@ import {
   consumeReturnTo,
   getAccessToken,
   hasStoredSession,
+  isBypassSession,
   readSession,
   redirectToSso,
   saveSession,
@@ -35,6 +36,22 @@ describe('sesión del ecosistema', () => {
     // The id_token does not authenticate: Core requires token_use === 'access'.
     expect(getAccessToken()).toBe('access-token-xyz');
     expect(getAccessToken()).not.toBe('id-token-abc');
+  });
+
+  it('reconoce la sesión local que no pasa por INNLAB', () => {
+    const payload = btoa(JSON.stringify({ iss: 'irl-diagnostic-bypass' }))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+    saveSession({ token: '', accessToken: `header.${payload}.sig` });
+
+    expect(isBypassSession()).toBe(true);
+  });
+
+  it('no trata un access token de Cognito como sesión local', () => {
+    saveSession(SESSION);
+
+    expect(isBypassSession()).toBe(false);
   });
 
   it('descarta una sesión guardada sin accessToken', () => {
@@ -70,10 +87,7 @@ describe('sesión del ecosistema', () => {
   });
 
   it('ignora campos que no son del contrato', () => {
-    window.localStorage.setItem(
-      'innlab.session.v1',
-      JSON.stringify({ ...SESSION, isAdmin: true }),
-    );
+    window.localStorage.setItem('innlab.session.v1', JSON.stringify({ ...SESSION, isAdmin: true }));
 
     expect(readSession()).toEqual(SESSION);
   });

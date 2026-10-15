@@ -1,5 +1,10 @@
 import { useEffect } from 'react';
-import { clearSession, getAccessToken, redirectToSso } from '@/shared/auth/session';
+import {
+  clearSession,
+  getAccessToken,
+  isBypassSession,
+  redirectToSso,
+} from '@/shared/auth/session';
 import { isSessionAlive } from '../api/core-auth.api';
 
 /**
@@ -19,7 +24,7 @@ export function useSessionLiveness(): void {
       if (document.visibilityState !== 'visible' || checking) return;
 
       const accessToken = getAccessToken();
-      if (accessToken === null) return;
+      if (accessToken === null || isBypassSession()) return;
 
       checking = true;
       try {

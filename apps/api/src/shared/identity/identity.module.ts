@@ -1,6 +1,9 @@
 import { Global, Module } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
+import { appConfig } from '../../config/configuration.js';
+import { AuthBypassPolicy } from './application/auth-bypass.policy.js';
 import { SSO_EXCHANGE_PORT } from './application/ports/sso-exchange.port.js';
 import type { SsoExchangePort } from './application/ports/sso-exchange.port.js';
 import { ExchangeSsoCodeUseCase } from './application/use-cases/exchange-sso-code.use-case.js';
@@ -13,6 +16,7 @@ import { InMemoryUserContextCache } from './infrastructure/cache/in-memory-user-
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard.js';
 import { InnlabCoreHttpClient } from './infrastructure/integrations/innlab-core-http.client.js';
 import { CognitoJwtStrategy } from './infrastructure/strategies/cognito-jwt.strategy.js';
+import { AuthBypassController } from './presentation/controllers/auth-bypass.controller.js';
 import { MeController } from './presentation/controllers/me.controller.js';
 import { SsoExchangeController } from './presentation/controllers/sso-exchange.controller.js';
 
@@ -51,7 +55,13 @@ import { SsoExchangeController } from './presentation/controllers/sso-exchange.c
       inject: [USER_CONTEXT_PORT, USER_CONTEXT_CACHE],
     },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    {
+      provide: AuthBypassPolicy,
+      useFactory: (cfg: ConfigType<typeof appConfig>) =>
+        new AuthBypassPolicy(cfg.authBypass, cfg.authBypassSecret),
+      inject: [appConfig.KEY],
+    },
   ],
-  controllers: [MeController, SsoExchangeController],
+  controllers: [MeController, SsoExchangeController, AuthBypassController],
 })
 export class IdentityModule {}

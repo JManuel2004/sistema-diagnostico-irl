@@ -25,4 +25,10 @@ export const envValidationSchema = Joi.object({
   LOG_LEVEL: Joi.string()
     .valid('trace', 'debug', 'info', 'warn', 'error')
     .default('info'),
+
+  // Local session for when INNLAB login is down. Off unless the value is
+  // exactly `true`. The secret only signs that session; leave it empty to
+  // use the built-in one.
+  AUTH_BYPASS: Joi.string().valid('true', 'false').default('false'),
+  AUTH_BYPASS_SECRET: Joi.string().allow('').optional(),
 });

@@ -6,6 +6,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { MeContextResponse } from '@innlab/contracts';
+import { AuthBypassPolicy } from '../../application/auth-bypass.policy.js';
 import { ResolveUserContextUseCase } from '../../application/use-cases/resolve-user-context.use-case.js';
 import { CurrentUser } from '../decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../application/dtos/authenticated-user.js';
@@ -22,7 +23,10 @@ import type { AuthenticatedUser } from '../../application/dtos/authenticated-use
 @ApiBearerAuth()
 @Controller('me')
 export class MeController {
-  constructor(private readonly resolveUserContext: ResolveUserContextUseCase) {}
+  constructor(
+    private readonly resolveUserContext: ResolveUserContextUseCase,
+    private readonly bypass: AuthBypassPolicy,
+  ) {}
 
   @Get('context')
   @ApiOperation({
@@ -40,6 +44,12 @@ export class MeController {
   async getContext(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<MeContextResponse> {
+    // The bypass leader does not exist in Core. Answering here is what
+    // keeps the panel usable when INNLAB login is switched off.
+    if (this.bypass.isBypassUser(user.id)) {
+      return this.bypass.profile();
+    }
+
     const context = await this.resolveUserContext.execute({ userId: user.id });
 
     return {
