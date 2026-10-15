@@ -24,8 +24,7 @@ vi.mock('@features/auth', () => ({
   UserContextGate: ({ children }: { children: React.ReactNode }) => children,
 }));
 vi.mock('@features/auth/api/auth-mode.api', () => ({
-  fetchAuthBypass: () => Promise.resolve(false),
-  openBypassSession: () => Promise.resolve(),
+  enterIfAuthIsUnresponsive: () => Promise.resolve(false),
 }));
 
 const ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';

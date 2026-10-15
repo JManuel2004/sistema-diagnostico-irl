@@ -19,12 +19,18 @@ interface BypassClaims {
 }
 
 /**
- * The switch that lets a deploy skip INNLAB login.
+ * How many times INNLAB must fail to answer in time before a testing
+ * deploy opens a local session on its own.
+ */
+const SLOW_ATTEMPTS = 3;
+
+/**
+ * The switch that lets a testing deploy skip INNLAB login.
  *
  * `enabled` comes from `AUTH_BYPASS` on the API. While it is off, tokens
  * signed with the bypass secret are ignored and the Cognito guard is the
- * only door. While it is on, the SPA can ask for a local session and the
- * profile is answered here, without calling Core.
+ * only door. While it is on, a local session is issued only after INNLAB
+ * auth fails to answer promptly {@link SLOW_ATTEMPTS} times in a row.
  *
  * Framework-free on purpose: the identity module constructs it with the
  * already-validated config.
@@ -34,6 +40,22 @@ export class AuthBypassPolicy {
     private readonly enabled: boolean,
     private readonly secret: string,
   ) {}
+
+  /**
+   * True only in a testing deploy, and only when every probe fails to get
+   * a timely answer. One prompt answer keeps the real INNLAB login.
+   */
+  async failsToRespondPromptly(
+    probe: () => Promise<boolean>,
+  ): Promise<boolean> {
+    if (!this.enabled) return false;
+
+    for (let attempt = 0; attempt < SLOW_ATTEMPTS; attempt += 1) {
+      if (await probe()) return false;
+    }
+
+    return true;
+  }
 
   isEnabled(): boolean {
     return this.enabled;

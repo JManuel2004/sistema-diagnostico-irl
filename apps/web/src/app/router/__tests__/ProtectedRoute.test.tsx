@@ -22,11 +22,10 @@ function renderGuarded(): void {
 }
 
 const redirectToSso = vi.hoisted(() => vi.fn());
-const fetchAuthBypass = vi.hoisted(() => vi.fn());
+const enterIfAuthIsUnresponsive = vi.hoisted(() => vi.fn());
 vi.mock('@features/auth', () => ({ useSessionLiveness: () => undefined }));
 vi.mock('@features/auth/api/auth-mode.api', () => ({
-  fetchAuthBypass,
-  openBypassSession: vi.fn(),
+  enterIfAuthIsUnresponsive,
 }));
 
 vi.mock('@/shared/auth/session', async (importOriginal) => {
@@ -38,8 +37,8 @@ describe('ProtectedRoute', () => {
   beforeEach(() => {
     window.localStorage.clear();
     redirectToSso.mockReset();
-    fetchAuthBypass.mockReset();
-    fetchAuthBypass.mockResolvedValue(false);
+    enterIfAuthIsUnresponsive.mockReset();
+    enterIfAuthIsUnresponsive.mockResolvedValue(false);
   });
 
   it('renderiza la pantalla protegida cuando hay sesión', () => {
@@ -70,14 +69,15 @@ describe('ProtectedRoute', () => {
     });
   });
 
-  it('con el interruptor encendido ofrece continuar sin INNLAB y no redirige solo', async () => {
-    fetchAuthBypass.mockResolvedValue(true);
+  it('entra solo cuando INNLAB no respondió a tiempo y no redirige al Hub', async () => {
+    enterIfAuthIsUnresponsive.mockImplementation(() => {
+      saveSession({ token: '', accessToken: 'bypass-token' });
+      return Promise.resolve(true);
+    });
 
     renderGuarded();
 
-    expect(await screen.findByRole('button', { name: 'Continuar sin INNLAB' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Entrar con INNLAB' })).toBeInTheDocument();
+    expect(await screen.findByText('contenido protegido')).toBeInTheDocument();
     expect(redirectToSso).not.toHaveBeenCalled();
-    expect(screen.queryByText('contenido protegido')).not.toBeInTheDocument();
   });
 });

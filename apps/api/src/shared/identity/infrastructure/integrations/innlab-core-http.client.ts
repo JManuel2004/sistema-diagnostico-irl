@@ -3,9 +3,13 @@ import type { ConfigType } from '@nestjs/config';
 import { coreSessionSchema, type CoreSession } from '@innlab/contracts';
 import { appConfig } from '../../../../config/configuration.js';
 import { NotFoundError } from '../../../../shared/kernel/domain/errors/index.js';
+import type { AuthProbePort } from '../../application/ports/auth-probe.port.js';
 import type { SsoExchangePort } from '../../application/ports/sso-exchange.port.js';
 import type { UserContext } from '../../domain/entities/user-context.vo.js';
 import type { UserContextPort } from '../../domain/repositories/user-context.repository.port.js';
+
+/** Past this wait, an auth probe counts as "no prompt answer". */
+const PROMPT_TIMEOUT_MS = 2_000;
 
 /**
  * EXTERNAL INTEGRATION — not domain logic of this system (SEMI).
@@ -29,11 +33,14 @@ import type { UserContextPort } from '../../domain/repositories/user-context.rep
  * timeout is all the machinery they need.
  */
 @Injectable()
-export class InnlabCoreHttpClient implements UserContextPort, SsoExchangePort {
+export class InnlabCoreHttpClient
+  implements UserContextPort, SsoExchangePort, AuthProbePort
+{
   private readonly logger = new Logger(InnlabCoreHttpClient.name);
 
   constructor(
-    @Inject(appConfig.KEY) private readonly config: ConfigType<typeof appConfig>,
+    @Inject(appConfig.KEY)
+    private readonly config: ConfigType<typeof appConfig>,
   ) {}
 
   /**
@@ -49,13 +56,19 @@ export class InnlabCoreHttpClient implements UserContextPort, SsoExchangePort {
       response = await fetch(url, {
         method: 'GET',
         headers: { accept: 'application/json' },
-        signal: AbortSignal.timeout(Math.max(this.config.innlabCore.timeoutMs, 20_000)),
+        signal: AbortSignal.timeout(
+          Math.max(this.config.innlabCore.timeoutMs, 20_000),
+        ),
       });
     } catch (cause) {
       this.logger.error('INNLAB Core unreachable while exchanging an SSO code');
-      throw new HttpException('INNLAB Core no respondio al canje del codigo', 502, {
-        cause,
-      });
+      throw new HttpException(
+        'INNLAB Core no respondio al canje del codigo',
+        502,
+        {
+          cause,
+        },
+      );
     }
 
     if (response.status === 404) {
@@ -79,6 +92,25 @@ export class InnlabCoreHttpClient implements UserContextPort, SsoExchangePort {
     }
 
     return session.data;
+  }
+
+  /**
+   * Any HTTP answer counts as prompt, including 4xx. A timeout or a
+   * connection failure means INNLAB auth did not answer in time.
+   */
+  async respondsPromptly(): Promise<boolean> {
+    try {
+      await fetch(this.config.innlabCore.baseUrl, {
+        method: 'GET',
+        signal: AbortSignal.timeout(PROMPT_TIMEOUT_MS),
+      });
+      return true;
+    } catch (cause) {
+      this.logger.warn(
+        `INNLAB auth did not answer within 2s: ${cause instanceof Error ? cause.message : 'unknown'}`,
+      );
+      return false;
+    }
   }
 
   async getUserContext(userId: string): Promise<UserContext> {

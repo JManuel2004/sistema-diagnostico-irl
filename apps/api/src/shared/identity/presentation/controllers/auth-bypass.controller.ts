@@ -8,22 +8,24 @@ import {
 } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthBypassPolicy } from '../../application/auth-bypass.policy.js';
+import { AUTH_PROBE_PORT } from '../../application/ports/auth-probe.port.js';
+import type { AuthProbePort } from '../../application/ports/auth-probe.port.js';
 import { Public } from '../decorators/public.decorator.js';
 
 /**
- * Runtime switch for skipping INNLAB login.
+ * Testing switch for skipping INNLAB login.
  *
- * Both routes are public. `GET /auth/mode` only tells the SPA whether the
- * switch is on, so a deploy can flip `AUTH_BYPASS` on the API and the
- * already-built frontend follows it. `POST /auth/bypass` issues a local
- * session and answers 404 while the switch is off, so the door does not
- * exist in the normal deploy.
+ * `GET /auth/mode` tells the SPA whether this deploy is in validation
+ * mode. `POST /auth/bypass` opens a local session only when that mode is
+ * on and INNLAB auth has failed to answer promptly three times in a row.
+ * Otherwise it answers 404, so a healthy INNLAB keeps the real login.
  */
 @ApiTags('identity')
 @Controller('auth')
 export class AuthBypassController {
   constructor(
     @Inject(AuthBypassPolicy) private readonly bypass: AuthBypassPolicy,
+    @Inject(AUTH_PROBE_PORT) private readonly probe: AuthProbePort,
   ) {}
 
   @Public()
@@ -37,12 +39,17 @@ export class AuthBypassController {
   @Public()
   @Post('bypass')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Open a local session without INNLAB' })
+  @ApiOperation({
+    summary: 'Open a local session after INNLAB auth stays silent',
+  })
   @ApiOkResponse({
     description: 'A session the SPA stores like an SSO exchange',
   })
-  open(): { token: string; accessToken: string } {
-    if (!this.bypass.isEnabled()) {
+  async open(): Promise<{ token: string; accessToken: string }> {
+    const unresponsive = await this.bypass.failsToRespondPromptly(() =>
+      this.probe.respondsPromptly(),
+    );
+    if (!unresponsive) {
       throw new NotFoundException();
     }
 
