@@ -32,7 +32,13 @@ function renderStep(): ReturnType<typeof render> {
         <Routes>
           <Route
             path="/diagnosticos/:id/asistente/cuestionario"
-            element={<QuestionnaireStep diagnosticId={DIAG_ID} frameworkVersion="KTH-IRL-1.0" />}
+            element={
+              <QuestionnaireStep
+                diagnosticId={DIAG_ID}
+                frameworkVersion="KTH-IRL-1.0"
+                saveStatus={{ kind: 'idle' }}
+              />
+            }
           />
           <Route path="/diagnosticos/:id/asistente/resumen" element={<div>RESUMEN_STUB</div>} />
           <Route

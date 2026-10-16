@@ -11,6 +11,11 @@ export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(LOCALE, { dateStyle: 'long' });
 }
 
+/** «7:30 p. m.»: when something was saved today. */
+export function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(LOCALE, { timeStyle: 'short' });
+}
+
 /** «3,5»: one decimal with a comma; an exact integer goes without decimals. */
 export function formatOneDecimal(value: number): string {
   return Number.isInteger(value)

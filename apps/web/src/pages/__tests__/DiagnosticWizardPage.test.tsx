@@ -55,6 +55,15 @@ interface Backend {
   readonly calls: string[];
   failInitiative: boolean;
   consentStatus: number;
+  /** The questionnaire draft saved on the server. */
+  draft: {
+    entries: { statementId: string; value: number | null; justification: string | null }[];
+    updatedAt: string | null;
+  };
+  /** Every draft the wizard saved, in order. */
+  readonly savedDrafts: unknown[];
+  /** HTTP status the draft save answers with. */
+  draftStatus: number;
 }
 
 /** A small in-memory backend: what the wizard reads back is what it wrote. */
@@ -66,6 +75,9 @@ function backend(start: Partial<Backend> = {}): Backend {
     calls: [],
     failInitiative: false,
     consentStatus: 201,
+    draft: { entries: [], updatedAt: null },
+    savedDrafts: [],
+    draftStatus: 200,
     ...start,
   };
   const notFound = () =>
@@ -109,6 +121,21 @@ function backend(start: Partial<Backend> = {}): Backend {
         i.id === params.id ? { ...i, consent: record, consentCurrent: true } : i,
       );
       return HttpResponse.json(record, { status: 201 });
+    }),
+    mswHttp.get('*/diagnostics/:id/questionnaire/draft', ({ params }) =>
+      HttpResponse.json({ diagnosticId: params.id, ...state.draft }),
+    ),
+    mswHttp.put('*/diagnostics/:id/questionnaire/draft', async ({ params, request }) => {
+      const body = (await request.json()) as { entries: Backend['draft']['entries'] };
+      state.savedDrafts.push(body);
+      if (state.draftStatus !== 200) {
+        return HttpResponse.json(
+          { code: 'X', status: state.draftStatus },
+          { status: state.draftStatus },
+        );
+      }
+      state.draft = { entries: body.entries, updatedAt: '2026-10-16T17:05:00.000Z' };
+      return HttpResponse.json({ diagnosticId: params.id, ...state.draft });
     }),
     mswHttp.get('*/diagnostics/:id/initiative', () =>
       state.profile ? HttpResponse.json(state.profile) : notFound(),
@@ -605,6 +632,107 @@ describe('DiagnosticWizardPage — el asistente', () => {
       });
       expect(api.calls).toEqual(['consent', 'initiative']);
       expect(api.profile?.initiativeId).toBe(INITIATIVE_ID);
+    });
+  });
+
+  describe('el borrador del cuestionario en el servidor', () => {
+    it('al volver desde otra sesión, recupera las respuestas guardadas', async () => {
+      backend({
+        initiatives: [initiativeSummaryFixture()],
+        profile: initiativeFixture(),
+        draft: {
+          entries: [
+            { statementId: '1', value: 4, justification: 'Hay un prototipo probado' },
+            { statementId: '2', value: null, justification: 'Lo estamos revisando' },
+          ],
+          updatedAt: '2026-10-15T20:00:00.000Z',
+        },
+      });
+
+      renderWizard();
+
+      expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
+        'Cuestionario IRL',
+      );
+      await waitFor(() => {
+        expect(useQuestionnaireDraftStore.getState().answers).toEqual({ '1': 4 });
+      });
+      expect(useQuestionnaireDraftStore.getState().justifications).toEqual({
+        '1': 'Hay un prototipo probado',
+        '2': 'Lo estamos revisando',
+      });
+      const first = screen.getAllByRole('radiogroup')[0];
+      expect(within(first).getByRole('radio', { name: '4 — De acuerdo' })).toBeChecked();
+    });
+
+    it('guarda automáticamente lo que responde y lo dice', async () => {
+      const api = backend({
+        initiatives: [initiativeSummaryFixture()],
+        profile: initiativeFixture(),
+      });
+      const user = userEvent.setup();
+
+      renderWizard();
+      const first = (await screen.findAllByRole('radiogroup'))[0];
+      await user.click(
+        within(first).getByRole('radio', { name: '3 — Ni de acuerdo ni en desacuerdo' }),
+      );
+
+      expect(
+        await screen.findByText(/Respuestas guardadas a las/, {}, { timeout: 3000 }),
+      ).toBeInTheDocument();
+      expect(api.savedDrafts.at(-1)).toEqual({
+        entries: [{ statementId: '1', value: 3, justification: null }],
+      });
+      expect(useQuestionnaireDraftStore.getState().unsynced).toBe(false);
+    });
+
+    it('si no se pudo guardar, lo avisa, conserva las respuestas en la pestaña y lo intenta de nuevo al salir', async () => {
+      const api = backend({
+        initiatives: [initiativeSummaryFixture()],
+        profile: initiativeFixture(),
+        draftStatus: 500,
+      });
+      const user = userEvent.setup();
+
+      const { unmount } = renderWizard();
+      const first = (await screen.findAllByRole('radiogroup'))[0];
+      await user.click(within(first).getByRole('radio', { name: '2 — En desacuerdo' }));
+
+      expect(
+        await screen.findByText(/No pudimos guardar tus respuestas/, {}, { timeout: 3000 }),
+      ).toBeInTheDocument();
+      expect(useQuestionnaireDraftStore.getState().answers).toEqual({ '1': 2 });
+      expect(useQuestionnaireDraftStore.getState().unsynced).toBe(true);
+
+      const attempts = api.savedDrafts.length;
+      unmount();
+      await waitFor(() => {
+        expect(api.savedDrafts.length).toBeGreaterThan(attempts);
+      });
+    });
+
+    it('las respuestas de esta pestaña que el servidor aún no tiene ganan y se guardan', async () => {
+      const api = backend({
+        initiatives: [initiativeSummaryFixture()],
+        profile: initiativeFixture(),
+        draft: {
+          entries: [{ statementId: '1', value: 1, justification: null }],
+          updatedAt: '2026-10-15T20:00:00.000Z',
+        },
+      });
+      useQuestionnaireDraftStore.getState().initialize(ID);
+      useQuestionnaireDraftStore.getState().setAnswer('1', 5);
+
+      renderWizard();
+
+      await waitFor(() => {
+        expect(api.savedDrafts).toHaveLength(1);
+      });
+      expect(api.savedDrafts[0]).toEqual({
+        entries: [{ statementId: '1', value: 5, justification: null }],
+      });
+      expect(useQuestionnaireDraftStore.getState().answers).toEqual({ '1': 5 });
     });
   });
 

@@ -49,6 +49,8 @@ const PROFILE: MaturityProfileResponse = {
 async function fakeBackend(page: Page): Promise<string[]> {
   const calls: string[] = [];
   let created = false;
+  let started = false;
+  let draft: { entries: unknown[]; updatedAt: string | null } = { entries: [], updatedAt: null };
   let initiative = false;
   let completed = false;
 
@@ -88,7 +90,17 @@ async function fakeBackend(page: Page): Promise<string[]> {
         return json(route, ME_CONTEXT);
       case 'POST /diagnostics':
         calls.push('start');
+        started = true;
         return json(route, diagnostic(), 201);
+      case 'GET /diagnostics/in-progress':
+        return started && !completed ? json(route, diagnostic()) : notFound(route);
+      case 'GET /diagnostics/:id/questionnaire/draft':
+        return json(route, { diagnosticId: ID, ...draft });
+      case 'PUT /diagnostics/:id/questionnaire/draft': {
+        const body = request.postDataJSON() as { entries: unknown[] };
+        draft = { entries: body.entries, updatedAt: new Date().toISOString() };
+        return json(route, { diagnosticId: ID, ...draft });
+      }
       case 'GET /diagnostics':
         // Only completed diagnostics are listed (DIAGIRL-26).
         return json(

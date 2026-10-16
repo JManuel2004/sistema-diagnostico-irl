@@ -2,6 +2,7 @@
 // here is considered internal — the project's feature-isolation rule.
 export { QuestionnaireView } from './components/QuestionnaireView';
 export { AnswersSummary } from './components/AnswersSummary';
+export { DraftSaveStatus } from './components/DraftSaveStatus';
 export {
   selectAnswers,
   selectClearDraft,
@@ -12,3 +13,8 @@ export {
 } from './store/questionnaire-draft.store';
 export { useQuestionnaireCompletion } from './hooks/useQuestionnaireCompletion';
 export { useQuestionnaireStructure } from './hooks/useQuestionnaireStructure';
+export {
+  useSavedDraftProgress,
+  useServerDraftSync,
+  type DraftSaveStatus as DraftSaveState,
+} from './hooks/useServerDraftSync';

@@ -19,7 +19,13 @@ const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 beforeEach(() => {
   signIn();
-  server.use(meContextHandler());
+  // Nothing in progress unless a test says otherwise.
+  server.use(
+    meContextHandler(),
+    mswHttp.get('*/diagnostics/in-progress', () =>
+      HttpResponse.json({ code: 'NOT_FOUND' }, { status: 404 }),
+    ),
+  );
 });
 afterEach(() => {
   server.resetHandlers();
@@ -170,17 +176,31 @@ describe('DashboardPage — panel de iniciativa', () => {
     });
   });
 
-  // Escenario 2: cuestionario en curso en esta misma pestaña.
-  describe('con un diagnóstico en curso en esta pestaña', () => {
-    it('ofrece continuarlo donde quedó', async () => {
-      draftInThisTab(UNFINISHED);
-      server.use(
+  // Escenario 2: un diagnóstico sin terminar, de esta o de otra sesión.
+  describe('con un diagnóstico en curso', () => {
+    function inProgressHandlers(answered = 2) {
+      return [
         mswHttp.get('*/diagnostics', () => HttpResponse.json([])),
-        mswHttp.get('*/diagnostics/:id', ({ params }) => {
+        mswHttp.get('*/diagnostics/in-progress', () =>
+          HttpResponse.json(diagnostic(UNFINISHED, 'QUESTIONNAIRE_IN_PROGRESS')),
+        ),
+        mswHttp.get('*/diagnostics/:id/questionnaire/draft', ({ params }) => {
           expect(params.id).toBe(UNFINISHED);
-          return HttpResponse.json(diagnostic(UNFINISHED, 'WITH_INITIATIVE'));
+          return HttpResponse.json({
+            diagnosticId: UNFINISHED,
+            entries: Array.from({ length: answered }, (_, i) => ({
+              statementId: String(i + 1),
+              value: 3,
+              justification: null,
+            })),
+            updatedAt: '2026-10-16T12:00:00.000Z',
+          });
         }),
-      );
+      ];
+    }
+
+    it('lo ofrece aunque esta pestaña no tenga nada: sus respuestas están en el servidor', async () => {
+      server.use(...inProgressHandlers());
 
       renderPage();
 
@@ -191,54 +211,119 @@ describe('DashboardPage — panel de iniciativa', () => {
         'href',
         `/diagnosticos/${UNFINISHED}/asistente`,
       );
-      expect(screen.getByText(/descarta el que tienes en curso/)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/llevas 2 de 48 afirmaciones respondidas/),
+      ).toBeInTheDocument();
     });
 
-    it('no lo ofrece si ese diagnóstico ya tiene resultados', async () => {
-      draftInThisTab(NEWEST);
+    it('iniciar uno nuevo pregunta antes, y continuar lleva al que tiene', async () => {
+      let started = false;
       server.use(
-        mswHttp.get('*/diagnostics', () => HttpResponse.json([summary(NEWEST)])),
-        mswHttp.get('*/diagnostics/:id/initiative', () => HttpResponse.json(initiativeFixture())),
-        mswHttp.get('*/diagnostics/:id', () => HttpResponse.json(diagnostic(NEWEST))),
-      );
-
-      renderPage();
-
-      expect(await screen.findByRole('heading', { name: 'Tus diagnósticos' })).toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: 'Continuar diagnóstico' })).not.toBeInTheDocument();
-    });
-  });
-
-  // Escenario 3: cuestionario incompleto de una sesión anterior.
-  describe('con un cuestionario incompleto de una sesión anterior', () => {
-    it('no lo ofrece: sin borrador en esta pestaña, solo queda iniciar uno nuevo', async () => {
-      // The backend keeps the unfinished one, but lists only completed diagnostics.
-      server.use(
-        mswHttp.get('*/diagnostics', () => HttpResponse.json([])),
-        mswHttp.post('*/diagnostics', () =>
-          HttpResponse.json(diagnostic(UNFINISHED, 'STARTED'), { status: 201 }),
-        ),
+        ...inProgressHandlers(5),
+        mswHttp.post('*/diagnostics', () => {
+          started = true;
+          return HttpResponse.json(diagnostic(NEWEST, 'STARTED'), { status: 201 });
+        }),
       );
       const user = userEvent.setup();
 
       renderPage();
+      await user.click(await screen.findByRole('button', { name: 'Iniciar un diagnóstico nuevo' }));
 
-      expect(
-        await screen.findByRole('heading', { name: 'Aún no tienes un diagnóstico' }),
-      ).toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: 'Continuar diagnóstico' })).not.toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Iniciar diagnóstico' }));
-      expect(await screen.findByText('ASISTENTE_STUB')).toBeInTheDocument();
+      const question = await screen.findByRole('heading', {
+        name: 'Tienes un diagnóstico sin terminar',
+      });
+      expect(question).toHaveFocus();
+      expect(screen.getByText(/Tiene 5 de 48 afirmaciones respondidas/)).toBeInTheDocument();
+      expect(screen.getByText(/se descartan y no se pueden recuperar/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Continuar el que tengo/ })).toHaveAttribute(
+        'href',
+        `/diagnosticos/${UNFINISHED}/asistente`,
+      );
+      expect(started).toBe(false);
     });
 
-    it('tampoco si el borrador de la pestaña es de un diagnóstico que ya se eliminó', async () => {
-      draftInThisTab(UNFINISHED);
+    it('descartarlo envía esa decisión y abre el asistente del nuevo', async () => {
+      let query = '';
+      server.use(
+        ...inProgressHandlers(),
+        mswHttp.post('*/diagnostics', ({ request }) => {
+          query = new URL(request.url).search;
+          return HttpResponse.json(diagnostic(NEWEST, 'STARTED'), { status: 201 });
+        }),
+      );
+      const user = userEvent.setup();
+
+      renderPage();
+      await user.click(await screen.findByRole('button', { name: 'Iniciar un diagnóstico nuevo' }));
+      await user.click(
+        await screen.findByRole('button', { name: 'Descartarlo y empezar uno nuevo' }),
+      );
+
+      expect(await screen.findByText('ASISTENTE_STUB')).toBeInTheDocument();
+      expect(query).toBe('?discardInProgress=true');
+    });
+
+    it('cancelar vuelve al panel sin descartar nada', async () => {
+      let started = false;
+      server.use(
+        ...inProgressHandlers(),
+        mswHttp.post('*/diagnostics', () => {
+          started = true;
+          return HttpResponse.json(diagnostic(NEWEST, 'STARTED'), { status: 201 });
+        }),
+      );
+      const user = userEvent.setup();
+
+      renderPage();
+      await user.click(await screen.findByRole('button', { name: 'Iniciar un diagnóstico nuevo' }));
+      await user.click(await screen.findByRole('button', { name: 'Cancelar' }));
+
+      expect(
+        await screen.findByRole('heading', { name: 'Tienes un diagnóstico en curso' }),
+      ).toBeInTheDocument();
+      expect(started).toBe(false);
+    });
+
+    it('si el servidor avisa de uno que el panel no conocía (otro dispositivo), pregunta en vez de descartarlo', async () => {
+      let known = false;
       server.use(
         mswHttp.get('*/diagnostics', () => HttpResponse.json([])),
-        mswHttp.get('*/diagnostics/:id', () =>
-          HttpResponse.json({ code: 'NOT_FOUND', message: 'x' }, { status: 404 }),
+        mswHttp.get('*/diagnostics/in-progress', () =>
+          known
+            ? HttpResponse.json(diagnostic(UNFINISHED, 'WITH_INITIATIVE'))
+            : HttpResponse.json({ code: 'NOT_FOUND' }, { status: 404 }),
         ),
+        mswHttp.get('*/diagnostics/:id/questionnaire/draft', () =>
+          HttpResponse.json({ diagnosticId: UNFINISHED, entries: [], updatedAt: null }),
+        ),
+        mswHttp.post('*/diagnostics', () => {
+          known = true;
+          return HttpResponse.json(
+            {
+              type: 'https://errors.innlab.icesi.edu.co/diagnosis_in_progress',
+              title: 'diagnosis in progress',
+              status: 409,
+              code: 'DIAGNOSIS_IN_PROGRESS',
+            },
+            { status: 409 },
+          );
+        }),
       );
+      const user = userEvent.setup();
+
+      renderPage();
+      await user.click(await screen.findByRole('button', { name: 'Iniciar diagnóstico' }));
+
+      expect(
+        await screen.findByRole('heading', { name: 'Tienes un diagnóstico sin terminar' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('ASISTENTE_STUB')).not.toBeInTheDocument();
+    });
+
+    it('no ofrece el borrador que esta pestaña guarde de un diagnóstico que ya no está en curso', async () => {
+      draftInThisTab(UNFINISHED);
+      server.use(mswHttp.get('*/diagnostics', () => HttpResponse.json([])));
 
       renderPage();
 

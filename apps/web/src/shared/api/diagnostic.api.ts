@@ -1,4 +1,4 @@
-import { getParsed, postParsed } from '@/shared/api/http';
+import { getParsed, getParsedOrNull, postParsed } from '@/shared/api/http';
 import {
   acceptDeepAnalysisResponseSchema,
   diagnosticSchema,
@@ -11,11 +11,18 @@ import {
 } from '@innlab/contracts';
 
 /**
- * HU-04 — the user starts a diagnostic of their own. The backend returns
- * the user's unfinished one if there is one, or creates a new one.
+ * Starts a new diagnostic. While the user has one in progress the server
+ * answers 409 `DIAGNOSIS_IN_PROGRESS`; `discardInProgress` is the user's
+ * choice to delete it (with its saved answers) and start over.
  */
-export function startDiagnostic(): Promise<Diagnostic> {
-  return postParsed('/diagnostics', undefined, diagnosticSchema);
+export function startDiagnostic(discardInProgress = false): Promise<Diagnostic> {
+  const query = discardInProgress ? '?discardInProgress=true' : '';
+  return postParsed(`/diagnostics${query}`, undefined, diagnosticSchema);
+}
+
+/** The user's diagnostic still being filled in, or `null` when there is none. */
+export function getInProgressDiagnostic(): Promise<Diagnostic | null> {
+  return getParsedOrNull('/diagnostics/in-progress', diagnosticSchema);
 }
 
 /** One diagnostic of the user, with its state and whether the deep analysis was accepted. */

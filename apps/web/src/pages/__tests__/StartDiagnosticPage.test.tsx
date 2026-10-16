@@ -125,4 +125,60 @@ describe('StartDiagnosticPage — continuar solo tras «Iniciar diagnóstico»',
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
     expect(requests).toBe(0);
   });
+
+  // With an unfinished diagnostic the backend refuses (409): the page asks.
+  describe('con un diagnóstico sin terminar', () => {
+    const UNFINISHED = 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22';
+    const conflict = () =>
+      HttpResponse.json(
+        {
+          type: 'https://errors.innlab.icesi.edu.co/diagnosis_in_progress',
+          title: 'diagnosis in progress',
+          status: 409,
+          code: 'DIAGNOSIS_IN_PROGRESS',
+        },
+        { status: 409 },
+      );
+
+    it('pregunta qué hacer en vez de descartarlo, y ofrece continuarlo', async () => {
+      server.use(
+        mswHttp.post('*/diagnostics', conflict),
+        mswHttp.get('*/diagnostics/in-progress', () =>
+          HttpResponse.json({ ...diagnostic, id: UNFINISHED, state: 'WITH_INITIATIVE' }),
+        ),
+      );
+
+      renderPage();
+
+      expect(
+        await screen.findByRole('heading', { name: 'Tienes un diagnóstico sin terminar' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Continuar el que tengo/ })).toHaveAttribute(
+        'href',
+        `/diagnosticos/${UNFINISHED}/asistente`,
+      );
+      expect(screen.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument();
+    });
+
+    it('descartarlo pide el diagnóstico nuevo con esa decisión y abre el asistente', async () => {
+      server.use(
+        mswHttp.post('*/diagnostics', ({ request }) =>
+          new URL(request.url).searchParams.get('discardInProgress') === 'true'
+            ? HttpResponse.json(diagnostic, { status: 201 })
+            : conflict(),
+        ),
+        mswHttp.get('*/diagnostics/in-progress', () =>
+          HttpResponse.json({ ...diagnostic, id: UNFINISHED, state: 'WITH_INITIATIVE' }),
+        ),
+        mswHttp.get('*/diagnostics', () => HttpResponse.json([])),
+      );
+
+      renderPage();
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Descartarlo y empezar uno nuevo' }),
+      );
+
+      expect(await screen.findByText('ASISTENTE_STUB')).toBeInTheDocument();
+    });
+  });
 });

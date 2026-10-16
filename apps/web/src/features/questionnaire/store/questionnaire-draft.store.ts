@@ -15,9 +15,12 @@ import type { DimensionCode, LikertValue } from '@innlab/contracts';
  *   3. `activeTab` — currently selected dimension code
  *   4. `diagnosticId` — guards against cross-diagnostic contamination
  *
- * Persistence: `sessionStorage` (see `STATE_MANAGEMENT.md` §"Zustand"). The
- * draft survives `F5` but dies with the tab — by design, since the
- * intended deployment is a multi-user coworking space.
+ * Persistence: `sessionStorage` (see `STATE_MANAGEMENT.md` §"Zustand") for
+ * `F5`, and **the server** for everything else: `useServerDraftSync` saves
+ * the draft while the user answers and brings it back in a later session or
+ * on another device. `unsynced` and `syncedAt` say what the server already
+ * has; `revision` counts local changes so a save that raced with a newer
+ * change does not mark the draft as saved.
  *
  * Re-renders are minimised by selector-based subscriptions; consumers
  * must always read individual slices, never the whole store.
@@ -28,6 +31,12 @@ interface State {
   justifications: Record<string, string>;
   activeTab: DimensionCode;
   dirty: boolean;
+  /** Local changes the server does not have yet. */
+  unsynced: boolean;
+  /** `updatedAt` of the server draft this one matches; null if none. */
+  syncedAt: string | null;
+  /** Number of local changes in this tab; not persisted. */
+  revision: number;
 }
 
 interface Actions {
@@ -44,6 +53,17 @@ interface Actions {
   /** Replaces answers and justifications at once (development autofill). */
   fill: (answers: Record<string, LikertValue>, justifications: Record<string, string>) => void;
   setActiveTab: (tab: DimensionCode) => void;
+  /** Replaces the draft with the one saved on the server. */
+  hydrate: (
+    answers: Record<string, LikertValue>,
+    justifications: Record<string, string>,
+    syncedAt: string,
+  ) => void;
+  /**
+   * The server saved the draft as it was at `revision`. Only when nothing
+   * changed since is it marked as synced.
+   */
+  markSynced: (syncedAt: string | null, revision: number) => void;
   /** Wipes only the per-diagnostic data; keeps the diagnosticId. */
   reset: () => void;
   /** Wipes everything including the diagnosticId. */
@@ -60,6 +80,9 @@ const INITIAL_STATE: State = {
   justifications: {},
   activeTab: 'TRL',
   dirty: false,
+  unsynced: false,
+  syncedAt: null,
+  revision: 0,
 };
 
 export const useQuestionnaireDraftStore = create<DraftStore>()(
@@ -75,13 +98,39 @@ export const useQuestionnaireDraftStore = create<DraftStore>()(
         set({ ...INITIAL_STATE, diagnosticId: next });
       },
       setAnswer(statementId: string, value: LikertValue) {
-        set((s) => ({ answers: { ...s.answers, [statementId]: value }, dirty: true }));
+        set((s) => ({
+          answers: { ...s.answers, [statementId]: value },
+          dirty: true,
+          unsynced: true,
+          revision: s.revision + 1,
+        }));
       },
       setJustification(statementId: string, text: string) {
-        set((s) => ({ justifications: { ...s.justifications, [statementId]: text }, dirty: true }));
+        set((s) => ({
+          justifications: { ...s.justifications, [statementId]: text },
+          dirty: true,
+          unsynced: true,
+          revision: s.revision + 1,
+        }));
       },
       fill(answers: Record<string, LikertValue>, justifications: Record<string, string>) {
-        set({ answers, justifications, dirty: true });
+        set((s) => ({
+          answers,
+          justifications,
+          dirty: true,
+          unsynced: true,
+          revision: s.revision + 1,
+        }));
+      },
+      hydrate(
+        answers: Record<string, LikertValue>,
+        justifications: Record<string, string>,
+        syncedAt: string,
+      ) {
+        set({ answers, justifications, unsynced: false, syncedAt });
+      },
+      markSynced(syncedAt: string | null, revision: number) {
+        set((s) => (s.revision === revision ? { unsynced: false, syncedAt } : { syncedAt }));
       },
       setActiveTab(activeTab: DimensionCode) {
         set({ activeTab });
@@ -96,9 +145,15 @@ export const useQuestionnaireDraftStore = create<DraftStore>()(
     {
       name: DRAFT_STORAGE_KEY,
       storage: createJSONStorage(() => sessionStorage),
-      // v2 added `justifications`; a v1 draft has none and simply starts without them.
-      version: 2,
-      migrate: (persisted) => ({ justifications: {}, ...(persisted as object) }),
+      // v2 added `justifications`; v3, what the server has (`unsynced`,
+      // `syncedAt`). An older draft is pushed to the server as unsynced.
+      version: 3,
+      migrate: (persisted) => ({
+        justifications: {},
+        unsynced: true,
+        syncedAt: null,
+        ...(persisted as object),
+      }),
       // `dirty` is derived (any answer makes it true on next mutation),
       // so we intentionally exclude it from persistence per
       // SPEC-STORY3 §5.3 / Definition of Done §7.6.
@@ -107,6 +162,8 @@ export const useQuestionnaireDraftStore = create<DraftStore>()(
         answers: s.answers,
         justifications: s.justifications,
         activeTab: s.activeTab,
+        unsynced: s.unsynced,
+        syncedAt: s.syncedAt,
       }),
     },
   ),
