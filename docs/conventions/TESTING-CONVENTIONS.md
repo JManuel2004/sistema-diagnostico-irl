@@ -393,7 +393,7 @@ This is always a real problem, never a flake. Common causes:
 
 ## CI fan-out
 
-There is no CI pipeline in the repository yet, and the Husky hooks are inactive (`.npmrc` sets `ignore-scripts`). Until there is one, run the gates by hand; this is the intended fan-out:
+The pipeline is the `Jenkinsfile` ([CI-JENKINS.md](../workflows/CI-JENKINS.md)): it runs every tier above in Chromium, Firefox and Edge and keeps the reports, the coverage and the acceptance matrix of each run. The Husky hooks are installed only when `pnpm prepare` runs (`.npmrc` sets `ignore-scripts`). The intended fan-out:
 
 | Trigger                   | Tests run                                                                 |
 | ------------------------- | ------------------------------------------------------------------------- |

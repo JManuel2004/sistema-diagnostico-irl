@@ -90,6 +90,8 @@ The Husky git hooks are configured but inactive (`.npmrc` sets `ignore-scripts`)
 | --------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Set up my machine for the first time          | [`docs/workflows/LOCAL-SETUP.md`](./docs/workflows/LOCAL-SETUP.md)                     |
 | Know the day-to-day flow                      | [`docs/workflows/DAILY-DEVELOPMENT.md`](./docs/workflows/DAILY-DEVELOPMENT.md)         |
+| Run the pipeline or deploy locally            | [`docs/workflows/CI-JENKINS.md`](./docs/workflows/CI-JENKINS.md)                       |
+| Use the app without Core or Cognito           | [`docs/workflows/LOCAL-SETUP.md`](./docs/workflows/LOCAL-SETUP.md), step 5c (simulated sign-in) |
 | Understand the architecture and its decisions | [`docs/architecture/README.md`](./docs/architecture/README.md)                         |
 | Follow a diagnostic from start to results     | [`docs/architecture/diagnostic-flow.md`](./docs/architecture/diagnostic-flow.md)       |
 | Work on the backend                           | [`apps/api/README.md`](./apps/api/README.md), then the module's own `README.md`        |
