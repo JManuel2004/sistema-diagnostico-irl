@@ -30,6 +30,7 @@ export default defineConfig({
     ? [
         ['list'],
         ['junit', { outputFile: 'test-results/mocked/junit.xml' }],
+        ['json', { outputFile: 'test-results/mocked/results.json' }],
         ['html', { open: 'never', outputFolder: 'playwright-report/mocked' }],
       ]
     : 'list',

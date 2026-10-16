@@ -1,0 +1,40 @@
+# Jenkins configured as code: an administrator, one executor on the
+# controller, and the pipeline job of this repository.
+jenkins:
+  systemMessage: 'Jenkins local del Sistema de Diagnóstico IRL. El pipeline está en el Jenkinsfile del repositorio.'
+  numExecutors: 1
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: '${JENKINS_ADMIN_ID:-admin}'
+          password: '${JENKINS_ADMIN_PASSWORD:-admin}'
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+unclassified:
+  location:
+    url: 'http://localhost:8088/'
+
+jobs:
+  - script: >
+      pipelineJob('sistema-diagnostico-irl') {
+        description('Instala, revisa, prueba, compila y despliega en local (modo de inicio de sesión simulado).')
+        parameters {
+          stringParam('BRANCH', '${JENKINS_DEFAULT_BRANCH:-dev}', 'Rama del repositorio a construir')
+        }
+        logRotator { numToKeep(20) }
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote { url('file:///repo') }
+                branch('${BRANCH}')
+              }
+            }
+            scriptPath('Jenkinsfile')
+            lightweight(false)
+          }
+        }
+      }

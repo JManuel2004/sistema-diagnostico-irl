@@ -59,6 +59,7 @@ export default defineConfig({
     ? [
         ['list'],
         ['junit', { outputFile: 'test-results/full-stack/junit.xml' }],
+        ['json', { outputFile: 'test-results/full-stack/results.json' }],
         ['html', { open: 'never', outputFolder: 'playwright-report/full-stack' }],
       ]
     : 'list',
