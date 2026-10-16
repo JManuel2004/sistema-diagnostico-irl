@@ -23,7 +23,7 @@ export function DraftSaveStatus({ status }: { readonly status: Status }): JSX.El
       {status.kind === 'saved' && (
         <>
           <CloudCheck className="text-azul-icesi size-4" aria-hidden="true" />
-          Respuestas guardadas a las {formatTime(status.at)}. Puedes cerrar sesión y continuar
+          Respuestas guardadas a las {formatTime(status.at)}; puedes cerrar sesión y continuar
           después.
         </>
       )}

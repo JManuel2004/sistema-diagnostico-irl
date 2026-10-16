@@ -22,7 +22,9 @@ describe('DraftSaveStatus — si las respuestas están guardadas', () => {
 
     const status = screen.getByRole('status');
     expect(status).toHaveTextContent(/Respuestas guardadas a las/);
-    expect(status).toHaveTextContent('Puedes cerrar sesión y continuar después.');
+    expect(status).toHaveTextContent('; puedes cerrar sesión y continuar después.');
+    expect(status.textContent?.match(/después\./g)).toHaveLength(1);
+    expect(status).not.toHaveTextContent('..');
   });
 
   it('si falló, dice que lo reintentará y que no se perdieron', () => {
