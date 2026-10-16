@@ -21,7 +21,11 @@ import {
   ReportInitiativeSection,
   ReportProfileSection,
   ReportSection,
+  ReportSectionsProvider,
+  ReportSectionsToolbar,
   useDiagnosticReport,
+  useReportSections,
+  type ReportSections,
 } from '@features/report';
 import { ImbalanceInsights, ProfileOverview, useRadarHighlight } from '@features/maturity-profile';
 import { RecommendationSummary } from '@features/portfolio-recommendation';
@@ -53,6 +57,11 @@ import { RETRY_LATER } from '@/shared/lib/copy';
  * alerts, the service card and the route by phases that the results show,
  * plus what only the report has — the initiative, the meaning of each level,
  * the 48 answers and the attribution. A sticky bar reaches each section.
+ *
+ * Each section folds from its title; the initiative, the profile and the
+ * recommendation start open, the rest folded, and «Expandir todas» /
+ * «Contraer todas» open or fold them all. Choosing a section in the bar
+ * opens it. The PDF always carries everything: it is rendered by the server.
  *
  * «Descargar reporte (PDF)» is the page's primary action and appears only
  * with the report loaded: without the deep analysis complete there is no
@@ -138,7 +147,11 @@ const SECTIONS: readonly { id: string; label: string; icon: LucideIcon }[] = [
 
 const SECTION_IDS = SECTIONS.map((s) => s.id);
 
+/** What the reader sees first: who, the profile and the service to take. */
+const INITIALLY_OPEN = ['report-initiative', 'report-profile', 'report-recommendation'];
+
 function FullReport({ report }: { readonly report: DiagnosticReport }): JSX.Element {
+  const sections = useReportSections(SECTION_IDS, INITIALLY_OPEN);
   const highlight = useRadarHighlight();
   const catalog = useQuestionnaireStructure(report.frameworkVersion);
   const subject = report.initiative.name;
@@ -165,82 +178,88 @@ function FullReport({ report }: { readonly report: DiagnosticReport }): JSX.Elem
   }
 
   return (
-    <div className="flex flex-col gap-14 sm:gap-20">
-      <ReportSectionNav />
+    <ReportSectionsProvider value={sections}>
+      <div className="flex flex-col gap-10 sm:gap-14">
+        <ReportSectionNav sections={sections} />
+        <ReportSectionsToolbar sections={sections} />
 
-      <ReportInitiativeSection report={report} />
+        <ReportInitiativeSection report={report} />
 
-      <ReportProfileSection report={report}>
-        <ProfileOverview
-          profile={profile}
-          highlight={highlight}
-          showImbalances
-          descriptions={descriptions}
-        />
-      </ReportProfileSection>
+        <ReportProfileSection report={report}>
+          <ProfileOverview
+            profile={profile}
+            highlight={highlight}
+            showImbalances
+            descriptions={descriptions}
+          />
+        </ReportProfileSection>
 
-      <ReportSection
-        id="report-alerts"
-        icon={Scale}
-        title="Brechas, alertas y desequilibrios"
-        description={`Dónde ${subject} avanza de forma despareja y qué dimensiones clave necesitan atención primero.`}
-      >
-        <ImbalanceInsights
-          profile={profile}
-          onHighlight={highlight.setHovered}
-          descriptions={descriptions}
-          plan={plan}
-          subject={subject}
-        />
-      </ReportSection>
+        <ReportSection
+          id="report-alerts"
+          icon={Scale}
+          title="Brechas, alertas y desequilibrios"
+          description={`Dónde ${subject} avanza de forma despareja y qué dimensiones clave necesitan atención primero.`}
+        >
+          <ImbalanceInsights
+            profile={profile}
+            onHighlight={highlight.setHovered}
+            descriptions={descriptions}
+            plan={plan}
+            subject={subject}
+          />
+        </ReportSection>
 
-      <ReportSection
-        id="report-recommendation"
-        icon={Compass}
-        title="Recomendación del portafolio INNLAB"
-        description="El servicio de INNLAB que mejor corresponde al estado actual de la iniciativa, y por qué."
-      >
-        <RecommendationSummary recommendation={report.recommendation} subject={subject} />
-      </ReportSection>
+        <ReportSection
+          id="report-recommendation"
+          icon={Compass}
+          title="Recomendación del portafolio INNLAB"
+          description="El servicio de INNLAB que mejor corresponde al estado actual de la iniciativa, y por qué."
+        >
+          <RecommendationSummary recommendation={report.recommendation} subject={subject} />
+        </ReportSection>
 
-      <ReportSection
-        id="report-roadmap"
-        icon={Route}
-        title="Roadmap de escalamiento"
-        description="Las fases en que conviene trabajar las dimensiones y el servicio de INNLAB que podría acompañar cada una, de lo más liviano a lo más profundo."
-      >
-        <RoadmapPhaseList
-          roadmap={report.roadmap}
-          profile={profile}
-          levelScale={profile.levelScale}
-          dimensionNames={dimensionNames}
-          subject={subject}
-        />
-      </ReportSection>
+        <ReportSection
+          id="report-roadmap"
+          icon={Route}
+          title="Roadmap de escalamiento"
+          description="Las fases en que conviene trabajar las dimensiones y el servicio de INNLAB que podría acompañar cada una, de lo más liviano a lo más profundo."
+        >
+          <RoadmapPhaseList
+            roadmap={report.roadmap}
+            profile={profile}
+            levelScale={profile.levelScale}
+            dimensionNames={dimensionNames}
+            subject={subject}
+          />
+        </ReportSection>
 
-      <ReportSection
-        id="report-answers"
-        icon={ListChecks}
-        title="Respuestas al cuestionario"
-        description="Lo que respondiste a cada afirmación, de 1 (totalmente en desacuerdo) a 5 (totalmente de acuerdo), con tu justificación cuando la diste."
-      >
-        <ReportAnswers
-          answers={report.answers}
-          dimensions={profile.dimensionResults.map((r) => ({
-            code: r.dimensionCode,
-            shortName: r.shortName,
-            averageLikert: r.averageLikert,
-          }))}
-        />
-      </ReportSection>
+        <ReportSection
+          id="report-answers"
+          icon={ListChecks}
+          title="Respuestas al cuestionario"
+          description="Lo que respondiste a cada afirmación, de 1 (totalmente en desacuerdo) a 5 (totalmente de acuerdo), con tu justificación cuando la diste."
+        >
+          <ReportAnswers
+            answers={report.answers}
+            dimensions={profile.dimensionResults.map((r) => ({
+              code: r.dimensionCode,
+              shortName: r.shortName,
+              averageLikert: r.averageLikert,
+            }))}
+          />
+        </ReportSection>
 
-      <ReportAttributionSection report={report} />
-    </div>
+        <ReportAttributionSection report={report} />
+      </div>
+    </ReportSectionsProvider>
   );
 }
 
-/** A sticky bar to each section, marking the one being read, like the results'. */
-function ReportSectionNav(): JSX.Element {
+/**
+ * A sticky bar to each section, marking the one being read, like the
+ * results'. Choosing a folded section opens it.
+ */
+function ReportSectionNav({ sections }: { readonly sections: ReportSections }): JSX.Element {
   const active = useActiveSection(SECTION_IDS);
 
   return (
@@ -253,6 +272,9 @@ function ReportSectionNav(): JSX.Element {
           <li key={section.id}>
             <a
               href={`#${section.id}`}
+              onClick={() => {
+                sections.open(section.id);
+              }}
               aria-current={active === section.id ? 'location' : undefined}
               className="text-muted-foreground hover:text-foreground hover:border-primary/40 aria-[current=location]:border-primary aria-[current=location]:text-foreground flex h-12 items-center gap-2 border-b-2 border-transparent text-[0.9375rem] font-semibold aria-[current=location]:font-bold"
             >

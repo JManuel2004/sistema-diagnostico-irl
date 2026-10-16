@@ -7,6 +7,7 @@ import { SectionHeader } from '@/shared/ui/section-header';
 import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { formatDateTime, formatOneDecimal } from '@/shared/lib/format';
 import { namesOf } from '../lib/report-text';
+import { useReportSection } from '../hooks/useReportSections';
 
 /**
  * The sections of the full report that only the report has (RF-16 /
@@ -19,7 +20,11 @@ import { namesOf } from '../lib/report-text';
  * components only lay it out.
  */
 
-/** A section of the report: a landmark with its `h2`, its icon and its text. */
+/**
+ * A section of the report: a landmark with its `h2`, its icon and its text.
+ * Inside a `ReportSectionsProvider` its title folds it; folded, its content
+ * is not rendered.
+ */
 export function ReportSection({
   id,
   icon,
@@ -33,10 +38,25 @@ export function ReportSection({
   readonly description?: string;
   readonly children: ReactNode;
 }): JSX.Element {
+  const folding = useReportSection(id);
+  const contentId = `${id}-content`;
+  const open = folding?.open ?? true;
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-40">
-      <SectionHeader id={`${id}-title`} icon={icon} title={title} description={description} />
-      {children}
+      <SectionHeader
+        id={`${id}-title`}
+        icon={icon}
+        title={title}
+        description={description}
+        toggle={
+          folding
+            ? { expanded: folding.open, controls: contentId, onToggle: folding.toggle }
+            : undefined
+        }
+      />
+      <div id={contentId} hidden={!open}>
+        {open && children}
+      </div>
     </section>
   );
 }
