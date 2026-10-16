@@ -286,8 +286,10 @@ describe('Roadmap de escalamiento (e2e) — AgroConecta', () => {
         ]),
       ).toEqual([
         ['Célula de Grado · Posgrado', 3, false],
-        // Never lighter than Profundiza from here on, and none fits: approximate.
-        ['Consultoría Experta', 4, true],
+        // Never lighter than Profundiza from here on. Consultoría Experta works
+        // Negocio as primary, so it fits phase 2; nothing works Financiación,
+        // so phase 3 is approximate.
+        ['Consultoría Experta', 4, false],
         ['Célula Dedicada · Co.LAB', 4, true],
       ]);
       // The route opens with the recommendation itself.

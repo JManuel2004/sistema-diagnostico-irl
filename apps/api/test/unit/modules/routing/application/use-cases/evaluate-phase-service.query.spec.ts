@@ -98,12 +98,12 @@ describe('EvaluatePhaseServiceQuery — the service of each phase of the route',
     expect(value.trace.skipped).toEqual([
       { name: 'Reto Express', reason: 'ALREADY_IN_ROUTE' },
     ]);
-    // Reto en el Aula: Negocio secondary × 2 levels × 1.5 + stage 0.8 = 2.3.
+    // Reto en el Aula: Negocio primary × 2 levels × 1.5 + stage 0.8 = 3.8.
     expect(value.trace.ranking[0]).toMatchObject({
       name: 'Reto en el Aula',
-      score: 2.3,
+      score: 3.8,
       coverage: [
-        { dimension: 'BRL', sourceLabel: 'secondary', levels: 2 },
+        { dimension: 'BRL', sourceLabel: 'primary', levels: 2 },
         { dimension: 'IPRL', sourceLabel: 'not_applicable', levels: 2 },
       ],
     });

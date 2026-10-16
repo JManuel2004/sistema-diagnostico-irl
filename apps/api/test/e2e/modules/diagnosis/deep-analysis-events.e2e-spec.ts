@@ -199,7 +199,7 @@ describe('Análisis profundo por eventos (e2e) — AgroConecta', () => {
 
     expect(dto.resultType).toBe('RECOMMENDATION');
     expect(dto.primary?.name).toBe('Célula de Grado · Posgrado');
-    expect(dto.primary?.score).toBeCloseTo(4.55, 3);
+    expect(dto.primary?.score).toBeCloseTo(4.3, 3);
     expect(dto.alternatives.map((a) => a.name)).toEqual([
       'Academia a la Medida',
       'Reto Express',

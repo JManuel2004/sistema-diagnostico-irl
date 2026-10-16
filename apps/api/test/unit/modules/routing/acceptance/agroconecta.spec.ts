@@ -34,7 +34,9 @@ import type { CompiledExceptionRule } from '../../../../../src/modules/routing/d
  * anything.
  *
  * The services are INNLAB's official portfolio; their intensities, stages
- * and rules are simulated (see `data/routing.ts`).
+ * and rules are simulated (see `data/routing.ts`). The seed currently runs
+ * the binary-intensity trial (only primary and not applicable), and the
+ * values below are derived from it.
  *
  * AgroConecta profile: TRL 6 · CRL 4 · BRL 3 · IPRL 1 · TmRL 5 · FRL 2
  *   - bottleneck:       IPRL (level 1, no tie)
@@ -200,72 +202,74 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
     /**
      * Reto Express breakdown, derived by hand from the configuration:
      *
-     *   intensities → TRL 1.0 · CRL 0.5 · BRL 0.2 · IPRL 0.0 · TmRL 0.2 · FRL 0.0
+     *   intensities → TRL 1.0 · CRL 1.0 · BRL 0.0 · IPRL 0.0 · TmRL 0.0 · FRL 0.0
      *
      *   bottleneck (IPRL)  3.0 × 0.0                              = 0.00
-     *   gaps               1.5 × (BRL 0.2 + IPRL 0.0 + FRL 0.0)   = 0.30
-     *   imbalances      TRL-CRL   0.5 × max(1.0, 0.5) = 0.50
-     *                   TRL-BRL   0.5 × max(1.0, 0.2) = 0.50
+     *   gaps               1.5 × (BRL 0.0 + IPRL 0.0 + FRL 0.0)   = 0.00
+     *   imbalances      TRL-CRL   0.5 × max(1.0, 1.0) = 0.50
+     *                   TRL-BRL   0.5 × max(1.0, 0.0) = 0.50
      *                   CRL-BRL   acceptable          = 0.00
-     *                   TmRL-FRL  0.5 × max(0.2, 0.0) = 0.10
-     *                   BRL-IPRL  0.5 × max(0.2, 0.0) = 0.10
-     *                   TRL-IPRL  1.0 × max(1.0, 0.0) = 1.00      = 2.20
+     *                   TmRL-FRL  0.5 × max(0.0, 0.0) = 0.00
+     *                   BRL-IPRL  0.5 × max(0.0, 0.0) = 0.00
+     *                   TRL-IPRL  1.0 × max(1.0, 0.0) = 1.00      = 2.00
      *   stage affinity  validacion ∈ {idea, validacion}           = 0.80
      *   penalty         average 3.5 within 3–5                    = 0.00
-     *                                                     total =  3.30
+     *                                                     total =  2.80
      */
-    it('puntúa Reto Express en 3.30, con el desglose término a término esperado', () => {
+    it('puntúa Reto Express en 2.80, con el desglose término a término esperado', () => {
       const { initialRanking } = evaluate(FACTS_AGROCONECTA);
       const reto = initialRanking.find((c) => c.serviceName === 'Reto Express');
 
       expect(reto).toBeDefined();
       expect(reto!.contributions.bottleneck.value).toBeCloseTo(0, 3);
-      expect(reto!.contributions.gaps.value).toBeCloseTo(0.3, 3);
-      expect(reto!.contributions.imbalances.value).toBeCloseTo(2.2, 3);
+      expect(reto!.contributions.gaps.value).toBeCloseTo(0, 3);
+      expect(reto!.contributions.imbalances.value).toBeCloseTo(2.0, 3);
       expect(reto!.contributions.stageAffinity.value).toBeCloseTo(0.8, 3);
       expect(reto!.contributions.rangePenalty.applied).toBe(false);
-      expect(reto!.total).toBeCloseTo(3.3, 3);
+      expect(reto!.total).toBeCloseTo(2.8, 3);
     });
 
     /**
      * Célula de Grado · Posgrado breakdown, by hand:
      *
-     *   intensities → TRL 0.2 · CRL 1.0 · BRL 1.0 · IPRL 0.0 · TmRL 0.5 · FRL 0.2
+     *   intensities → TRL 0.0 · CRL 1.0 · BRL 1.0 · IPRL 0.0 · TmRL 1.0 · FRL 0.0
      *
      *   bottleneck (IPRL)  3.0 × 0.0                              = 0.00
-     *   gaps               1.5 × (BRL 1.0 + IPRL 0.0 + FRL 0.2)   = 1.80
-     *   imbalances      TRL-CRL   0.5 × max(0.2, 1.0) = 0.50
-     *                   TRL-BRL   0.5 × max(0.2, 1.0) = 0.50
+     *   gaps               1.5 × (BRL 1.0 + IPRL 0.0 + FRL 0.0)   = 1.50
+     *   imbalances      TRL-CRL   0.5 × max(0.0, 1.0) = 0.50
+     *                   TRL-BRL   0.5 × max(0.0, 1.0) = 0.50
      *                   CRL-BRL   acceptable          = 0.00
-     *                   TmRL-FRL  0.5 × max(0.5, 0.2) = 0.25
+     *                   TmRL-FRL  0.5 × max(1.0, 0.0) = 0.50
      *                   BRL-IPRL  0.5 × max(1.0, 0.0) = 0.50
-     *                   TRL-IPRL  1.0 × max(0.2, 0.0) = 0.20      = 1.95
+     *                   TRL-IPRL  1.0 × max(0.0, 0.0) = 0.00      = 2.00
      *   stage affinity  validacion ∈ {idea, validacion}           = 0.80
      *   penalty         average 3.5 within 3–5                    = 0.00
-     *                                                     total =  4.55
+     *                                                     total =  4.30
      */
-    it('puntúa Célula de Grado · Posgrado en 4.55: trabaja Cliente y Negocio dentro de su banda', () => {
+    it('puntúa Célula de Grado · Posgrado en 4.30: trabaja Cliente y Negocio dentro de su banda', () => {
       const { initialRanking } = evaluate(FACTS_AGROCONECTA);
       const posgrado = initialRanking.find(
         (c) => c.serviceName === 'Célula de Grado · Posgrado',
       );
 
       expect(posgrado).toBeDefined();
-      expect(posgrado!.contributions.gaps.value).toBeCloseTo(1.8, 3);
-      expect(posgrado!.contributions.imbalances.value).toBeCloseTo(1.95, 3);
+      expect(posgrado!.contributions.gaps.value).toBeCloseTo(1.5, 3);
+      expect(posgrado!.contributions.imbalances.value).toBeCloseTo(2.0, 3);
       expect(posgrado!.contributions.rangePenalty.applied).toBe(false);
-      expect(posgrado!.total).toBeCloseTo(4.55, 3);
+      expect(posgrado!.total).toBeCloseTo(4.3, 3);
     });
 
     /**
      * The rest, by hand (bottleneck + gaps + imbalances + stage − penalty):
-     *   Célula Dedicada · Co.LAB  0.60 + 1.05 + 2.50 + 0.0 − 2.0 = 2.15
-     *   Célula de Grado · Pregr.  0.60 + 0.60 + 2.10 + 0.8 − 2.0 = 2.10
-     *   Consultoría Experta       0.60 + 1.05 + 2.35 + 0.0 − 2.0 = 2.00
-     *   Reto en el Aula           0.00 + 0.75 + 2.25 + 0.8 − 2.0 = 1.80
-     *   Semillero con Propósito   0.00 + 0.30 + 2.35 + 0.8 − 2.0 = 1.45
-     *   Talento In-House          0.00 + 0.30 + 2.60 + 0.0 − 2.0 = 0.90
-     * Every one of them is outside its band for an average of 3.5.
+     *   Reto en el Aula           0.00 + 1.50 + 2.50 + 0.8 − 2.0 = 2.80
+     *   Célula Dedicada · Co.LAB  0.00 + 1.50 + 3.00 + 0.0 − 2.0 = 2.50
+     *   Consultoría Experta       0.00 + 1.50 + 2.50 + 0.0 − 2.0 = 2.00
+     *   Semillero con Propósito   0.00 + 0.00 + 2.50 + 0.8 − 2.0 = 1.30
+     *   Célula de Grado · Pregr.  0.00 + 0.00 + 2.00 + 0.8 − 2.0 = 0.80
+     *   Talento In-House          0.00 + 0.00 + 2.50 + 0.0 − 2.0 = 0.50
+     * Every one of them is outside its band for an average of 3.5. Reto
+     * Express and Reto en el Aula tie at 2.80; the lower service id goes
+     * first.
      */
     it('produce el ranking previo a los ajustes esperado', () => {
       const { initialRanking } = evaluate(FACTS_AGROCONECTA);
@@ -273,14 +277,14 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
       expect(
         initialRanking.map((c) => [c.serviceName, c.total] as const),
       ).toEqual([
-        ['Célula de Grado · Posgrado', 4.55],
-        ['Reto Express', 3.3],
-        ['Célula Dedicada · Co.LAB', 2.15],
-        ['Célula de Grado · Pregrado', 2.1],
+        ['Célula de Grado · Posgrado', 4.3],
+        ['Reto Express', 2.8],
+        ['Reto en el Aula', 2.8],
+        ['Célula Dedicada · Co.LAB', 2.5],
         ['Consultoría Experta', 2.0],
-        ['Reto en el Aula', 1.8],
-        ['Semillero con Propósito', 1.45],
-        ['Talento In-House', 0.9],
+        ['Semillero con Propósito', 1.3],
+        ['Célula de Grado · Pregrado', 0.8],
+        ['Talento In-House', 0.5],
       ]);
     });
 
@@ -290,10 +294,10 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
         (c) => c.serviceName === 'Célula Dedicada · Co.LAB',
       )!;
 
-      // It is what allows explaining "it is marginal in IPRL" instead of
-      // exposing the 0.2 of the calibration.
+      // It is what allows explaining "it does not apply to IPRL" instead of
+      // exposing the 0.0 of the calibration.
       expect(colab.contributions.bottleneck.details).toEqual([
-        { dimension: 'IPRL', sourceLabel: 'marginal', value: 0.2 },
+        { dimension: 'IPRL', sourceLabel: 'not_applicable', value: 0 },
       ]);
     });
   });
@@ -325,11 +329,11 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
         'Célula de Grado · Posgrado',
         'Academia a la Medida',
         'Reto Express',
-        'Célula Dedicada · Co.LAB',
-        'Célula de Grado · Pregrado',
-        'Consultoría Experta',
         'Reto en el Aula',
+        'Célula Dedicada · Co.LAB',
+        'Consultoría Experta',
         'Semillero con Propósito',
+        'Célula de Grado · Pregrado',
         'Talento In-House',
       ]);
       expect(isIncluded(finalRanking[1])).toBe(true);
@@ -350,7 +354,8 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
     it('recomienda Célula de Grado · Posgrado, con Academia a la Medida (exenta del umbral) y Reto Express', () => {
       const { finalRanking } = evaluate(FACTS_AGROCONECTA);
       // The included service passes without a score; of the scored ones,
-      // only Célula de Grado · Posgrado and Reto Express reach the threshold (2.5).
+      // four reach the threshold (2.5). The result shows the first two
+      // after the recommendation.
       const eligibleForResult = finalRanking.filter(
         (c) => isIncluded(c) || c.total >= SCORING_PARAMETERS.minimumThreshold,
       );
@@ -359,6 +364,8 @@ describe('Aceptación — enrutamiento de portafolio para AgroConecta', () => {
         'Célula de Grado · Posgrado',
         'Academia a la Medida',
         'Reto Express',
+        'Reto en el Aula',
+        'Célula Dedicada · Co.LAB',
       ]);
     });
   });
