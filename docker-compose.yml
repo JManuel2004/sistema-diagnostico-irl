@@ -29,5 +29,25 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
+  # Sign-in simulator: replaces the INNLAB Hub, Core and the Cognito keys
+  # when they are not available (a demo, CI). Off by default: it only starts
+  # with `--profile simulated`, and it refuses to start without
+  # AUTH_SIMULATOR_CONFIRM. It signs in anyone as a test user, so never
+  # point a real deployment at it. See docs/workflows/LOCAL-SETUP.md.
+  auth-simulator:
+    profiles: ['simulated']
+    build: ./tools/auth-simulator
+    container_name: irl-auth-simulator
+    ports:
+      - '8090:8090'
+    environment:
+      AUTH_SIMULATOR_CONFIRM: ${AUTH_SIMULATOR_CONFIRM:-}
+      # The issuer written in every token. The API compares it with
+      # COGNITO_ISSUER as text, so it stays the browser-facing address even
+      # when the API reaches the simulator by its service name.
+      AUTH_SIMULATOR_ISSUER: http://localhost:8090
+      AUTH_SIMULATOR_INTERNAL_KEY: simulated-internal-key
+      AUTH_SIMULATOR_REDIRECT_ORIGINS: ${AUTH_SIMULATOR_REDIRECT_ORIGINS:-http://localhost:5173,http://localhost:4173,http://localhost:8080}
+
 volumes:
   irl-postgres-data:

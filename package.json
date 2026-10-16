@@ -22,6 +22,8 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "db:up": "docker compose -f docker-compose.yml up -d postgres mailpit",
     "db:down": "docker compose -f docker-compose.yml down",
+    "auth:simulated:up": "docker compose --profile simulated up -d --build auth-simulator",
+    "test:simulator": "node --test tools/auth-simulator/server.test.mjs",
     "prepare": "husky"
   },
   "devDependencies": {
