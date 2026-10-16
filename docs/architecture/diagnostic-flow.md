@@ -49,7 +49,7 @@ STARTED ──InitiativeRegisteredEvent──▶ (WITH_CONSENT ▶) WITH_INITIAT
 - **The inputs freeze with the results** (MD-04): the answers are accepted only up to `QUESTIONNAIRE_COMPLETE` (processing again from `PROFILE_GENERATED` answers 409), and the initiative profile cannot be corrected once the deep analysis is accepted (409; the frontend hides «Editar iniciativa»).
 - `completed` (the profile exists: `PROFILE_GENERATED` or later), `deepAnalysisAccepted` and `deepAnalysisCompleted` (`DEEP_ANALYSIS_COMPLETE`: the full report exists) are derived by the backend and exposed on `GET /diagnostics/:id`; the frontend decides what to show from them and infers nothing from the state.
 - The deep analysis is complete once both of its results are saved: `diagnosis` records when each "calculated" event arrives (`recommendation_calculated_at`, `roadmap_calculated_at`) and, with both, moves the diagnostic to `DEEP_ANALYSIS_COMPLETE` ([ADR 0008](./decisions/0008-deep-analysis-completes-from-its-results.md)).
-- `DEEP_ANALYSIS_DECLINED` exists in the state machine but nothing moves a diagnostic into it yet: «Por ahora no» only takes the user to the panel.
+- There is no declined state: «Por ahora no» only takes the user to the panel. The diagnostic stays in `PROFILE_GENERATED` and the deep analysis can still be accepted from its results.
 
 ## Who does what (backend modules)
 

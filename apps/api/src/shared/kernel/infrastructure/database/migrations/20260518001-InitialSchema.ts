@@ -357,7 +357,7 @@ const UP: readonly string[] = [
       CONSTRAINT pk_diagnostic PRIMARY KEY (id),
       CONSTRAINT ck_diagnostic_state CHECK (state IN (
         'STARTED', 'WITH_CONSENT', 'WITH_INITIATIVE', 'QUESTIONNAIRE_IN_PROGRESS',
-        'QUESTIONNAIRE_COMPLETE', 'PROFILE_GENERATED', 'DEEP_ANALYSIS_DECLINED',
+        'QUESTIONNAIRE_COMPLETE', 'PROFILE_GENERATED',
         'DEEP_ANALYSIS_IN_PROGRESS', 'DEEP_ANALYSIS_COMPLETE'
       )),
       CONSTRAINT fk_diagnostic_framework_version FOREIGN KEY (id_framework_version) REFERENCES irl_catalog.framework_version (id)

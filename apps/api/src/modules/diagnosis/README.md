@@ -25,7 +25,7 @@ Runs the IRL questionnaire (48 statements, Likert scale 1..5) and computes the m
 - Implemented: questionnaire (E-03) with the optional justification of each answer, maturity profile (E-04) with the critical state, acceptance of the deep analysis (RF-11), reaction to the initiative profile (RF-03, RF-04), starting one's own diagnostic (HU-04, `StartDiagnosisUseCase`), listing one's completed diagnostics (DIAGIRL-26, `ListUserDiagnosesQuery`) and reading one's own diagnostic (`GetDiagnosisUseCase`).
 - **Consent and initiative are mandatory steps**: `StartDiagnosisUseCase` leaves the diagnostic in `STARTED`; `InitiativeRegisteredEvent` (a profile is only registered with a current consent) takes it through `WITH_CONSENT` to `WITH_INITIATIVE`, and processing the questionnaire takes it through `QUESTIONNAIRE_IN_PROGRESS` up to `PROFILE_GENERATED`.
 - **Known limit:** deleting the unfinished diagnostics and creating the new one are two steps; two simultaneous starts (two tabs) can each create one, and the second deletes the first.
-- Pending: `DEEP_ANALYSIS_DECLINED` exists in the state machine but nothing moves a diagnostic into it («Por ahora no» records nothing).
+- Not accepting the deep analysis («Por ahora no») records nothing: there is no declined state, the diagnostic stays in `PROFILE_GENERATED` and the analysis can be accepted later.
 
 ## Responsibility (ubiquitous language)
 "Taking the diagnostic": answering the 48 statements, getting the initiative's maturity level in each dimension and knowing where the bottleneck is and which imbalances there are between dimensions.
