@@ -179,10 +179,19 @@ describe('Guard global de Cognito (e2e)', () => {
     );
     const now = Math.floor(Date.now() / 1000);
     const payload = base64url(
-      JSON.stringify({ iss: ISSUER, iat: now, exp: now + 3600, ...VALID_CLAIMS }),
+      JSON.stringify({
+        iss: ISSUER,
+        iat: now,
+        exp: now + 3600,
+        ...VALID_CLAIMS,
+      }),
     );
     const forged = `${header}.${payload}.${base64url(
-      sign('RSA-SHA256', Buffer.from(`${header}.${payload}`), intruder.privateKey),
+      sign(
+        'RSA-SHA256',
+        Buffer.from(`${header}.${payload}`),
+        intruder.privateKey,
+      ),
     )}`;
 
     await request(server)
@@ -191,10 +200,39 @@ describe('Guard global de Cognito (e2e)', () => {
       .expect(401);
   });
 
+  // Plan de pruebas: token expirado. A token whose `exp` passed is refused
+  // even though its signature, issuer and type are right.
+  it('rechaza un token vencido', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const expired = mintToken({
+      ...VALID_CLAIMS,
+      iat: now - 7200,
+      exp: now - 60,
+    });
+
+    await request(server)
+      .get('/protegido')
+      .set('Authorization', `Bearer ${expired}`)
+      .expect(401);
+  });
+
+  it('acepta el mismo token mientras no ha vencido', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const live = mintToken({ ...VALID_CLAIMS, iat: now - 7200, exp: now + 60 });
+
+    await request(server)
+      .get('/protegido')
+      .set('Authorization', `Bearer ${live}`)
+      .expect(200);
+  });
+
   it('rechaza un token cuyo kid no esta en el JWKS', async () => {
     await request(server)
       .get('/protegido')
-      .set('Authorization', `Bearer ${mintToken(VALID_CLAIMS, { kid: 'other-kid' })}`)
+      .set(
+        'Authorization',
+        `Bearer ${mintToken(VALID_CLAIMS, { kid: 'other-kid' })}`,
+      )
       .expect(401);
   });
 
