@@ -179,17 +179,66 @@ Cognito, and it returns to `/auth/callback?code=…`, which the SPA exchanges fo
 tokens against `VITE_CORE_API_URL`. See the `auth` feature in
 [`apps/web/docs/MODULES.md`](../../apps/web/docs/MODULES.md).
 
-### 5c. InnLab Core mock — first-time only
+### 5c. Simulated sign-in — when Core and Cognito are not available
 
-The real InnLab Core API isn't accessible from local development. The repo includes a minimal mock server. From a separate terminal:
+For a demo, for CI, or whenever INNLAB Core or the Cognito pool cannot be
+reached, the repo ships a **sign-in simulator** (`tools/auth-simulator/`). It
+stands in for the four things this system uses from the ecosystem: the Hub
+page (`/auth/sso`), Core's code exchange, session check and logout
+(`/api/auth/*`), Core's user context (`/api/internal/users/:id/context`) and
+the public keys and issuer of the tokens (`/.well-known/jwks.json`).
 
-```bash
-cd tools/innlab-core-mock
-pnpm install
-pnpm start    # listens on :8081
-```
+It is not an identity provider: there are no passwords. Its page lists the
+test users of `tools/auth-simulator/users.json` and signs in as the one you
+pick. Its signing key is generated at start-up, so restarting it signs
+everyone out.
 
-The mock responds to `POST /oauth/token` (returns a fake service token) and `GET /users/:id` (returns canned user contexts). It's enough to exercise the local flow end-to-end.
+**Switching mode is done only with environment variables.** No code changes.
+
+1. Start the simulator. It is off by default (compose profile `simulated`)
+   and it refuses to start without the confirmation variable:
+
+   ```bash
+   AUTH_SIMULATOR_CONFIRM=simulated-sign-in-only pnpm auth:simulated:up
+   ```
+
+   If the SPA is served from an origin other than `http://localhost:5173`,
+   `:4173` or `:8080`, add it to `AUTH_SIMULATOR_REDIRECT_ORIGINS`
+   (comma-separated): the simulator only sends the sign-in code back to
+   those origins.
+
+2. Create `apps/api/.env.local` with the simulated values. It is read
+   before `.env`, so it overrides the real ones:
+
+   ```dotenv
+   COGNITO_JWKS_URI=http://localhost:8090/.well-known/jwks.json
+   COGNITO_ISSUER=http://localhost:8090
+   INNLAB_API_BASE_URL=http://localhost:8090/api
+   CORE_INTERNAL_KEY=simulated-internal-key
+   ```
+
+3. Create `apps/web/.env.local`:
+
+   ```dotenv
+   VITE_CORE_URL=http://localhost:8090
+   VITE_CORE_API_URL=http://localhost:8090/api
+   ```
+
+4. Restart `pnpm dev`. «Iniciar diagnóstico» now opens the simulator's page.
+
+**Back to the real mode:** delete both `.env.local` files and restart
+`pnpm dev`. Stop the simulator with `docker compose --profile simulated stop auth-simulator`.
+
+Safeguards against turning it on by mistake in a real deployment:
+
+- It only starts with `--profile simulated` **and** `AUTH_SIMULATOR_CONFIRM=simulated-sign-in-only`.
+- Its tokens carry `simulated: true` and its issuer is its own address, so a
+  deployment configured with the real Cognito pool rejects them (401).
+- Its page says «Modo simulado» on top, so nobody mistakes it for the Hub.
+- The real values live in `.env`, the simulated ones only in `.env.local`:
+  deleting one file is the whole way back.
+
+The simulator's contract is covered by `pnpm test:simulator`.
 
 ## Step 6 — Apply database migrations and seeds
 
