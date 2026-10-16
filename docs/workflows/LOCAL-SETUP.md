@@ -203,7 +203,7 @@ everyone out.
    ```
 
    If the SPA is served from an origin other than `http://localhost:5173`,
-   `:4173` or `:8080`, add it to `AUTH_SIMULATOR_REDIRECT_ORIGINS`
+   `:4173`, `:4174` (the full-stack browser tests) or `:8080` (the local deployment), add it to `AUTH_SIMULATOR_REDIRECT_ORIGINS`
    (comma-separated): the simulator only sends the sign-in code back to
    those origins.
 

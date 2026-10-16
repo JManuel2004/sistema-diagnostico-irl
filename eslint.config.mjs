@@ -19,6 +19,7 @@ export default tseslint.config(
       // cannot parse them; `pnpm lint` does not cover them either (web lints src/).
       'apps/web/tests/**',
       'apps/web/playwright.config.ts',
+      'apps/web/playwright.full-stack.config.ts',
     ],
   },
   js.configs.recommended,

@@ -16,7 +16,8 @@
     "test:ui": "vitest --ui",
     "test:unit": "vitest run",
     "test:cov": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:full-stack": "playwright test -c playwright.full-stack.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

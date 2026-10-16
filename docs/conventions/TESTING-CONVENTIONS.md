@@ -18,6 +18,11 @@ Three principles guide every test we write:
 | **Integration** | `apps/api/test/integration/` | Jest + Testcontainers (Postgres) | Repositories, use cases with real DB                                    | Full suite < 60s  |
 | **E2E**         | `apps/api/test/e2e/`         | Jest + supertest + nock          | Full HTTP cycle, one spec per user story, self-signed JWT + mocked JWKS | Full suite < 3min |
 
+Two suites reach real external services, and only them:
+
+- **INNLAB Core** (`test/integration/external/innlab-core.spec.ts`): runs against Core's development instance only when `CORE_IT_BASE_URL` and `CORE_IT_INTERNAL_KEY` are set and the instance answers; otherwise it is skipped with a warning (`CORE_IT_USER_ID`, optional, adds the read of a real user's context). Dedicated variables, not the app's: pointing the tests at a real service is a decision.
+- **The report mail** (`test/e2e/modules/reporting/report-mail*.e2e-spec.ts`): the test inbox of `docker-compose.yml` (Mailpit, `pnpm db:up`) receives the mail and the suite reads it through Mailpit's API (`MAILPIT_API`, default `http://localhost:8025`); the failure suite points the SMTP at a closed port. Both set their own mail settings before importing `AppModule` (`support/deep-analysis-case.ts`), so the tests never mail with the `.env` settings.
+
 ### Running the tiers
 
 - **Node ≥ 24.9** is required (`.nvmrc`, `engines`): `jose`/`jwks-rsa` load ESM through `require()`, which Jest supports only from that version. On older Node the identity unit suite and every e2e suite fail to load.
@@ -292,7 +297,14 @@ MSW intercepts at the network layer; your real HTTP client code runs.
 
 ### Playwright E2E
 
-`apps/web/tests/e2e/` holds the browser tests of whole flows; `diagnostic-flow.spec.ts` goes from the landing through the four wizard steps to the results. `pnpm --filter @innlab/web test:e2e` builds the app, serves it with `vite preview` on port 4173 and runs the specs in Chromium (`playwright.config.ts`).
+Two configurations:
+
+- **`playwright.config.ts`** (`pnpm --filter @innlab/web test:e2e`): `tests/e2e/`, the API faked in the browser (below).
+- **`playwright.full-stack.config.ts`** (`pnpm --filter @innlab/web test:full-stack`): `tests/full-stack/`, against the **real stack** — the built SPA, the API built from the repository, its database, the test inbox and the sign-in simulator (`tools/auth-simulator`) in place of the Hub, Core and Cognito. It covers the flows of the test plan: the full flow with the deep analysis and the PDF download, the flow without the deep analysis, and the errors (incomplete questionnaire, invalid session, a service that does not answer, the only place a fault is injected with `page.route`). The config starts the API (port 3200) and the built SPA (port 4174) itself; the database must be migrated and seeded and the API built (`pnpm --filter @innlab/api build`). The tests share three simulated users, so they run one at a time, and each starts its diagnostic with «descartar» if a previous run left one in progress.
+
+Both run in the browsers of `E2E_BROWSERS` (comma separated: `chromium`, `firefox`, `msedge`). Locally Chromium and Firefox (`pnpm exec playwright install firefox`); Microsoft Edge needs the browser installed, which the Jenkins image has. In CI they keep the trace and screenshots of every test and write JUnit and HTML reports under `test-results/` and `playwright-report/`.
+
+`apps/web/tests/e2e/` holds the browser tests of whole flows with the API faked; `diagnostic-flow.spec.ts` goes from the landing through the four wizard steps to the results. `pnpm --filter @innlab/web test:e2e` builds the app, serves it with `vite preview` on port 4173 and runs the specs (`playwright.config.ts`).
 
 - **The API is faked in the browser** with `page.route`: a small in-memory backend per spec, so what the app reads back is what it wrote. The payloads come from the same fixtures the component tests use (`src/test/fixtures/`), typed with the `@innlab/contracts` types.
 - **The INNLAB session is seeded** into `localStorage` under `innlab.session.v1` before the page loads. No Hub, no Cognito, no backend.

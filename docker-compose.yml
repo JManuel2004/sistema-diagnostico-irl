@@ -47,7 +47,7 @@ services:
       # when the API reaches the simulator by its service name.
       AUTH_SIMULATOR_ISSUER: http://localhost:8090
       AUTH_SIMULATOR_INTERNAL_KEY: simulated-internal-key
-      AUTH_SIMULATOR_REDIRECT_ORIGINS: ${AUTH_SIMULATOR_REDIRECT_ORIGINS:-http://localhost:5173,http://localhost:4173,http://localhost:8080}
+      AUTH_SIMULATOR_REDIRECT_ORIGINS: ${AUTH_SIMULATOR_REDIRECT_ORIGINS:-http://localhost:5173,http://localhost:4173,http://localhost:4174,http://localhost:8080}
 
 volumes:
   irl-postgres-data:
