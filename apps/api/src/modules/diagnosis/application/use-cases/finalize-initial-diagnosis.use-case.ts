@@ -2,6 +2,7 @@ import type { MaturityProfileResponse } from '@innlab/contracts';
 import { type DiagnosisRepositoryPort } from '../../domain/repositories/diagnosis.repository.port.js';
 import type { SubmitQuestionnaireUseCase } from './submit-questionnaire.use-case.js';
 import { type AnswerSheetRepositoryPort } from '../../domain/repositories/answer-sheet.repository.port.js';
+import { type QuestionnaireDraftRepositoryPort } from '../../domain/repositories/questionnaire-draft.repository.port.js';
 import type { ComputeMaturityProfileUseCase } from './compute-maturity-profile.use-case.js';
 import { type TaxonomyRepositoryPort } from '../../../../shared/irl-taxonomy/domain/repositories/taxonomy.repository.port.js';
 import { toMaturityProfileResponse } from '../dtos/map-maturity-profile-response.js';
@@ -40,6 +41,7 @@ export class FinalizeInitialDiagnosisUseCase {
     private readonly submitQuestionnaire: SubmitQuestionnaireUseCase,
     private readonly computeProfile: ComputeMaturityProfileUseCase,
     private readonly taxonomy: TaxonomyRepositoryPort,
+    private readonly drafts: QuestionnaireDraftRepositoryPort,
   ) {}
 
   async execute(
@@ -110,6 +112,8 @@ export class FinalizeInitialDiagnosisUseCase {
     }
 
     await this.diagnostics.save(diagnosis);
+    // The answers are saved for good: the draft has nothing left to recover.
+    await this.drafts.deleteByDiagnosticId(cmd.diagnosticId);
 
     const [dimensions, levels] = await Promise.all([
       this.taxonomy.findAllDimensions(),
