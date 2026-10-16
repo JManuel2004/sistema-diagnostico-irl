@@ -27,7 +27,6 @@ import { fileURLToPath } from 'node:url';
 export const CONFIRMATION = 'simulated-sign-in-only';
 
 const CODE_TTL_MS = 30_000;
-const KID = 'auth-simulator-1';
 
 function base64url(input) {
   return Buffer.from(input).toString('base64url');
@@ -69,7 +68,10 @@ export function optionsFromEnv(env = process.env) {
 /** Builds the simulator. `listen()` is left to the caller. */
 export function createSimulator(options) {
   const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
-  const jwks = { keys: [{ ...publicKey.export({ format: 'jwk' }), kid: KID, alg: 'RS256', use: 'sig' }] };
+  // A new key id on every start: the API caches keys by id, so a restarted
+  // simulator's key is fetched again instead of being mistaken for the old one.
+  const kid = `auth-simulator-${randomBytes(6).toString('hex')}`;
+  const jwks = { keys: [{ ...publicKey.export({ format: 'jwk' }), kid, alg: 'RS256', use: 'sig' }] };
 
   /** code → { userId, expiresAt } */
   const codes = new Map();
@@ -77,7 +79,7 @@ export function createSimulator(options) {
   const revoked = new Set();
 
   function signToken(claims) {
-    const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: KID }));
+    const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid }));
     const payload = base64url(JSON.stringify(claims));
     const signature = sign('RSA-SHA256', Buffer.from(`${header}.${payload}`), privateKey);
     return `${header}.${payload}.${base64url(signature)}`;

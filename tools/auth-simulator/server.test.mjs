@@ -83,6 +83,17 @@ describe('code exchange', () => {
     assert.ok(verify('RSA-SHA256', Buffer.from(`${header}.${payload}`), key, Buffer.from(signature, 'base64url')));
   });
 
+  it('names its key differently on every start, so a restart is never mistaken for the old key', async () => {
+    const other = createSimulator(options);
+    await new Promise((resolve) => other.listen(0, '127.0.0.1', resolve));
+    const otherBase = `http://127.0.0.1:${String(other.address().port)}`;
+    const [mine, theirs] = await Promise.all(
+      [base, otherBase].map(async (b) => (await (await fetch(`${b}/.well-known/jwks.json`)).json()).keys[0].kid),
+    );
+    other.close();
+    assert.notEqual(mine, theirs);
+  });
+
   it('accepts each code once, like Core', async () => {
     const { code } = await signIn();
     const again = await fetch(`${base}/api/auth/sso/exchange?code=${code}`);
