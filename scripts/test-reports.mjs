@@ -6,7 +6,7 @@
  *     Converts a Jest / Vitest JSON report (`--json` / `--reporter=json`)
  *     to JUnit XML, the format Jenkins displays.
  *
- *   node scripts/test-reports.mjs matrix <reports dir> <out.md>
+ *   node scripts/test-reports.mjs matrix <reports dir> <out.md> [where the results come from]
  *     Writes the acceptance matrix: each functional requirement of the SRS
  *     with the test cases that verify it and their result in this run.
  *     Reads from <reports dir>: api.json (Jest), web.json (Vitest),
@@ -178,6 +178,12 @@ const REPORT_FILES = {
   browser: ['browser-mocked.json', 'browser-full-stack.json'],
 };
 
+/** Playwright names files relative to its test directory: put the directory back. */
+const BROWSER_DIRS = {
+  'browser-mocked.json': 'tests/e2e/',
+  'browser-full-stack.json': 'tests/full-stack/',
+};
+
 const LEVEL = {
   api: (file) =>
     file.includes('/e2e/') ? 'API extremo a extremo' : file.includes('/integration/') ? 'API integración' : 'API unitaria',
@@ -200,7 +206,7 @@ function casesOfJest(json, report) {
 }
 
 /** Playwright JSON: nested suites, each spec with one test per browser. */
-function casesOfPlaywright(json, report) {
+function casesOfPlaywright(json, report, dir) {
   const out = [];
   const walk = (suite, titles) => {
     for (const spec of suite.specs ?? []) {
@@ -210,7 +216,7 @@ function casesOfPlaywright(json, report) {
           t.status === 'skipped' ? 'skipped' : t.status === 'expected' || t.status === 'flaky' ? 'passed' : 'failed';
         out.push({
           report,
-          file: `tests/${spec.file}`,
+          file: `${dir}${spec.file}`,
           name: `[${t.projectName}] ${[...titles, spec.title].join(' ')}`,
           status,
           duration: last?.duration ?? 0,
@@ -233,7 +239,11 @@ function loadCases(dir) {
       if (!existsSync(path)) continue;
       ran.add(report);
       const json = JSON.parse(readFileSync(path, 'utf8'));
-      cases.push(...(report === 'browser' ? casesOfPlaywright(json, report) : casesOfJest(json, report)));
+      cases.push(
+        ...(report === 'browser'
+          ? casesOfPlaywright(json, report, BROWSER_DIRS[f])
+          : casesOfJest(json, report)),
+      );
     }
   }
   return { cases, ran };
@@ -269,7 +279,7 @@ function statusOf(cases) {
   return 'Pasa';
 }
 
-function matrix(dir, output) {
+function matrix(dir, output, source) {
   const { cases, ran } = loadCases(dir);
   const when = new Date().toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' });
   const lines = [
@@ -279,7 +289,7 @@ function matrix(dir, output) {
     'Este archivo se genera con `node scripts/test-reports.mjs matrix <reportes> docs/testing/matriz-aceptacion.md`',
     'a partir de los reportes de Jest, Vitest y Playwright; el pipeline de Jenkins lo regenera en cada ejecución.',
     '',
-    `Última ejecución: ${when}`,
+    source ? `Resultados de: ${source}. Matriz generada: ${when}` : `Matriz generada: ${when}`,
     `Reportes leídos: ${['api', 'web', 'browser'].map((r) => `${r} ${ran.has(r) ? 'sí' : 'no'}`).join(', ')}.`,
     '',
     '## Resumen',
@@ -325,7 +335,7 @@ function matrix(dir, output) {
 
 const [command, ...args] = process.argv.slice(2);
 if (command === 'junit') junit(args[0], args[1], args[2] ?? 'tests');
-else if (command === 'matrix') matrix(args[0], args[1]);
+else if (command === 'matrix') matrix(args[0], args[1], args[2]);
 else {
   process.stderr.write('usage: test-reports.mjs junit <in.json> <out.xml> <name> | matrix <dir> <out.md>\n');
   process.exit(2);

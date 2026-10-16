@@ -132,7 +132,7 @@ pipeline {
   post {
     always {
       // The acceptance matrix of this run, from whatever reports exist.
-      sh 'node scripts/test-reports.mjs matrix reports reports/matriz-aceptacion.md || true'
+      sh "node scripts/test-reports.mjs matrix reports reports/matriz-aceptacion.md 'Jenkins, ejecución ${env.BUILD_NUMBER} de la rama ${params.BRANCH ?: env.GIT_BRANCH}' || true"
       junit allowEmptyResults: true,
         testResults: 'reports/*-junit.xml, apps/web/test-results/*/junit.xml'
       archiveArtifacts allowEmptyArchive: true, artifacts: [
