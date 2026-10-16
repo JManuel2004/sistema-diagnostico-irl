@@ -16,6 +16,7 @@ import { NotifyInnlabOfCompletedReportUseCase } from './application/use-cases/no
 import { REPORT_RENDERER } from './application/ports/report-renderer.port.js';
 import { PdfkitReportRenderer } from './infrastructure/pdf/pdfkit-report.renderer.js';
 import { NodemailerReportMailer } from './infrastructure/mail/nodemailer-report-mailer.js';
+import { ResendReportMailer } from './infrastructure/mail/resend-report-mailer.js';
 import { DeepAnalysisCompletedListener } from './infrastructure/messaging/deep-analysis-completed.listener.js';
 import { ReportSourcesAdapter } from './infrastructure/report-sources.adapter.js';
 import { ReportController } from './presentation/controllers/report.controller.js';
@@ -50,13 +51,18 @@ import { ReportController } from './presentation/controllers/report.controller.j
     {
       provide: REPORT_MAILER,
       useFactory: (cfg: ConfigType<typeof appConfig>) =>
-        new NodemailerReportMailer({
-          host: cfg.mail.host,
-          port: cfg.mail.port,
-          user: cfg.mail.user,
-          password: cfg.mail.password,
-          from: cfg.mail.from,
-        }),
+        cfg.mail.transport === 'resend'
+          ? new ResendReportMailer({
+              apiKey: cfg.mail.resendApiKey,
+              from: cfg.mail.from,
+            })
+          : new NodemailerReportMailer({
+              host: cfg.mail.host,
+              port: cfg.mail.port,
+              user: cfg.mail.user,
+              password: cfg.mail.password,
+              from: cfg.mail.from,
+            }),
       inject: [appConfig.KEY],
     },
     applicationProvider(NotifyInnlabOfCompletedReportUseCase, [

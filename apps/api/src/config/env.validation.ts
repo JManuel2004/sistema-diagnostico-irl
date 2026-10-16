@@ -26,9 +26,11 @@ export const envValidationSchema = Joi.object({
     .valid('trace', 'debug', 'info', 'warn', 'error')
     .default('info'),
 
-  // Where the finished report is mailed. Both empty disables the
-  // notification; the report stays available on screen.
+  // Where the finished report is mailed. Empty destination disables it.
+  // `RESEND_API_KEY` sends over HTTPS. Without it, SMTP is used (local
+  // Mailpit). A free Render service cannot open SMTP ports.
   REPORT_NOTIFY_TO: Joi.string().email().allow('').optional(),
+  RESEND_API_KEY: Joi.string().allow('').optional(),
   SMTP_HOST: Joi.string().allow('').optional(),
   SMTP_PORT: Joi.number().default(1025),
   SMTP_USER: Joi.string().allow('').optional(),

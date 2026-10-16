@@ -54,14 +54,16 @@ export interface InnLabCoreConfig {
 }
 
 /**
- * Mail of the finished report to INNLAB. Empty destination or host means
- * the notification is off: the analysis and the on-screen report do not
- * depend on a mail server.
+ * Mail of the finished report to INNLAB. The notification is off unless
+ * there is a destination and a way to send it. `resend` uses HTTPS, which
+ * is what a free Render service can do. `smtp` stays for the local inbox.
  */
 export interface MailConfig {
   readonly enabled: boolean;
+  readonly transport: 'resend' | 'smtp';
   readonly to: string;
   readonly from: string;
+  readonly resendApiKey: string;
   readonly host: string;
   readonly port: number;
   readonly user: string;
@@ -126,11 +128,21 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
 function mailConfig(env: NodeJS.ProcessEnv): MailConfig {
   const to = env.REPORT_NOTIFY_TO ?? '';
+  const resendApiKey = env.RESEND_API_KEY ?? '';
   const host = env.SMTP_HOST ?? '';
+  const useResend = resendApiKey !== '';
+  const configuredFrom = env.SMTP_FROM ?? '';
   return {
-    enabled: to !== '' && host !== '',
+    enabled: to !== '' && (useResend || host !== ''),
+    transport: useResend ? 'resend' : 'smtp',
     to,
-    from: env.SMTP_FROM ?? 'noreply@innlab.icesi.edu.co',
+    from:
+      configuredFrom !== ''
+        ? configuredFrom
+        : useResend
+          ? 'INNLAB Diagnostico <onboarding@resend.dev>'
+          : 'noreply@innlab.icesi.edu.co',
+    resendApiKey,
     host,
     port: Number(env.SMTP_PORT ?? 1025),
     user: env.SMTP_USER ?? '',
