@@ -84,10 +84,6 @@ export class QuestionnaireDraft {
     return [...this.byStatement.values()];
   }
 
-  statementIds(): readonly string[] {
-    return [...this.byStatement.keys()];
-  }
-
   /** Statements with a level chosen. */
   get answeredCount(): number {
     return this.entries().filter((e) => e.value !== null).length;
