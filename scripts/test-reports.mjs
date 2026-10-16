@@ -279,7 +279,7 @@ function matrix(dir, output) {
     'Este archivo se genera con `node scripts/test-reports.mjs matrix <reportes> docs/testing/matriz-aceptacion.md`',
     'a partir de los reportes de Jest, Vitest y Playwright; el pipeline de Jenkins lo regenera en cada ejecución.',
     '',
-    `Última ejecución: ${when}.`,
+    `Última ejecución: ${when}`,
     `Reportes leídos: ${['api', 'web', 'browser'].map((r) => `${r} ${ran.has(r) ? 'sí' : 'no'}`).join(', ')}.`,
     '',
     '## Resumen',
