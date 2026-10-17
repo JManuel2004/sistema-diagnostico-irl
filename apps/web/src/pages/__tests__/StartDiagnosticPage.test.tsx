@@ -42,6 +42,7 @@ function renderPage() {
         <Routes>
           <Route path="/diagnosticos/nuevo" element={<StartDiagnosticPage />} />
           <Route path="/diagnosticos/:id/asistente" element={<div>ASISTENTE_STUB</div>} />
+          <Route path="/panel" element={<div>PANEL_STUB</div>} />
         </Routes>
       </MemoryRouter>
     </StrictMode>,
@@ -157,7 +158,12 @@ describe('StartDiagnosticPage — continuar solo tras «Iniciar diagnóstico»',
         'href',
         `/diagnosticos/${UNFINISHED}/asistente`,
       );
-      expect(screen.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument();
+      // In a modal; cancelling discards nothing and goes back to the panel.
+      expect(
+        screen.getByRole('alertdialog', { name: 'Tienes un diagnóstico sin terminar' }),
+      ).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+      expect(await screen.findByText('PANEL_STUB')).toBeInTheDocument();
     });
 
     it('descartarlo pide el diagnóstico nuevo con esa decisión y abre el asistente', async () => {

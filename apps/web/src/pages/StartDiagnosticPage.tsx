@@ -1,4 +1,5 @@
 import { useEffect, useRef, type JSX } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserContextGate, UserMenu, useCurrentUser } from '@features/auth';
 import { PageShell } from '@/shared/ui/page-shell';
 import { Alert } from '@/shared/ui/alert';
@@ -36,6 +37,7 @@ export default function StartDiagnosticPage(): JSX.Element {
   const user = useCurrentUser();
   const start = useStartDiagnostic();
   const requested = useRef(false);
+  const navigate = useNavigate();
   const conflict = isApiErrorWithCode(start.error, 'DIAGNOSIS_IN_PROGRESS');
   const inProgress = useInProgressDiagnostic(conflict);
 
@@ -49,13 +51,22 @@ export default function StartDiagnosticPage(): JSX.Element {
     <PageShell width="reading" showAttribution headerActions={<UserMenu />}>
       <UserContextGate>
         {conflict && inProgress.data ? (
-          <InProgressChoice
-            continueTo={paths.wizard(inProgress.data.id)}
-            discarding={start.isPending}
-            onDiscard={() => {
-              start.mutate({ discardInProgress: true });
-            }}
-          />
+          <>
+            <p className="text-muted-foreground text-base">
+              Antes de empezar, elige qué hacer con tu diagnóstico sin terminar.
+            </p>
+            <InProgressChoice
+              open
+              continueTo={paths.wizard(inProgress.data.id)}
+              discarding={start.isPending}
+              onDiscard={() => {
+                start.mutate({ discardInProgress: true });
+              }}
+              onCancel={() => {
+                void navigate(paths.panel);
+              }}
+            />
+          </>
         ) : start.isError && (!conflict || inProgress.data === null) ? (
           <Alert
             tone="critical"

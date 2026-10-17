@@ -230,10 +230,12 @@ describe('DashboardPage — panel de iniciativa', () => {
       renderPage();
       await user.click(await screen.findByRole('button', { name: 'Iniciar un diagnóstico nuevo' }));
 
-      const question = await screen.findByRole('heading', {
+      // A modal confirmation: the safe choice has the focus.
+      const dialog = await screen.findByRole('alertdialog', {
         name: 'Tienes un diagnóstico sin terminar',
       });
-      expect(question).toHaveFocus();
+      expect(dialog).toHaveAttribute('aria-modal', 'true');
+      expect(within(dialog).getByRole('link', { name: /Continuar el que tengo/ })).toHaveFocus();
       expect(screen.getByText(/Tiene 5 de 48 afirmaciones respondidas/)).toBeInTheDocument();
       expect(screen.getByText(/se descartan y no se pueden recuperar/)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /Continuar el que tengo/ })).toHaveAttribute(

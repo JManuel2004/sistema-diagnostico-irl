@@ -4,77 +4,100 @@ import { ArrowRight } from 'lucide-react';
 import { Button, buttonVariants } from './button';
 
 interface InProgressChoiceProps {
+  /** Shows the dialog; closing it is the caller's `onCancel`. */
+  readonly open: boolean;
   /** Where «Continuar» leads: the wizard of the diagnostic in progress. */
   readonly continueTo: string;
   /** Statements already answered in its saved draft, when known. */
   readonly answered?: number;
   readonly onDiscard: () => void;
   readonly discarding: boolean;
-  /** Without it there is no «Cancelar» (the start screen has nowhere to go back to). */
-  readonly onCancel?: () => void;
+  /**
+   * «Cancelar» or Escape: nothing is discarded. A click outside does not
+   * close it: a destructive choice is never dismissed by accident.
+   */
+  readonly onCancel: () => void;
 }
 
 /**
- * Asks what to do with the diagnostic in progress before starting a new
- * one: its answers are saved, and starting over deletes them. Continuing is
- * the primary action; discarding says what is lost.
+ * Asks, in a modal, what to do with the diagnostic in progress before
+ * starting a new one: its answers are saved, and starting over deletes
+ * them. Continuing is the primary action; discarding says what is lost.
  *
- * Focus moves to the question when it appears, so a keyboard or screen
- * reader user lands on it instead of on a button that vanished.
+ * Built on the native `<dialog>` opened with `showModal()`: the browser
+ * makes the rest of the page inert, keeps the focus inside and closes it
+ * with Escape, with no dependency. It is an `alertdialog` because it
+ * confirms a destructive action; the focus starts on the safe choice.
  */
 export function InProgressChoice({
+  open,
   continueTo,
   answered,
   onDiscard,
   discarding,
   onCancel,
 }: InProgressChoiceProps): JSX.Element {
-  const heading = useRef<HTMLHeadingElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const safeChoice = useRef<HTMLAnchorElement>(null);
+
   useEffect(() => {
-    heading.current?.focus();
-  }, []);
+    const element = dialog.current;
+    if (element === null) return;
+    if (open && !element.open) {
+      element.showModal();
+      safeChoice.current?.focus();
+    } else if (!open && element.open) {
+      element.close();
+    }
+  }, [open]);
 
   const progress =
     answered === undefined ? '' : ` Tiene ${String(answered)} de 48 afirmaciones respondidas.`;
 
   return (
-    <section
+    <dialog
+      ref={dialog}
+      role="alertdialog"
+      aria-modal="true"
       aria-labelledby="in-progress-choice-title"
-      className="border-border bg-card flex flex-col gap-4 rounded-2xl border p-5 sm:p-6"
+      aria-describedby="in-progress-choice-text"
+      onCancel={(event) => {
+        // Escape: the caller decides, so the state stays the single source.
+        event.preventDefault();
+        onCancel();
+      }}
+      className="bg-card text-foreground m-auto w-[min(47rem,calc(100vw-2rem))] rounded-2xl border-0 p-0 shadow-xl backdrop:bg-black/45"
     >
-      <div>
-        <h2
-          id="in-progress-choice-title"
-          ref={heading}
-          tabIndex={-1}
-          className="text-foreground text-lg font-bold outline-none"
-        >
-          Tienes un diagnóstico sin terminar
-        </h2>
-        <p className="text-muted-foreground mt-1.5 max-w-prose text-base leading-relaxed">
-          {`Tus respuestas están guardadas.${progress} Si inicias uno nuevo, el diagnóstico sin terminar y sus respuestas se descartan y no se pueden recuperar.`}
-        </p>
-      </div>
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
-        <Link to={continueTo} className={`${buttonVariants({ size: 'lg' })} w-full sm:w-auto`}>
-          Continuar el que tengo
-          <ArrowRight className="size-5" aria-hidden="true" />
-        </Link>
-        <Button
-          variant="secondary"
-          size="lg"
-          className="w-full sm:w-auto"
-          onClick={onDiscard}
-          disabled={discarding}
-        >
-          {discarding ? 'Preparando tu diagnóstico…' : 'Descartarlo y empezar uno nuevo'}
-        </Button>
-        {onCancel && (
-          <Button variant="ghost" size="lg" className="w-full sm:w-auto" onClick={onCancel}>
+      <div className="flex flex-col gap-5 p-6 sm:p-8">
+        <div>
+          <h2 id="in-progress-choice-title" className="text-foreground text-xl font-bold">
+            Tienes un diagnóstico sin terminar
+          </h2>
+          <p
+            id="in-progress-choice-text"
+            className="text-muted-foreground mt-2 text-base leading-relaxed"
+          >
+            {`Tus respuestas están guardadas.${progress} Si inicias uno nuevo, el diagnóstico sin terminar y sus respuestas se descartan y no se pueden recuperar.`}
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end sm:gap-3">
+          <Button variant="ghost" className="w-full sm:order-first sm:w-auto" onClick={onCancel}>
             Cancelar
           </Button>
-        )}
+          <Button
+            variant="secondary"
+            className="w-full sm:w-auto"
+            onClick={onDiscard}
+            disabled={discarding}
+          >
+            {discarding ? 'Preparando tu diagnóstico…' : 'Descartarlo y empezar uno nuevo'}
+          </Button>
+          <Link ref={safeChoice} to={continueTo} className={`${buttonVariants()} w-full sm:w-auto`}>
+            Continuar el que tengo
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
-    </section>
+    </dialog>
   );
 }

@@ -12,6 +12,17 @@ vi.mock('sonner', async (importOriginal) => {
   };
 });
 
+// jsdom has no modal dialogs: `showModal` and `close` only toggle `open`,
+// enough for the tests to see the dialog and its content in the tree.
+if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.showModal) {
+  HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
+    this.open = false;
+  };
+}
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();

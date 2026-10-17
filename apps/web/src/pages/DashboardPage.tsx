@@ -36,7 +36,7 @@ import { formatDate, formatOneDecimal } from '@/shared/lib/format';
  *    on the server while the user answers, so «Continuar diagnóstico»
  *    appears whenever there is an unfinished one, on any device. Starting a
  *    new one asks first (`InProgressChoice`): continuing it, or discarding
- *    it with its saved answers.
+ *    it with its saved answers, in a modal.
  *  - Without any completed diagnostic, starting one is the only action.
  *
  * Hierarchy: a single primary button per screen — «Continuar diagnóstico»
@@ -98,7 +98,7 @@ export default function DashboardPage(): JSX.Element {
           </Alert>
         )}
 
-        {inProgress && !confirmingNew && (
+        {inProgress && (
           <section
             aria-labelledby="dashboard-in-progress"
             className="bg-azul-wash flex flex-col gap-5 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:p-8"
@@ -207,8 +207,9 @@ export default function DashboardPage(): JSX.Element {
           </section>
         )}
 
-        {confirmingNew && inProgress && (
+        {inProgress && (
           <InProgressChoice
+            open={confirmingNew}
             continueTo={paths.wizard(inProgress.id)}
             answered={answered}
             discarding={start.isPending}
@@ -221,7 +222,7 @@ export default function DashboardPage(): JSX.Element {
           />
         )}
 
-        {(completed.length > 0 || inProgress) && !confirmingNew && (
+        {(completed.length > 0 || inProgress) && (
           <section
             aria-labelledby="dashboard-new"
             className="border-border flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between"
