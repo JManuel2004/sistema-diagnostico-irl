@@ -13,11 +13,20 @@ import type { ReportRendererPort } from '../../application/ports/report-renderer
  * as the face of documents generated outside the product.
  */
 const AZUL_ICESI = '#5454E9';
+const AZUL_INK = '#3737BD';
+const WASH = '#F3F3FD';
 const TEXT = '#333333';
 const MUTED = '#5C5C66';
 const HAIRLINE = '#D9D9D9';
-const CRITICAL = '#C0392B';
 const TRACK = '#E8E8EC';
+const ON_BAND = '#E4E4FF';
+/**
+ * INNLAB asked to keep red out of the results: what needs attention first
+ * reads in dark orange, always with words and a mark, never by color alone.
+ * The approximate service of a phase reads in dark amber.
+ */
+const ATTENTION = '#B45309';
+const APPROXIMATE = '#8C7818';
 
 /**
  * The fill tone of each dimension, the same as the web's
@@ -55,9 +64,10 @@ export interface PdfkitReportRendererOptions {
 
 /**
  * `ReportRendererPort` with pdfkit: an A4 document whose first page opens
- * with the institutional lock-up in words, the title and the date; each
- * block of the model drawn in order; and, on every page, the KTH
- * attribution and the page number at the foot.
+ * with a band (the institutional lock-up, the title, the initiative and
+ * the date) and a summary of the results; then each block of the model in
+ * order; and, on every page, the KTH attribution and the page number at
+ * the foot.
  *
  * Registered with a factory (`reporting.module.ts`): its options are not a
  * provider.
@@ -98,7 +108,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
       doc.on('error', reject);
     });
 
-    this.drawHeader(doc, model);
+    this.drawBanner(doc, model);
     for (const block of model.blocks) this.drawBlock(doc, block);
     this.drawFooters(doc, model.footer);
     doc.end();
@@ -110,35 +120,40 @@ export class PdfkitReportRenderer implements ReportRendererPort {
     return doc.page.width - doc.page.margins.left - doc.page.margins.right;
   }
 
-  private drawHeader(
+  /** The band across the top of the first page. */
+  private drawBanner(
     doc: PDFKit.PDFDocument,
     model: ReportDocumentModel,
   ): void {
+    const left = doc.page.margins.left;
+    const width = this.width(doc);
+    doc.font('Helvetica').fontSize(10.5);
+    const initiativeHeight = doc.heightOfString(model.banner.initiative, {
+      width,
+    });
+    const bandHeight = 104 + initiativeHeight;
+    doc.rect(0, 0, doc.page.width, bandHeight).fill(AZUL_ICESI);
     doc
       .font('Helvetica-Bold')
-      .fontSize(10)
-      .fillColor(AZUL_ICESI)
-      .text('INNLAB', { continued: true })
+      .fontSize(9)
+      .fillColor('#FFFFFF')
+      .text('INNLAB', left, 26, { continued: true })
       .font('Helvetica')
-      .fillColor(MUTED)
-      .text('  |  Centro de Innovación · Universidad Icesi');
-    doc.moveDown(1.5);
+      .text('   Centro de Innovación  |  Universidad Icesi');
     doc
       .font('Helvetica-Bold')
-      .fontSize(20)
-      .fillColor(TEXT)
-      .text(model.title, { width: this.width(doc) });
-    doc.moveDown(0.3);
-    doc.font('Helvetica').fontSize(11).fillColor(MUTED).text(model.subtitle);
-    doc.moveDown(0.5);
-    const y = doc.y;
+      .fontSize(19)
+      .text(model.banner.heading, left, 46, { width });
     doc
-      .moveTo(doc.page.margins.left, y)
-      .lineTo(doc.page.width - doc.page.margins.right, y)
-      .lineWidth(2)
-      .strokeColor(AZUL_ICESI)
-      .stroke();
-    doc.moveDown(1);
+      .font('Helvetica')
+      .fontSize(10.5)
+      .text(model.banner.initiative, left, 72, { width });
+    doc
+      .fontSize(8.5)
+      .fillColor(ON_BAND)
+      .text(model.banner.meta, left, 80 + initiativeHeight, { width });
+    doc.x = left;
+    doc.y = bandHeight + 18;
   }
 
   private drawBlock(doc: PDFKit.PDFDocument, block: ReportBlock): void {
@@ -205,26 +220,420 @@ export class PdfkitReportRenderer implements ReportRendererPort {
           });
         doc.moveDown(0.2);
         return;
-      case 'radar':
-        this.drawRadar(doc, block);
-        return;
       case 'route':
         this.drawRoute(doc, block);
         return;
       case 'answers':
         this.drawAnswers(doc, block);
         return;
+      case 'summary':
+        this.drawSummary(doc, block.summary);
+        return;
+      case 'timeline':
+        this.drawTimeline(doc, block.phases);
+        return;
+      case 'pageBreak':
+        doc.addPage();
+        return;
       case 'alert':
         doc
           .font('Helvetica-Bold')
           .fontSize(10.5)
-          .fillColor(CRITICAL)
-          .text('Alerta: ', { width, continued: true, lineGap: 2 })
+          .fillColor(ATTENTION)
+          .text('Atención prioritaria: ', {
+            width,
+            continued: true,
+            lineGap: 2,
+          })
           .fillColor(TEXT)
           .font('Helvetica')
           .text(block.text, { lineGap: 2 });
         doc.moveDown(0.4);
         return;
+    }
+  }
+
+  /** The largest size up to `max` at which `text` fits `width` in one line. */
+  private fitSize(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    width: number,
+    max: number,
+    min = 9,
+  ): number {
+    let size = max;
+    doc.font('Helvetica-Bold');
+    while (size > min && doc.fontSize(size).widthOfString(text) > width) {
+      size -= 0.5;
+    }
+    return size;
+  }
+
+  /** A small filled circle with «!»: attention never relies on color alone. */
+  private attentionMark(doc: PDFKit.PDFDocument, x: number, y: number): void {
+    doc.circle(x, y, 6).fill(ATTENTION);
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(8)
+      .fillColor('#FFFFFF')
+      .text('!', x - 1.6, y - 4, { lineBreak: false });
+  }
+
+  /**
+   * The first page after the band: four indicators, the profile as a radar
+   * beside level bars, the recommended service and the glossary.
+   */
+  private drawSummary(
+    doc: PDFKit.PDFDocument,
+    summary: Extract<ReportBlock, { kind: 'summary' }>['summary'],
+  ): void {
+    const left = doc.page.margins.left;
+    const width = this.width(doc);
+    let y = doc.y;
+
+    // Indicators.
+    const gap = 10;
+    const cardW =
+      (width - gap * (summary.indicators.length - 1)) /
+      summary.indicators.length;
+    const cardH = 86;
+    summary.indicators.forEach((c, i) => {
+      const x = left + i * (cardW + gap);
+      const tone = c.attention ? ATTENTION : TEXT;
+      doc
+        .roundedRect(x, y, cardW, cardH, 6)
+        .lineWidth(1)
+        .fillAndStroke(
+          i === 0 ? WASH : '#FFFFFF',
+          c.attention ? ATTENTION : HAIRLINE,
+        );
+      const labelX = c.attention ? x + 24 : x + 10;
+      if (c.attention) this.attentionMark(doc, x + 15, y + 13.5);
+      const labelW = cardW - (labelX - x) - 8;
+      const label = c.label.toUpperCase();
+      // One line always: the spacing goes before the size does.
+      doc.font('Helvetica-Bold').fontSize(7);
+      const spacing =
+        doc.widthOfString(label) + 0.4 * label.length <= labelW ? 0.4 : 0;
+      doc
+        .fontSize(this.fitSize(doc, label, labelW, 7, 5.5))
+        .fillColor(c.attention ? ATTENTION : MUTED)
+        .text(label, labelX, y + 10, {
+          width: labelW,
+          lineBreak: false,
+          characterSpacing: spacing,
+        });
+      const size = this.fitSize(doc, c.value, cardW - 20, 20);
+      doc
+        .fontSize(size)
+        .fillColor(tone)
+        .text(c.value, x + 10, y + 24 + (20 - size) / 2, {
+          width: cardW - 20,
+          lineBreak: false,
+        });
+      doc
+        .font('Helvetica')
+        .fontSize(8.5)
+        .fillColor(MUTED)
+        .text(c.caption, x + 10, y + 50, {
+          width: cardW - 20,
+          lineBreak: false,
+        });
+      doc.fontSize(7.5).text(c.detail, x + 10, y + 64, { width: cardW - 20 });
+    });
+    y += cardH + 22;
+
+    // Profile: radar and level bars.
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(12)
+      .fillColor(TEXT)
+      .text('Perfil de seis dimensiones', left, y);
+    doc
+      .font('Helvetica')
+      .fontSize(8.5)
+      .fillColor(MUTED)
+      .text(
+        'Nivel de madurez en cada dimensión, en una escala de 1 a 9.',
+        left,
+        y + 16,
+      );
+    y += 34;
+    const radius = 74;
+    const cx = left + radius + 36;
+    const cy = y + radius + 14;
+    this.radarAt(
+      doc,
+      summary.levels.map((l) => ({
+        dimensionCode: l.dimensionCode,
+        label: l.label,
+        level: l.level,
+      })),
+      cx,
+      cy,
+      radius,
+      7.5,
+    );
+    const barsLeft = left + 2 * radius + 92;
+    const barsWidth = left + width - barsLeft;
+    const labelW = 104;
+    const scaleW = barsWidth - labelW - 34;
+    summary.levels.forEach((l, i) => {
+      const rowY = y + 6 + i * 29;
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(8.5)
+        .fillColor(TEXT)
+        .text(l.label, barsLeft, rowY, {
+          width: labelW - 4,
+          lineBreak: false,
+        });
+      if (l.tag) {
+        doc
+          .font('Helvetica')
+          .fontSize(7)
+          .fillColor(l.attention ? ATTENTION : MUTED)
+          .text(l.tag, barsLeft, rowY + 11, {
+            width: labelW - 4,
+            lineBreak: false,
+          });
+      }
+      const sx = barsLeft + labelW;
+      const cell = scaleW / 9;
+      for (let level = 1; level <= 9; level += 1) {
+        doc
+          .rect(sx + (level - 1) * cell, rowY + 2, cell - 2, 10)
+          .fill(level <= l.level ? DIMENSION_FILL[l.dimensionCode] : TRACK);
+      }
+      if (l.dimensionCode === 'FRL') {
+        // The yellow is too light on white: its reached cells get an edge.
+        for (let level = 1; level <= l.level; level += 1) {
+          doc
+            .rect(sx + (level - 1) * cell, rowY + 2, cell - 2, 10)
+            .lineWidth(0.5)
+            .strokeColor(DIMENSION_EDGE.FRL)
+            .stroke();
+        }
+      }
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(9)
+        .fillColor(TEXT)
+        .text(`${String(l.level)}/9`, sx + scaleW + 6, rowY + 2, {
+          width: 30,
+          lineBreak: false,
+        });
+    });
+    y = Math.max(cy + radius + 26, y + 6 + summary.levels.length * 29 + 8);
+
+    // The recommendation, highlighted.
+    const boxH = 108;
+    doc.roundedRect(left, y, width, boxH, 8).fill(WASH);
+    doc.rect(left, y, 5, boxH).fill(AZUL_ICESI);
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(7.5)
+      .fillColor(AZUL_ICESI)
+      .text('SERVICIO RECOMENDADO DEL PORTAFOLIO INNLAB', left + 18, y + 12, {
+        characterSpacing: 0.4,
+        lineBreak: false,
+      });
+    const rec = summary.recommendation;
+    if (rec) {
+      const pillW = 112;
+      const nameSize = this.fitSize(doc, rec.name, width - pillW - 44, 16, 10);
+      doc
+        .fontSize(nameSize)
+        .fillColor(TEXT)
+        .text(rec.name, left + 18, y + 26, {
+          width: width - pillW - 44,
+          lineBreak: false,
+        });
+      doc
+        .font('Helvetica')
+        .fontSize(8.5)
+        .fillColor(MUTED)
+        .text(rec.subtitle, left + 18, y + 46, {
+          width: width - pillW - 44,
+          lineBreak: false,
+        });
+      doc
+        .roundedRect(left + width - pillW - 16, y + 14, pillW, 22, 11)
+        .fill(AZUL_ICESI);
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(8.5)
+        .fillColor('#FFFFFF')
+        .text(`Nivel ${rec.tier}`, left + width - pillW - 16, y + 21, {
+          width: pillW,
+          align: 'center',
+          lineBreak: false,
+        });
+      doc
+        .font('Helvetica')
+        .fontSize(8.5)
+        .fillColor(TEXT)
+        .text(`Qué puede lograr: ${rec.scope}`, left + 18, y + 62, {
+          width: width - 36,
+          height: 22,
+        });
+      if (rec.alternatives.length > 0) {
+        doc
+          .fontSize(8)
+          .fillColor(MUTED)
+          .text(
+            `Otras opciones: ${rec.alternatives.join(', ')}.`,
+            left + 18,
+            y + 88,
+            {
+              width: width - 36,
+              lineBreak: false,
+            },
+          );
+      }
+    } else {
+      doc
+        .font('Helvetica')
+        .fontSize(10)
+        .fillColor(TEXT)
+        .text(summary.noRecommendation ?? '', left + 18, y + 30, {
+          width: width - 36,
+        });
+    }
+    y += boxH + 18;
+
+    // Glossary.
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .fillColor(TEXT)
+      .text('Cómo leer este reporte', left, y);
+    y += 14;
+    const colGap = 16;
+    const colW = (width - colGap) / 2;
+    summary.glossary.forEach((g, i) => {
+      const x = left + (i % 2) * (colW + colGap);
+      const rowY = y + Math.floor(i / 2) * 24;
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(7.8)
+        .fillColor(AZUL_INK)
+        .text(`${g.term}: `, x, rowY, { width: colW, continued: true })
+        .font('Helvetica')
+        .fillColor(TEXT)
+        .text(g.text);
+    });
+    doc.x = left;
+    doc.y = y + Math.ceil(summary.glossary.length / 2) * 24 + 6;
+  }
+
+  /**
+   * The route as a line of phases: a numbered node per phase, joined by a
+   * line, each with its service (outlined in amber when it is only the
+   * closest available) and the rise of each dimension it works.
+   */
+  private drawTimeline(
+    doc: PDFKit.PDFDocument,
+    phases: Extract<ReportBlock, { kind: 'timeline' }>['phases'],
+  ): void {
+    const left = doc.page.margins.left;
+    const width = this.width(doc);
+    const perRow = Math.min(4, phases.length);
+    const step = width / perRow;
+    for (let start = 0; start < phases.length; start += perRow) {
+      const row = phases.slice(start, start + perRow);
+      const tallest = Math.max(...row.map((p) => p.steps.length));
+      this.ensureRoom(doc, 120 + tallest * 14);
+      const nodeY = doc.y + 16;
+      if (row.length > 1) {
+        doc
+          .moveTo(left + step / 2, nodeY)
+          .lineTo(left + (row.length - 1) * step + step / 2, nodeY)
+          .lineWidth(2)
+          .strokeColor(HAIRLINE)
+          .stroke();
+      }
+      row.forEach((phase, i) => {
+        const x = left + i * step + step / 2;
+        const colX = left + i * step + 6;
+        const colW = step - 12;
+        doc.circle(x, nodeY, 13).fill(AZUL_ICESI);
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(11)
+          .fillColor('#FFFFFF')
+          .text(String(phase.order), x - 13, nodeY - 6, {
+            width: 26,
+            align: 'center',
+            lineBreak: false,
+          });
+        let y = nodeY + 22;
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(9)
+          .fillColor(TEXT)
+          .text(`Fase ${String(phase.order)}`, colX, y, {
+            width: colW,
+            align: 'center',
+            lineBreak: false,
+          });
+        y += 14;
+        doc
+          .roundedRect(colX, y, colW, 52, 6)
+          .lineWidth(1)
+          .fillAndStroke(
+            phase.approximate ? '#FFFFFF' : WASH,
+            phase.approximate ? APPROXIMATE : AZUL_ICESI,
+          );
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(8.5)
+          .fillColor(TEXT)
+          .text(
+            phase.service ?? 'Sin servicio del portafolio',
+            colX + 6,
+            y + 8,
+            {
+              width: colW - 12,
+              align: 'center',
+              height: 24,
+            },
+          );
+        doc
+          .font('Helvetica')
+          .fontSize(7.5)
+          .fillColor(phase.approximate ? APPROXIMATE : MUTED)
+          .text(
+            phase.tier
+              ? `${phase.tier}${phase.approximate ? '  |  el más cercano disponible' : ''}`
+              : '',
+            colX + 6,
+            y + 34,
+            { width: colW - 12, align: 'center', lineBreak: false },
+          );
+        y += 62;
+        for (const s of phase.steps) {
+          doc
+            .circle(colX + 6, y + 4.5, 3)
+            .fill(DIMENSION_FILL[s.dimensionCode]);
+          doc
+            .font('Helvetica-Bold')
+            .fontSize(8)
+            .fillColor(TEXT)
+            .text(
+              `${s.label}: ${String(s.from)} a ${String(s.to)}`,
+              colX + 14,
+              y,
+              {
+                width: colW - 14,
+                lineBreak: false,
+              },
+            );
+          y += 14;
+        }
+      });
+      doc.x = left;
+      doc.y = nodeY + 106 + tallest * 14;
     }
   }
 
@@ -236,19 +645,23 @@ export class PdfkitReportRenderer implements ReportRendererPort {
   }
 
   /**
-   * The six levels on the 1–9 scale: rings at 3, 6 and 9, the profile in
-   * Azul Icesi over a 15% wash, each point in its dimension's tone and named
-   * outside the ring with its level.
+   * The six levels on the 1–9 scale around (`cx`, `cy`): rings at 3, 6 and
+   * 9, the profile in Azul Icesi over a 15% wash, each point in its
+   * dimension's tone and named outside the ring with its level.
    */
-  private drawRadar(
+  private radarAt(
     doc: PDFKit.PDFDocument,
-    block: Extract<ReportBlock, { kind: 'radar' }>,
+    points: readonly {
+      readonly dimensionCode: DimensionCode;
+      readonly label: string;
+      readonly level: number;
+    }[],
+    cx: number,
+    cy: number,
+    radius: number,
+    labelSize: number,
   ): void {
-    const radius = 95;
-    this.ensureRoom(doc, radius * 2 + 60);
-    const cx = doc.page.margins.left + this.width(doc) / 2;
-    const cy = doc.y + radius + 24;
-    const n = block.points.length;
+    const n = points.length;
     const at = (i: number, level: number): [number, number] => {
       const angle = -Math.PI / 2 + (i * 2 * Math.PI) / n;
       const r = (radius * level) / 9;
@@ -257,12 +670,12 @@ export class PdfkitReportRenderer implements ReportRendererPort {
 
     for (const ring of [3, 6, 9]) {
       doc
-        .polygon(...block.points.map((_, i) => at(i, ring)))
+        .polygon(...points.map((_, i) => at(i, ring)))
         .lineWidth(0.6)
         .strokeColor(HAIRLINE)
         .stroke();
     }
-    block.points.forEach((_, i) => {
+    points.forEach((_, i) => {
       const [x, y] = at(i, 9);
       doc
         .moveTo(cx, cy)
@@ -271,7 +684,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         .strokeColor(HAIRLINE)
         .stroke();
     });
-    const shape = block.points.map((p, i) => at(i, p.level));
+    const shape = points.map((p, i) => at(i, p.level));
     doc.save();
     doc
       .polygon(...shape)
@@ -283,7 +696,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
       .lineWidth(2)
       .strokeColor(AZUL_ICESI)
       .stroke();
-    block.points.forEach((p, i) => {
+    points.forEach((p, i) => {
       const [x, y] = shape[i] ?? [cx, cy];
       doc
         .circle(x, y, 4.5)
@@ -295,28 +708,14 @@ export class PdfkitReportRenderer implements ReportRendererPort {
     });
 
     // Each point named outside the outer ring, in text ink.
-    doc.font('Helvetica').fontSize(9).fillColor(TEXT);
-    block.points.forEach((p, i) => {
+    doc.font('Helvetica').fontSize(labelSize).fillColor(TEXT);
+    points.forEach((p, i) => {
       const [x, y] = at(i, 10.4);
       const label = `${p.label}: ${String(p.level)}`;
       const w = doc.widthOfString(label) + 2;
       const lx = x < cx - 4 ? x - w : x > cx + 4 ? x : x - w / 2;
       doc.text(label, lx, y - 5, { width: w, lineBreak: false });
     });
-    doc
-      .fontSize(8)
-      .fillColor(MUTED)
-      .text(
-        'Nivel IRL de 1 a 9; anillos en los niveles 3, 6 y 9.',
-        doc.page.margins.left,
-        cy + radius + 24,
-        {
-          width: this.width(doc),
-          align: 'center',
-        },
-      );
-    doc.x = doc.page.margins.left;
-    doc.moveDown(0.8);
   }
 
   /**
