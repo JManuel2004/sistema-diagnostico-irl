@@ -4,14 +4,24 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 
-/** Vercel serves this file when a route has no static asset, so /panel and the rest open the app. */
+/**
+ * Vercel serves this file when a route has no static asset, so /panel and
+ * the rest open the app. The directory is the build's own outDir: a test
+ * builds into a temp folder, and a missing apps/web/dist must not fail it.
+ */
 function spaFallback404(): Plugin {
+  let indexHtml = '';
+  let notFoundHtml = '';
   return {
     name: 'spa-fallback-404',
     apply: 'build',
+    configResolved(config) {
+      const outDir = path.resolve(config.root, config.build.outDir);
+      indexHtml = path.join(outDir, 'index.html');
+      notFoundHtml = path.join(outDir, '404.html');
+    },
     closeBundle() {
-      const dist = path.resolve(__dirname, 'dist');
-      copyFileSync(path.join(dist, 'index.html'), path.join(dist, '404.html'));
+      copyFileSync(indexHtml, notFoundHtml);
     },
   };
 }
