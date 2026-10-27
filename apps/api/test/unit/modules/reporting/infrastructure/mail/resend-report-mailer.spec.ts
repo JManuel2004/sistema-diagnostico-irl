@@ -34,7 +34,10 @@ describe('ResendReportMailer', () => {
     expect(init.method).toBe('POST');
     const headers = init.headers as Record<string, string>;
     expect(headers.Authorization).toBe('Bearer re_test');
-    const body = JSON.parse(String(init.body)) as {
+    if (typeof init.body !== 'string') {
+      throw new Error('Resend body must be a JSON string');
+    }
+    const body = JSON.parse(init.body) as {
       from: string;
       to: string[];
       attachments: { filename: string; content: string }[];
