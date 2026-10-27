@@ -50,50 +50,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Comparar carpetas
-        id: filter
-        if: github.event_name != 'workflow_dispatch'
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            api:
-              - 'apps/api/**'
-              - '!apps/api/**/*.md'
-              - 'packages/contracts/**'
-              - '!packages/contracts/**/*.md'
-              - 'pnpm-lock.yaml'
-              - 'pnpm-workspace.yaml'
-              - 'package.json'
-              - '.npmrc'
-              - 'tsconfig.base.json'
-            web:
-              - 'apps/web/**'
-              - '!apps/web/**/*.md'
-              - 'packages/contracts/**'
-              - '!packages/contracts/**/*.md'
-              - 'vercel.json'
-              - 'pnpm-lock.yaml'
-              - 'pnpm-workspace.yaml'
-              - 'package.json'
-              - '.npmrc'
-              - 'tsconfig.base.json'
-            flujo:
-              - '.github/workflows/**'
-
       - name: Decidir el destino
         id: decidir
         env:
           DESTINO: ${{ inputs.destino }}
           EVENTO: ${{ github.event_name }}
-          API: ${{ steps.filter.outputs.api }}
-          WEB: ${{ steps.filter.outputs.web }}
-          FLUJO: ${{ steps.filter.outputs.flujo }}
+          BEFORE: ${{ github.event.before }}
+          BASE: ${{ github.event.pull_request.base.sha }}
         shell: bash
         run: |
           set -euo pipefail
+          api=false
+          web=false
+          flujo=false
+          comprobar=false
+
           if [ "$EVENTO" = "workflow_dispatch" ]; then
-            api=false
-            web=false
             case "$DESTINO" in
               api) api=true ;;
               web) web=true ;;
@@ -102,14 +74,48 @@ jobs:
             esac
             comprobar=true
           else
-            api="${API:-false}"
-            web="${WEB:-false}"
-            flujo="${FLUJO:-false}"
-            comprobar=false
+            if [ "$EVENTO" = "pull_request" ]; then
+              from="$BASE"
+            elif [ -z "${BEFORE}" ] || [[ "$BEFORE" =~ ^0+$ ]]; then
+              from=""
+            else
+              from="$BEFORE"
+            fi
+
+            if [ -n "$from" ]; then
+              files=$(git diff --name-only "$from" HEAD)
+            else
+              files=$(git ls-tree -r --name-only HEAD)
+            fi
+
+            # A leading "!" in a glob matches every other file, so the
+            # decision is plain path prefixes. Markdown does not deploy.
+            while IFS= read -r file; do
+              [ -z "$file" ] && continue
+              case "$file" in
+                *.md) continue ;;
+              esac
+              case "$file" in
+                .github/workflows/*) flujo=true ;;
+              esac
+              case "$file" in
+                apps/api/*|packages/contracts/*|pnpm-lock.yaml|pnpm-workspace.yaml|package.json|.npmrc|tsconfig.base.json)
+                  api=true ;;
+              esac
+              case "$file" in
+                apps/web/*|packages/contracts/*|vercel.json|pnpm-lock.yaml|pnpm-workspace.yaml|package.json|.npmrc|tsconfig.base.json)
+                  web=true ;;
+              esac
+            done <<< "$files"
+
             if [ "$api" = "true" ] || [ "$web" = "true" ] || [ "$flujo" = "true" ]; then
               comprobar=true
             fi
+            echo "Archivos:"
+            echo "$files"
           fi
+
+          echo "api=$api web=$web flujo=$flujo"
           echo "api=$api" >> "$GITHUB_OUTPUT"
           echo "web=$web" >> "$GITHUB_OUTPUT"
           echo "comprobar=$comprobar" >> "$GITHUB_OUTPUT"
