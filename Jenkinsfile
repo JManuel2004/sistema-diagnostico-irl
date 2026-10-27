@@ -1,10 +1,15 @@
 // Pipeline of the IRL Diagnostic System (Jenkins in infra/jenkins).
 //
 // Install with the frozen lockfile, typecheck and lint, test every level
-// with coverage, test in the browsers, build, and deploy locally with
-// docker compose in the simulated sign-in mode. Every run keeps its
+// with coverage, test in the browsers, and build. Every run keeps its
 // evidence: test reports, coverage, browser traces and screenshots, and the
 // acceptance matrix built from the results.
+//
+// When the built branch is dev, and every stage above passed, the last
+// stage merges that commit into GitHub dev and pushes it. The GitHub
+// Actions workflow deploys. This pipeline does not call Render or Vercel.
+// Jenkins needs a Secret text credential named github-dev-push-token: a
+// GitHub token that can push to JManuel2004/sistema-diagnostico-irl.
 //
 // The test services run in containers of their own (infra/ci) started
 // through the host's Docker socket; see docs/workflows/CI-JENKINS.md.
@@ -119,12 +124,26 @@ pipeline {
       }
     }
 
-    stage('Desplegar en local (inicio de sesión simulado)') {
+    stage('Publicar en GitHub') {
+      when {
+        expression { params.BRANCH == 'dev' }
+      }
       steps {
-        sh 'docker compose -f infra/deploy/docker-compose.yml up -d --build --wait'
-        sh 'curl -fsS http://host.docker.internal:8080/api/v1/health/live'
-        sh 'curl -fsS -o /dev/null http://host.docker.internal:8080/'
-        echo 'Desplegado: aplicación en http://localhost:8080, inicio de sesión simulado en http://localhost:8091, buzón en http://localhost:8026'
+        withCredentials([string(credentialsId: 'github-dev-push-token', variable: 'GITHUB_TOKEN')]) {
+          sh '''
+            set -eu
+            SOURCE=$(git rev-parse HEAD)
+            git config user.name "Jenkins"
+            git config user.email "jenkins@localhost"
+            GITHUB_REPO=https://github.com/JManuel2004/sistema-diagnostico-irl.git
+            git -c http.extraheader="AUTHORIZATION: Bearer ${GITHUB_TOKEN}" \
+              fetch --no-tags "$GITHUB_REPO" dev
+            git checkout -B publish-to-github FETCH_HEAD
+            git merge --no-edit "$SOURCE"
+            git -c http.extraheader="AUTHORIZATION: Bearer ${GITHUB_TOKEN}" \
+              push "$GITHUB_REPO" HEAD:dev
+          '''
+        }
       }
     }
   }

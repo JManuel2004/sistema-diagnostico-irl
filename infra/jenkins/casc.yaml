@@ -20,7 +20,7 @@ unclassified:
 jobs:
   - script: >
       pipelineJob('sistema-diagnostico-irl') {
-        description('Instala, revisa, prueba, compila y despliega en local (modo de inicio de sesión simulado).')
+        description('Instala, revisa, prueba y compila. Si la rama es dev y las pruebas pasan, publica ese commit en GitHub dev.')
         parameters {
           stringParam('BRANCH', '${JENKINS_DEFAULT_BRANCH:-dev}', 'Rama del repositorio a construir')
         }

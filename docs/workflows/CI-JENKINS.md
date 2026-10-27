@@ -38,7 +38,7 @@ Stop it with `docker compose -f infra/jenkins/docker-compose.yml down`. Add
 | Pruebas del frontend | Vitest with coverage; the simulator's contract |
 | Pruebas en navegador | Playwright in Chromium, Firefox and Edge: the flow with the API faked, and the flows against the real stack |
 | Compilar | `pnpm build` |
-| Desplegar en local | `infra/deploy/docker-compose.yml`, in the simulated sign-in mode, then a health check |
+| Publicar en GitHub | Only when the built branch is `dev`. Merges that commit into GitHub `dev` and pushes it. Render and Vercel are deployed by the GitHub workflow, not by this stage |
 
 ### Evidence of each run
 
@@ -82,7 +82,6 @@ Three kinds of test need containers:
 - Testcontainers starts Postgres for the integration tests.
 - The end-to-end tests need Postgres, the test inbox and the sign-in
   simulator.
-- The deploy stage starts the whole system.
 
 **Decision: Jenkins uses the host's Docker through its socket**
 (`/var/run/docker.sock` mounted in the container, the Jenkins user added to
@@ -93,8 +92,8 @@ For Testcontainers that is `TESTCONTAINERS_HOST_OVERRIDE`.
 Why this way:
 
 - It is the simplest setup that works on a developer machine.
-- The deployment ends up on the same Docker the developer sees, so
-  <http://localhost:8080> works.
+- The test containers run on the same Docker the developer sees, and Jenkins
+  reaches them through `host.docker.internal`.
 - Images and layers are cached between builds.
 
 **Risks, and how they are contained:**
