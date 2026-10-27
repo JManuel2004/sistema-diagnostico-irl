@@ -1,0 +1,238 @@
+# Publica en Render o en Vercel solo lo que cambió, después de las pruebas.
+#
+# Render y Vercel siguen conectados a la rama dev para clonar el código,
+# pero su despliegue automático al hacer push tiene que estar apagado.
+# Si sigue encendido, cada push se publica dos veces.
+#
+# Secretos del repositorio (Settings → Secrets and variables → Actions):
+#   RENDER_DEPLOY_HOOK_URL  hook del servicio del API en Render
+#   VERCEL_DEPLOY_HOOK_URL  hook del proyecto web, rama dev, en Vercel
+#
+# Un cambio solo de documentación no despliega. Este workflow tampoco
+# despliega: solo se comprueba. Para repetir un despliegue sin un commit
+# nuevo, Actions → Verificar y desplegar → Run workflow.
+
+name: Verificar y desplegar
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      destino:
+        description: Qué desplegar
+        required: true
+        type: choice
+        options:
+          - api
+          - web
+          - ambos
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desplegar-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  cambios:
+    name: Ver qué cambió
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.decidir.outputs.api }}
+      web: ${{ steps.decidir.outputs.web }}
+      comprobar: ${{ steps.decidir.outputs.comprobar }}
+    steps:
+      - name: Traer el repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Comparar carpetas
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - '!apps/api/**/*.md'
+              - 'packages/contracts/**'
+              - '!packages/contracts/**/*.md'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - '.npmrc'
+              - 'tsconfig.base.json'
+            web:
+              - 'apps/web/**'
+              - '!apps/web/**/*.md'
+              - 'packages/contracts/**'
+              - '!packages/contracts/**/*.md'
+              - 'vercel.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - '.npmrc'
+              - 'tsconfig.base.json'
+            flujo:
+              - '.github/workflows/**'
+
+      - name: Decidir el destino
+        id: decidir
+        env:
+          DESTINO: ${{ inputs.destino }}
+          EVENTO: ${{ github.event_name }}
+          API: ${{ steps.filter.outputs.api }}
+          WEB: ${{ steps.filter.outputs.web }}
+          FLUJO: ${{ steps.filter.outputs.flujo }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$EVENTO" = "workflow_dispatch" ]; then
+            api=false
+            web=false
+            case "$DESTINO" in
+              api) api=true ;;
+              web) web=true ;;
+              ambos) api=true; web=true ;;
+              *) echo "::error::Destino no reconocido: $DESTINO"; exit 1 ;;
+            esac
+            comprobar=true
+          else
+            api="${API:-false}"
+            web="${WEB:-false}"
+            flujo="${FLUJO:-false}"
+            comprobar=false
+            if [ "$api" = "true" ] || [ "$web" = "true" ] || [ "$flujo" = "true" ]; then
+              comprobar=true
+            fi
+          fi
+          echo "api=$api" >> "$GITHUB_OUTPUT"
+          echo "web=$web" >> "$GITHUB_OUTPUT"
+          echo "comprobar=$comprobar" >> "$GITHUB_OUTPUT"
+
+  verificar:
+    name: Typecheck, lint y pruebas
+    needs: cambios
+    if: needs.cambios.outputs.comprobar == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: irl_diagnostic
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d irl_diagnostic"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      APP_PORT: 3000
+      WEB_ORIGIN: http://localhost:5173
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/irl_diagnostic
+      DATABASE_SCHEMA_DIAGNOSTIC: irl_diagnostic
+      DATABASE_SCHEMA_CATALOG: irl_catalog
+      COGNITO_JWKS_URI: https://example.com/.well-known/jwks.json
+      COGNITO_ISSUER: https://example.com
+      INNLAB_API_BASE_URL: http://127.0.0.1:9
+      INNLAB_API_TIMEOUT: 5000
+      CORE_INTERNAL_KEY: ci-internal-key
+      LOG_LEVEL: info
+      REPORT_NOTIFY_TO: ""
+      RESEND_API_KEY: ""
+      SMTP_HOST: ""
+      AUTH_BYPASS: "false"
+    steps:
+      - name: Traer el repositorio
+        uses: actions/checkout@v4
+
+      - name: Activar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - name: Activar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.9.0
+          cache: pnpm
+
+      - name: Instalar
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Pruebas unitarias
+        run: pnpm test:unit
+
+      - name: Pruebas de integración
+        run: pnpm --filter @innlab/api test:integration
+
+      - name: Preparar la base de las pruebas de extremo a extremo
+        run: |
+          pnpm --filter @innlab/api db:migration:run
+          pnpm --filter @innlab/api db:seed
+
+      - name: Pruebas de extremo a extremo del API
+        run: pnpm --filter @innlab/api test:e2e
+
+  desplegar-api:
+    name: Desplegar el API en Render
+    needs: [cambios, verificar]
+    if: >-
+      always() &&
+      github.event_name != 'pull_request' &&
+      (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') &&
+      needs.cambios.outputs.api == 'true' &&
+      needs.verificar.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Avisar a Render
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${HOOK}" ]; then
+            echo "::error::Falta el secreto RENDER_DEPLOY_HOOK_URL. En Render, el servicio del API, Settings, Deploy Hook. En GitHub, Settings, Secrets and variables, Actions. Apaga el auto-deploy de la rama dev en Render."
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --output /tmp/render-hook.json --request POST "$HOOK"
+          echo "Render aceptó el despliegue del API."
+
+  desplegar-web:
+    name: Desplegar la web en Vercel
+    needs: [cambios, verificar]
+    if: >-
+      always() &&
+      github.event_name != 'pull_request' &&
+      (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/dev') &&
+      needs.cambios.outputs.web == 'true' &&
+      needs.verificar.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Avisar a Vercel
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${HOOK}" ]; then
+            echo "::error::Falta el secreto VERCEL_DEPLOY_HOOK_URL. En Vercel, Project Settings, Git, Deploy Hooks, rama dev. En GitHub, Settings, Secrets and variables, Actions. Apaga el auto-deploy de la rama dev en Vercel."
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --output /tmp/vercel-hook.json --request POST "$HOOK"
+          echo "Vercel aceptó el despliegue de la web."
