@@ -5,13 +5,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { ProtectedRoute } from '../ProtectedRoute';
 import { saveSession } from '@/shared/auth/session';
 import type * as SessionModule from '@/shared/auth/session';
+import type { SimulatedUser } from '@features/auth/api/auth-mode.api';
 
-/**
- * `PageShell` (the "redirecting" screen) contains a `Link`, so the tree
- * needs a router context. `ProtectedRoute` reads the route from
- * `window.location`, not from the router, so `pushState` is still what
- * decides the remembered deep link.
- */
 function renderGuarded(): void {
   render(
     <MemoryRouter>
@@ -23,12 +18,12 @@ function renderGuarded(): void {
 }
 
 const redirectToSso = vi.hoisted(() => vi.fn());
-const fetchAuthBypass = vi.hoisted(() => vi.fn());
-const enterWithCredentials = vi.hoisted(() => vi.fn());
+const fetchSimulatedSignIn = vi.hoisted(() => vi.fn());
+const enterAsSimulatedUser = vi.hoisted(() => vi.fn());
 vi.mock('@features/auth', () => ({ useSessionLiveness: () => undefined }));
 vi.mock('@features/auth/api/auth-mode.api', () => ({
-  fetchAuthBypass,
-  enterWithCredentials,
+  fetchSimulatedSignIn,
+  enterAsSimulatedUser,
 }));
 
 vi.mock('@/shared/auth/session', async (importOriginal) => {
@@ -36,13 +31,31 @@ vi.mock('@/shared/auth/session', async (importOriginal) => {
   return { ...actual, redirectToSso };
 });
 
+const LAURA_ID = 'b1a55e55-0000-4000-8000-000000000001';
+const CARDS: readonly SimulatedUser[] = [
+  {
+    id: LAURA_ID,
+    firstName: 'Laura',
+    lastName: 'Gómez',
+    email: 'lider.agro@demo.innlab.local',
+    companyName: 'AgroConecta (demo)',
+  },
+  {
+    id: 'b1a55e55-0000-4000-8000-000000000003',
+    firstName: 'Camila',
+    lastName: 'Torres',
+    email: 'sin.empresa@demo.innlab.local',
+    companyName: null,
+  },
+];
+
 describe('ProtectedRoute', () => {
   beforeEach(() => {
     window.localStorage.clear();
     redirectToSso.mockReset();
-    fetchAuthBypass.mockReset();
-    enterWithCredentials.mockReset();
-    fetchAuthBypass.mockResolvedValue(false);
+    fetchSimulatedSignIn.mockReset();
+    enterAsSimulatedUser.mockReset();
+    fetchSimulatedSignIn.mockResolvedValue(null);
   });
 
   it('renderiza la pantalla protegida cuando hay sesión', () => {
@@ -73,43 +86,50 @@ describe('ProtectedRoute', () => {
     });
   });
 
-  it('entra con correo y contraseña y no va al Hub', async () => {
-    fetchAuthBypass.mockResolvedValue(true);
-    enterWithCredentials.mockImplementation(() => {
+  it('muestra el aviso y las tarjetas del simulador', async () => {
+    fetchSimulatedSignIn.mockResolvedValue(CARDS);
+
+    renderGuarded();
+
+    expect(await screen.findByRole('note')).toHaveTextContent(
+      'Modo simulado. Este inicio de sesión no usa INNLAB ni Cognito. Sirve solo para demostraciones y pruebas.',
+    );
+    expect(screen.getByRole('heading', { name: 'Elige un usuario de prueba' })).toBeInTheDocument();
+    const laura = screen.getByRole('button', { name: /Laura Gómez/ });
+    expect(laura).toHaveTextContent('lider.agro@demo.innlab.local');
+    expect(laura).toHaveTextContent('AgroConecta (demo)');
+    expect(screen.getByRole('button', { name: /Camila Torres/ })).toHaveTextContent(
+      'Sin organización',
+    );
+    expect(redirectToSso).not.toHaveBeenCalled();
+  });
+
+  it('entra al pulsar una tarjeta y no va al Hub', async () => {
+    fetchSimulatedSignIn.mockResolvedValue(CARDS);
+    enterAsSimulatedUser.mockImplementation(() => {
       saveSession({ token: '', accessToken: 'bypass-token' });
       return Promise.resolve('ok');
     });
 
     renderGuarded();
-
-    await userEvent.type(
-      await screen.findByLabelText('Correo'),
-      'lider.agro@demo.innlab.local',
-    );
-    await userEvent.type(screen.getByLabelText('Contraseña'), 'Agro-2026');
-    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+    await userEvent.click(await screen.findByRole('button', { name: /Laura Gómez/ }));
 
     expect(await screen.findByText('contenido protegido')).toBeInTheDocument();
-    expect(enterWithCredentials).toHaveBeenCalledWith(
-      'lider.agro@demo.innlab.local',
-      'Agro-2026',
-    );
+    expect(enterAsSimulatedUser).toHaveBeenCalledWith(LAURA_ID);
     expect(redirectToSso).not.toHaveBeenCalled();
   });
 
-  it('se queda en el formulario si las credenciales no sirven', async () => {
-    fetchAuthBypass.mockResolvedValue(true);
-    enterWithCredentials.mockResolvedValue('invalid');
+  it('se queda en las tarjetas si esa persona no abre sesión', async () => {
+    fetchSimulatedSignIn.mockResolvedValue(CARDS);
+    enterAsSimulatedUser.mockResolvedValue('invalid');
 
     renderGuarded();
-
-    await userEvent.type(await screen.findByLabelText('Correo'), 'lider.agro@demo.innlab.local');
-    await userEvent.type(screen.getByLabelText('Contraseña'), 'mala');
-    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+    await userEvent.click(await screen.findByRole('button', { name: /Laura Gómez/ }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Correo o contraseña incorrectos.',
+      'No se pudo abrir la sesión de esa persona.',
     );
+    expect(screen.getByRole('heading', { name: 'Elige un usuario de prueba' })).toBeInTheDocument();
     expect(screen.queryByText('contenido protegido')).not.toBeInTheDocument();
     expect(redirectToSso).not.toHaveBeenCalled();
   });

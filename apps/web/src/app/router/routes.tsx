@@ -42,9 +42,10 @@ function RedirectToWizardStep({ step }: { readonly step: WizardStepKey }): JSX.E
  * the first screen with navigation, from where the panel (`/panel`) is
  * reached.
  *
- * Every authenticated route is wrapped in `<ProtectedRoute>`, which
- * redirects to the INNLAB Hub when there is no session and brings the user
- * back to the requested route on return. The exceptions are the landing,
+ * Every authenticated route is wrapped in `<ProtectedRoute>`. With the
+ * testing switch on, that shows the simulated user cards. Otherwise it
+ * redirects to the INNLAB Hub and brings the user back to the requested
+ * route on return. The exceptions are the landing,
  * which is public, and `/auth/callback`, which by definition is visited
  * without a session.
  */

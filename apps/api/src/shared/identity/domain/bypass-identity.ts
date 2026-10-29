@@ -4,14 +4,13 @@
  * Each id is a UUID so it satisfies the same contract as a Cognito `sub`.
  * None of them exist in INNLAB Core and must never be sent there. The first
  * id is the original single bypass user, so a session opened before the
- * picker still belongs to the same person.
+ * cards still belongs to the same person.
  */
 export const BYPASS_ISSUER = 'irl-diagnostic-bypass';
 
 export interface BypassParticipant {
   readonly id: string;
   readonly email: string;
-  readonly password: string;
   readonly firstName: string;
   readonly lastName: string;
   readonly company: {
@@ -21,11 +20,19 @@ export interface BypassParticipant {
   } | null;
 }
 
+/** What the sign-in cards show. No secret leaves with this shape. */
+export interface BypassCard {
+  readonly id: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly email: string;
+  readonly companyName: string | null;
+}
+
 export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000001',
     email: 'lider.agro@demo.innlab.local',
-    password: 'Agro-2026',
     firstName: 'Laura',
     lastName: 'Gómez',
     company: {
@@ -37,7 +44,6 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000002',
     email: 'lider.salud@demo.innlab.local',
-    password: 'Salud-2026',
     firstName: 'Andrés',
     lastName: 'Ríos',
     company: {
@@ -49,7 +55,6 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000003',
     email: 'sin.empresa@demo.innlab.local',
-    password: 'Camila-2026',
     firstName: 'Camila',
     lastName: 'Torres',
     company: null,
@@ -57,7 +62,6 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000004',
     email: 'lider.edu@demo.innlab.local',
-    password: 'Edu-2026',
     firstName: 'Valeria',
     lastName: 'Díaz',
     company: {
@@ -69,7 +73,6 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000005',
     email: 'lider.logistica@demo.innlab.local',
-    password: 'Logi-2026',
     firstName: 'Mateo',
     lastName: 'Cruz',
     company: {
@@ -86,7 +89,12 @@ export function findBypassParticipant(userId: string): BypassParticipant | null 
   return BYPASS_PARTICIPANTS.find((person) => person.id === userId) ?? null;
 }
 
-export function findBypassParticipantByEmail(email: string): BypassParticipant | null {
-  const normalized = email.trim().toLowerCase();
-  return BYPASS_PARTICIPANTS.find((person) => person.email === normalized) ?? null;
+export function bypassRoster(): readonly BypassCard[] {
+  return BYPASS_PARTICIPANTS.map((person) => ({
+    id: person.id,
+    firstName: person.firstName,
+    lastName: person.lastName,
+    email: person.email,
+    companyName: person.company?.name ?? null,
+  }));
 }

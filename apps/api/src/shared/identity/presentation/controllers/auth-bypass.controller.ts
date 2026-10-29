@@ -9,27 +9,23 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsString, MinLength } from 'class-validator';
+import { IsUUID } from 'class-validator';
 import { AuthBypassPolicy } from '../../application/auth-bypass.policy.js';
+import type { BypassCard } from '../../domain/bypass-identity.js';
 import { Public } from '../decorators/public.decorator.js';
 
 class OpenBypassDto {
-  @IsString()
-  @MinLength(3)
-  email!: string;
-
-  @IsString()
-  @MinLength(1)
-  password!: string;
+  @IsUUID()
+  userId!: string;
 }
 
 /**
  * Testing switch for skipping INNLAB login.
  *
- * `GET /auth/mode` tells the SPA whether this deploy shows a credential
- * form. `POST /auth/bypass` opens a session when the email and password
- * match one test person. While the switch is off both stay closed, so
- * the real INNLAB login is unchanged. A wrong password is 400, not 401:
+ * `GET /auth/mode` tells the SPA whether to show the same cards as the
+ * Bitbucket sign-in simulator. `POST /auth/bypass` opens the session of
+ * the card that was pressed. While the switch is off both stay closed, so
+ * the real INNLAB login is unchanged. An unknown card is 400, not 401:
  * the SPA treats 401 as a dead session and would send the user to the Hub.
  */
 @ApiTags('identity')
@@ -41,16 +37,21 @@ export class AuthBypassController {
 
   @Public()
   @Get('mode')
-  @ApiOperation({ summary: 'Whether this deploy can skip INNLAB login' })
-  @ApiOkResponse({ description: '`bypass: true` when the credential form is on' })
-  mode(): { bypass: boolean } {
-    return { bypass: this.bypass.isEnabled() };
+  @ApiOperation({ summary: 'Whether this deploy shows the simulated sign-in cards' })
+  @ApiOkResponse({
+    description: '`bypass: true` and the cards while the testing switch is on',
+  })
+  mode(): { bypass: boolean; participants: readonly BypassCard[] } {
+    return {
+      bypass: this.bypass.isEnabled(),
+      participants: this.bypass.roster(),
+    };
   }
 
   @Public()
   @Post('bypass')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Open a local session with email and password' })
+  @ApiOperation({ summary: 'Open the session of one simulated user' })
   @ApiOkResponse({
     description: 'A session the SPA stores like an SSO exchange',
   })
@@ -59,9 +60,9 @@ export class AuthBypassController {
       throw new NotFoundException();
     }
 
-    const session = this.bypass.login(body.email, body.password);
+    const session = this.bypass.issue(body.userId);
     if (session === null) {
-      throw new BadRequestException('Correo o contraseña incorrectos');
+      throw new BadRequestException('Ese usuario de prueba no existe');
     }
     return session;
   }

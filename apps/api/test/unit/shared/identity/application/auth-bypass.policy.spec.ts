@@ -10,9 +10,9 @@ describe('AuthBypassPolicy', () => {
   const off = new AuthBypassPolicy(false, SECRET);
 
   it.each(BYPASS_PARTICIPANTS)(
-    'abre la sesión de $firstName con su correo y su contraseña',
+    'abre la sesión de $firstName al elegir su tarjeta',
     (person) => {
-      const session = on.login(person.email, person.password);
+      const session = on.issue(person.id);
 
       expect(session?.token).toBe('');
       expect(on.authenticate(session?.accessToken)).toMatchObject({
@@ -23,40 +23,21 @@ describe('AuthBypassPolicy', () => {
       });
       expect(on.profile(person.id)?.user.email).toBe(person.email);
       expect(on.profile(person.id)?.core.companyId).toBe(person.company?.id ?? null);
-      expect(JSON.stringify(on.profile(person.id))).not.toContain(person.password);
+      expect(on.roster().map((card) => card.email)).toContain(person.email);
     },
   );
 
-  it.each(BYPASS_PARTICIPANTS)(
-    'rechaza a $firstName si la contraseña es de otra persona',
-    (person) => {
-      const foreign = BYPASS_PARTICIPANTS.find((other) => other.id !== person.id);
-      expect(foreign).toBeDefined();
-      expect(on.login(person.email, foreign?.password ?? '')).toBeNull();
-      expect(on.login(person.email, 'no-es-la-clave')).toBeNull();
-      expect(on.login(person.email, '')).toBeNull();
-    },
-  );
-
-  it('acepta el correo con mayúsculas y espacios', () => {
-    const laura = BYPASS_PARTICIPANTS[0];
-    const session = on.login(`  ${laura.email.toUpperCase()}  `, laura.password);
-
-    expect(on.authenticate(session?.accessToken)?.id).toBe(laura.id);
+  it('no abre una sesión para un id que no está en las tarjetas', () => {
+    expect(on.issue('b1a55e55-0000-4000-8000-000000000099')).toBeNull();
+    expect(on.issue('')).toBeNull();
   });
 
-  it('no dice si falló el correo o la contraseña', () => {
+  it('no publica las tarjetas ni abre sesión cuando el interruptor está apagado', () => {
     const laura = BYPASS_PARTICIPANTS[0];
+    const issued = on.issue(laura.id);
 
-    expect(on.login('nadie@demo.innlab.local', laura.password)).toBeNull();
-    expect(on.login(laura.email, 'Agro-2026 ')).toBeNull();
-  });
-
-  it('no abre sesión ni acepta un token ya emitido cuando el interruptor está apagado', () => {
-    const laura = BYPASS_PARTICIPANTS[0];
-    const issued = on.login(laura.email, laura.password);
-
-    expect(off.login(laura.email, laura.password)).toBeNull();
+    expect(off.roster()).toEqual([]);
+    expect(off.issue(laura.id)).toBeNull();
     expect(off.authenticate(issued?.accessToken)).toBeNull();
     expect(off.isBypassUser(laura.id)).toBe(false);
     expect(off.profile(laura.id)).toBeNull();
@@ -64,8 +45,8 @@ describe('AuthBypassPolicy', () => {
 
   it('rechaza un token firmado con otra clave, vencido o alterado', () => {
     const laura = BYPASS_PARTICIPANTS[0];
-    const issued = on.login(laura.email, laura.password);
-    const expired = on.login(laura.email, laura.password, Date.now() - TWELVE_HOURS_MS - 1000);
+    const issued = on.issue(laura.id);
+    const expired = on.issue(laura.id, Date.now() - TWELVE_HOURS_MS - 1000);
     const otherKey = new AuthBypassPolicy(true, 'otra-clave');
 
     expect(otherKey.authenticate(issued?.accessToken)).toBeNull();
@@ -77,11 +58,21 @@ describe('AuthBypassPolicy', () => {
 
   it('separa los diagnósticos: el token de una persona no es el de otra', () => {
     const [laura, andres] = BYPASS_PARTICIPANTS;
-    const lauraToken = on.login(laura.email, laura.password)?.accessToken;
-    const andresToken = on.login(andres.email, andres.password)?.accessToken;
+    const lauraToken = on.issue(laura.id)?.accessToken;
+    const andresToken = on.issue(andres.id)?.accessToken;
 
     expect(on.authenticate(lauraToken)?.id).toBe(laura.id);
     expect(on.authenticate(andresToken)?.id).toBe(andres.id);
     expect(on.authenticate(lauraToken)?.id).not.toBe(andres.id);
+  });
+
+  it('nombra la empresa en la tarjeta y deja vacía la de quien no tiene', () => {
+    const cards = on.roster();
+    const camila = cards.find((card) => card.firstName === 'Camila');
+
+    expect(cards.find((card) => card.firstName === 'Laura')?.companyName).toBe(
+      'AgroConecta (demo)',
+    );
+    expect(camila?.companyName).toBeNull();
   });
 });

@@ -3,8 +3,9 @@ import type { MeContextResponse } from '@innlab/contracts';
 import type { AuthenticatedUser } from '../domain/entities/authenticated-user.vo.js';
 import {
   BYPASS_ISSUER,
+  bypassRoster,
   findBypassParticipant,
-  findBypassParticipantByEmail,
+  type BypassCard,
 } from '../domain/bypass-identity.js';
 
 const DEFAULT_TTL_SECONDS = 12 * 60 * 60;
@@ -21,8 +22,9 @@ interface BypassClaims {
  *
  * `enabled` comes from `AUTH_BYPASS` on the API. While it is off, tokens
  * signed with the bypass secret are ignored and the Cognito guard is the
- * only door. While it is on, a person enters with email and password.
- * Core is not called.
+ * only door. While it is on, the SPA shows the same cards as the Bitbucket
+ * sign-in simulator and `issue` opens the chosen person's session. Core is
+ * not called.
  *
  * Framework-free on purpose: the identity module constructs it with the
  * already-validated config.
@@ -41,21 +43,22 @@ export class AuthBypassPolicy {
     return this.enabled && findBypassParticipant(userId) !== null;
   }
 
+  /** Cards for the sign-in screen. Empty while the switch is off. */
+  roster(): readonly BypassCard[] {
+    return this.enabled ? bypassRoster() : [];
+  }
+
   /**
    * A session the SPA can store. `token` stays empty: only `accessToken`
-   * authenticates. `null` when the switch is off, the email is unknown,
-   * or the password does not match. The comparison does not say which of
-   * those three happened.
+   * authenticates. `null` when the switch is off or the id is not one of
+   * the cards.
    */
-  login(
-    email: string,
-    password: string,
+  issue(
+    userId: string,
     nowMs: number = Date.now(),
   ): { token: ''; accessToken: string } | null {
-    const person = findBypassParticipantByEmail(email);
-    const expected = person?.password ?? 'not-a-real-password';
-    const matches = passwordsMatch(password, expected);
-    if (!this.enabled || person === null || !matches) return null;
+    const person = findBypassParticipant(userId);
+    if (!this.enabled || person === null) return null;
     return { token: '', accessToken: signBypassToken(this.secret, person.id, nowMs) };
   }
 
@@ -151,12 +154,6 @@ function verifyBypassToken(
     firstName: person.firstName,
     lastName: person.lastName,
   };
-}
-
-function passwordsMatch(given: string, expected: string): boolean {
-  const digest = (value: string): Buffer =>
-    createHmac('sha256', 'bypass-password').update(value).digest();
-  return timingSafeEqual(digest(given), digest(expected));
 }
 
 function sign(unsigned: string, secret: string): string {

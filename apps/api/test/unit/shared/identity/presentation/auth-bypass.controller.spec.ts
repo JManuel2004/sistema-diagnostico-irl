@@ -10,35 +10,38 @@ describe('AuthBypassController', () => {
   const on = new AuthBypassController(new AuthBypassPolicy(true, SECRET));
   const off = new AuthBypassController(new AuthBypassPolicy(false, SECRET));
 
-  it('no publica contraseñas ni la lista de personas', () => {
-    const body = JSON.stringify(on.mode());
+  it('publica las tarjetas solo mientras el interruptor está encendido', () => {
+    const openDoor = on.mode();
+    const closedDoor = JSON.stringify(off.mode());
 
-    expect(on.mode()).toEqual({ bypass: true });
-    expect(off.mode()).toEqual({ bypass: false });
+    expect(openDoor.bypass).toBe(true);
+    expect(openDoor.participants).toHaveLength(BYPASS_PARTICIPANTS.length);
+    expect(openDoor.participants.map((card) => card.email)).toEqual(
+      BYPASS_PARTICIPANTS.map((person) => person.email),
+    );
+    expect(JSON.stringify(openDoor)).not.toContain('password');
+    expect(off.mode()).toEqual({ bypass: false, participants: [] });
     for (const person of BYPASS_PARTICIPANTS) {
-      expect(body).not.toContain(person.password);
-      expect(body).not.toContain(person.email);
+      expect(closedDoor).not.toContain(person.email);
     }
   });
 
-  it.each(BYPASS_PARTICIPANTS)(
-    'entra a $firstName y rechaza la misma clave en otro correo',
-    (person) => {
-      const session = on.open({ email: person.email, password: person.password });
-      const other = BYPASS_PARTICIPANTS.find((candidate) => candidate.id !== person.id);
+  it.each(BYPASS_PARTICIPANTS)('entra a $firstName al elegir su tarjeta', (person) => {
+    const session = on.open({ userId: person.id });
 
-      expect(session.accessToken.length).toBeGreaterThan(0);
-      expect(() =>
-        on.open({ email: other?.email ?? '', password: person.password }),
-      ).toThrow(BadRequestException);
-    },
-  );
+    expect(session.accessToken.length).toBeGreaterThan(0);
+    expect(session.token).toBe('');
+  });
 
-  it('responde 404 con la clave correcta cuando el interruptor está apagado', () => {
+  it('rechaza un id que no es una tarjeta', () => {
+    expect(() => on.open({ userId: 'b1a55e55-0000-4000-8000-000000000099' })).toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('responde 404 aunque el id sea de una tarjeta cuando el interruptor está apagado', () => {
     const laura = BYPASS_PARTICIPANTS[0];
 
-    expect(() => off.open({ email: laura.email, password: laura.password })).toThrow(
-      NotFoundException,
-    );
+    expect(() => off.open({ userId: laura.id })).toThrow(NotFoundException);
   });
 });
