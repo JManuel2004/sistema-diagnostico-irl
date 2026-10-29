@@ -11,7 +11,7 @@ import {
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsUUID } from 'class-validator';
 import { AuthBypassPolicy } from '../../application/auth-bypass.policy.js';
-import type { BypassCard } from '../../domain/bypass-identity.js';
+import type { BypassCard } from '../../application/auth-bypass.policy.js';
 import { Public } from '../decorators/public.decorator.js';
 
 class OpenBypassDto {

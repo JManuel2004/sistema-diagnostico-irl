@@ -8,6 +8,8 @@ import {
   type BypassCard,
 } from '../domain/bypass-identity.js';
 
+export type { BypassCard };
+
 const DEFAULT_TTL_SECONDS = 12 * 60 * 60;
 
 interface BypassClaims {
