@@ -2,11 +2,10 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { MeContextResponse } from '@innlab/contracts';
 import type { AuthenticatedUser } from '../domain/entities/authenticated-user.vo.js';
 import {
-  BYPASS_EMAIL,
-  BYPASS_FIRST_NAME,
   BYPASS_ISSUER,
-  BYPASS_LAST_NAME,
-  BYPASS_USER_ID,
+  BYPASS_PARTICIPANTS,
+  findBypassParticipant,
+  type BypassParticipant,
 } from '../domain/bypass-identity.js';
 
 const DEFAULT_TTL_SECONDS = 12 * 60 * 60;
@@ -19,18 +18,12 @@ interface BypassClaims {
 }
 
 /**
- * How many times INNLAB must fail to answer in time before a testing
- * deploy opens a local session on its own.
- */
-const SLOW_ATTEMPTS = 3;
-
-/**
  * The switch that lets a testing deploy skip INNLAB login.
  *
  * `enabled` comes from `AUTH_BYPASS` on the API. While it is off, tokens
  * signed with the bypass secret are ignored and the Cognito guard is the
- * only door. While it is on, a local session is issued only after INNLAB
- * auth fails to answer promptly {@link SLOW_ATTEMPTS} times in a row.
+ * only door. While it is on, each known participant gets their own session
+ * and Core is not called.
  *
  * Framework-free on purpose: the identity module constructs it with the
  * already-validated config.
@@ -41,33 +34,30 @@ export class AuthBypassPolicy {
     private readonly secret: string,
   ) {}
 
-  /**
-   * True only in a testing deploy, and only when every probe fails to get
-   * a timely answer. One prompt answer keeps the real INNLAB login.
-   */
-  async failsToRespondPromptly(
-    probe: () => Promise<boolean>,
-  ): Promise<boolean> {
-    if (!this.enabled) return false;
-
-    for (let attempt = 0; attempt < SLOW_ATTEMPTS; attempt += 1) {
-      if (await probe()) return false;
-    }
-
-    return true;
-  }
-
   isEnabled(): boolean {
     return this.enabled;
   }
 
-  isBypassUser(userId: string): boolean {
-    return this.enabled && userId === BYPASS_USER_ID;
+  /** Names the SPA shows. Empty while the switch is off. */
+  participants(): readonly BypassParticipant[] {
+    return this.enabled ? BYPASS_PARTICIPANTS : [];
   }
 
-  /** A session the SPA can store. `token` stays empty: only `accessToken` authenticates. */
-  issue(nowMs: number = Date.now()): { token: ''; accessToken: string } {
-    return { token: '', accessToken: signBypassToken(this.secret, nowMs) };
+  isBypassUser(userId: string): boolean {
+    return this.enabled && findBypassParticipant(userId) !== null;
+  }
+
+  /**
+   * A session the SPA can store. `token` stays empty: only `accessToken`
+   * authenticates. `null` when the switch is off or the id is not one of
+   * the five participants.
+   */
+  issue(
+    userId: string,
+    nowMs: number = Date.now(),
+  ): { token: ''; accessToken: string } | null {
+    if (!this.isBypassUser(userId)) return null;
+    return { token: '', accessToken: signBypassToken(this.secret, userId, nowMs) };
   }
 
   /**
@@ -83,20 +73,27 @@ export class AuthBypassPolicy {
     return verifyBypassToken(token, this.secret);
   }
 
-  /** Profile for the bypass leader. Core is not consulted. */
-  profile(): MeContextResponse {
+  /** Profile for one participant. Core is not consulted. */
+  profile(userId: string): MeContextResponse | null {
+    const person = this.enabled ? findBypassParticipant(userId) : null;
+    if (person === null) return null;
+
+    const company = person.company;
     return {
       user: {
-        id: BYPASS_USER_ID,
-        email: BYPASS_EMAIL,
-        firstName: BYPASS_FIRST_NAME,
-        lastName: BYPASS_LAST_NAME,
+        id: person.id,
+        email: person.email,
+        firstName: person.firstName,
+        lastName: person.lastName,
       },
       core: {
-        companyId: null,
-        companyRole: null,
+        companyId: company?.id ?? null,
+        companyRole: company?.role ?? null,
         workspaceId: null,
-        companies: [],
+        companies:
+          company === null
+            ? []
+            : [{ id: company.id, name: company.name, role: company.role }],
       },
     };
   }
@@ -104,13 +101,14 @@ export class AuthBypassPolicy {
 
 function signBypassToken(
   secret: string,
+  userId: string,
   nowMs: number,
   ttlSeconds = DEFAULT_TTL_SECONDS,
 ): string {
   const header = base64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = base64Url(
     JSON.stringify({
-      sub: BYPASS_USER_ID,
+      sub: userId,
       iss: BYPASS_ISSUER,
       token_use: 'access',
       exp: Math.floor(nowMs / 1000) + ttlSeconds,
@@ -143,14 +141,16 @@ function verifyBypassToken(
 
   if (claims.iss !== BYPASS_ISSUER || claims.token_use !== 'access')
     return null;
-  if (claims.sub !== BYPASS_USER_ID) return null;
+  if (typeof claims.sub !== 'string') return null;
+  const person = findBypassParticipant(claims.sub);
+  if (person === null) return null;
   if (typeof claims.exp !== 'number' || claims.exp * 1000 <= nowMs) return null;
 
   return {
-    id: BYPASS_USER_ID,
-    email: BYPASS_EMAIL,
-    firstName: BYPASS_FIRST_NAME,
-    lastName: BYPASS_LAST_NAME,
+    id: person.id,
+    email: person.email,
+    firstName: person.firstName,
+    lastName: person.lastName,
   };
 }
 

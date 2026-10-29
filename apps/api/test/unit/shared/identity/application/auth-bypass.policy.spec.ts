@@ -1,67 +1,49 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 import { AuthBypassPolicy } from '../../../../../src/shared/identity/application/auth-bypass.policy.js';
-import { BYPASS_USER_ID } from '../../../../../src/shared/identity/domain/bypass-identity.js';
+import { BYPASS_PARTICIPANTS } from '../../../../../src/shared/identity/domain/bypass-identity.js';
 
 const SECRET = 'test-secret';
+const LAURA = BYPASS_PARTICIPANTS[0];
+const ANDRES = BYPASS_PARTICIPANTS[1];
+const CAMILA = BYPASS_PARTICIPANTS[2];
 
 describe('AuthBypassPolicy', () => {
   it('rechaza cualquier token mientras el interruptor está apagado', () => {
     const off = new AuthBypassPolicy(false, SECRET);
     const on = new AuthBypassPolicy(true, SECRET);
 
-    const { accessToken } = on.issue();
+    const issued = on.issue(LAURA.id);
+    expect(issued).not.toBeNull();
 
-    expect(off.authenticate(accessToken)).toBeNull();
-    expect(off.isBypassUser(BYPASS_USER_ID)).toBe(false);
+    expect(off.authenticate(issued?.accessToken)).toBeNull();
+    expect(off.isBypassUser(LAURA.id)).toBe(false);
+    expect(off.participants()).toHaveLength(0);
+    expect(off.issue(LAURA.id)).toBeNull();
   });
 
-  it('acepta la sesión que él mismo emitió y arma un perfil sin INNLAB', () => {
+  it('acepta la sesión de cada persona y no llama a INNLAB para el perfil', () => {
     const policy = new AuthBypassPolicy(true, SECRET);
-    const { token, accessToken } = policy.issue();
 
-    expect(token).toBe('');
-    expect(policy.authenticate(accessToken)).toMatchObject({
-      id: BYPASS_USER_ID,
+    expect(policy.participants()).toHaveLength(5);
+
+    const laura = policy.issue(LAURA.id);
+    const andres = policy.issue(ANDRES.id);
+    expect(laura?.token).toBe('');
+    expect(policy.authenticate(laura?.accessToken)).toMatchObject({
+      id: LAURA.id,
+      email: 'lider.agro@demo.innlab.local',
     });
-    expect(policy.profile().user).toMatchObject({
-      id: BYPASS_USER_ID,
-      email: 'lider.prueba@innlab.local',
-    });
-    expect(policy.profile().core.companyId).toBeNull();
-  });
-
-  it('no abre la puerta si el interruptor está apagado, aunque INNLAB no conteste', async () => {
-    const off = new AuthBypassPolicy(false, SECRET);
-    const probe = jest.fn<() => Promise<boolean>>().mockResolvedValue(false);
-
-    await expect(off.failsToRespondPromptly(probe)).resolves.toBe(false);
-    expect(probe).not.toHaveBeenCalled();
-  });
-
-  it('sigue con INNLAB si alguna de las tres pruebas contesta a tiempo', async () => {
-    const on = new AuthBypassPolicy(true, SECRET);
-    const probe = jest
-      .fn<() => Promise<boolean>>()
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(true);
-
-    await expect(on.failsToRespondPromptly(probe)).resolves.toBe(false);
-    expect(probe).toHaveBeenCalledTimes(2);
-  });
-
-  it('deja entrar solo cuando las tres pruebas se quedan sin respuesta', async () => {
-    const on = new AuthBypassPolicy(true, SECRET);
-    const probe = jest.fn<() => Promise<boolean>>().mockResolvedValue(false);
-
-    await expect(on.failsToRespondPromptly(probe)).resolves.toBe(true);
-    expect(probe).toHaveBeenCalledTimes(3);
+    expect(policy.authenticate(andres?.accessToken)?.id).toBe(ANDRES.id);
+    expect(policy.profile(LAURA.id)?.core.companyId).toBe(LAURA.company?.id);
+    expect(policy.profile(CAMILA.id)?.core.companyId).toBeNull();
+    expect(policy.issue('b1a55e55-0000-4000-8000-000000000099')).toBeNull();
   });
 
   it('rechaza un token firmado con otra clave', () => {
-    const issued = new AuthBypassPolicy(true, SECRET).issue().accessToken;
+    const issued = new AuthBypassPolicy(true, SECRET).issue(LAURA.id);
 
     expect(
-      new AuthBypassPolicy(true, 'otra-clave').authenticate(issued),
+      new AuthBypassPolicy(true, 'otra-clave').authenticate(issued?.accessToken),
     ).toBeNull();
   });
 });

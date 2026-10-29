@@ -47,7 +47,8 @@ export class MeController {
     // The bypass leader does not exist in Core. Answering here is what
     // keeps the panel usable when INNLAB login is switched off.
     if (this.bypass.isBypassUser(user.id)) {
-      return this.bypass.profile();
+      const profile = this.bypass.profile(user.id);
+      if (profile !== null) return profile;
     }
 
     const context = await this.resolveUserContext.execute({ userId: user.id });

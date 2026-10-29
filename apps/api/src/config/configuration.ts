@@ -80,7 +80,10 @@ export interface AppConfig {
   readonly cognito: CognitoConfig;
   readonly innlabCore: InnLabCoreConfig;
   readonly mail: MailConfig;
-  /** `AUTH_BYPASS=true` opens a local session so a deploy can skip INNLAB login. */
+  /**
+   * Opens the five-person entry. On in production when `AUTH_BYPASS` is
+   * unset, so that deploy does not wait on INNLAB.
+   */
   readonly authBypass: boolean;
   /** Signs that local session. Ignored while `authBypass` is false. */
   readonly authBypassSecret: string;
@@ -118,12 +121,26 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       internalKey: requireString(env.CORE_INTERNAL_KEY, 'CORE_INTERNAL_KEY'),
     },
     mail: mailConfig(env),
-    authBypass: env.AUTH_BYPASS === 'true',
+    authBypass: authBypassEnabled(env.AUTH_BYPASS, nodeEnv),
     authBypassSecret:
       env.AUTH_BYPASS_SECRET !== undefined && env.AUTH_BYPASS_SECRET !== ''
         ? env.AUTH_BYPASS_SECRET
         : 'irl-diagnostic-bypass-signing-key',
   };
+}
+
+/**
+ * Production opens the five-person entry when the variable is unset, so a
+ * usability deploy does not depend on INNLAB. `false` keeps the Hub.
+ * Any other environment stays on the Hub unless the variable is `true`.
+ */
+function authBypassEnabled(
+  value: string | undefined,
+  nodeEnv: string,
+): boolean {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return nodeEnv === 'production';
 }
 
 function mailConfig(env: NodeJS.ProcessEnv): MailConfig {

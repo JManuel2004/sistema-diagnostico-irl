@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ProtectedRoute } from '../ProtectedRoute';
 import { saveSession } from '@/shared/auth/session';
@@ -22,10 +23,12 @@ function renderGuarded(): void {
 }
 
 const redirectToSso = vi.hoisted(() => vi.fn());
-const enterIfAuthIsUnresponsive = vi.hoisted(() => vi.fn());
+const fetchAuthMode = vi.hoisted(() => vi.fn());
+const enterAsParticipant = vi.hoisted(() => vi.fn());
 vi.mock('@features/auth', () => ({ useSessionLiveness: () => undefined }));
 vi.mock('@features/auth/api/auth-mode.api', () => ({
-  enterIfAuthIsUnresponsive,
+  fetchAuthMode,
+  enterAsParticipant,
 }));
 
 vi.mock('@/shared/auth/session', async (importOriginal) => {
@@ -37,8 +40,9 @@ describe('ProtectedRoute', () => {
   beforeEach(() => {
     window.localStorage.clear();
     redirectToSso.mockReset();
-    enterIfAuthIsUnresponsive.mockReset();
-    enterIfAuthIsUnresponsive.mockResolvedValue(false);
+    fetchAuthMode.mockReset();
+    enterAsParticipant.mockReset();
+    fetchAuthMode.mockResolvedValue({ bypass: false, participants: [] });
   });
 
   it('renderiza la pantalla protegida cuando hay sesión', () => {
@@ -69,15 +73,32 @@ describe('ProtectedRoute', () => {
     });
   });
 
-  it('entra solo cuando INNLAB no respondió a tiempo y no redirige al Hub', async () => {
-    enterIfAuthIsUnresponsive.mockImplementation(() => {
+  it('muestra las cinco personas y entra con la elegida, sin ir al Hub', async () => {
+    fetchAuthMode.mockResolvedValue({
+      bypass: true,
+      participants: [
+        {
+          id: 'b1a55e55-0000-4000-8000-000000000001',
+          firstName: 'Laura',
+          lastName: 'Gómez',
+          email: 'lider.agro@demo.innlab.local',
+          companyName: 'AgroConecta (demo)',
+        },
+      ],
+    });
+    enterAsParticipant.mockImplementation(() => {
       saveSession({ token: '', accessToken: 'bypass-token' });
       return Promise.resolve(true);
     });
 
     renderGuarded();
 
+    await userEvent.click(await screen.findByRole('button', { name: /Laura Gómez/ }));
+
     expect(await screen.findByText('contenido protegido')).toBeInTheDocument();
+    expect(enterAsParticipant).toHaveBeenCalledWith(
+      'b1a55e55-0000-4000-8000-000000000001',
+    );
     expect(redirectToSso).not.toHaveBeenCalled();
   });
 });

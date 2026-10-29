@@ -37,9 +37,9 @@ export const envValidationSchema = Joi.object({
   SMTP_PASS: Joi.string().allow('').optional(),
   SMTP_FROM: Joi.string().allow('').optional(),
 
-  // Local session for when INNLAB login is down. Off unless the value is
-  // exactly `true`. The secret only signs that session; leave it empty to
-  // use the built-in one.
-  AUTH_BYPASS: Joi.string().valid('true', 'false').default('false'),
+  // Five-person entry without INNLAB. Unset in production turns it on.
+  // `false` keeps the Hub. The secret only signs that session; leave it
+  // empty to use the built-in one.
+  AUTH_BYPASS: Joi.string().valid('true', 'false').optional(),
   AUTH_BYPASS_SECRET: Joi.string().allow('').optional(),
 });

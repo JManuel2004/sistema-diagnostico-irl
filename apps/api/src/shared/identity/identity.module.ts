@@ -4,7 +4,6 @@ import { APP_GUARD } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
 import { appConfig } from '../../config/configuration.js';
 import { AuthBypassPolicy } from './application/auth-bypass.policy.js';
-import { AUTH_PROBE_PORT } from './application/ports/auth-probe.port.js';
 import { SSO_EXCHANGE_PORT } from './application/ports/sso-exchange.port.js';
 import type { SsoExchangePort } from './application/ports/sso-exchange.port.js';
 import { ExchangeSsoCodeUseCase } from './application/use-cases/exchange-sso-code.use-case.js';
@@ -43,7 +42,6 @@ import { SsoExchangeController } from './presentation/controllers/sso-exchange.c
     InnlabCoreHttpClient,
     { provide: USER_CONTEXT_PORT, useExisting: InnlabCoreHttpClient },
     { provide: SSO_EXCHANGE_PORT, useExisting: InnlabCoreHttpClient },
-    { provide: AUTH_PROBE_PORT, useExisting: InnlabCoreHttpClient },
     {
       provide: ExchangeSsoCodeUseCase,
       useFactory: (core: SsoExchangePort) => new ExchangeSsoCodeUseCase(core),

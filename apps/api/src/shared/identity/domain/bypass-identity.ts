@@ -1,15 +1,81 @@
 /**
- * Fixed leader used only while `AUTH_BYPASS` is on.
+ * People who can enter a testing deploy without INNLAB.
  *
- * The id is a UUID so it satisfies the same contract as a Cognito `sub`.
- * It is not a person in INNLAB Core and must never be sent there.
+ * Each id is a UUID so it satisfies the same contract as a Cognito `sub`.
+ * None of them exist in INNLAB Core and must never be sent there. The first
+ * id is the original single bypass user, so a session opened before the
+ * picker still belongs to the same person.
  */
 export const BYPASS_ISSUER = 'irl-diagnostic-bypass';
 
-export const BYPASS_USER_ID = 'b1a55e55-0000-4000-8000-000000000001';
+export interface BypassParticipant {
+  readonly id: string;
+  readonly email: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly company: {
+    readonly id: string;
+    readonly name: string;
+    readonly role: 'OWNER' | 'MEMBER';
+  } | null;
+}
 
-export const BYPASS_EMAIL = 'lider.prueba@innlab.local';
+export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
+  {
+    id: 'b1a55e55-0000-4000-8000-000000000001',
+    email: 'lider.agro@demo.innlab.local',
+    firstName: 'Laura',
+    lastName: 'Gómez',
+    company: {
+      id: 'c0a1b2c3-d4e5-4f60-8a71-9b8c7d6e5f01',
+      name: 'AgroConecta (demo)',
+      role: 'OWNER',
+    },
+  },
+  {
+    id: 'b1a55e55-0000-4000-8000-000000000002',
+    email: 'lider.salud@demo.innlab.local',
+    firstName: 'Andrés',
+    lastName: 'Ríos',
+    company: {
+      id: 'c0a1b2c3-d4e5-4f60-8a71-9b8c7d6e5f02',
+      name: 'SaludVital (demo)',
+      role: 'MEMBER',
+    },
+  },
+  {
+    id: 'b1a55e55-0000-4000-8000-000000000003',
+    email: 'sin.empresa@demo.innlab.local',
+    firstName: 'Camila',
+    lastName: 'Torres',
+    company: null,
+  },
+  {
+    id: 'b1a55e55-0000-4000-8000-000000000004',
+    email: 'lider.edu@demo.innlab.local',
+    firstName: 'Valeria',
+    lastName: 'Díaz',
+    company: {
+      id: 'c0a1b2c3-d4e5-4f60-8a71-9b8c7d6e5f04',
+      name: 'EduAndes (demo)',
+      role: 'OWNER',
+    },
+  },
+  {
+    id: 'b1a55e55-0000-4000-8000-000000000005',
+    email: 'lider.logistica@demo.innlab.local',
+    firstName: 'Mateo',
+    lastName: 'Cruz',
+    company: {
+      id: 'c0a1b2c3-d4e5-4f60-8a71-9b8c7d6e5f05',
+      name: 'LogiSur (demo)',
+      role: 'MEMBER',
+    },
+  },
+];
 
-export const BYPASS_FIRST_NAME = 'Líder';
+export const BYPASS_USER_ID = BYPASS_PARTICIPANTS[0].id;
 
-export const BYPASS_LAST_NAME = 'de prueba';
+export function findBypassParticipant(userId: string): BypassParticipant | null {
+  return BYPASS_PARTICIPANTS.find((person) => person.id === userId) ?? null;
+}
