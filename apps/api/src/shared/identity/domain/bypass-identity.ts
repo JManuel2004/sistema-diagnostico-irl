@@ -11,6 +11,7 @@ export const BYPASS_ISSUER = 'irl-diagnostic-bypass';
 export interface BypassParticipant {
   readonly id: string;
   readonly email: string;
+  readonly password: string;
   readonly firstName: string;
   readonly lastName: string;
   readonly company: {
@@ -24,6 +25,7 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000001',
     email: 'lider.agro@demo.innlab.local',
+    password: 'Agro-2026',
     firstName: 'Laura',
     lastName: 'Gómez',
     company: {
@@ -35,6 +37,7 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000002',
     email: 'lider.salud@demo.innlab.local',
+    password: 'Salud-2026',
     firstName: 'Andrés',
     lastName: 'Ríos',
     company: {
@@ -46,6 +49,7 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000003',
     email: 'sin.empresa@demo.innlab.local',
+    password: 'Camila-2026',
     firstName: 'Camila',
     lastName: 'Torres',
     company: null,
@@ -53,6 +57,7 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000004',
     email: 'lider.edu@demo.innlab.local',
+    password: 'Edu-2026',
     firstName: 'Valeria',
     lastName: 'Díaz',
     company: {
@@ -64,6 +69,7 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000005',
     email: 'lider.logistica@demo.innlab.local',
+    password: 'Logi-2026',
     firstName: 'Mateo',
     lastName: 'Cruz',
     company: {
@@ -78,4 +84,9 @@ export const BYPASS_USER_ID = BYPASS_PARTICIPANTS[0].id;
 
 export function findBypassParticipant(userId: string): BypassParticipant | null {
   return BYPASS_PARTICIPANTS.find((person) => person.id === userId) ?? null;
+}
+
+export function findBypassParticipantByEmail(email: string): BypassParticipant | null {
+  const normalized = email.trim().toLowerCase();
+  return BYPASS_PARTICIPANTS.find((person) => person.email === normalized) ?? null;
 }
