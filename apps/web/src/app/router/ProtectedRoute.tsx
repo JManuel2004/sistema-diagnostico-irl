@@ -179,7 +179,7 @@ function SimulatedSignIn({
         ) : null}
         <ul>
           {people.map((person) => {
-            const company = person.companyName === null ? 'Sin organización' : person.companyName;
+            const company = person.companyName ?? 'Sin organización';
             return (
               <li key={person.id}>
                 <button
