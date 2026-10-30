@@ -87,10 +87,10 @@ pnpm --filter @innlab/contracts dev   # optional, watch mode
 ### Backend
 
 ```bash
-cp apps/api/.env.example apps/api/.env.local
+cp apps/api/.env.example apps/api/.env
 ```
 
-Open `apps/api/.env.local` and review:
+Open `apps/api/.env` and review:
 
 | Variable                            | What to set                                                                 |
 | ----------------------------------- | --------------------------------------------------------------------------- |
@@ -106,10 +106,10 @@ Every variable is described in `apps/api/.env.example` and validated at boot by 
 ### Frontend
 
 ```bash
-cp apps/web/.env.example apps/web/.env.local
+cp apps/web/.env.example apps/web/.env
 ```
 
-Open `apps/web/.env.local`:
+Open `apps/web/.env`:
 
 | Variable                 | What to set                                             |
 | ------------------------ | ------------------------------------------------------- |
@@ -140,7 +140,7 @@ You should see `irl-postgres` with status `running` (and `healthy` after ~10s) a
 
 When a leader finishes the deep analysis, the API mails the full PDF. Locally that mail stays on this machine: open <http://localhost:8025>. It does not reach Gmail or INNLAB.
 
-`apps/api/.env.local` needs the catcher, or the API boots with mail disabled and sends nothing:
+`apps/api/.env` needs the catcher, or the API boots with mail disabled and sends nothing:
 
 ```dotenv
 REPORT_NOTIFY_TO=prueba@innlab.local
@@ -161,7 +161,7 @@ There is **no local identity provider to start**. Authentication runs against th
 **Amazon Cognito User Pool shared across the INNLAB ecosystem** — the same pool
 `innlab-core-api` validates against. Do not create a User Pool of your own and do
 not build the URLs from a region you picked: ask the Core team for the real
-values and paste them into `apps/api/.env.local`:
+values and paste them into `apps/api/.env`:
 
 ```dotenv
 COGNITO_JWKS_URI=https://cognito-idp.<region>.amazonaws.com/<userPoolId>/.well-known/jwks.json
@@ -327,7 +327,7 @@ docker compose down -v   # -v also wipes the postgres volume
 
 ### "Port 5433 is already allocated"
 
-Something else listens on 5433. Either stop it, or change the published port in `docker-compose.yml` and update `DATABASE_URL` in `apps/api/.env.local` to match.
+Something else listens on 5433. Either stop it, or change the published port in `docker-compose.yml` and update `DATABASE_URL` in `apps/api/.env` to match.
 
 ### "Cannot find module '@innlab/contracts'" in api or web
 
@@ -335,7 +335,7 @@ You forgot Step 3. Run `pnpm --filter @innlab/contracts build`.
 
 ### "Invalid token signature" when the SPA calls the API
 
-Almost always `COGNITO_JWKS_URI` or `COGNITO_ISSUER` in `apps/api/.env.local` still holds the `<region>`/`<userPoolId>` placeholder from `.env.example`, so no key can be fetched and no signature verified. Get the real values from the Core team (Step 5b). If they are already set, check that the SPA is sending `accessToken` and not `token`: the guard requires `token_use === 'access'` and rejects the id_token.
+Almost always `COGNITO_JWKS_URI` or `COGNITO_ISSUER` in `apps/api/.env` still holds the `<region>`/`<userPoolId>` placeholder from `.env.example`, so no key can be fetched and no signature verified. Get the real values from the Core team (Step 5b). If they are already set, check that the SPA is sending `accessToken` and not `token`: the guard requires `token_use === 'access'` and rejects the id_token.
 
 ### "EACCES" on macOS/Linux when running `pnpm install`
 

@@ -18,7 +18,7 @@ A pnpm monorepo with three packages:
 
 The architecture is a **modular monolith with DDD-lite**: one NestJS module per bounded context (`diagnosis`, `initiative`, `routing`, `roadmap`, plus `shared/irl-taxonomy` and `shared/identity`). Modules react to each other through in-process domain events and read from each other only through exported queries; the domain and application layers import no framework. The why of each of these choices is in [`docs/architecture/`](./docs/architecture/README.md).
 
-What is implemented: sign-in through the INNLAB SSO (HU-01/02), starting a diagnostic (HU-04), consulting a completed one from the panel (DIAGIRL-26), consent (HU-05), initiative profile (HU-06), the questionnaire with optional justifications (E-03), the maturity profile with its critical state (E-04), and the deep analysis — roadmap and portfolio recommendation (RF-11). Reporting and notifications are not built.
+What is implemented: sign-in through the INNLAB SSO (HU-01/02), starting a diagnostic (HU-04), consulting a completed one from the panel (DIAGIRL-26), consent (HU-05), initiative profile (HU-06), the questionnaire with optional justifications (E-03), the maturity profile with its critical state (E-04), the deep analysis — roadmap and portfolio recommendation (RF-11), the full report on screen and in PDF, and the mail of that report to INNLAB. A simulated sign-in lets the whole flow run without Core or Cognito (see below).
 
 ## Prerequisites
 
@@ -44,8 +44,8 @@ The short version:
 pnpm install                                  # installs all workspace packages
 pnpm --filter @innlab/contracts build         # build shared contracts first
 
-cp apps/api/.env.example apps/api/.env.local  # fill in real values
-cp apps/web/.env.example apps/web/.env.local
+cp apps/api/.env.example apps/api/.env       # fill in real values
+cp apps/web/.env.example apps/web/.env
 
 pnpm db:up                                    # postgres (port 5433) and the local mail inbox (1025, http://localhost:8025)
 
@@ -59,6 +59,55 @@ You should see:
 
 - API: <http://localhost:3000/api/v1>, Swagger UI at <http://localhost:3000/api/docs>
 - Web: <http://localhost:5173>
+
+The real values go in `.env`. `.env.local` is reserved for the simulated sign-in: it is read before `.env`, so it overrides it.
+
+If your local database was created before a schema change, the API answers 500 with `relation "..." does not exist`. The schema lives in a single migration that is edited in place, so an existing database never picks up the change: rebuild it (this deletes all local data).
+
+```bash
+docker compose down -v
+pnpm db:up
+pnpm --filter @innlab/api db:migration:run
+pnpm --filter @innlab/api db:seed
+```
+
+## Try it with the simulated sign-in
+
+Without Core or Cognito, a local simulator (`tools/auth-simulator/`, port 8090) stands in for the INNLAB sign-in page, the session and the user's profile. There are no passwords: its page lists test users (`tools/auth-simulator/users.json`) and signs in as the one you pick. Never use it where real users can reach it.
+
+1. Start the simulator. It refuses to start without the confirmation variable:
+
+   ```bash
+   AUTH_SIMULATOR_CONFIRM=simulated-sign-in-only pnpm auth:simulated:up
+   ```
+
+2. Create `apps/api/.env.local`:
+
+   ```dotenv
+   COGNITO_JWKS_URI=http://localhost:8090/.well-known/jwks.json
+   COGNITO_ISSUER=http://localhost:8090
+   INNLAB_API_BASE_URL=http://localhost:8090/api
+   CORE_INTERNAL_KEY=simulated-internal-key
+   ```
+
+3. Create `apps/web/.env.local`:
+
+   ```dotenv
+   VITE_CORE_URL=http://localhost:8090
+   VITE_CORE_API_URL=http://localhost:8090/api
+   ```
+
+4. Restart `pnpm dev` (both apps read their env files only at start-up) and open <http://localhost:5173>. «Iniciar diagnóstico» now opens the simulator's page, marked «Modo simulado».
+
+Restarting the simulator signs everyone out, because its signing key is generated at start-up. The finished report mail lands in the local inbox at <http://localhost:8025>.
+
+**Back to the real sign-in:** delete both `.env.local` files, restart `pnpm dev` and stop the simulator:
+
+```bash
+docker compose --profile simulated stop auth-simulator
+```
+
+The details and the safeguards are in [`docs/workflows/LOCAL-SETUP.md`](./docs/workflows/LOCAL-SETUP.md), step 5c.
 
 ## Common commands
 
