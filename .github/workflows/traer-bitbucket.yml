@@ -1,0 +1,83 @@
+# Cada tres horas mira la rama dev de Bitbucket y, si hay commits nuevos,
+# los mezcla en la dev de GitHub. No reemplaza esa rama: el pipeline, Vercel
+# y el ingreso de prueba se quedan.
+#
+# El push lo hace un token propio. El token automático de Actions no
+# dispara «Verificar y desplegar», y entonces el cambio llegaría a GitHub
+# sin publicarse.
+#
+# Secretos (Settings → Secrets and variables → Actions):
+#   GITHUB_PUSH_TOKEN       token con permiso de escritura en este repositorio
+#   BITBUCKET_USERNAME      solo si el clon de Bitbucket pide usuario
+#   BITBUCKET_READ_TOKEN    solo si el clon de Bitbucket pide contraseña
+#
+# Si la mezcla tiene conflictos, este job falla y no hace push. El despliegue
+# no cambia. Hay que mezclar esos archivos a mano.
+
+name: Traer dev de Bitbucket
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traer-bitbucket
+  cancel-in-progress: false
+
+jobs:
+  traer:
+    name: Mezclar dev de Bitbucket
+    runs-on: ubuntu-latest
+    steps:
+      - name: Traer GitHub dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Mezclar y publicar si hay commits nuevos
+        env:
+          BB_USER: ${{ secrets.BITBUCKET_USERNAME }}
+          BB_TOKEN: ${{ secrets.BITBUCKET_READ_TOKEN }}
+          PUSH_TOKEN: ${{ secrets.GITHUB_PUSH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${PUSH_TOKEN}" ]; then
+            echo "::error::Falta el secreto GITHUB_PUSH_TOKEN. Tiene que poder escribir en este repositorio. Sin él no se publica nada."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "${BB_TOKEN}" ]; then
+            if [ -z "${BB_USER}" ]; then
+              echo "::error::BITBUCKET_READ_TOKEN está puesto y falta BITBUCKET_USERNAME."
+              exit 1
+            fi
+            git remote add bitbucket "https://${BB_USER}:${BB_TOKEN}@pi2tools.icesi.edu.co/bitbucket/scm/pdgdiag/sistema-diagnostico-irl.git"
+          else
+            git remote add bitbucket "https://pi2tools.icesi.edu.co/bitbucket/scm/pdgdiag/sistema-diagnostico-irl.git"
+          fi
+
+          git fetch bitbucket dev
+          if git merge-base --is-ancestor FETCH_HEAD HEAD; then
+            echo "Bitbucket dev no tiene commits nuevos."
+            exit 0
+          fi
+
+          if ! git merge --no-edit -m "enhance: update + [dev] - [bring bitbucket dev into github]" FETCH_HEAD; then
+            echo "::error::La mezcla tiene conflictos. GitHub dev no se modifica."
+            git diff --name-only --diff-filter=U || true
+            git merge --abort || true
+            exit 1
+          fi
+
+          git push "https://x-access-token:${PUSH_TOKEN}@github.com/JManuel2004/sistema-diagnostico-irl.git" HEAD:dev
+          echo "Bitbucket dev quedó mezclado en GitHub. El pipeline de despliegue revisa ese push."
