@@ -381,7 +381,7 @@ This is always a real problem, never a flake. Common causes:
 
 ## CI fan-out
 
-There is no CI pipeline in the repository yet, and the Husky hooks are inactive (`.npmrc` sets `ignore-scripts`). Until there is one, run the gates by hand; this is the intended fan-out:
+GitHub Actions runs lint, typecheck, unit, integration and the API end-to-end tests before a deploy. Browser tiers stay local. The Husky hooks are installed only when `pnpm prepare` runs (`.npmrc` sets `ignore-scripts`). The intended fan-out:
 
 | Trigger                   | Tests run                                                                 |
 | ------------------------- | ------------------------------------------------------------------------- |
