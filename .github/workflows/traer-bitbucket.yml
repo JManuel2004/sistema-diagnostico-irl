@@ -56,17 +56,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          git remote add bitbucket "https://pi2tools.icesi.edu.co/bitbucket/scm/pdgdiag/sistema-diagnostico-irl.git"
           if [ -n "${BB_TOKEN}" ]; then
             if [ -z "${BB_USER}" ]; then
               echo "::error::BITBUCKET_READ_TOKEN está puesto y falta BITBUCKET_USERNAME."
               exit 1
             fi
-            git remote add bitbucket "https://${BB_USER}:${BB_TOKEN}@pi2tools.icesi.edu.co/bitbucket/scm/pdgdiag/sistema-diagnostico-irl.git"
+            auth=$(printf '%s:%s' "$BB_USER" "$BB_TOKEN" | base64 -w 0)
+            git -c "http.extraheader=Authorization: Basic ${auth}" fetch bitbucket dev
           else
-            git remote add bitbucket "https://pi2tools.icesi.edu.co/bitbucket/scm/pdgdiag/sistema-diagnostico-irl.git"
+            git fetch bitbucket dev
           fi
-
-          git fetch bitbucket dev
           if git merge-base --is-ancestor FETCH_HEAD HEAD; then
             echo "Bitbucket dev no tiene commits nuevos."
             exit 0
