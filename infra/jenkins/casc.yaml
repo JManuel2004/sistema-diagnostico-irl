@@ -1,7 +1,7 @@
 # Jenkins configured as code: an administrator, one executor on the
 # controller, and the pipeline job of this repository.
 jenkins:
-  systemMessage: 'Jenkins local del Sistema de Diagnóstico IRL. El pipeline está en el Jenkinsfile del repositorio.'
+  systemMessage: 'Jenkins local del Sistema de Diagnóstico IRL. El repositorio ya no trae un Jenkinsfile.'
   numExecutors: 1
   securityRealm:
     local:
@@ -20,7 +20,7 @@ unclassified:
 jobs:
   - script: >
       pipelineJob('sistema-diagnostico-irl') {
-        description('Instala, revisa, prueba y compila. Si la rama es dev y las pruebas pasan, publica ese commit en GitHub dev.')
+        description('El repositorio ya no trae un Jenkinsfile. Las pruebas y la publicación las hace GitHub.')
         parameters {
           stringParam('BRANCH', '${JENKINS_DEFAULT_BRANCH:-dev}', 'Rama del repositorio a construir')
         }

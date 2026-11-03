@@ -1,9 +1,8 @@
 # CI and local deployment with Jenkins
 
-The pipeline is the [`Jenkinsfile`](../../Jenkinsfile) at the root. Jenkins
-itself runs in a container defined in [`infra/jenkins/`](../../infra/jenkins),
-configured as code (an administrator and the pipeline job), so it starts
-ready to build.
+There is no `Jenkinsfile`. Checks and the publish to GitHub run in GitHub
+Actions when `dev` arrives there. Jenkins can still be started from
+[`infra/jenkins/`](../../infra/jenkins), but its job has nothing to build.
 
 ## Start Jenkins
 
@@ -27,22 +26,16 @@ JENKINS_DEFAULT_BRANCH=$(git branch --show-current) \
 Stop it with `docker compose -f infra/jenkins/docker-compose.yml down`. Add
 `-v` to also delete Jenkins' data.
 
-## What the pipeline does
+## What used to run here
 
-| Stage | What runs |
-| --- | --- |
-| Instalar | `pnpm install --frozen-lockfile` (the lockfile is never rewritten) |
-| Typecheck y lint | `pnpm typecheck`, `pnpm lint` |
-| Servicios de prueba | `infra/ci/docker-compose.yml`: Postgres, the test inbox and the sign-in simulator, on ports of their own; migration and seed |
-| Pruebas de la API | Unit, integration (Testcontainers) and end-to-end, with coverage and its thresholds |
-| Pruebas del frontend | Vitest with coverage; the simulator's contract |
-| Pruebas en navegador | Playwright in Chromium, Firefox and Edge: the flow with the API faked, and the flows against the real stack |
-| Compilar | `pnpm build` |
-| Publicar en GitHub | Only when the built branch is `dev`. Merges that commit into GitHub `dev` and pushes it. Render and Vercel are deployed by the GitHub workflow, not by this stage |
+The stages (install, typecheck, lint, API tests, frontend tests, browser
+tests, compile, and the push of `dev` to GitHub) are no longer driven by
+Jenkins. GitHub runs typecheck, lint, unit, integration and the API
+end-to-end tests before it deploys. Browser tests stay a local command.
 
 ### Evidence of each run
 
-The evidence is archived with the build:
+When Jenkins did build, the evidence was archived with the build:
 
 - `reports/`:
   - the JSON and JUnit reports of every level;

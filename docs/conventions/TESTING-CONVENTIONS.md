@@ -393,7 +393,7 @@ This is always a real problem, never a flake. Common causes:
 
 ## CI fan-out
 
-The pipeline is the `Jenkinsfile` ([CI-JENKINS.md](../workflows/CI-JENKINS.md)): it runs every tier above in Chromium, Firefox and Edge and keeps the reports, the coverage and the acceptance matrix of each run. The Husky hooks are installed only when `pnpm prepare` runs (`.npmrc` sets `ignore-scripts`). The intended fan-out:
+GitHub Actions runs lint, typecheck, unit, integration and the API end-to-end tests before a deploy ([CI-JENKINS.md](../workflows/CI-JENKINS.md)). Browser tiers stay local. The Husky hooks are installed only when `pnpm prepare` runs (`.npmrc` sets `ignore-scripts`). The intended fan-out:
 
 | Trigger                   | Tests run                                                                 |
 | ------------------------- | ------------------------------------------------------------------------- |

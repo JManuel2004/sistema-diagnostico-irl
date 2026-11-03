@@ -1,4 +1,4 @@
-# Services the pipeline's tests need (Jenkinsfile), on ports of their own so
+# Services the test runs need, on ports of their own so
 # a developer's stack (docker-compose.yml) and the local deployment
 # (infra/deploy) keep running. Jenkins reaches them through the host
 # (host.docker.internal).
