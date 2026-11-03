@@ -1,5 +1,6 @@
 import { DataSource } from 'typeorm';
 import { InitialSchema1747526400001 } from './migrations/20260518001-InitialSchema.js';
+import { SectorCatalogColumns1793664000001 } from './migrations/20261103001-SectorCatalogColumns.js';
 import { seedCatalog } from './seeds/seed-catalog.js';
 
 interface SchemaFingerprint {
@@ -45,20 +46,17 @@ async function schemaIsStale(dataSource: DataSource): Promise<boolean> {
  * Applies the schema and the IRL catalog before the API accepts traffic.
  *
  * Production on Render has no Shell on the free plan, and the process
- * starts with `migrationsRun: false`. The single migration is edited in
- * place while no environment holds real data. A database that already
- * recorded `InitialSchema1747526400001` keeps the old tables, so the
- * seed then fails (Render: `dimension.code` does not exist). When the
- * live shape is not the one this migration creates, both schemas are
- * dropped and the migration runs again. A database that already matches
- * is left in place; the seed only upserts catalog rows.
+ * starts with `migrationsRun: false`. Pending migrations run here, then
+ * the seed. A database whose shape is older than `dimension.code` is
+ * dropped and rebuilt. Anything later, such as the sector columns, is an
+ * incremental migration so the diagnostics already stored stay.
  */
 export async function prepareDatabase(url: string): Promise<void> {
   const dataSource = new DataSource({
     type: 'postgres',
     url,
     synchronize: false,
-    migrations: [InitialSchema1747526400001],
+    migrations: [InitialSchema1747526400001, SectorCatalogColumns1793664000001],
     migrationsTableName: 'typeorm_migrations',
   });
 
