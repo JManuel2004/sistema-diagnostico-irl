@@ -33,8 +33,8 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000001',
     email: 'lider.agro@demo.innlab.local',
-    firstName: 'Laura',
-    lastName: 'Gómez',
+    firstName: 'P01',
+    lastName: '',
     company: {
       id: 'c0a1b2c3-d4e5-4f60-8a71-9b8c7d6e5f01',
       name: 'AgroConecta (demo)',
@@ -44,8 +44,8 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000002',
     email: 'lider.salud@demo.innlab.local',
-    firstName: 'Andrés',
-    lastName: 'Ríos',
+    firstName: 'P02',
+    lastName: '',
     company: {
       id: 'c0a1b2c3-d4e5-4f60-8a71-9b8c7d6e5f02',
       name: 'SaludVital (demo)',
@@ -55,15 +55,15 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000003',
     email: 'sin.empresa@demo.innlab.local',
-    firstName: 'Camila',
-    lastName: 'Torres',
+    firstName: 'P03',
+    lastName: '',
     company: null,
   },
   {
     id: 'b1a55e55-0000-4000-8000-000000000004',
     email: 'lider.edu@demo.innlab.local',
-    firstName: 'Valeria',
-    lastName: 'Díaz',
+    firstName: 'P04',
+    lastName: '',
     company: {
       id: 'c0a1b2c3-d4e5-4f60-8a71-9b8c7d6e5f04',
       name: 'EduAndes (demo)',
@@ -73,8 +73,8 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
   {
     id: 'b1a55e55-0000-4000-8000-000000000005',
     email: 'lider.logistica@demo.innlab.local',
-    firstName: 'Mateo',
-    lastName: 'Cruz',
+    firstName: 'P05',
+    lastName: '',
     company: {
       id: 'c0a1b2c3-d4e5-4f60-8a71-9b8c7d6e5f05',
       name: 'LogiSur (demo)',
@@ -92,7 +92,9 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
 
 export const BYPASS_USER_ID = BYPASS_PARTICIPANTS[0].id;
 
-export function findBypassParticipant(userId: string): BypassParticipant | null {
+export function findBypassParticipant(
+  userId: string,
+): BypassParticipant | null {
   return BYPASS_PARTICIPANTS.find((person) => person.id === userId) ?? null;
 }
 

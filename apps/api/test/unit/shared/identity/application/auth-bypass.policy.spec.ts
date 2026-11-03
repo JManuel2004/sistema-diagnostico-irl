@@ -22,7 +22,9 @@ describe('AuthBypassPolicy', () => {
         lastName: person.lastName,
       });
       expect(on.profile(person.id)?.user.email).toBe(person.email);
-      expect(on.profile(person.id)?.core.companyId).toBe(person.company?.id ?? null);
+      expect(on.profile(person.id)?.core.companyId).toBe(
+        person.company?.id ?? null,
+      );
       expect(on.roster().map((card) => card.email)).toContain(person.email);
     },
   );
@@ -68,13 +70,23 @@ describe('AuthBypassPolicy', () => {
 
   it('nombra la empresa en la tarjeta y deja vacía la de quien no tiene', () => {
     const cards = on.roster();
-    const camila = cards.find((card) => card.firstName === 'Camila');
-
-    expect(cards.find((card) => card.firstName === 'Laura')?.companyName).toBe(
-      'AgroConecta (demo)',
+    const withoutCompany = cards.find(
+      (card) => card.email === 'sin.empresa@demo.innlab.local',
     );
-    expect(camila?.companyName).toBeNull();
-    expect(cards.find((card) => card.email === 'usuario.prueba@demo.innlab.local')).toMatchObject({
+
+    expect(
+      cards.find((card) => card.email === 'lider.agro@demo.innlab.local')
+        ?.companyName,
+    ).toBe('AgroConecta (demo)');
+    expect(withoutCompany?.companyName).toBeNull();
+    expect(
+      cards
+        .filter((card) => card.email !== 'usuario.prueba@demo.innlab.local')
+        .map((card) => `${card.firstName}${card.lastName}`),
+    ).toEqual(['P01', 'P02', 'P03', 'P04', 'P05']);
+    expect(
+      cards.find((card) => card.email === 'usuario.prueba@demo.innlab.local'),
+    ).toMatchObject({
       firstName: 'Usuario',
       lastName: 'de prueba',
       companyName: null,
