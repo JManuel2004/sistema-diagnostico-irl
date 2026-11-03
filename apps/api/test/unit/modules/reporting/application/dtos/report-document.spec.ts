@@ -164,7 +164,7 @@ describe('buildReportDocument', () => {
     expect(fields).not.toContain('Cuello de botella');
     // The service's level, scope and alternatives are in the summary box.
     expect(fields).not.toContain('Nivel');
-    expect(fields).not.toContain('Qué puede lograr');
+    expect(fields).not.toContain('Alcance y entregables');
     expect(fields).not.toContain('Otras opciones del portafolio');
     // The service of each phase and its levels are on the line of phases.
     expect(fields).not.toContain('Servicio');

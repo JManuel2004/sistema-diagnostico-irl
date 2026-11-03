@@ -473,7 +473,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         .font('Helvetica')
         .fontSize(8.5)
         .fillColor(TEXT)
-        .text(`Qué puede lograr: ${rec.scope}`, left + 18, y + 62, {
+        .text(`Alcance y entregables: ${rec.scope}`, left + 18, y + 62, {
           width: width - 36,
           height: 22,
         });

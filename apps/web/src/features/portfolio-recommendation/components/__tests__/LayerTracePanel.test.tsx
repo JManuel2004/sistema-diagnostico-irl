@@ -620,7 +620,9 @@ describe('RecommendationSummary', () => {
     expect(screen.getByText('Consultoría colaborativa')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Nivel: Alíate' })[0]).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'IRL global 7 a 9' })).toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { name: 'Qué puede lograr' })[0]).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('heading', { name: 'Alcance y entregables' })[0],
+    ).toBeInTheDocument();
     expect(
       screen.getByText('Desarrollo profesional listo para el mercado (TRL 7–9).'),
     ).toBeInTheDocument();
