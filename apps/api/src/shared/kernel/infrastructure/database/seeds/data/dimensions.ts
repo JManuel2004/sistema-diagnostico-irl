@@ -3,7 +3,9 @@
  *
  * The codes, names, and order are non-negotiable domain facts (see
  * the project's domain-model conventions, PROJECT-SUMMARY.md §1.2). The descriptions are
- * authored from the public KTH framework documentation; if the project
+ * authored from the public KTH framework documentation and written in the
+ * user's words, not in technical terms (client validation: the TRL is told
+ * against a real productive environment, not «producción»); if the project
  * stakeholders provide canonical Spanish text, replace these strings
  * but never change the codes or order.
  *
@@ -43,7 +45,7 @@ export const DIMENSIONS: readonly DimensionSeed[] = [
     nameEs: 'Nivel de Madurez Tecnológica',
     shortNameEs: 'Tecnología',
     description:
-      'Madurez tecnológica: qué tan probada y lista para producción está la solución técnica de la iniciativa.',
+      'Qué tan probada y lista está la solución para usarse en un entorno productivo real.',
     isCriticalDimension: false,
     sequence: 1,
     minimumExpectedLevel: 4,
@@ -53,7 +55,7 @@ export const DIMENSIONS: readonly DimensionSeed[] = [
     nameEs: 'Nivel de Madurez del Cliente',
     shortNameEs: 'Cliente',
     description:
-      'Madurez del entendimiento del cliente y del mercado: validación de la necesidad, segmentación y disposición a adoptar.',
+      'Qué tanto conoces a tus clientes: si su necesidad está confirmada, quiénes son y si están dispuestos a usar o comprar la solución.',
     isCriticalDimension: true,
     sequence: 2,
     minimumExpectedLevel: 4,
@@ -63,7 +65,7 @@ export const DIMENSIONS: readonly DimensionSeed[] = [
     nameEs: 'Nivel de Madurez del Modelo de Negocio',
     shortNameEs: 'Negocio',
     description:
-      'Madurez del modelo de negocio: propuesta de valor, fuentes de ingresos, estructura de costos y viabilidad económica.',
+      'Qué tan claro está cómo la iniciativa crea valor para sus clientes, de dónde vienen sus ingresos, cuánto le cuesta operar y si es viable.',
     isCriticalDimension: true,
     sequence: 3,
     minimumExpectedLevel: 4,
@@ -73,7 +75,7 @@ export const DIMENSIONS: readonly DimensionSeed[] = [
     nameEs: 'Nivel de Madurez de la Propiedad Intelectual',
     shortNameEs: 'Propiedad Intelectual',
     description:
-      'Madurez de la propiedad intelectual: identificación, protección y libertad de operación de los activos intangibles.',
+      'Qué tan identificadas y protegidas están las ideas, la tecnología y la marca de la iniciativa, y si puede usarlas sin chocar con derechos de otros.',
     isCriticalDimension: false,
     sequence: 4,
     minimumExpectedLevel: 4,
@@ -83,7 +85,7 @@ export const DIMENSIONS: readonly DimensionSeed[] = [
     nameEs: 'Nivel de Madurez del Equipo',
     shortNameEs: 'Equipo',
     description:
-      'Madurez del equipo: composición, complementariedad de competencias y dedicación de los miembros clave.',
+      'Qué tan completo es el equipo que impulsa la iniciativa: si sus capacidades se complementan y cuánto tiempo le dedican las personas clave.',
     isCriticalDimension: true,
     sequence: 5,
     minimumExpectedLevel: 4,
@@ -93,7 +95,7 @@ export const DIMENSIONS: readonly DimensionSeed[] = [
     nameEs: 'Nivel de Madurez de la Financiación',
     shortNameEs: 'Financiación',
     description:
-      'Madurez de la financiación: fuentes de capital aseguradas, runway y plan financiero para alcanzar los siguientes hitos.',
+      'Con qué recursos cuenta la iniciativa, para cuánto tiempo le alcanzan y qué tan claro es su plan para conseguir los que le faltan.',
     isCriticalDimension: false,
     sequence: 6,
     minimumExpectedLevel: 4,
