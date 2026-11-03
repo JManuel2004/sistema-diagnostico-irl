@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { CircleCheck, OctagonAlert, TriangleAlert } from 'lucide-react';
+import { CircleCheck, OctagonAlert, ShieldAlert, TriangleAlert } from 'lucide-react';
 import type {
   DimensionCode,
   ImbalanceClassification,
@@ -8,13 +8,17 @@ import type {
 import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { Badge } from '@/shared/ui/badge';
 import { LevelBar } from '@/shared/ui/level-bar';
+import { imbalanceRisk } from '../utils/imbalance-risks';
 import type { HighlightHandler } from './MaturityProfileSummary';
 
 /**
  * A pair of dimensions that should move forward together, with how far
  * apart they are. The severity (`classification`) is computed by the
  * backend with the framework's rules; here it is turned into color, icon
- * and a sentence anyone can understand, without codes or symbols.
+ * and a sentence anyone can understand, without codes or symbols. A pair
+ * with an alert also says what the initiative risks while it stays apart
+ * (`imbalanceRisk`), so the reader knows why closing it matters; when both
+ * dimensions are in gap there is no one ahead, and no risk of the pair.
  */
 interface Props {
   readonly pair: ImbalancePairResult;
@@ -94,6 +98,12 @@ export function PairCard({ pair, names, levels, bothInGap, onHighlight }: Props)
   const rightLevel = levels.get(pair.right) ?? 0;
   const higher = leftLevel >= rightLevel ? left : right;
   const lower = leftLevel >= rightLevel ? right : left;
+  const risk =
+    pair.classification !== 'acceptable' && !bothInGap && pair.difference > 0
+      ? leftLevel >= rightLevel
+        ? imbalanceRisk(pair.left, pair.right)
+        : imbalanceRisk(pair.right, pair.left)
+      : null;
 
   let headline: string;
   if (pair.difference === 0) headline = 'Van exactamente al mismo nivel.';
@@ -153,6 +163,19 @@ export function PairCard({ pair, names, levels, bothInGap, onHighlight }: Props)
         <p className="text-foreground text-base font-semibold">{headline}</p>
         <p className="text-muted-foreground mt-1 text-base leading-relaxed">{advice}</p>
       </div>
+
+      {risk && (
+        <p className="border-border text-foreground flex items-start gap-2 border-t pt-3 text-base leading-relaxed">
+          <ShieldAlert
+            className={`${pair.classification === 'critical' ? 'text-critical' : 'text-moderate'} mt-1 size-4 shrink-0`}
+            aria-hidden="true"
+          />
+          <span>
+            <span className="font-bold">Riesgo: </span>
+            {risk}
+          </span>
+        </p>
+      )}
     </article>
   );
 }

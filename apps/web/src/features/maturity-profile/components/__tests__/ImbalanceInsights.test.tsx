@@ -121,6 +121,31 @@ describe('ImbalanceInsights — pairs', () => {
     expect(within(card).getByText('Equilibrado')).toBeInTheDocument();
   });
 
+  it('says what the initiative risks while a pair with an alert stays apart', () => {
+    render(<ImbalanceInsights profile={profile()} />);
+
+    const critical = screen.getByRole('article', { name: /Tecnología y Propiedad Intelectual/ });
+    expect(critical).toHaveTextContent('Riesgo:');
+    expect(critical).toHaveTextContent(/copia o plagio/);
+    const moderate = screen.getByRole('article', { name: /Tecnología y Cliente/ });
+    expect(moderate).toHaveTextContent(/una solución que el mercado todavía no ha validado/);
+  });
+
+  it('gives no risk to a balanced pair nor to two dimensions that are both in a gap', () => {
+    render(
+      <ImbalanceInsights
+        profile={profile({ gaps: { dimensions: ['TmRL', 'FRL'], threshold: 3 } })}
+      />,
+    );
+
+    expect(
+      screen.getByRole('article', { name: /Negocio y Propiedad Intelectual/ }),
+    ).not.toHaveTextContent('Riesgo:');
+    expect(screen.getByRole('article', { name: /Equipo y Financiación/ })).not.toHaveTextContent(
+      'Riesgo:',
+    );
+  });
+
   it('uses no arrows, deltas or codes: the texts say the same in plain words', () => {
     render(<ImbalanceInsights profile={profile()} />);
 
