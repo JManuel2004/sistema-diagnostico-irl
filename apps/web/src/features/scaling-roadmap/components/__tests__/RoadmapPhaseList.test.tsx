@@ -184,7 +184,7 @@ describe('RoadmapPhaseList', () => {
     expect(second).toHaveTextContent('Proyectos académicos integradores (pregrado y posgrado)');
     expect(second).toHaveTextContent('Nivel: Co-crea');
     expect(second).toHaveTextContent('IRL global 4 a 6');
-    expect(second).toHaveTextContent('Qué puede lograr');
+    expect(second).toHaveTextContent('Alcance y entregables');
   });
 
   it('cuando ningún servicio atiende bien la fase, muestra el más cercano y lo dice', () => {
