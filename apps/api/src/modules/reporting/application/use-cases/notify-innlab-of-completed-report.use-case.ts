@@ -35,10 +35,16 @@ export class NotifyInnlabOfCompletedReportUseCase {
     await this.mailer.send({
       to: this.settings.to,
       subject: `Reporte IRL completo: ${file.value.fileName}`,
+      // It is an alert for a commercial contact (client validation of
+      // RF-17): what the leader acquired, what was recommended, and what to do.
       text: [
-        'El análisis profundo de una iniciativa quedó completo.',
-        'El reporte completo va adjunto en PDF.',
-        'El diagnóstico sigue disponible para el líder desde la plataforma.',
+        'Hola, equipo INNLAB:',
+        '',
+        'Un líder de iniciativa adquirió el análisis profundo de su diagnóstico IRL. Con él, el sistema le recomendó servicios de INNLAB y le propuso una ruta de escalamiento por fases para hacer crecer su iniciativa.',
+        '',
+        'Por favor, contáctalo para acompañarlo en los siguientes pasos.',
+        '',
+        'El reporte completo va adjunto en PDF: los datos de la iniciativa, su perfil de madurez, los desequilibrios, el servicio recomendado y la ruta de escalamiento. El líder también puede consultar su diagnóstico en la plataforma.',
       ].join('\n'),
       attachment: {
         fileName: file.value.fileName,
