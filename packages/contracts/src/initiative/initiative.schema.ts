@@ -6,20 +6,51 @@ import { consentRecordSchema } from './consent.schema.js';
  * An entry of the sector taxonomy (HU-06 / RF-04).
  *
  * Sectors are catalog: they are managed by seed and immutable at runtime.
- * Endpoint: `GET /api/v1/initiative-catalog/sectors`.
+ * They are the sections of the DANE's CIIU Rev. 5 A.C. (`code` A to V, the
+ * official title as `name`), plus one entry with `isOther` and no code,
+ * «Otro sector (especificar)», for an activity the user does not find
+ * represented: the profile then carries the user's own description in
+ * `customSector`.
  *
- * `id` is the bigint identifier of `irl_catalog.sector` exposed as a string
- * — that table has no `code` column (unlike `initiative_stage`, which
- * does).
+ * `id` is the bigint identifier of `irl_catalog.sector` exposed as a string.
  */
 export const sectorSchema = z
   .object({
     id: z.string().min(1),
-    name: z.string().min(1).describe('Name of the sector, in Spanish'),
+    code: z
+      .string()
+      .min(1)
+      .nullable()
+      .describe('Section code of the classification; null for «Otro»'),
+    name: z.string().min(1).describe('Official title of the section, in Spanish'),
+    classification: z.string().min(1).describe('Classification and version, e.g. CIIU Rev. 5 A.C.'),
+    isOther: z.boolean().describe('Whether this entry is «Otro sector (especificar)»'),
   })
-  .describe('An economic/thematic sector of the INNLAB taxonomy');
+  .describe('An economic sector: a section of the CIIU, or «Otro»');
 
 export type Sector = z.infer<typeof sectorSchema>;
+
+/**
+ * A sector as the registration form offers it: besides its code and name,
+ * a line on what it groups (an official title such as «Otras actividades
+ * de servicios» does not say it) and the words a person may search it by.
+ *
+ * Endpoint: `GET /api/v1/initiative-catalog/sectors`, ordered by code with
+ * «Otro» last.
+ */
+export const sectorOptionSchema = sectorSchema
+  .extend({
+    description: z
+      .string()
+      .describe('What the section groups, in a line; for «Otro», when to choose it'),
+    keywords: z.array(z.string().min(1)).describe('Related words to search the sector by'),
+  })
+  .describe('A sector of the catalog, as the registration form offers it');
+
+export type SectorOption = z.infer<typeof sectorOptionSchema>;
+
+/** Maximum length of the user's own description of the sector («Otro»). */
+export const CUSTOM_SECTOR_MAX = 120;
 
 /**
  * A stage of the initiative (`irl_catalog.initiative_stage` catalog).
@@ -62,6 +93,8 @@ const requiredText = (label: string) =>
  * It is the step before the questionnaire and every field is mandatory:
  *   - `name`: 3–120 characters.
  *   - `sectorId` and `stageId`: catalog ids; the backend checks they exist.
+ *   - `customSector`: the user's own sector, mandatory when `sectorId` is
+ *     the «Otro» entry and discarded (stored as null) otherwise.
  *   - `declaredStage`: how the user describes their stage, in their own
  *     words, next to the catalog stage (the one the router uses).
  *   - `teamSize` is an integer ≥ 1 and `teamDescription` says who the team
@@ -79,6 +112,13 @@ export const registerInitiativeSchema = z
       .min(3, 'El nombre debe tener al menos 3 caracteres')
       .max(120, 'El nombre no puede exceder 120 caracteres'),
     sectorId: z.string().min(1).describe('ID of the selected sector'),
+    customSector: z
+      .string()
+      .trim()
+      .max(CUSTOM_SECTOR_MAX, `El sector no puede exceder ${String(CUSTOM_SECTOR_MAX)} caracteres`)
+      .nullable()
+      .optional()
+      .describe('The user’s own sector, when the chosen sector is «Otro»'),
     productType: requiredText('El tipo de producto o servicio'),
     stageId: z.string().min(1).describe('ID of the catalog stage'),
     declaredStage: requiredText('La etapa declarada'),
@@ -106,6 +146,11 @@ export const initiativeSchema = z
     diagnosticId: uuidSchema,
     name: z.string().min(3).max(120),
     sector: sectorSchema,
+    customSector: z
+      .string()
+      .min(1)
+      .nullable()
+      .describe('The user’s own sector; only with the «Otro» sector'),
     productType: z.string().min(1),
     stage: initiativeStageSchema,
     declaredStage: z.string().min(1),

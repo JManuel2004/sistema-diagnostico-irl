@@ -7,6 +7,7 @@ import type { InitiativeRegisteredEvent } from '../../../../../../src/shared/ker
 import { ConflictError } from '../../../../../../src/shared/kernel/domain/errors/conflict.error.js';
 import { ForbiddenError } from '../../../../../../src/shared/kernel/domain/errors/forbidden.error.js';
 import { NotFoundError } from '../../../../../../src/shared/kernel/domain/errors/not-found.error.js';
+import { InvariantViolationError } from '../../../../../../src/shared/kernel/domain/errors/invariant-violation.error.js';
 import { Result } from '../../../../../../src/shared/kernel/domain/result.js';
 import {
   CATALOG,
@@ -84,6 +85,43 @@ describe('RegisterInitiativeProfileUseCase', () => {
     expect(profiles.profiles).toHaveLength(1);
     const [event] = publish.mock.calls[0] as [InitiativeRegisteredEvent];
     expect(event.payload).toEqual({ diagnosticId: DIAGNOSTIC_ID });
+  });
+
+  it('serves the CIIU section of the profile with its code, and no own sector', async () => {
+    const result = await useCase().execute({
+      ...profileOf(initiativeId),
+      customSector: 'Texto que quedó de «Otro»',
+    });
+
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.value.sector).toEqual({
+      id: '1',
+      code: 'A',
+      name: 'Agricultura, ganadería, caza, silvicultura y pesca',
+      classification: 'CIIU Rev. 5 A.C.',
+      isOther: false,
+    });
+    expect(result.value.customSector).toBeNull();
+  });
+
+  it('with the «Otro» sector stores and serves the user’s own sector', async () => {
+    const result = await useCase().execute({
+      ...profileOf(initiativeId),
+      sectorId: '23',
+      customSector: 'Biotecnología aplicada a la agricultura',
+    });
+
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.value.sector).toMatchObject({ isOther: true, code: null });
+    expect(result.value.customSector).toBe('Biotecnología aplicada a la agricultura');
+  });
+
+  it('with the «Otro» sector and no own sector stores nothing', async () => {
+    await expect(
+      useCase().execute({ ...profileOf(initiativeId), sectorId: '23', customSector: '  ' }),
+    ).rejects.toBeInstanceOf(InvariantViolationError);
+    expect(profiles.profiles).toHaveLength(0);
+    expect(publish).not.toHaveBeenCalled();
   });
 
   it('refuses the profile while the consent is not accepted at the current version', async () => {

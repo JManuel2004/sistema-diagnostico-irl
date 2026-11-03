@@ -49,6 +49,7 @@ export class TypeOrmInitiativeProfileRepository implements InitiativeProfileRepo
         idInitiative: s.initiativeId,
         idDiagnostic: s.diagnosticId,
         idSector: s.sectorId,
+        customSector: s.customSector,
         name: s.name,
         productType: s.productType,
         idStage: s.stageId,
@@ -63,6 +64,7 @@ export class TypeOrmInitiativeProfileRepository implements InitiativeProfileRepo
         [
           'id_initiative',
           'id_sector',
+          'custom_sector',
           'name',
           'product_type',
           'id_stage',
@@ -84,6 +86,7 @@ export class TypeOrmInitiativeProfileRepository implements InitiativeProfileRepo
       initiativeId: row.idInitiative,
       diagnosticId: row.idDiagnostic,
       sectorId: row.idSector,
+      customSector: row.customSector,
       name: row.name,
       productType: row.productType,
       declaredStage: row.declaredStage,

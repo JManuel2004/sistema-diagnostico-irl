@@ -11,16 +11,22 @@ import type {
 import type { InitiativeCatalogPort } from '../../../../../src/modules/initiative/domain/repositories/initiative-catalog.port.js';
 
 /** In-memory initiatives and their consents (the history is kept whole). */
-export class FakeInitiatives implements InitiativeRepositoryPort, ConsentRepositoryPort {
+export class FakeInitiatives
+  implements InitiativeRepositoryPort, ConsentRepositoryPort
+{
   readonly initiatives: Initiative[] = [];
   readonly consents: Consent[] = [];
 
   findById(id: string): Promise<Initiative | null> {
-    return Promise.resolve(this.initiatives.find((i) => i.id.value === id) ?? null);
+    return Promise.resolve(
+      this.initiatives.find((i) => i.id.value === id) ?? null,
+    );
   }
 
   findByOwner(ownerId: string): Promise<Initiative[]> {
-    return Promise.resolve(this.initiatives.filter((i) => i.ownerId === ownerId).reverse());
+    return Promise.resolve(
+      this.initiatives.filter((i) => i.ownerId === ownerId).reverse(),
+    );
   }
 
   createWithConsent(initiative: Initiative, consent: Consent): Promise<void> {
@@ -30,7 +36,9 @@ export class FakeInitiatives implements InitiativeRepositoryPort, ConsentReposit
   }
 
   findLatestByInitiativeId(initiativeId: string): Promise<Consent | null> {
-    const own = this.consents.filter((c) => c.initiativeId.value === initiativeId);
+    const own = this.consents.filter(
+      (c) => c.initiativeId.value === initiativeId,
+    );
     return Promise.resolve(own[own.length - 1] ?? null);
   }
 
@@ -45,16 +53,24 @@ export class FakeProfiles implements InitiativeProfileRepositoryPort {
   readonly profiles: InitiativeProfile[] = [];
 
   findByDiagnosticId(diagnosticId: string): Promise<InitiativeProfile | null> {
-    return Promise.resolve(this.profiles.find((p) => p.diagnosticId.value === diagnosticId) ?? null);
+    return Promise.resolve(
+      this.profiles.find((p) => p.diagnosticId.value === diagnosticId) ?? null,
+    );
   }
 
-  findLatestByInitiativeId(initiativeId: string): Promise<InitiativeProfile | null> {
-    const own = this.profiles.filter((p) => p.initiativeId.value === initiativeId);
+  findLatestByInitiativeId(
+    initiativeId: string,
+  ): Promise<InitiativeProfile | null> {
+    const own = this.profiles.filter(
+      (p) => p.initiativeId.value === initiativeId,
+    );
     return Promise.resolve(own[own.length - 1] ?? null);
   }
 
   save(profile: InitiativeProfile): Promise<void> {
-    const i = this.profiles.findIndex((p) => p.diagnosticId.value === profile.diagnosticId.value);
+    const i = this.profiles.findIndex(
+      (p) => p.diagnosticId.value === profile.diagnosticId.value,
+    );
     if (i >= 0) this.profiles.splice(i, 1);
     this.profiles.push(profile);
     return Promise.resolve();
@@ -74,13 +90,41 @@ export function termsAt(version: string | null): ConsentTermsCatalogPort {
   return { findCurrent: () => Promise.resolve(entry) };
 }
 
+/** A CIIU section and the «Otro» entry, as the seeded catalog has them. */
+export const SECTOR_A = {
+  id: '1',
+  code: 'A',
+  name: 'Agricultura, ganadería, caza, silvicultura y pesca',
+  classification: 'CIIU Rev. 5 A.C.',
+  isOther: false,
+  description:
+    'Cultivos agrícolas, cría de animales, silvicultura y extracción de madera, pesca y acuicultura.',
+  keywords: ['agro'],
+} as const;
+export const SECTOR_OTHER = {
+  id: '23',
+  code: null,
+  name: 'Otro sector (especificar)',
+  classification: 'CIIU Rev. 5 A.C.',
+  isOther: true,
+  description:
+    'Si ninguna sección representa tu actividad, descríbela con tus palabras.',
+  keywords: ['otro'],
+} as const;
+
 export const CATALOG: InitiativeCatalogPort = {
-  findAllSectors: () => Promise.resolve([{ id: '1', name: 'Agroindustria' }]),
+  findAllSectors: () => Promise.resolve([SECTOR_A, SECTOR_OTHER]),
   findSectorById: (id: string) =>
-    Promise.resolve(id === '1' ? { id: '1', name: 'Agroindustria' } : null),
+    Promise.resolve([SECTOR_A, SECTOR_OTHER].find((s) => s.id === id) ?? null),
   findAllStages: () =>
-    Promise.resolve([{ id: '2', code: 'validacion', name: 'Validación', sequence: 2 }]),
+    Promise.resolve([
+      { id: '2', code: 'validacion', name: 'Validación', sequence: 2 },
+    ]),
   findStageById: (id: string) =>
-    Promise.resolve(id === '2' ? { id: '2', code: 'validacion', name: 'Validación', sequence: 2 } : null),
+    Promise.resolve(
+      id === '2'
+        ? { id: '2', code: 'validacion', name: 'Validación', sequence: 2 }
+        : null,
+    ),
   findStageByCode: () => Promise.resolve(null),
 };

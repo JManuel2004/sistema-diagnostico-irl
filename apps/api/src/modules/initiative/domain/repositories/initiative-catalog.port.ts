@@ -1,11 +1,20 @@
 /**
- * A sector entry from the read-only `irl_catalog.sector` taxonomy.
- * Catalog data, not an aggregate — no invariants of its own beyond what
- * the database already enforces (unique name).
+ * A sector entry from the read-only `irl_catalog.sector` taxonomy: a
+ * section of the CIIU (its code and official title) or the «Otro» entry
+ * (no code). Catalog data, not an aggregate — no invariants of its own
+ * beyond what the database already enforces (unique name and code, a code
+ * exactly when it is not «Otro»).
  */
 export interface SectorCatalogEntry {
   readonly id: string;
+  readonly code: string | null;
   readonly name: string;
+  readonly classification: string;
+  readonly isOther: boolean;
+  /** What the section groups, in a line; for «Otro», when to choose it. */
+  readonly description: string;
+  /** Related words the registration form searches the sector by. */
+  readonly keywords: readonly string[];
 }
 
 /**
@@ -27,7 +36,9 @@ export interface InitiativeStageCatalogEntry {
  * `shared/irl-taxonomy/` because neither is IRL framework vocabulary,
  * they are INNLAB's own initiative-intake taxonomy.
  */
-export const INITIATIVE_CATALOG_REPOSITORY = Symbol('INITIATIVE_CATALOG_REPOSITORY');
+export const INITIATIVE_CATALOG_REPOSITORY = Symbol(
+  'INITIATIVE_CATALOG_REPOSITORY',
+);
 
 export interface InitiativeCatalogPort {
   findAllSectors(): Promise<SectorCatalogEntry[]>;

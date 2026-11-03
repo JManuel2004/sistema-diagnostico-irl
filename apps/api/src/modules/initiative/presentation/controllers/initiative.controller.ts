@@ -48,6 +48,7 @@ export class InitiativeController {
         userId: user.id,
         initiativeId: body.initiativeId,
         sectorId: body.sectorId,
+        customSector: body.customSector ?? null,
         name: body.name,
         productType: body.productType,
         stageId: body.stageId,

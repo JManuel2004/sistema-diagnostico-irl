@@ -1,8 +1,9 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsInt,
   IsUUID,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Matches,
   Max,
@@ -10,6 +11,7 @@ import {
   Min,
 } from 'class-validator';
 import {
+  CUSTOM_SECTOR_MAX,
   INITIATIVE_TEXT_MAX,
   type RegisterConsentCommand,
   type RegisterInitiativeCommand,
@@ -50,6 +52,18 @@ export class RegisterInitiativeRequestDto implements RegisterInitiativeCommand {
   @IsString()
   @IsNotEmpty()
   sectorId!: string;
+
+  @ApiPropertyOptional({
+    maxLength: CUSTOM_SECTOR_MAX,
+    nullable: true,
+    type: String,
+    description:
+      'The user’s own sector: required with the «Otro» sector, ignored otherwise',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(CUSTOM_SECTOR_MAX)
+  customSector?: string | null;
 
   @ApiProperty({ maxLength: INITIATIVE_TEXT_MAX })
   @IsString()

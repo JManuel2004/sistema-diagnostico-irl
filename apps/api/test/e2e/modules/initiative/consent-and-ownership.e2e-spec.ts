@@ -99,8 +99,8 @@ describe('Initiatives and consent (e2e)', () => {
     );
 
     await dataSource.query(
-      `INSERT INTO irl_catalog.sector (name, is_active)
-       VALUES ('Agroindustria', true)
+      `INSERT INTO irl_catalog.sector (name, classification, is_active)
+       VALUES ('Agroindustria', 'CIIU Rev. 5 A.C.', true)
        ON CONFLICT (name) DO NOTHING`,
     );
     const [sector] = await dataSource.query<{ id: string }[]>(

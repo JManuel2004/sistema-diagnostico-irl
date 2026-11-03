@@ -2,12 +2,14 @@ import { Uuid } from '../../../../shared/kernel/domain/value-objects/uuid.vo.js'
 import { InvariantViolationError } from '../../../../shared/kernel/domain/errors/invariant-violation.error.js';
 
 export const MAX_INITIATIVE_TEXT_LENGTH = 500;
+export const MAX_CUSTOM_SECTOR_LENGTH = 120;
 
 export interface InitiativeProfilePersistence {
   readonly id: string;
   readonly initiativeId: string;
   readonly diagnosticId: string;
   readonly sectorId: string;
+  readonly customSector: string | null;
   readonly name: string;
   readonly productType: string;
   readonly stageId: string;
@@ -24,6 +26,10 @@ export interface RegisterInitiativeProfileInput {
   initiativeId: Uuid;
   diagnosticId: Uuid;
   sectorId: string;
+  /** Whether the catalog sector is «Otro sector (especificar)». */
+  sectorIsOther: boolean;
+  /** The user's own sector; required with «Otro», discarded otherwise. */
+  customSector?: string | null;
   name: string;
   productType: string;
   stageId: string;
@@ -43,6 +49,11 @@ export interface RegisterInitiativeProfileInput {
  * Registered before the questionnaire (HU-06); every field is required.
  * `stageId` (catalog) is what the portfolio router reads; `declaredStage` is
  * the user's own description of it and is only shown back.
+ *
+ * The sector is a CIIU section of the catalog or the «Otro» entry. With
+ * «Otro» the user describes their sector (`customSector`, mandatory); with
+ * a CIIU section any description sent is discarded, so no stale text is
+ * kept from an earlier «Otro».
  */
 export class InitiativeProfile {
   private constructor(
@@ -50,6 +61,7 @@ export class InitiativeProfile {
     public readonly initiativeId: Uuid,
     public readonly diagnosticId: Uuid,
     public readonly sectorId: string,
+    public readonly customSector: string | null,
     public readonly name: string,
     public readonly productType: string,
     public readonly stageId: string,
@@ -81,6 +93,9 @@ export class InitiativeProfile {
       input.initiativeId,
       input.diagnosticId,
       input.sectorId,
+      input.sectorIsOther
+        ? InitiativeProfile.customSector(input.customSector)
+        : null,
       name,
       InitiativeProfile.requiredText('product type', input.productType),
       input.stageId,
@@ -99,6 +114,7 @@ export class InitiativeProfile {
       Uuid.create(row.initiativeId),
       Uuid.create(row.diagnosticId),
       row.sectorId,
+      row.customSector,
       row.name,
       row.productType,
       row.stageId,
@@ -117,6 +133,7 @@ export class InitiativeProfile {
       initiativeId: this.initiativeId.value,
       diagnosticId: this.diagnosticId.value,
       sectorId: this.sectorId,
+      customSector: this.customSector,
       name: this.name,
       productType: this.productType,
       stageId: this.stageId,
@@ -127,6 +144,16 @@ export class InitiativeProfile {
       currentFunding: this.currentFunding,
       recordedAt: this.recordedAt,
     };
+  }
+
+  private static customSector(raw: string | null | undefined): string {
+    const value = typeof raw === 'string' ? raw.trim() : '';
+    if (value.length === 0 || value.length > MAX_CUSTOM_SECTOR_LENGTH) {
+      throw new InvariantViolationError(
+        `With the «Otro» sector, the initiative's own sector must be non-empty and at most ${String(MAX_CUSTOM_SECTOR_LENGTH)} characters`,
+      );
+    }
+    return value;
   }
 
   private static requiredText(field: string, raw: string): string {

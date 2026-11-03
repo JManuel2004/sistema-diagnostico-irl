@@ -1,6 +1,7 @@
 import type {
   ConsentRecord,
   Initiative as InitiativeProfileResponse,
+  Sector,
 } from '@innlab/contracts';
 import type { InitiativeProfile } from '../../domain/entities/initiative-profile.aggregate.js';
 import type { Consent } from '../../domain/entities/consent.entity.js';
@@ -20,7 +21,8 @@ export function toInitiativeProfileResponse(
     initiativeId: profile.initiativeId.value,
     diagnosticId: profile.diagnosticId.value,
     name: profile.name,
-    sector: { id: sector.id, name: sector.name },
+    sector: toSector(sector),
+    customSector: profile.customSector,
     productType: profile.productType,
     stage: { id: stage.id, code: stage.code, name: stage.name },
     declaredStage: profile.declaredStage,
@@ -29,6 +31,17 @@ export function toInitiativeProfileResponse(
     targetMarket: profile.targetMarket,
     currentFunding: profile.currentFunding,
     recordedAt: profile.recordedAt.toISOString(),
+  };
+}
+
+/** A catalog sector as the API serves it inside a profile (without its keywords). */
+export function toSector(sector: SectorCatalogEntry): Sector {
+  return {
+    id: sector.id,
+    code: sector.code,
+    name: sector.name,
+    classification: sector.classification,
+    isOther: sector.isOther,
   };
 }
 
