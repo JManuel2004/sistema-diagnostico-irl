@@ -18,7 +18,8 @@ The user's initiatives, the data-processing consent of each one (Law 1581, RF-03
 ## Completeness
 
 - Implemented: the user's initiatives with their latest consent and profile (`ListMyInitiativesUseCase`), creating an initiative with its consent and accepting it again (HU-05, wizard step 2), the current consent text, recording and reading the profile of a diagnostic (HU-06, with its form and its panel in the frontend), sector and stage catalogs for the form, "my diagnostics" list (HU-03), characterization and stage codes for `routing/`.
-- Pending: the sector catalog only holds the AgroConecta case's sector: INNLAB's taxonomy is missing. The consent text is provisional pending legal review.
+- The sector catalog is the 22 sections of the DANE's CIIU Rev. 5 A.C., each with its code and search words, plus «Otro sector (especificar)»; with «Otro» the profile requires the user's own sector (`customSector`) and with a CIIU section it stores none ([ADR 0019](../../../../../docs/architecture/decisions/0019-sectors-from-the-dane-ciiu.md)). The seed deactivates a sector that leaves the list instead of deleting it.
+- Pending: INNLAB's confirmation of the sector catalog. The consent text is provisional pending legal review.
 
 ## Responsibility (ubiquitous language)
 
