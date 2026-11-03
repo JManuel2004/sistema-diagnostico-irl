@@ -6,6 +6,7 @@ import { LevelBar } from '@/shared/ui/level-bar';
 import { SectionHeader } from '@/shared/ui/section-header';
 import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { formatDateTime, formatOneDecimal } from '@/shared/lib/format';
+import { sectorLabel } from '@/shared/lib/sector';
 import { namesOf } from '../lib/report-text';
 import { useReportSection } from '../hooks/useReportSections';
 
@@ -69,7 +70,7 @@ export function ReportInitiativeSection({ report }: Props): JSX.Element {
   const i = report.initiative;
   const rows: readonly [string, string][] = [
     ['Nombre', i.name],
-    ['Sector', i.sector.name],
+    ['Sector', sectorLabel(i.sector, i.customSector)],
     ['Producto o servicio', i.productType],
     ['Etapa', `${i.stage.name}. ${i.declaredStage}`],
     [

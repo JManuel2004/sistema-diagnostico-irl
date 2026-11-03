@@ -4,11 +4,13 @@ import { initiativeFixture } from '@/test/fixtures/initiative';
 import { InitiativeSummary } from '../InitiativeSummary';
 
 describe('InitiativeSummary', () => {
-  it('abre con el nombre de la iniciativa y su sector como insignia', () => {
+  it('abre con el nombre de la iniciativa y muestra su sector con el código de la sección', () => {
     render(<InitiativeSummary initiative={initiativeFixture()} />);
 
     expect(screen.getByRole('heading', { name: 'AgroConecta' })).toBeInTheDocument();
-    expect(screen.getByText('Agroindustria / AgriTech')).toBeInTheDocument();
+    expect(
+      screen.getByText('A. Agricultura, ganadería, caza, silvicultura y pesca', { exact: false }),
+    ).toBeInTheDocument();
   });
 
   it('muestra cada dato con su nombre, en bloques legibles', () => {

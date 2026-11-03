@@ -92,7 +92,9 @@ describe('DashboardPage — panel de iniciativa', () => {
     renderPage();
 
     expect(await screen.findByRole('heading', { name: 'AgroConecta' })).toBeInTheDocument();
-    expect(screen.getByText('Agroindustria / AgriTech')).toBeInTheDocument();
+    expect(
+      screen.getByText('A. Agricultura, ganadería, caza, silvicultura y pesca', { exact: false }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Validación — Piloto completado/)).toBeInTheDocument();
     expect(screen.getByText('Ahorros de la fundadora')).toBeInTheDocument();
   });
