@@ -1,8 +1,11 @@
 /**
  * How long a calculated result stays on the processing screen.
- * The calculation itself is often faster than a person can see.
+ * The calculation itself is often faster than a person can see, and the
+ * client asked for the wait to show the work behind the result (validation
+ * of RF-08: at least about ten seconds), for the profile and for the deep
+ * analysis alike.
  */
-export const PROCESSING_VISIBLE_MS = 2000;
+export const PROCESSING_VISIBLE_MS = 10_000;
 
 /** Resolves immediately when the work already lasted `minimumMs`. */
 export function holdForMinimum(

@@ -232,8 +232,9 @@ test('from the landing to the results through the four wizard steps', async ({ p
   ).toBeVisible();
   await page.getByRole('button', { name: 'Procesar diagnóstico' }).click();
 
-  // The results, the first screen with navigation.
-  await expect(page).toHaveURL(`/diagnosticos/${ID}/resultados`);
+  // The results, the first screen with navigation, after the processing
+  // screen's minimum of 10 s (`PROCESSING_VISIBLE_MS`).
+  await expect(page).toHaveURL(`/diagnosticos/${ID}/resultados`, { timeout: 20_000 });
   await expect(page.getByText('Diagnóstico procesado.')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Principal' })).toBeVisible();
   expect(calls).toEqual(['start', 'create', 'initiative:created', 'finalize:48']);
