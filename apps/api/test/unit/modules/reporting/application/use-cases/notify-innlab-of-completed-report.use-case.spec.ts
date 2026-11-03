@@ -22,14 +22,18 @@ describe('NotifyInnlabOfCompletedReportUseCase', () => {
   let useCase: NotifyInnlabOfCompletedReportUseCase;
 
   beforeEach(() => {
-    owner = jest.fn<FindDiagnosisOwnerQuery['execute']>().mockResolvedValue('user-1');
-    download = jest.fn<DownloadDiagnosticReportUseCase['execute']>().mockResolvedValue(
-      Result.ok({
-        fileName: 'reporte-irl-agroconecta-2026-01-02.pdf',
-        contentType: 'application/pdf',
-        content: PDF,
-      }),
-    );
+    owner = jest
+      .fn<FindDiagnosisOwnerQuery['execute']>()
+      .mockResolvedValue('user-1');
+    download = jest
+      .fn<DownloadDiagnosticReportUseCase['execute']>()
+      .mockResolvedValue(
+        Result.ok({
+          fileName: 'reporte-irl-agroconecta-2026-01-02.pdf',
+          contentType: 'application/pdf',
+          content: PDF,
+        }),
+      );
     send = jest.fn<ReportMailerPort['send']>().mockResolvedValue(undefined);
     useCase = new NotifyInnlabOfCompletedReportUseCase(
       { execute: owner } as unknown as FindDiagnosisOwnerQuery,
@@ -42,7 +46,10 @@ describe('NotifyInnlabOfCompletedReportUseCase', () => {
   it('mails the PDF of the completed report to the configured address', async () => {
     await useCase.execute(DIAGNOSTIC_ID);
 
-    expect(download).toHaveBeenCalledWith({ diagnosticId: DIAGNOSTIC_ID, userId: 'user-1' });
+    expect(download).toHaveBeenCalledWith({
+      diagnosticId: DIAGNOSTIC_ID,
+      userId: 'user-1',
+    });
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
         to: 'innlab@example.com',
@@ -54,6 +61,15 @@ describe('NotifyInnlabOfCompletedReportUseCase', () => {
         },
       }),
     );
+  });
+
+  it('asks INNLAB to contact the leader, telling what was acquired and recommended', async () => {
+    await useCase.execute(DIAGNOSTIC_ID);
+
+    const [mail] = send.mock.calls[0] as [{ text: string }];
+    expect(mail.text).toContain('adquirió el análisis profundo');
+    expect(mail.text).toContain('le recomendó servicios de INNLAB');
+    expect(mail.text).toContain('contáctalo');
   });
 
   it('sends nothing when mail is not configured', async () => {
@@ -71,7 +87,9 @@ describe('NotifyInnlabOfCompletedReportUseCase', () => {
   });
 
   it('sends nothing when the deep analysis is not complete', async () => {
-    download.mockResolvedValueOnce(Result.err(new ReportNotAvailableError(DIAGNOSTIC_ID)));
+    download.mockResolvedValueOnce(
+      Result.err(new ReportNotAvailableError(DIAGNOSTIC_ID)),
+    );
 
     await useCase.execute(DIAGNOSTIC_ID);
 
