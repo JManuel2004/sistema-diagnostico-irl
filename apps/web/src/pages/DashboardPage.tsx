@@ -20,6 +20,7 @@ import { useStartDiagnostic } from '@/shared/hooks/useStartDiagnostic';
 import { paths } from '@/shared/lib/paths';
 import { RETRY_LATER } from '@/shared/lib/copy';
 import { formatDate, formatOneDecimal } from '@/shared/lib/format';
+import { maturityBand } from '@/shared/lib/maturity-scale';
 
 /**
  * `/panel` — where the user lands after signing in (DIAGIRL-26).
@@ -258,16 +259,21 @@ export default function DashboardPage(): JSX.Element {
 function DiagnosticRow({ diagnostic }: { readonly diagnostic: DiagnosticSummary }): JSX.Element {
   const name = diagnostic.initiativeName ?? 'Iniciativa sin nombre';
   const when = diagnostic.profileComputedAt ?? diagnostic.createdAt;
+  const band = diagnostic.globalAverage === null ? null : maturityBand(diagnostic.globalAverage);
   return (
     <li className="border-border flex flex-col gap-3 border-b py-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 flex-col gap-1.5">
         <p className="text-foreground text-base font-bold">{name}</p>
         <p className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-base">
           <span>Perfil del {formatDate(when)}</span>
-          {diagnostic.globalAverage !== null && (
+          {diagnostic.globalAverage !== null && band && (
             <span className="text-foreground inline-flex items-center gap-1.5 font-semibold">
-              <Gauge className="text-azul-icesi size-4" aria-hidden="true" />
-              Nivel IRL global {formatOneDecimal(diagnostic.globalAverage)}
+              <Gauge className={`${band.textInk} size-4`} aria-hidden="true" />
+              Nivel IRL global{' '}
+              <span className={`${band.textInk} font-extrabold`}>
+                {formatOneDecimal(diagnostic.globalAverage)}
+              </span>
+              <span className={`${band.textInk} text-sm font-semibold`}>({band.label})</span>
             </span>
           )}
           {diagnostic.deepAnalysisAccepted ? (
