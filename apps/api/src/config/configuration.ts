@@ -81,7 +81,7 @@ export interface AppConfig {
   readonly innlabCore: InnLabCoreConfig;
   readonly mail: MailConfig;
   /**
-   * Opens the five-person entry. On in production when `AUTH_BYPASS` is
+   * Opens the simulated-card entry. On in production when `AUTH_BYPASS` is
    * unset, so that deploy does not wait on INNLAB.
    */
   readonly authBypass: boolean;
@@ -130,7 +130,7 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 }
 
 /**
- * Production opens the five-person entry when the variable is unset, so a
+ * Production opens the simulated-card entry when the variable is unset, so a
  * usability deploy does not depend on INNLAB. `false` keeps the Hub.
  * Any other environment stays on the Hub unless the variable is `true`.
  */

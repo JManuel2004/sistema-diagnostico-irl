@@ -81,6 +81,13 @@ export const BYPASS_PARTICIPANTS: readonly BypassParticipant[] = [
       role: 'MEMBER',
     },
   },
+  {
+    id: 'b1a55e55-0000-4000-8000-000000000006',
+    email: 'usuario.prueba@demo.innlab.local',
+    firstName: 'Usuario',
+    lastName: 'de prueba',
+    company: null,
+  },
 ];
 
 export const BYPASS_USER_ID = BYPASS_PARTICIPANTS[0].id;

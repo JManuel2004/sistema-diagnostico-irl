@@ -74,5 +74,10 @@ describe('AuthBypassPolicy', () => {
       'AgroConecta (demo)',
     );
     expect(camila?.companyName).toBeNull();
+    expect(cards.find((card) => card.email === 'usuario.prueba@demo.innlab.local')).toMatchObject({
+      firstName: 'Usuario',
+      lastName: 'de prueba',
+      companyName: null,
+    });
   });
 });
