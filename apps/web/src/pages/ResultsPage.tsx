@@ -224,7 +224,7 @@ const RESULT_SECTIONS: readonly { id: string; label: string; icon: LucideIcon }[
   { id: 'perfil', label: 'Perfil', icon: Layers },
   { id: 'desequilibrios', label: 'Desequilibrios y alertas', icon: Scale },
   { id: 'servicio', label: 'Servicio INNLAB', icon: Compass },
-  { id: 'roadmap', label: 'Roadmap', icon: Route },
+  { id: 'roadmap', label: 'Ruta de escalamiento', icon: Route },
 ];
 
 const RESULT_SECTION_IDS = RESULT_SECTIONS.map((section) => section.id);
@@ -376,17 +376,17 @@ function DeepAnalysis({
       <section id="roadmap" aria-labelledby="deep-roadmap" className="scroll-mt-40">
         <SectionHeader
           id="deep-roadmap"
-          overline="Roadmap de escalamiento"
+          overline="Ruta de escalamiento"
           icon={Route}
-          title={`El plan de escalamiento de ${who}`}
+          title={`La ruta de escalamiento de ${who}`}
           description="Las dimensiones que todavía tienen que avanzar, ordenadas según qué habilita qué, y el servicio de INNLAB que podrías contratar en cada fase: de lo más liviano a lo más profundo, hasta dejar tus dimensiones parejas."
         >
           {roadmap.data && <ResultMeta savedAt={roadmap.data.generatedAt} />}
         </SectionHeader>
-        {roadmap.isPending && <LoadingState label="Cargando roadmap…" />}
-        {roadmapMissing && <MissingResult what="el roadmap" onRetry={onRetry} />}
+        {roadmap.isPending && <LoadingState label="Cargando la ruta de escalamiento…" />}
+        {roadmapMissing && <MissingResult what="la ruta de escalamiento" onRetry={onRetry} />}
         {roadmap.isError && !roadmapMissing && (
-          <Alert tone="critical" title="No fue posible construir el roadmap">
+          <Alert tone="critical" title="No fue posible construir la ruta de escalamiento">
             {isApiErrorWithCode(roadmap.error, 'ROADMAP_GRAPH_HAS_CYCLE')
               ? 'El grafo de dependencias entre dimensiones está mal configurado. Contacta al equipo de INNLAB.'
               : RETRY_LATER}

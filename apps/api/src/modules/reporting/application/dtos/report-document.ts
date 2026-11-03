@@ -294,7 +294,7 @@ export function buildReportDocument(
   }
 
   // Roadmap.
-  push({ kind: 'heading', text: 'Roadmap de escalamiento' });
+  push({ kind: 'heading', text: 'Ruta de escalamiento' });
   if (roadmap.phases.length === 0) {
     push({
       kind: 'paragraph',

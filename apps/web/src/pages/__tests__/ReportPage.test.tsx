@@ -147,7 +147,7 @@ describe('ReportPage — con el análisis profundo completo', () => {
 
     renderPage();
 
-    const section = await screen.findByRole('region', { name: 'Roadmap de escalamiento' });
+    const section = await screen.findByRole('region', { name: 'Ruta de escalamiento' });
     expect(within(section).getByRole('heading', { name: 'Fase 1' })).toBeInTheDocument();
     expect(within(section).getByRole('heading', { name: 'Fase 3' })).toBeInTheDocument();
     expect(within(section).getByText('Al terminar la ruta')).toBeInTheDocument();
