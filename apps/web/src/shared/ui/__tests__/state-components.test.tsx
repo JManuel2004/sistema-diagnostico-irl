@@ -184,7 +184,7 @@ describe('AcceptDeepAnalysisCard', () => {
     for (const item of [
       /desequilibrios entre seis pares/i,
       /Alertas de las dimensiones clave/i,
-      /plan de escalamiento por fases/i,
+      /ruta de escalamiento por fases/i,
       /recomendación del servicio de INNLAB/i,
     ]) {
       expect(screen.getByText(item)).toBeInTheDocument();

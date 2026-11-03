@@ -140,7 +140,7 @@ const SECTIONS: readonly { id: string; label: string; icon: LucideIcon }[] = [
   { id: 'report-profile', label: 'Perfil', icon: Layers },
   { id: 'report-alerts', label: 'Desequilibrios y alertas', icon: Scale },
   { id: 'report-recommendation', label: 'Servicio INNLAB', icon: Compass },
-  { id: 'report-roadmap', label: 'Roadmap', icon: Route },
+  { id: 'report-roadmap', label: 'Ruta de escalamiento', icon: Route },
   { id: 'report-answers', label: 'Respuestas', icon: ListChecks },
   { id: 'report-attribution', label: 'Marco', icon: BookOpen },
 ];
@@ -221,7 +221,7 @@ function FullReport({ report }: { readonly report: DiagnosticReport }): JSX.Elem
         <ReportSection
           id="report-roadmap"
           icon={Route}
-          title="Roadmap de escalamiento"
+          title="Ruta de escalamiento"
           description="Las fases en que conviene trabajar las dimensiones y el servicio de INNLAB que podría acompañar cada una, de lo más liviano a lo más profundo."
         >
           <RoadmapPhaseList

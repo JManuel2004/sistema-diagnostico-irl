@@ -49,7 +49,7 @@ const INCLUDES: readonly { text: string; icon: LucideIcon }[] = [
     icon: Scale,
   },
   { text: 'Alertas de las dimensiones clave que hoy más frenan tu avance.', icon: Siren },
-  { text: 'Un plan de escalamiento por fases, en el orden en que conviene avanzar.', icon: Route },
+  { text: 'Una ruta de escalamiento por fases, en el orden en que conviene avanzar.', icon: Route },
   {
     text: 'La recomendación del servicio de INNLAB que mejor encaja con tu iniciativa.',
     icon: Compass,

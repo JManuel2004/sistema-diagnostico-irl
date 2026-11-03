@@ -87,7 +87,7 @@ export function RoadmapPhaseList({
             </h2>
             <p className="text-muted-foreground mt-1 text-base leading-relaxed">
               {roadmap.dimensionsWithoutIntervention.map((d) => d.shortName).join(', ')} ya alcanzan
-              el nivel esperado. Se consideraron al construir el roadmap y no requieren acción.
+              el nivel esperado. Se consideraron al construir la ruta y no requieren acción.
             </p>
           </CardContent>
         </Card>

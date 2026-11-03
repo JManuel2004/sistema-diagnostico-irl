@@ -37,7 +37,7 @@ describe('buildReportDocument', () => {
       'Perfil de seis dimensiones',
       'Brechas, alertas y desequilibrios',
       'Recomendación del portafolio INNLAB',
-      'Roadmap de escalamiento',
+      'Ruta de escalamiento',
       'Respuestas al cuestionario',
       'Marco de referencia',
     ]);

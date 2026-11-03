@@ -159,7 +159,7 @@ describe('ReportPage — con el análisis profundo completo', () => {
 
     renderPage();
 
-    const section = await openSection('Roadmap de escalamiento');
+    const section = await openSection('Ruta de escalamiento');
     expect(within(section).getByRole('heading', { name: 'Fase 1' })).toBeInTheDocument();
     expect(within(section).getByRole('heading', { name: 'Fase 3' })).toBeInTheDocument();
     expect(within(section).getByText('Al terminar la ruta')).toBeInTheDocument();
@@ -249,7 +249,7 @@ describe('ReportPage — secciones plegables', () => {
     'Perfil de seis dimensiones',
     'Brechas, alertas y desequilibrios',
     'Recomendación del portafolio INNLAB',
-    'Roadmap de escalamiento',
+    'Ruta de escalamiento',
     'Respuestas al cuestionario',
     'Marco de referencia',
   ];
@@ -271,7 +271,7 @@ describe('ReportPage — secciones plegables', () => {
       'Recomendación del portafolio INNLAB',
     ]);
     // A folded section keeps its title and description, but not its content.
-    const roadmap = screen.getByRole('region', { name: 'Roadmap de escalamiento' });
+    const roadmap = screen.getByRole('region', { name: 'Ruta de escalamiento' });
     expect(within(roadmap).queryByRole('heading', { name: 'Fase 1' })).not.toBeInTheDocument();
   });
 
@@ -281,7 +281,7 @@ describe('ReportPage — secciones plegables', () => {
     renderPage();
     await screen.findByRole('region', { name: 'Datos de la iniciativa' });
 
-    const toggle = toggleOf('Roadmap de escalamiento');
+    const toggle = toggleOf('Ruta de escalamiento');
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(toggle).toHaveAttribute('aria-controls', 'report-roadmap-content');
     expect(document.getElementById('report-roadmap-content')).not.toBeNull();
@@ -296,7 +296,7 @@ describe('ReportPage — secciones plegables', () => {
     renderPage();
     await screen.findByRole('region', { name: 'Datos de la iniciativa' });
 
-    const toggle = toggleOf('Roadmap de escalamiento');
+    const toggle = toggleOf('Ruta de escalamiento');
     toggle.focus();
     await user.keyboard('{Enter}');
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
