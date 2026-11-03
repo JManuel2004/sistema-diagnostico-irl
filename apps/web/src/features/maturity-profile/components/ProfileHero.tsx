@@ -69,10 +69,15 @@ export function ProfileHero({
             {description}
           </p>
         )}
-        {(sectorName !== undefined || stageName !== undefined) && (
-          <p className="mt-4 flex flex-wrap items-center gap-2">
-            {sectorName !== undefined && <Badge tone="info">{sectorName}</Badge>}
-            {stageName !== undefined && <Badge>Etapa: {stageName}</Badge>}
+        {sectorName !== undefined && (
+          <p className="text-muted-foreground mt-4 max-w-prose text-base leading-snug">
+            <span className="text-foreground font-semibold">Sector: </span>
+            {sectorName}
+          </p>
+        )}
+        {stageName !== undefined && (
+          <p className="mt-3 flex flex-wrap items-center gap-2">
+            <Badge>Etapa: {stageName}</Badge>
           </p>
         )}
         {children}

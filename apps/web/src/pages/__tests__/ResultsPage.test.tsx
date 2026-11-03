@@ -598,7 +598,9 @@ describe('ResultsPage — la iniciativa como protagonista', () => {
     expect(
       screen.getByText('Aplicación web y módulo de trazabilidad para cooperativas'),
     ).toBeInTheDocument();
-    expect(screen.getByText('Agroindustria / AgriTech')).toBeInTheDocument();
+    expect(
+      screen.getByText('A. Agricultura, ganadería, caza, silvicultura y pesca', { exact: false }),
+    ).toBeInTheDocument();
   });
 
   it('muestra al lado el nivel IRL global que calcula el backend', async () => {

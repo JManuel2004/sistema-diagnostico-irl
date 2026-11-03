@@ -43,6 +43,7 @@ import { isApiErrorWithCode, isApiErrorWithStatus } from '@/shared/api/http';
 import { useDiagnostic } from '@/shared/hooks/useDiagnostics';
 import { useActiveSection } from '@/shared/hooks/useActiveSection';
 import { paths } from '@/shared/lib/paths';
+import { sectorLabel } from '@/shared/lib/sector';
 import { FALLBACK_SUBJECT, RETRY_LATER, RETRY_LATER_OR_CONTACT } from '@/shared/lib/copy';
 
 /**
@@ -110,7 +111,11 @@ export default function ResultsPage(): JSX.Element {
         <ProfileHero
           initiativeName={subject}
           description={initiative.data?.productType}
-          sectorName={initiative.data?.sector.name}
+          sectorName={
+            initiative.data
+              ? sectorLabel(initiative.data.sector, initiative.data.customSector)
+              : undefined
+          }
           stageName={initiative.data?.stage.name}
           globalAverage={profile.data.globalAverage}
           globalLevel={profile.data.globalLevel}

@@ -84,7 +84,9 @@ describe('ReportPage — con el análisis profundo completo', () => {
     renderPage();
 
     const section = await screen.findByRole('region', { name: 'Datos de la iniciativa' });
-    expect(within(section).getByText('Agroindustria / AgriTech')).toBeInTheDocument();
+    expect(
+      within(section).getByText('A. Agricultura, ganadería, caza, silvicultura y pesca'),
+    ).toBeInTheDocument();
     expect(within(section).getByText('Productores de café del suroccidente')).toBeInTheDocument();
     expect(within(section).getByText('Ahorros de la fundadora')).toBeInTheDocument();
   });

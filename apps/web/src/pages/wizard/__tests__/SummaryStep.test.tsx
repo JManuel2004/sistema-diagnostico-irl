@@ -107,7 +107,9 @@ describe('SummaryStep — resumen antes de procesar', () => {
       renderStep();
 
       expect(await screen.findByRole('heading', { name: 'AgroConecta' })).toBeInTheDocument();
-      expect(screen.getByText('Agroindustria / AgriTech')).toBeInTheDocument();
+      expect(
+        screen.getByText('A. Agricultura, ganadería, caza, silvicultura y pesca', { exact: false }),
+      ).toBeInTheDocument();
       expect(screen.getByText(/Aplicación web y módulo de trazabilidad/)).toBeInTheDocument();
       expect(screen.getByText(/Fundadora, coordinadora/)).toBeInTheDocument();
       // The initiative comes before the answers in the page.

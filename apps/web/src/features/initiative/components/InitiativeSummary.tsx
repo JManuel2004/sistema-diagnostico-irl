@@ -1,15 +1,15 @@
 import type { JSX, ReactNode } from 'react';
-import { Milestone, Package, Target, Users, Wallet } from 'lucide-react';
+import { Factory, Milestone, Package, Target, Users, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Initiative } from '@innlab/contracts';
-import { Badge } from '@/shared/ui/badge';
 import { Card } from '@/shared/ui/card';
+import { sectorLabel } from '@/shared/lib/sector';
 
 /**
  * The initiative as it was registered: the summary shown in the panel and
  * before processing the diagnostic.
  *
- * It opens with its name and its sector and goes down to the rest in blocks
+ * It opens with its name and goes down to the rest, its sector first, in blocks
  * with their icon, at reading size: it is what the user said about
  * themselves and they must be able to reread it at a glance, not decode it
  * from a definition list.
@@ -28,6 +28,11 @@ interface Row {
 
 export function InitiativeSummary({ initiative, action }: Props): JSX.Element {
   const rows: readonly Row[] = [
+    {
+      label: 'Sector económico',
+      value: sectorLabel(initiative.sector, initiative.customSector),
+      icon: Factory,
+    },
     { label: 'Qué ofrece', value: initiative.productType, icon: Package },
     {
       label: 'Etapa',
@@ -51,9 +56,6 @@ export function InitiativeSummary({ initiative, action }: Props): JSX.Element {
           <h2 className="text-foreground mt-2 text-[1.625rem] font-bold leading-tight tracking-tight sm:text-[1.75rem]">
             {initiative.name}
           </h2>
-          <p className="mt-3 flex flex-wrap gap-2">
-            <Badge tone="info">{initiative.sector.name}</Badge>
-          </p>
         </div>
         {action}
       </div>
