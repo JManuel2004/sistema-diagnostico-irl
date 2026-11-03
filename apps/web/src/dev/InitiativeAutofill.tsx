@@ -13,6 +13,7 @@ export default function InitiativeAutofill({
     onFill({
       name: AGROCONECTA_INITIATIVE.name,
       sectorId: sectors.find((s) => s.name === AGROCONECTA_INITIATIVE.sectorName)?.id ?? '',
+      customSector: '',
       productType: AGROCONECTA_INITIATIVE.productType,
       stageId: stages.find((s) => s.code === AGROCONECTA_INITIATIVE.stageCode)?.id ?? '',
       declaredStage: AGROCONECTA_INITIATIVE.declaredStage,

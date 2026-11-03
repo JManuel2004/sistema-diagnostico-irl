@@ -36,6 +36,7 @@ const NEW_INITIATIVE_ID = 'd3eebc99-9c0b-4ef8-bb6d-6bb9bd380a44';
 const COMMAND = {
   name: 'AgroConecta',
   sectorId: '1',
+  customSector: null,
   productType: 'App web',
   stageId: '2',
   declaredStage: 'Piloto completado',
@@ -160,14 +161,31 @@ function renderWizard(path = `/diagnosticos/${ID}/asistente`): ReturnType<typeof
 
 async function fillInitiative(user: ReturnType<typeof userEvent.setup>) {
   await user.type(await screen.findByLabelText('Nombre de la iniciativa'), 'AgroConecta');
-  await user.selectOptions(screen.getByLabelText('Sector'), '1');
-  await user.selectOptions(screen.getByLabelText('Etapa'), '2');
-  await user.type(screen.getByLabelText('Tipo de producto o servicio'), 'App web');
-  await user.type(screen.getByLabelText('Etapa declarada'), 'Piloto completado');
-  await user.type(screen.getByLabelText('Personas en el equipo'), '3');
-  await user.type(screen.getByLabelText('Equipo'), 'Fundadora y equipo');
-  await user.type(screen.getByLabelText('Mercado objetivo'), 'Productores de café');
-  await user.type(screen.getByLabelText('Financiamiento actual'), 'Ahorros');
+  await user.click(
+    screen.getByRole('combobox', { name: '¿A qué sector económico pertenece tu iniciativa?' }),
+  );
+  await user.click(
+    screen.getByRole('option', { name: 'Agricultura, ganadería, caza, silvicultura y pesca' }),
+  );
+  await user.selectOptions(screen.getByLabelText('¿En qué etapa está tu iniciativa?'), '2');
+  await user.type(
+    screen.getByLabelText('¿En qué consiste tu iniciativa? ¿Es un producto o un servicio?'),
+    'App web',
+  );
+  await user.type(
+    screen.getByLabelText('Cuéntanos con tus palabras en qué punto está'),
+    'Piloto completado',
+  );
+  await user.type(screen.getByLabelText('¿Cuántas personas conforman el equipo?'), '3');
+  await user.type(
+    screen.getByLabelText('¿Qué hace cada persona del equipo?'),
+    'Fundadora y equipo',
+  );
+  await user.type(
+    screen.getByLabelText('¿Cuál es el mercado objetivo de tu iniciativa?'),
+    'Productores de café',
+  );
+  await user.type(screen.getByLabelText('¿Cómo se financia hoy tu iniciativa?'), 'Ahorros');
 }
 
 const where = () => screen.getByTestId('where').textContent;
@@ -370,8 +388,10 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await user.click(screen.getByRole('button', { name: 'Continuar' }));
 
       expect(await screen.findByLabelText('Nombre de la iniciativa')).toHaveValue('AgroConecta');
-      expect(screen.getByLabelText('Sector')).toHaveValue('1');
-      expect(screen.getByLabelText('Personas en el equipo')).toHaveValue(3);
+      expect(
+        screen.getByRole('combobox', { name: '¿A qué sector económico pertenece tu iniciativa?' }),
+      ).toHaveValue('Agricultura, ganadería, caza, silvicultura y pesca');
+      expect(screen.getByLabelText('¿Cuántas personas conforman el equipo?')).toHaveValue(3);
     });
 
     it('recargar la página en la iniciativa no pierde el formulario ni la aceptación', async () => {

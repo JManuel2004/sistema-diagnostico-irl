@@ -176,14 +176,26 @@ test('from the landing to the results through the four wizard steps', async ({ p
     page.getByRole('heading', { level: 1, name: 'Cuéntanos de tu iniciativa' }),
   ).toBeVisible();
   await page.getByLabel('Nombre de la iniciativa').fill('AgroConecta');
-  await page.getByLabel('Sector').selectOption(SECTORS[0].id);
-  await page.getByLabel('Etapa', { exact: true }).selectOption(STAGES[1].id);
-  await page.getByLabel('Tipo de producto o servicio').fill('Plataforma web');
-  await page.getByLabel('Etapa declarada').fill('Piloto con tres productores');
-  await page.getByLabel('Personas en el equipo').fill('3');
-  await page.getByLabel('Equipo', { exact: true }).fill('Fundadora y dos ingenieros');
-  await page.getByLabel('Mercado objetivo').fill('Productores de café');
-  await page.getByLabel('Financiamiento actual').fill('Ahorros propios');
+  // The sector is searched: typing filters the CIIU sections, Enter chooses.
+  const sector = page.getByRole('combobox', {
+    name: '¿A qué sector económico pertenece tu iniciativa?',
+  });
+  await sector.fill('agricultura');
+  await sector.press('Enter');
+  await expect(sector).toHaveValue(SECTORS[0].name);
+  await page.getByLabel('¿En qué etapa está tu iniciativa?').selectOption(STAGES[1].id);
+  await page
+    .getByLabel('¿En qué consiste tu iniciativa? ¿Es un producto o un servicio?')
+    .fill('Plataforma web');
+  await page
+    .getByLabel('Cuéntanos con tus palabras en qué punto está')
+    .fill('Piloto con tres productores');
+  await page.getByLabel('¿Cuántas personas conforman el equipo?').fill('3');
+  await page.getByLabel('¿Qué hace cada persona del equipo?').fill('Fundadora y dos ingenieros');
+  await page
+    .getByLabel('¿Cuál es el mercado objetivo de tu iniciativa?')
+    .fill('Productores de café');
+  await page.getByLabel('¿Cómo se financia hoy tu iniciativa?').fill('Ahorros propios');
   await page.getByRole('button', { name: 'Continuar' }).click();
   await expect(page.getByText('Consentimiento registrado.')).toBeVisible();
 

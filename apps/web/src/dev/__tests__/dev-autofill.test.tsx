@@ -133,7 +133,9 @@ describe('AgroConecta case — the 48 answers', () => {
 describe('AgroConecta case — the initiative profile', () => {
   it('has the seven fields of the specification, verbatim', () => {
     expect(AGROCONECTA_INITIATIVE.name).toBe('AgroConecta');
-    expect(AGROCONECTA_INITIATIVE.sectorName).toBe('Agroindustria / AgriTech');
+    expect(AGROCONECTA_INITIATIVE.sectorName).toBe(
+      'Agricultura, ganadería, caza, silvicultura y pesca',
+    );
     expect(AGROCONECTA_INITIATIVE.productType).toBe(
       'Aplicación web (mercado digital) + módulo de trazabilidad de calidad para la cadena de café',
     );
@@ -208,7 +210,7 @@ describe('InitiativeAutofill button', () => {
       <InitiativeAutofill
         sectors={[
           { id: '7', name: 'Salud' },
-          { id: '9', name: 'Agroindustria / AgriTech' },
+          { id: '9', name: 'Agricultura, ganadería, caza, silvicultura y pesca' },
         ]}
         stages={[
           { id: '1', code: 'idea' },
@@ -224,6 +226,7 @@ describe('InitiativeAutofill button', () => {
       {
         name: AGROCONECTA_INITIATIVE.name,
         sectorId: '9',
+        customSector: '',
         productType: AGROCONECTA_INITIATIVE.productType,
         stageId: '5',
         declaredStage: AGROCONECTA_INITIATIVE.declaredStage,

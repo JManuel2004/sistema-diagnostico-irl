@@ -22,7 +22,7 @@ export interface AgroconectaAnswer {
 
 export const AGROCONECTA_INITIATIVE = {
   name: 'AgroConecta',
-  sectorName: 'Agroindustria / AgriTech',
+  sectorName: 'Agricultura, ganadería, caza, silvicultura y pesca',
   productType:
     'Aplicación web (mercado digital) + módulo de trazabilidad de calidad para la cadena de café',
   declaredStage:
