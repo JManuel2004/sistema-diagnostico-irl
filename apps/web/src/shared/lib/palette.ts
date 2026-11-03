@@ -49,6 +49,22 @@ export const PALETTE = {
     'frl-ink': '#8C7818',
   },
 
+  // How mature an IRL level is, 1 to 9, as the thermometer of the KTH
+  // framework's material: red, orange, yellow, green. Red covers the
+  // levels the system counts as a gap (3 or less). `{band}` paints bars;
+  // `{band}-ink` is the text, ≥4.5:1 on white. The level always goes along
+  // as a number and a word, so the hue is never the only signal.
+  maturity: {
+    low: '#C0392B',
+    'low-ink': '#B03224',
+    developing: '#E07B24',
+    'developing-ink': '#A8500B',
+    advanced: '#E3B505',
+    'advanced-ink': '#7A5C00',
+    mature: '#2E9E5B',
+    'mature-ink': '#1B7A48',
+  },
+
   // How much the user agreed with a statement, 1 to 5: one hue (Azul
   // Icesi), light to dark, each step visibly apart and the lightest still
   // clear of white (checked as an ordinal ramp). A cell always shows its
