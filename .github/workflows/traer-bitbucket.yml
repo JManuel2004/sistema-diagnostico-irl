@@ -7,7 +7,7 @@
 # sin publicarse.
 #
 # Secretos (Settings → Secrets and variables → Actions):
-#   GITHUB_PUSH_TOKEN       token con permiso de escritura en este repositorio
+#   PUSH_TOKEN              token con permiso de escritura en este repositorio
 #   BITBUCKET_USERNAME      solo si el clon de Bitbucket pide usuario
 #   BITBUCKET_READ_TOKEN    solo si el clon de Bitbucket pide contraseña
 #
@@ -44,12 +44,12 @@ jobs:
         env:
           BB_USER: ${{ secrets.BITBUCKET_USERNAME }}
           BB_TOKEN: ${{ secrets.BITBUCKET_READ_TOKEN }}
-          PUSH_TOKEN: ${{ secrets.GITHUB_PUSH_TOKEN }}
+          PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           if [ -z "${PUSH_TOKEN}" ]; then
-            echo "Falta el secreto GITHUB_PUSH_TOKEN. Sin él no se publica nada y la rama dev no se toca."
+            echo "Falta el secreto PUSH_TOKEN. Sin él no se publica nada y la rama dev no se toca."
             exit 0
           fi
 
