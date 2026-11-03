@@ -104,7 +104,7 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
       .get('/api/v1/initiative-catalog/sectors')
       .expect(200);
     sectorId = (sectors.body as { id: string; name: string }[]).find(
-      (s) => s.name === 'Agroindustria / AgriTech',
+      (s) => s.name === 'Agricultura, ganadería, caza, silvicultura y pesca',
     )!.id;
     const stages = await agent
       .get('/api/v1/initiative-catalog/stages')
@@ -159,7 +159,7 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
         initiativeStageSchema.parse(s),
       );
       expect(parsedSectors.map((s) => s.name)).toContain(
-        'Agroindustria / AgriTech',
+        'Agricultura, ganadería, caza, silvicultura y pesca',
       );
       expect(parsedStages.map((s) => s.code)).toEqual([
         'idea',
@@ -198,13 +198,44 @@ describe('Iniciar → consentimiento → iniciativa → cuestionario → perfil 
         .expect(201);
 
       const initiative = initiativeSchema.parse(res.body);
-      expect(initiative.sector.name).toBe('Agroindustria / AgriTech');
+      expect(initiative.sector.name).toBe(
+        'Agricultura, ganadería, caza, silvicultura y pesca',
+      );
       expect(initiative.stage).toMatchObject({
         code: 'validacion',
         name: 'Validación',
       });
       expect(initiative.teamSize).toBe(3);
       expect(initiative.currentFunding).toContain('COP 25M');
+    });
+
+    it('con «Otro sector» exige describirlo, y guarda y devuelve lo descrito', async () => {
+      const id = await start();
+      const sectors = await agent
+        .get('/api/v1/initiative-catalog/sectors')
+        .expect(200);
+      const other = (sectors.body as { id: string; isOther: boolean }[]).find(
+        (s) => s.isOther,
+      )!;
+
+      await agent
+        .post(`/api/v1/diagnostics/${id}/initiative`)
+        .send(body({ sectorId: other.id, customSector: '  ' }))
+        .expect(422);
+      await agent.get(`/api/v1/diagnostics/${id}/initiative`).expect(404);
+
+      await agent
+        .post(`/api/v1/diagnostics/${id}/initiative`)
+        .send(
+          body({ sectorId: other.id, customSector: 'Industria aeroespacial' }),
+        )
+        .expect(201);
+      const read = await agent
+        .get(`/api/v1/diagnostics/${id}/initiative`)
+        .expect(200);
+      const initiative = initiativeSchema.parse(read.body);
+      expect(initiative.sector).toMatchObject({ isOther: true, code: null });
+      expect(initiative.customSector).toBe('Industria aeroespacial');
     });
 
     it('lo que se guardó es lo que se lee de vuelta', async () => {

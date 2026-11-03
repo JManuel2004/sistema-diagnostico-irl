@@ -3,7 +3,11 @@ import { CONSENT_TERMS } from './data/consent-terms.js';
 import { CONVERSION_RANGES } from './data/conversion-ranges.js';
 import { DIMENSIONS } from './data/dimensions.js';
 import { FRAMEWORK_VERSION } from './data/framework-version.js';
-import { SECTORS } from './data/sectors.js';
+import {
+  OTHER_SECTOR,
+  SECTOR_CLASSIFICATION,
+  SECTORS,
+} from './data/sectors.js';
 import { STATEMENTS } from './data/statements.js';
 import {
   DIMENSION_LEVEL_DESCRIPTIONS,
@@ -82,12 +86,35 @@ export async function seedCatalog(manager: EntityManager): Promise<{
     );
   }
 
-  for (const name of SECTORS) {
+  const sectors = [...SECTORS, OTHER_SECTOR];
+  // A sector that left the list stops being offered, but is not deleted:
+  // the profiles registered with it keep naming it. It gives up its code
+  // first, so a section that changed its title can take the code back.
+  await manager.query(
+    `UPDATE irl_catalog.sector SET is_active = false, code = NULL
+     WHERE NOT (name = ANY($1::varchar[]))`,
+    [sectors.map((s) => s.name)],
+  );
+  for (const s of sectors) {
     await manager.query(
-      `INSERT INTO irl_catalog.sector (name, is_active)
-       VALUES ($1, true)
-       ON CONFLICT (name) DO NOTHING`,
-      [name],
+      `INSERT INTO irl_catalog.sector
+         (code, name, classification, is_other, description, keywords, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, true)
+       ON CONFLICT (name) DO UPDATE
+         SET code           = EXCLUDED.code,
+             classification = EXCLUDED.classification,
+             is_other       = EXCLUDED.is_other,
+             description    = EXCLUDED.description,
+             keywords       = EXCLUDED.keywords,
+             is_active      = true`,
+      [
+        s.code,
+        s.name,
+        SECTOR_CLASSIFICATION,
+        s.code === null,
+        s.description,
+        [...s.keywords],
+      ],
     );
   }
 

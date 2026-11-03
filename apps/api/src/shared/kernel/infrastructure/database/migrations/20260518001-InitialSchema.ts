@@ -199,10 +199,17 @@ const UP: readonly string[] = [
   // ── irl_catalog: initiative ───────────────────────────────────────────
   `CREATE TABLE irl_catalog.sector (
       id bigint GENERATED ALWAYS AS IDENTITY,
-      name character varying(120) NOT NULL,
+      code character varying(4),
+      name character varying(200) NOT NULL,
+      classification character varying(40) NOT NULL,
+      is_other boolean DEFAULT false NOT NULL,
+      description character varying(160) DEFAULT '' NOT NULL,
+      keywords text[] DEFAULT '{}' NOT NULL,
       is_active boolean DEFAULT true NOT NULL,
       CONSTRAINT pk_sector PRIMARY KEY (id),
-      CONSTRAINT uq_sector_name UNIQUE (name)
+      CONSTRAINT uq_sector_name UNIQUE (name),
+      CONSTRAINT uq_sector_code UNIQUE (code),
+      CONSTRAINT ck_sector_other_without_code CHECK (NOT is_other OR code IS NULL)
   )`,
   `CREATE TABLE irl_catalog.initiative_stage (
       id bigint GENERATED ALWAYS AS IDENTITY,
@@ -432,6 +439,7 @@ const UP: readonly string[] = [
       id_initiative uuid NOT NULL,
       id_diagnostic uuid NOT NULL,
       id_sector bigint NOT NULL,
+      custom_sector character varying(120),
       name character varying(200) NOT NULL,
       product_type character varying(500) NOT NULL,
       id_stage bigint NOT NULL,

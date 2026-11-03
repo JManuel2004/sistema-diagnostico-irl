@@ -1,13 +1,22 @@
-import type { InitiativeStage, Sector } from '@innlab/contracts';
+import type { InitiativeStage, SectorOption } from '@innlab/contracts';
 import { type InitiativeCatalogPort } from '../../domain/repositories/initiative-catalog.port.js';
+import { toSector } from '../dtos/map-initiative-response.js';
 
-/** The sectors the registration form offers (`irl_catalog.sector`). */
+/**
+ * The sectors the registration form offers (`irl_catalog.sector`): the CIIU
+ * sections by code, with what each groups and the words to search them
+ * by, and «Otro» last.
+ */
 export class ListSectorsUseCase {
   constructor(private readonly catalog: InitiativeCatalogPort) {}
 
-  async execute(): Promise<Sector[]> {
+  async execute(): Promise<SectorOption[]> {
     const sectors = await this.catalog.findAllSectors();
-    return sectors.map((s) => ({ id: s.id, name: s.name }));
+    return sectors.map((s) => ({
+      ...toSector(s),
+      description: s.description,
+      keywords: [...s.keywords],
+    }));
   }
 }
 

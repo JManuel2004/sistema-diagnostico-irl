@@ -116,6 +116,7 @@ describe('Initiative — persistence (integration)', () => {
       initiativeId: initiative.id,
       diagnosticId: Uuid.create(diagnosticId),
       sectorId: sector.id,
+      sectorIsOther: sector.isOther,
       name: 'AgroConecta',
       productType: 'Aplicación web',
       stageId: stage!.id,
@@ -133,7 +134,9 @@ describe('Initiative — persistence (integration)', () => {
     const stages = await catalog.findAllStages();
     const current = await terms.findCurrent();
 
-    expect(sectors.map((s) => s.name)).toContain('Agroindustria / AgriTech');
+    expect(sectors.map((s) => s.name)).toContain(
+      'Agricultura, ganadería, caza, silvicultura y pesca',
+    );
     expect(stages.map((s) => s.code)).toEqual([
       'idea',
       'validacion',
@@ -149,8 +152,70 @@ describe('Initiative — persistence (integration)', () => {
     const sectors = await catalog.findAllSectors();
 
     expect(
-      sectors.filter((s) => s.name === 'Agroindustria / AgriTech'),
+      sectors.filter(
+        (s) => s.name === 'Agricultura, ganadería, caza, silvicultura y pesca',
+      ),
     ).toHaveLength(1);
+  });
+
+  it('the seed offers the 22 CIIU Rev. 5 A.C. sections by code, then «Otro», and retires the rest', async () => {
+    await dataSource.query(
+      `INSERT INTO irl_catalog.sector (name, classification, is_active)
+       VALUES ('Información y comunicaciones', 'CIIU Rev. 4 A.C.', true)
+       ON CONFLICT (name) DO UPDATE SET is_active = true`,
+    );
+    await dataSource.transaction((manager) => seedCatalog(manager));
+
+    const sectors = await catalog.findAllSectors();
+
+    expect(sectors.map((s) => s.code)).toEqual([
+      ...'ABCDEFGHIJKLMNOPQRSTUV'.split(''),
+      null,
+    ]);
+    expect(sectors.at(-1)).toMatchObject({
+      name: 'Otro sector (especificar)',
+      isOther: true,
+    });
+    expect(sectors.every((s) => s.classification === 'CIIU Rev. 5 A.C.')).toBe(
+      true,
+    );
+    expect(sectors.find((s) => s.code === 'K')?.keywords).toContain('software');
+    expect(sectors.every((s) => s.description.length > 0)).toBe(true);
+    expect(sectors.find((s) => s.code === 'T')?.description).toContain(
+      'peluquería',
+    );
+    expect(sectors.map((s) => s.name)).not.toContain(
+      'Información y comunicaciones',
+    );
+  });
+
+  it('keeps the user’s own sector of an «Otro» profile and reads it back', async () => {
+    const initiative = await createdInitiative('owner-other');
+    const other = (await catalog.findAllSectors()).find((s) => s.isOther)!;
+    const stage = await catalog.findStageByCode('validacion');
+    await profiles.save(
+      InitiativeProfile.register({
+        id: Uuid.generate(),
+        initiativeId: initiative.id,
+        diagnosticId: Uuid.create(diagnosticId),
+        sectorId: other.id,
+        sectorIsOther: true,
+        customSector: 'Industria aeroespacial',
+        name: 'Satélites Andinos',
+        productType: 'Nanosatélites',
+        stageId: stage!.id,
+        declaredStage: 'Prototipo',
+        teamSize: 4,
+        teamDescription: 'Ingenieros',
+        targetMarket: 'Universidades',
+        currentFunding: 'Convocatoria',
+      }),
+    );
+
+    const stored = await profiles.findByDiagnosticId(diagnosticId);
+
+    expect(stored?.sectorId).toBe(other.id);
+    expect(stored?.customSector).toBe('Industria aeroespacial');
   });
 
   it('an initiative is stored with its first consent and listed for its owner', async () => {

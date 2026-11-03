@@ -139,7 +139,7 @@ export function buildReportDocument(
   push(
     { kind: 'heading', text: 'Datos de la iniciativa' },
     { kind: 'field', label: 'Nombre', value: initiative.name },
-    { kind: 'field', label: 'Sector', value: initiative.sector.name },
+    { kind: 'field', label: 'Sector', value: sectorLabel(initiative) },
     {
       kind: 'field',
       label: 'Producto o servicio',
@@ -416,4 +416,14 @@ export function reportFileName(report: DiagnosticReport): string {
     timeZone: TIME_ZONE,
   });
   return `reporte-irl-${slug || 'iniciativa'}-${day}.pdf`;
+}
+
+/**
+ * The sector as the report names it: the CIIU section with its code
+ * («A. Agricultura, …»), or the user's own sector when they chose «Otro».
+ */
+function sectorLabel(initiative: DiagnosticReport['initiative']): string {
+  const { sector, customSector } = initiative;
+  if (sector.isOther) return `Otro sector: ${customSector ?? 'sin especificar'}`;
+  return sector.code ? `${sector.code}. ${sector.name}` : sector.name;
 }

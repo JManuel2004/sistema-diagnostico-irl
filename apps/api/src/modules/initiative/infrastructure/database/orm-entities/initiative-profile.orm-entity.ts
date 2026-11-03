@@ -15,6 +15,15 @@ export class InitiativeProfileOrm {
   @Column({ name: 'id_sector', type: 'bigint' })
   idSector!: string;
 
+  /** The user's own sector, only with the «Otro» sector. */
+  @Column({
+    name: 'custom_sector',
+    type: 'varchar',
+    length: 120,
+    nullable: true,
+  })
+  customSector!: string | null;
+
   @Column({ name: 'name', type: 'varchar', length: 200 })
   name!: string;
 

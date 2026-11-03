@@ -5,7 +5,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import type { InitiativeStage, Sector } from '@innlab/contracts';
+import type { InitiativeStage, SectorOption } from '@innlab/contracts';
 import {
   ListSectorsUseCase,
   ListStagesUseCase,
@@ -13,7 +13,7 @@ import {
 import { ApiErrors } from '../../../../shared/kernel/presentation/api-errors.decorator.js';
 import {
   InitiativeStageResponseDto,
-  SectorResponseDto,
+  SectorOptionResponseDto,
 } from './dto/initiative.response.dto.js';
 
 @ApiTags('initiative')
@@ -28,11 +28,12 @@ export class InitiativeCatalogController {
   @Get('sectors')
   @ApiOperation({
     summary: 'List the sectors',
-    description: 'Active sectors, by name.',
+    description:
+      'Active sectors: the sections of the CIIU Rev. 5 A.C. by code, with the words to search them by, and «Otro sector (especificar)» last.',
   })
-  @ApiOkResponse({ type: [SectorResponseDto] })
+  @ApiOkResponse({ type: [SectorOptionResponseDto] })
   @ApiErrors()
-  listSectors(): Promise<Sector[]> {
+  listSectors(): Promise<SectorOption[]> {
     return this.sectors.execute();
   }
 

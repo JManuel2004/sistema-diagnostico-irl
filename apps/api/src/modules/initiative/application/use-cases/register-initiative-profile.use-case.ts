@@ -21,6 +21,8 @@ export interface RegisterInitiativeProfileCommand {
   userId: string;
   initiativeId: string;
   sectorId: string;
+  /** The user's own sector, read only with the «Otro» sector. */
+  customSector?: string | null;
   name: string;
   productType: string;
   stageId: string;
@@ -44,6 +46,8 @@ export interface RegisterInitiativeProfileCommand {
  *      on the profile is frozen, because the recommendation was computed
  *      from it.
  *   5. The sector and the stage exist in the catalog (404).
+ *   6. With the «Otro» sector, the user's own sector is given (422, from
+ *      the aggregate); with a CIIU section any such text is discarded.
  *
  * Registering the profile of the same diagnostic again replaces its
  * snapshot. Once saved it publishes `InitiativeRegisteredEvent`, and
@@ -120,6 +124,8 @@ export class RegisterInitiativeProfileUseCase {
       initiativeId: initiative.value.id,
       diagnosticId: Uuid.create(cmd.diagnosticId),
       sectorId: sector.id,
+      sectorIsOther: sector.isOther,
+      customSector: cmd.customSector,
       name: cmd.name,
       productType: cmd.productType,
       stageId: stage.id,
