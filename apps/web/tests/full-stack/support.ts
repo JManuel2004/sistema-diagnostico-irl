@@ -66,14 +66,24 @@ export async function consentAndInitiative(page: Page, name: string): Promise<vo
   const newInitiative = page.getByRole('radio', { name: /Nueva iniciativa/ });
   if (await newInitiative.isVisible()) await newInitiative.check();
   await page.getByLabel('Nombre de la iniciativa').fill(name);
-  await page.getByLabel('Sector').selectOption({ index: 1 });
-  await page.getByLabel('Etapa', { exact: true }).selectOption({ index: 2 });
-  await page.getByLabel('Tipo de producto o servicio').fill('Plataforma web de trazabilidad');
-  await page.getByLabel('Etapa declarada').fill('Piloto con tres productores');
-  await page.getByLabel('Personas en el equipo').fill('3');
-  await page.getByLabel('Equipo', { exact: true }).fill('Fundadora y dos ingenieros');
-  await page.getByLabel('Mercado objetivo').fill('Productores de café del Cauca');
-  await page.getByLabel('Financiamiento actual').fill('Ahorros propios');
+  const sector = page.getByRole('combobox', {
+    name: '¿A qué sector económico pertenece tu iniciativa?',
+  });
+  await sector.fill('software');
+  await page.getByRole('option', { name: /^Telecomunicaciones, programación informática/ }).click();
+  await page.getByLabel('¿En qué etapa está tu iniciativa?').selectOption({ index: 2 });
+  await page
+    .getByLabel('¿En qué consiste tu iniciativa? ¿Es un producto o un servicio?')
+    .fill('Plataforma web de trazabilidad');
+  await page
+    .getByLabel('Cuéntanos con tus palabras en qué punto está')
+    .fill('Piloto con tres productores');
+  await page.getByLabel('¿Cuántas personas conforman el equipo?').fill('3');
+  await page.getByLabel('¿Qué hace cada persona del equipo?').fill('Fundadora y dos ingenieros');
+  await page
+    .getByLabel('¿Cuál es el mercado objetivo de tu iniciativa?')
+    .fill('Productores de café del Cauca');
+  await page.getByLabel('¿Cómo se financia hoy tu iniciativa?').fill('Ahorros propios');
   await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Cuestionario IRL' })).toBeVisible();
 }

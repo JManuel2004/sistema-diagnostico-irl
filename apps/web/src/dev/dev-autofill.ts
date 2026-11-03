@@ -31,6 +31,7 @@ export const QuestionnaireAutofill: LazyExoticComponent<
 export interface InitiativeAutofillValues {
   readonly name: string;
   readonly sectorId: string;
+  readonly customSector: string;
   readonly productType: string;
   readonly stageId: string;
   readonly declaredStage: string;

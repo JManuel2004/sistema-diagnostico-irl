@@ -1,24 +1,30 @@
-import { Suspense, useEffect, useRef, type JSX, type ReactNode } from 'react';
-import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
+import { Suspense, useEffect, useMemo, useRef, type JSX, type ReactNode } from 'react';
+import { Controller, useForm, useWatch, type Control, type FieldPath } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { INITIATIVE_TEXT_MAX, type InitiativeStage, type Sector } from '@innlab/contracts';
+import {
+  CUSTOM_SECTOR_MAX,
+  INITIATIVE_TEXT_MAX,
+  type InitiativeStage,
+  type SectorOption,
+} from '@innlab/contracts';
 import { Alert } from '@/shared/ui/alert';
 import { Button } from '@/shared/ui/button';
 import { Field, Input, Select, Textarea } from '@/shared/ui/field';
 import { InitiativeAutofill } from '@/dev/dev-autofill';
 import {
   EMPTY_INITIATIVE_FORM,
-  initiativeFormSchema,
+  initiativeFormSchemaFor,
   type InitiativeFormValues,
   type InitiativeProfileFields,
 } from '../lib/form-values';
+import { SectorCombobox } from './SectorCombobox';
 
 type Values = InitiativeFormValues;
 
 type FormControl = Control<Values, unknown, InitiativeProfileFields>;
 
 export interface InitiativeFormProps {
-  readonly sectors: readonly Sector[];
+  readonly sectors: readonly SectorOption[];
   readonly stages: readonly InitiativeStage[];
   /** Values of an already registered initiative, to edit it. */
   readonly initial?: Values;
@@ -38,13 +44,21 @@ export interface InitiativeFormProps {
  * Form of the initiative profile (HU-06 / RF-04).
  *
  * Every field is mandatory. It is a `react-hook-form` form validated by
- * `initiativeFormSchema`, which is the contract's `registerInitiativeSchema`
+ * `initiativeFormSchemaFor`, which is the contract's `registerInitiativeSchema`
  * — the same one the backend applies — so the message shown is the
  * contract's. The fields hold text and `teamSize` becomes a number on
  * validation; `onSubmit` receives the profile fields ready to send.
  *
  * The nine fields are grouped in three blocks (the initiative, the team,
- * market and funding); sector and stage are native `<select>`s.
+ * market and funding). The sector is searched in a combobox
+ * (`SectorCombobox`) over the 22 sections of the DANE's CIIU Rev. 5 A.C.;
+ * with «Otro sector (especificar)» a text field asks for the user's own
+ * sector, and leaving «Otro» empties and hides it, so no stale text is sent.
+ * The stage is a native `<select>`. Each label
+ * is the question the field answers, so the answer is precise (client
+ * validation of RF-04): the team is asked as how many people and what role
+ * each one plays, and the free texts carry an example as a grey
+ * placeholder.
  */
 export function InitiativeForm({
   sectors,
@@ -56,16 +70,25 @@ export function InitiativeForm({
   onDraftChange,
   secondaryAction,
 }: InitiativeFormProps): JSX.Element {
+  const otherSectorIds = useMemo(
+    () => new Set(sectors.filter((s) => s.isOther).map((s) => s.id)),
+    [sectors],
+  );
+  const schema = useMemo(() => initiativeFormSchemaFor(otherSectorIds), [otherSectorIds]);
   const {
     control,
     handleSubmit,
     reset,
+    setValue,
+    clearErrors,
     subscribe,
     formState: { errors },
   } = useForm<Values, unknown, InitiativeProfileFields>({
-    resolver: zodResolver(initiativeFormSchema),
+    resolver: zodResolver(schema),
     defaultValues: initial ?? EMPTY_INITIATIVE_FORM,
   });
+  const sectorId = useWatch({ control, name: 'sectorId' });
+  const isOtherSector = otherSectorIds.has(sectorId);
   const onDraftChangeRef = useRef(onDraftChange);
   useEffect(() => {
     onDraftChangeRef.current = onDraftChange;
@@ -118,39 +141,76 @@ export function InitiativeForm({
           maxLength={120}
         />
 
-        <div className="grid gap-5 sm:grid-cols-2 sm:items-start">
-          <SelectField
-            control={control}
-            name="sectorId"
-            label="Sector"
+        <div className="flex flex-col gap-3">
+          <Field
+            label="¿A qué sector económico pertenece tu iniciativa?"
+            hint="Selecciona el sector económico que mejor represente la actividad principal de tu iniciativa."
             error={errors.sectorId?.message}
-            placeholder="Selecciona un sector"
-            options={sectors}
-          />
-          <SelectField
-            control={control}
-            name="stageId"
-            label="Etapa"
-            hint="La etapa del catálogo de INNLAB más cercana a la tuya."
-            error={errors.stageId?.message}
-            placeholder="Selecciona una etapa"
-            options={stages}
-          />
+          >
+            {(c) => (
+              <Controller<Values, 'sectorId', InitiativeProfileFields>
+                control={control}
+                name="sectorId"
+                render={({ field }) => (
+                  <SectorCombobox
+                    {...c}
+                    sectors={sectors}
+                    value={field.value}
+                    onBlur={field.onBlur}
+                    onChange={(id) => {
+                      field.onChange(id);
+                      // Leaving «Otro» drops the text typed for it.
+                      if (!otherSectorIds.has(id)) {
+                        setValue('customSector', '');
+                        clearErrors('customSector');
+                      }
+                    }}
+                  />
+                )}
+              />
+            )}
+          </Field>
+          <SectorGuide />
         </div>
+
+        {isOtherSector && (
+          <TextField
+            control={control}
+            name="customSector"
+            label="¿A qué sector pertenece tu iniciativa?"
+            hint={`Por ejemplo: biotecnología aplicada a la agricultura, industria aeroespacial o economía circular. Máximo ${String(CUSTOM_SECTOR_MAX)} caracteres`}
+            placeholder="Describe brevemente el sector económico…"
+            error={errors.customSector?.message}
+            maxLength={CUSTOM_SECTOR_MAX}
+          />
+        )}
+
+        <SelectField
+          control={control}
+          name="stageId"
+          label="¿En qué etapa está tu iniciativa?"
+          hint="Idea: todavía es un concepto. Validación: la estás probando con usuarios o clientes. Crecimiento: ya opera y busca escalar."
+          error={errors.stageId?.message}
+          placeholder="Selecciona una etapa"
+          options={stages}
+          className="sm:max-w-md"
+        />
 
         <TextField
           control={control}
           name="productType"
-          label="Tipo de producto o servicio"
+          label="¿En qué consiste tu iniciativa? ¿Es un producto o un servicio?"
           hint={limit}
+          placeholder="Describe qué ofrece y a quién. Por ejemplo: una aplicación web que ayuda a pequeños productores a registrar la trazabilidad de sus cosechas."
           error={errors.productType?.message}
           multiline
         />
         <TextField
           control={control}
           name="declaredStage"
-          label="Etapa declarada"
-          hint={`Cuéntala con tus palabras. ${limit}`}
+          label="Cuéntanos con tus palabras en qué punto está"
+          hint={`Si es una idea, qué tan desarrollada está. Si ya está en desarrollo, qué has construido o probado. ${limit}`}
+          placeholder="Por ejemplo: tenemos un prototipo funcional que probamos con 10 productores durante un mes."
           error={errors.declaredStage?.message}
           multiline
         />
@@ -159,45 +219,47 @@ export function InitiativeForm({
       <FormSection
         id="initiative-group-team"
         title="El equipo"
-        description="Quiénes la impulsan hoy y con qué dedicación."
+        description="Cuántas personas la impulsan hoy y qué rol cumple cada una."
       >
-        <div className="grid gap-5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-start">
-          <TextField
-            control={control}
-            name="teamSize"
-            label="Personas en el equipo"
-            error={errors.teamSize?.message}
-            type="number"
-          />
-          <TextField
-            control={control}
-            name="teamDescription"
-            label="Equipo"
-            hint={`Quiénes son y qué dedicación tienen. ${limit}`}
-            error={errors.teamDescription?.message}
-            multiline
-          />
-        </div>
+        <TextField
+          control={control}
+          name="teamSize"
+          label="¿Cuántas personas conforman el equipo?"
+          error={errors.teamSize?.message}
+          type="number"
+          className="sm:max-w-sm"
+        />
+        <TextField
+          control={control}
+          name="teamDescription"
+          label="¿Qué hace cada persona del equipo?"
+          hint={`Indica el rol de cada una. ${limit}`}
+          placeholder="Por ejemplo: una fundadora a cargo del negocio, un desarrollador y una agrónoma que asesora el producto."
+          error={errors.teamDescription?.message}
+          multiline
+        />
       </FormSection>
 
       <FormSection
         id="initiative-group-market"
         title="Mercado y financiamiento"
-        description="A quién se dirige y con qué recursos cuenta."
+        description="A quién se dirige y con qué recursos cuenta hoy."
       >
         <TextField
           control={control}
           name="targetMarket"
-          label="Mercado objetivo"
-          hint={limit}
+          label="¿Cuál es el mercado objetivo de tu iniciativa?"
+          hint={`A quién le vendes o a quién atiendes, y dónde están. ${limit}`}
+          placeholder="Por ejemplo: pequeños productores de café del Valle del Cauca y las cooperativas que les compran."
           error={errors.targetMarket?.message}
           multiline
         />
         <TextField
           control={control}
           name="currentFunding"
-          label="Financiamiento actual"
-          hint={limit}
+          label="¿Cómo se financia hoy tu iniciativa?"
+          hint={`Si todavía no tiene financiación, cuéntalo también. ${limit}`}
+          placeholder="Por ejemplo: recursos propios de los fundadores y una convocatoria de innovación ganada este año."
           error={errors.currentFunding?.message}
           multiline
         />
@@ -228,6 +290,7 @@ interface FieldBaseProps {
   readonly label: string;
   readonly hint?: string;
   readonly error?: string;
+  readonly className?: string;
 }
 
 /**
@@ -240,27 +303,37 @@ function TextField({
   label,
   hint,
   error,
+  className,
+  placeholder,
   multiline = false,
   type,
   maxLength = INITIATIVE_TEXT_MAX,
 }: FieldBaseProps & {
+  /** An example answer, in grey while the field is empty. */
+  readonly placeholder?: string;
   readonly multiline?: boolean;
   readonly type?: 'number';
   readonly maxLength?: number;
 }): JSX.Element {
   return (
-    <Field label={label} hint={hint} error={error}>
+    <Field label={label} hint={hint} error={error} className={className}>
       {(c) => (
         <Controller<Values, FieldPath<Values>, InitiativeProfileFields>
           control={control}
           name={name}
           render={({ field }) =>
             multiline ? (
-              <Textarea {...c} {...field} rows={2} maxLength={maxLength} />
+              <Textarea
+                {...c}
+                {...field}
+                rows={2}
+                maxLength={maxLength}
+                placeholder={placeholder}
+              />
             ) : type === 'number' ? (
               <Input {...c} {...field} type="number" min={1} inputMode="numeric" />
             ) : (
-              <Input {...c} {...field} maxLength={maxLength} />
+              <Input {...c} {...field} maxLength={maxLength} placeholder={placeholder} />
             )
           }
         />
@@ -275,6 +348,7 @@ function SelectField({
   label,
   hint,
   error,
+  className,
   placeholder,
   options,
 }: FieldBaseProps & {
@@ -282,7 +356,7 @@ function SelectField({
   readonly options: readonly { readonly id: string; readonly name: string }[];
 }): JSX.Element {
   return (
-    <Field label={label} hint={hint} error={error}>
+    <Field label={label} hint={hint} error={error} className={className}>
       {(c) => (
         <Controller<Values, FieldPath<Values>, InitiativeProfileFields>
           control={control}
@@ -300,6 +374,48 @@ function SelectField({
         />
       )}
     </Field>
+  );
+}
+
+/**
+ * How to choose the sector when the initiative uses technology: by its main
+ * economic activity, not by the technology it uses nor by the industry it
+ * serves. Folded, so it is there for whoever doubts and costs nothing to
+ * whoever does not.
+ */
+function SectorGuide(): JSX.Element {
+  return (
+    <details className="border-border bg-surface-muted rounded-control border px-4 py-3 text-sm leading-relaxed">
+      <summary className="text-azul-icesi cursor-pointer font-semibold">
+        ¿Tu iniciativa usa tecnología? Así eliges el sector
+      </summary>
+      <div className="text-muted-foreground mt-3 flex flex-col gap-2">
+        <p>
+          Elige el sector por la{' '}
+          <span className="text-foreground font-semibold">actividad principal</span> de tu
+          iniciativa, no por la tecnología que usa ni por la industria a la que atiende. Desarrollar
+          y vender software es la sección K; usarlo como herramienta, no.
+        </p>
+        <ul className="flex list-disc flex-col gap-1.5 pl-5">
+          <li>
+            Software para cultivos: si lo desarrollas y lo vendes, K; si produces alimentos y lo
+            usas, A.
+          </li>
+          <li>
+            Plataforma de educación virtual: si prestas el servicio educativo, Q; si vendes el
+            software educativo, K.
+          </li>
+          <li>
+            Historias clínicas digitales: si prestas atención médica, R; si vendes la solución
+            informática, K.
+          </li>
+          <li>
+            Tienda virtual: si vendes productos, G; si construyes la infraestructura para que otros
+            vendan, K.
+          </li>
+        </ul>
+      </div>
+    </details>
   );
 }
 
