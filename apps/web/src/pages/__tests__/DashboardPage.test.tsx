@@ -148,7 +148,7 @@ describe('DashboardPage — panel de iniciativa', () => {
       expect(rows[1]).toHaveTextContent('Café Andino');
       expect(rows[1]).toHaveTextContent('Perfil del 12 de agosto de 2026');
       expect(rows[1]).toHaveTextContent('Nivel IRL global 2');
-      expect(rows[1]).toHaveTextContent('Perfil inicial');
+      expect(rows[1]).toHaveTextContent('Solo perfil de madurez');
       expect(
         within(rows[1]).getByRole('link', { name: /Ver resultados de Café Andino/ }),
       ).toHaveAttribute('href', `/diagnosticos/${OLDER}/resultados`);

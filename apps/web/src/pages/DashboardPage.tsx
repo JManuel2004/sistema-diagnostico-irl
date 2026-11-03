@@ -2,7 +2,7 @@ import type { JSX } from 'react';
 import { ArrowRight, Gauge } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { DiagnosticSummary } from '@innlab/contracts';
-import { UserContextGate, UserMenu } from '@features/auth';
+import { UserContextGate, UserMenu, useCurrentUser } from '@features/auth';
 import {
   InitiativeSummary,
   selectDraftDiagnosticId as selectInitiativeDraftDiagnosticId,
@@ -45,6 +45,10 @@ import { maturityBand } from '@/shared/lib/maturity-scale';
  *    is not offered. Starting a new one deletes it in the backend.
  *  - Without any completed diagnostic, starting one is the only action.
  *
+ * It greets the user by their first name, from the INNLAB profile; while
+ * the profile has not arrived (or Core does not answer) the title is the
+ * neutral «Tu iniciativa».
+ *
  * Hierarchy: a single primary button per screen — «Continuar diagnóstico»
  * with one in progress, else «Ver resultados» of the latest, else
  * «Iniciar diagnóstico».
@@ -56,6 +60,7 @@ export default function DashboardPage(): JSX.Element {
   const latest = completed.at(0);
   const initiative = useInitiative(latest?.id);
   const start = useStartDiagnostic();
+  const firstName = useCurrentUser().data?.user.firstName.trim();
 
   // A diagnostic this tab is filling in: its drafts name it.
   const questionnaireOwner = useQuestionnaireDraftStore(selectQuestionnaireDraftDiagnosticId);
@@ -77,8 +82,8 @@ export default function DashboardPage(): JSX.Element {
     <PageShell width="standard" showAttribution showNavigation headerActions={<UserMenu />}>
       <PageHeader
         overline="Panel de iniciativa"
-        title="Tu iniciativa"
-        description="Consulta tus diagnósticos anteriores o inicia uno nuevo."
+        title={firstName ? `Hola, ${firstName}` : 'Tu iniciativa'}
+        description="Te damos la bienvenida a tu panel. Aquí ves tu iniciativa, consultas tus diagnósticos anteriores o inicias uno nuevo."
       />
 
       <div className="flex flex-col gap-8">
@@ -184,8 +189,10 @@ export default function DashboardPage(): JSX.Element {
             <h2 id="dashboard-history" className="text-foreground text-xl font-bold">
               Tus diagnósticos
             </h2>
-            <p className="text-muted-foreground text-base">
-              Abre uno para revisar sus resultados sin responder de nuevo el cuestionario.
+            <p className="text-muted-foreground max-w-prose text-base leading-relaxed">
+              Abre uno para revisar sus resultados sin responder de nuevo el cuestionario. Los
+              marcados «Con análisis profundo» incluyen además los desequilibrios, el servicio de
+              INNLAB recomendado y la ruta de escalamiento.
             </p>
             <ul className="border-border flex flex-col border-t">
               {completed.map((d) => (
@@ -251,7 +258,7 @@ function DiagnosticRow({ diagnostic }: { readonly diagnostic: DiagnosticSummary 
           {diagnostic.deepAnalysisAccepted ? (
             <Badge tone="acceptable">Con análisis profundo</Badge>
           ) : (
-            <Badge>Perfil inicial</Badge>
+            <Badge>Solo perfil de madurez</Badge>
           )}
         </p>
       </div>
