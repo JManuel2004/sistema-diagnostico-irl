@@ -33,3 +33,4 @@ Architecture Decision Records: short (context, decision, consequences) and immut
 | [0016](./decisions/0016-route-by-phases-with-services.md) | The roadmap is a balanced route by phases, with a service per phase |
 | [0017](./decisions/0017-level-descriptions.md) | Every score is shown with what its level means |
 | [0018](./decisions/0018-report-gathered-from-saved-results.md) | The full report is gathered from the saved results, in a module of its own |
+| [0019](./decisions/0019-sectors-from-the-dane-ciiu.md) | The sector catalog is the DANE's CIIU Rev. 5 A.C., with «Otro» |
