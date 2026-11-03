@@ -22,18 +22,25 @@ import { hasStoredSession } from '@/shared/auth/session';
  * Composition:
  *  - A left-aligned hero (the manual's alignment rule), with the headline
  *    in color blocks and the key phrase highlighted in yellow, like
- *    innlab.org: the institutional context, the h1, the paragraph, the CTA
- *    and the questionnaire facts (48 statements, 6 dimensions, 45–60
- *    minutes). Next to it, what is received at the end, with a schematic
- *    radar without values.
- *  - «Cómo funciona»: the three steps as a numbered list on a soft
- *    surface, not as cards.
- *  - A mosaic of the 6 dimensions: a header in each one's color and a
- *    white body. It is the only saturated color moment of the screen. Colors
+ *    innlab.org: the institutional context, the h1, the paragraph (the
+ *    need, what is offered and why), the CTA and the questionnaire facts
+ *    (48 statements, 6 dimensions, levels 1 to 9). The time it takes is not
+ *    shown: the answers are saved, so it can be done in several sessions,
+ *    and that goes in the small print under the facts. Next to it, what is
+ *    received at the end, with a schematic radar without values and what
+ *    the levels mean.
+ *  - A mosaic of the 6 dimensions, right after the hero: it is the
+ *    vocabulary the rest of the product uses, so it comes before the
+ *    process. A header in each one's color with its code and what the code
+ *    means («TRL - Madurez tecnológica»), and a white body with what it
+ *    measures in plain words.
+ *    It is the only saturated color moment of the screen. Colors
  *    and canonical order are resolved with `getDimensionVisual` /
  *    `DIMENSION_ORDER` (shared/lib/dimensions). The only thing living in
  *    this page is the editorial copy (name + short description); the full
  *    official name comes from the catalog in the pages that consume it.
+ *  - «Cómo funciona»: the three steps as a numbered list on a soft
+ *    surface, not as cards.
  */
 
 interface LandingDimensionCopy {
@@ -50,28 +57,33 @@ interface LandingDimensionCopy {
  */
 const LANDING_COPY: Record<DimensionCode, Omit<LandingDimensionCopy, 'code'>> = {
   TRL: {
-    name: 'Madurez Tecnológica',
-    shortDescription: 'Qué tan probada y lista para producción está la solución.',
+    name: 'Madurez tecnológica',
+    shortDescription:
+      'Qué tan probada y lista está tu solución para usarse en un entorno productivo real.',
   },
   CRL: {
-    name: 'Madurez de Cliente',
-    shortDescription: 'Validación de necesidad, segmentación y disposición a adoptar.',
+    name: 'Madurez de cliente',
+    shortDescription:
+      'Qué tanto conoces a tus clientes: si su necesidad está confirmada y si están dispuestos a usar o comprar tu solución.',
   },
   BRL: {
-    name: 'Madurez de Negocio',
-    shortDescription: 'Propuesta de valor, fuentes de ingresos y viabilidad económica.',
+    name: 'Madurez de negocio',
+    shortDescription:
+      'Qué tan claro está cómo tu iniciativa crea valor, genera ingresos y se sostiene en el tiempo.',
   },
   IPRL: {
-    name: 'Propiedad Intelectual',
-    shortDescription: 'Identificación, protección y libertad de operación de PI.',
+    name: 'Propiedad intelectual',
+    shortDescription:
+      'Qué tan protegidas están tus ideas, tu tecnología y tu marca, y si puedes usarlas sin chocar con derechos de otros.',
   },
   TmRL: {
-    name: 'Madurez de Equipo',
-    shortDescription: 'Composición, competencias y dedicación de miembros clave.',
+    name: 'Madurez de equipo',
+    shortDescription: 'Qué tan completo y comprometido está el equipo que impulsa la iniciativa.',
   },
   FRL: {
-    name: 'Madurez de Financiación',
-    shortDescription: 'Fuentes de capital, runway y plan financiero por hitos.',
+    name: 'Madurez de financiación',
+    shortDescription:
+      'Con qué recursos cuentas para avanzar y qué tan claro es tu plan para conseguir los que te faltan.',
   },
 };
 
@@ -102,26 +114,35 @@ export default function LandingPage(): JSX.Element {
             </span>
           </h1>
           <p className="text-muted-foreground max-w-xl text-[1.0625rem] leading-relaxed sm:text-xl">
-            Evalúa la madurez de tu iniciativa en seis dimensiones del marco KTH Innovation
-            Readiness Level y obtén un perfil con el roadmap para{' '}
+            ¿Quieres sacar adelante tu idea de innovación? Te ofrecemos un diagnóstico de su
+            madurez: respondes un formulario y descubres{' '}
             <mark className="bg-dimension-frl text-foreground px-1 font-bold">
-              cerrar las brechas más críticas
-            </mark>
-            .
+              las brechas que necesitas superar
+            </mark>{' '}
+            para hacerla realidad.
           </p>
 
-          <div className="pt-2">
-            <Link to={paths.panel} className={`${buttonVariants({ size: 'lg' })} w-full sm:w-auto`}>
+          <div className="flex flex-col gap-3 pt-2">
+            <Link
+              to={paths.panel}
+              className={`${buttonVariants({ size: 'lg' })} w-full self-start sm:w-auto`}
+            >
               Iniciar diagnóstico
               <ArrowRight className="size-5" aria-hidden="true" />
             </Link>
+            {/* What the user needs before pressing: the sign-in is INNLAB's, not this system's. */}
+            <p className="text-muted-foreground max-w-xl text-sm leading-relaxed">
+              {hasStoredSession()
+                ? 'Ya iniciaste sesión: entrarás directo a tu panel.'
+                : 'Ingresas con tu cuenta del ecosistema INNLAB. Te llevaremos a su página de inicio de sesión y, al volver, llegarás a tu panel para empezar.'}
+            </p>
           </div>
 
           <dl className="border-border mt-2 grid grid-cols-3 gap-4 border-t pt-6 sm:flex sm:gap-10">
             {[
               { value: '48', label: 'afirmaciones', ink: 'text-foreground' },
-              { value: '6', label: 'dimensiones KTH', ink: 'text-foreground' },
-              { value: '45–60', label: 'minutos estimados', ink: 'text-foreground' },
+              { value: '6', label: 'dimensiones', ink: 'text-foreground' },
+              { value: '1 a 9', label: 'niveles de madurez', ink: 'text-foreground' },
             ].map((fact) => (
               <div key={fact.label} className="flex flex-col-reverse gap-1">
                 <dt className="text-muted-foreground text-sm">{fact.label}</dt>
@@ -133,7 +154,10 @@ export default function LandingPage(): JSX.Element {
               </div>
             ))}
           </dl>
-          <p className="text-muted-foreground -mt-2 text-sm">Resultados inmediatos al finalizar.</p>
+          <p className="text-muted-foreground -mt-2 max-w-xl text-sm leading-relaxed">
+            Tus respuestas se guardan automáticamente: puedes responder en una o en varias sesiones.
+            Tus resultados aparecen apenas terminas.
+          </p>
         </div>
 
         <aside
@@ -146,10 +170,16 @@ export default function LandingPage(): JSX.Element {
           <SchematicRadar />
           <ul className="flex flex-col gap-3.5">
             {[
-              { text: 'Perfil de madurez de 1 a 9 en cada dimensión', ink: 'text-azul-icesi' },
-              { text: 'Tu dimensión más fuerte y tu cuello de botella', ink: 'text-azul-icesi' },
               {
-                text: 'Con el análisis profundo: desequilibrios, roadmap y servicio de INNLAB',
+                text: 'Un perfil que ubica tu iniciativa en cada dimensión, del nivel 1 (una idea inicial) al 9 (una iniciativa madura y sostenible en su mercado), y te explica qué significa cada nivel',
+                ink: 'text-azul-icesi',
+              },
+              {
+                text: 'Tu dimensión más fuerte y la más débil, la que hoy más frena tu avance',
+                ink: 'text-azul-icesi',
+              },
+              {
+                text: 'Con el análisis profundo: los desequilibrios entre dimensiones, el servicio de INNLAB que mejor te acompaña y tu ruta de escalamiento',
                 ink: 'text-azul-icesi',
               },
             ].map((item) => (
@@ -166,10 +196,47 @@ export default function LandingPage(): JSX.Element {
         </aside>
       </section>
 
+      {/* Dimensions overview grid */}
+      <section
+        aria-labelledby="dimensiones-heading"
+        className="flex flex-col gap-8 py-14 sm:gap-10 sm:py-20 lg:py-24"
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-eyebrow">Qué evaluamos</p>
+          <h2
+            id="dimensiones-heading"
+            className="text-foreground text-[1.875rem] font-bold leading-tight tracking-tight sm:text-[2.5rem]"
+          >
+            Las seis dimensiones de tu iniciativa
+          </h2>
+        </div>
+        <ul className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+          {DIMENSION_ORDER.map((code) => {
+            const visual = getDimensionVisual(code);
+            const copy = LANDING_COPY[code];
+            return (
+              <li key={code} className="border-border flex flex-col border">
+                {/* The only color moment of the screen, like innlab.org's mosaic. */}
+                <div className={`${visual.bg} px-5 py-4 sm:px-8 sm:py-5`}>
+                  {/* The color goes on the h3: the base layer of globals.css sets the one of h1–h4. */}
+                  <h3 className={`${TILE_TEXT[code]} text-xl font-bold`}>
+                    {code} - {copy.name}
+                  </h3>
+                </div>
+                <div className="flex flex-col gap-2 p-5 sm:p-8 sm:pt-5">
+                  <p className="text-muted-foreground text-base leading-relaxed">
+                    {copy.shortDescription}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
       {/* How it works — three-step institutional process */}
       <section
         aria-labelledby="proceso-heading"
-        className="bg-surface-muted -mx-4 grid gap-10 px-4 py-14 sm:-mx-8 sm:px-8 sm:py-20 lg:mx-0 lg:grid-cols-12 lg:gap-16 lg:rounded-3xl lg:px-14 lg:py-20"
+        className="bg-surface-muted -mx-4 grid gap-10 px-4 py-14 sm:-mx-8 sm:px-8 sm:py-20 lg:mx-0 lg:mb-24 lg:grid-cols-12 lg:gap-16 lg:rounded-3xl lg:px-14 lg:py-20"
       >
         <div className="flex flex-col gap-3 lg:col-span-4">
           <p className="text-eyebrow">Proceso</p>
@@ -180,7 +247,7 @@ export default function LandingPage(): JSX.Element {
             Cómo funciona
           </h2>
           <p className="text-muted-foreground text-[1.0625rem] leading-relaxed">
-            Tres pasos, en una sola sesión.
+            Tres pasos, en una sola sesión o en varias.
           </p>
         </div>
         <ol className="grid gap-8 sm:grid-cols-3 sm:gap-10 lg:col-span-8">
@@ -206,50 +273,6 @@ export default function LandingPage(): JSX.Element {
           ))}
         </ol>
       </section>
-
-      {/* Dimensions overview grid */}
-      <section
-        aria-labelledby="dimensiones-heading"
-        className="flex flex-col gap-8 py-14 sm:gap-10 sm:py-20 lg:py-24"
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-          <div className="flex flex-col gap-3">
-            <p className="text-eyebrow">Marco KTH Innovation Readiness Level</p>
-            <h2
-              id="dimensiones-heading"
-              className="text-foreground text-[1.875rem] font-bold leading-tight tracking-tight sm:text-[2.5rem]"
-            >
-              Las seis dimensiones
-            </h2>
-          </div>
-          <p className="text-muted-foreground max-w-md text-base leading-relaxed">
-            Cada una recibe un nivel de 1 a 9 a partir de sus ocho afirmaciones.
-          </p>
-        </div>
-        <ul className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-          {DIMENSION_ORDER.map((code) => {
-            const visual = getDimensionVisual(code);
-            const copy = LANDING_COPY[code];
-            return (
-              <li key={code} className="border-border flex flex-col border">
-                {/* The only color moment of the screen, like innlab.org's mosaic. */}
-                <div className={`${visual.bg} px-5 py-4 sm:px-8 sm:py-5`}>
-                  {/* The color goes on the h3: the base layer of globals.css sets the one of h1–h4. */}
-                  <h3 className={`${TILE_TEXT[code]} text-xl font-bold`}>{copy.name}</h3>
-                </div>
-                <div className="flex flex-col gap-2 p-5 sm:p-8 sm:pt-5">
-                  <span className={`${visual.textInk} text-sm font-extrabold tracking-wide`}>
-                    {code}
-                  </span>
-                  <p className="text-muted-foreground text-base leading-relaxed">
-                    {copy.shortDescription}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
     </PageShell>
   );
 }
@@ -270,20 +293,20 @@ const TILE_TEXT: Record<DimensionCode, string> = {
 
 const STEPS: readonly { title: string; body: string; circle: string; line: string }[] = [
   {
-    title: 'Responde 48 afirmaciones',
-    body: 'Ocho por dimensión, en escala Likert de 1 a 5. Tu borrador se conserva mientras mantengas abierta la pestaña.',
+    title: 'Responde el formulario',
+    body: '48 afirmaciones sobre las seis dimensiones. En cada una indicas qué tan de acuerdo estás, de 1 a 5. Si no terminas, continúas después donde lo dejaste.',
     circle: 'bg-dimension-trl text-primary-foreground',
     line: 'bg-border',
   },
   {
-    title: 'Obtén tu perfil IRL',
-    body: 'Visualiza tu madurez en cada dimensión sobre una escala de 1 a 9, con análisis de desequilibrios.',
+    title: 'Conoce tu perfil de madurez',
+    body: 'Un gráfico te muestra en qué nivel, de 1 a 9, está tu iniciativa en cada dimensión y qué significa ese nivel.',
     circle: 'bg-dimension-trl text-primary-foreground',
     line: 'bg-border',
   },
   {
-    title: 'Recibe tu roadmap',
-    body: 'Recomendaciones priorizadas para cerrar las brechas detectadas con el portafolio de InnLab.',
+    title: 'Recibe tu ruta de escalamiento',
+    body: 'Con el análisis profundo te presentamos una ruta por fases para hacer realidad tu innovación, con los servicios de INNLAB que pueden acompañarte.',
     circle: 'bg-dimension-trl text-primary-foreground',
     line: 'bg-border',
   },
