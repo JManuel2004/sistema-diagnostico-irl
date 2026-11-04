@@ -90,9 +90,10 @@ describe('InitiativePage — corregir la iniciativa ya registrada (HU-06)', () =
     expect(
       screen.getByRole('combobox', { name: '¿A qué sector económico pertenece tu iniciativa?' }),
     ).toHaveValue('Agricultura, ganadería, caza, silvicultura y pesca');
-    expect(screen.getByLabelText('¿En qué etapa está tu iniciativa?')).toHaveValue('2');
+    expect(
+      screen.getByRole('combobox', { name: '¿En qué etapa está tu iniciativa?' }),
+    ).toHaveTextContent('Validación');
     expect(screen.getByLabelText('¿Cuántas personas conforman el equipo?')).toHaveValue(3);
-    expect(screen.getByText('Sección A ·')).toBeInTheDocument();
   });
 
   it('al guardar actualiza la iniciativa y vuelve al panel', async () => {

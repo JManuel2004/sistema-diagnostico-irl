@@ -58,7 +58,8 @@ export function QuestionnaireStep({
     <>
       <PageHeader
         title="Cuestionario IRL"
-        description="Responde 8 afirmaciones por dimensión con la escala Likert de 1 a 5 y explica en cada una por qué elegiste ese nivel. Sé lo más objetivo posible; la honestidad en las respuestas garantiza un diagnóstico más preciso y útil."
+        fullWidthDescription
+        description="Este paso mide qué tan madura está tu iniciativa en las seis dimensiones del marco IRL (Innovation Readiness Level) de KTH: tecnología, cliente, negocio, propiedad intelectual, equipo y financiación. Cada pestaña es una dimensión con afirmaciones sobre lo que tu iniciativa hace hoy: en cada una, elige qué tan de acuerdo estás con que la describe y, si quieres, cuenta por qué. Sé lo más objetivo posible; la honestidad en las respuestas garantiza un diagnóstico más preciso y útil."
       />
 
       {QuestionnaireAutofill && catalog && (

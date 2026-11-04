@@ -195,7 +195,8 @@ test('from the landing to the results through the four wizard steps', async ({ p
   await sector.fill('agricultura');
   await sector.press('Enter');
   await expect(sector).toHaveValue(SECTORS[0].name);
-  await page.getByLabel('¿En qué etapa está tu iniciativa?').selectOption(STAGES[1].id);
+  await page.getByRole('combobox', { name: '¿En qué etapa está tu iniciativa?' }).click();
+  await page.getByRole('option', { name: STAGES[1].name }).click();
   await page
     .getByLabel('¿En qué consiste tu iniciativa? ¿Es un producto o un servicio?')
     .fill('Plataforma web');

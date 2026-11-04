@@ -97,7 +97,7 @@ describe('SectorCombobox', () => {
     expect(active).toBe(options()[1].id);
   });
 
-  it('cerrado, muestra el sector elegido con su sección', async () => {
+  it('cerrado, muestra el sector elegido una sola vez', async () => {
     const user = userEvent.setup();
     render(<Harness />);
 
@@ -105,7 +105,7 @@ describe('SectorCombobox', () => {
     await user.click(screen.getByRole('option', { name: /^Educación/ }));
 
     expect(combobox()).toHaveValue('Educación');
-    expect(screen.getByText('Sección Q ·')).toBeInTheDocument();
+    expect(screen.queryByText('Sección Q ·')).not.toBeInTheDocument();
   });
 
   it('Escape cierra la lista y conserva lo elegido', async () => {

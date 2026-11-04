@@ -12,7 +12,7 @@ This README is for frontend developers. For the system overview, see the [root R
 | Framework      | React 19                                                                   |
 | Routing        | React Router 7 (`react-router-dom`)                                        |
 | Server state   | TanStack Query 5                                                           |
-| Draft state    | Zustand with `persist` to `sessionStorage` (questionnaire, initiative); the questionnaire draft is also saved on the server |
+| Draft state    | Zustand with `persist`: the questionnaire to `sessionStorage` (also saved on the server), the initiative to `localStorage` |
 | Forms          | React Hook Form + `@hookform/resolvers/zod` (initiative form)              |
 | HTTP           | axios, responses parsed with the `@innlab/contracts` Zod schemas           |
 | Auth           | INNLAB SSO against Core (no OIDC library; Cognito through the Hub)         |
@@ -106,7 +106,7 @@ features/<name>/
 | State category        | Tool                                          | Examples                                                    |
 | --------------------- | --------------------------------------------- | ----------------------------------------------------------- |
 | Server state          | TanStack Query                                | Catalogs, diagnostic, profile, recommendation, roadmap      |
-| Browser drafts        | Zustand with `persist` to `sessionStorage`    | The 48 in-progress answers (also saved on the server); the initiative before consent |
+| Browser drafts        | Zustand with `persist` to `sessionStorage` and `localStorage` | The 48 in-progress answers (also saved on the server); the initiative until it is registered, in `localStorage` |
 | Local component state | `useState`, React Hook Form                   | The initiative form, the radar highlight, open panels       |
 
 **Never mix the two for the same piece of state.** Details: [`docs/STATE_MANAGEMENT.md`](./docs/STATE_MANAGEMENT.md).

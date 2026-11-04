@@ -21,8 +21,10 @@ describe('DraftSaveStatus — si las respuestas están guardadas', () => {
     render(<DraftSaveStatus status={{ kind: 'saved', at: '2026-10-16T17:05:00.000Z' }} />);
 
     const status = screen.getByRole('status');
-    expect(status).toHaveTextContent(/Respuestas guardadas a las/);
-    expect(status).toHaveTextContent('; puedes cerrar sesión y continuar después.');
+    expect(status).toHaveTextContent(
+      /^Tus respuestas se guardaron a las .+ y puedes cerrar sesión/,
+    );
+    expect(status).not.toHaveTextContent(';');
     expect(status.textContent?.match(/después\./g)).toHaveLength(1);
     expect(status).not.toHaveTextContent('..');
   });

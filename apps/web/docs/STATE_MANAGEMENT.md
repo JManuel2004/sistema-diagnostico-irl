@@ -7,7 +7,7 @@ Which tool owns which kind of state on the frontend, and why. Getting state plac
 | Category of state                                           | Tool                                              | In this codebase                                                                    |
 | ----------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | **Server state** — anything read from the API               | **TanStack Query**                                | Catalogs, the diagnostic and the user's list, profile, recommendation, roadmap      |
-| **Browser drafts** — input that must survive a reload       | **Zustand** with `persist` to `sessionStorage`    | The 48 answers and their optional justifications (also saved on the server, see below); the accepted consent version and the chosen initiative with its profile until it is registered |
+| **Browser drafts** — input that must survive a reload       | **Zustand** with `persist` (`sessionStorage` for the questionnaire, `localStorage` for the initiative) | The 48 answers and their optional justifications (also saved on the server, see below); the accepted consent version and the chosen initiative with its profile, as typed, until it is registered |
 | **Form state**                                              | **React Hook Form** + `zodResolver`               | The initiative form (ten fields)                                                    |
 | **Local component state**                                   | `useState` / `useReducer`                         | The consent checkbox, the radar highlight, open panels                              |
 | **URL state**                                               | React Router params                               | The diagnostic id (`:id`) and the wizard step (`:step`)                             |
@@ -20,7 +20,7 @@ No Redux, MobX, Jotai or app-data React contexts. The only providers are `QueryC
 The same fact stored in two places diverges, and then nobody knows which is right. So:
 
 - **Server state never goes into Zustand.** React Query already caches, deduplicates, retries and invalidates; a store that fetches reimplements all of it, badly.
-- **Form values never go into Zustand** unless they are a draft that must survive a reload before it can be sent — the initiative profile is the one case: the wizard asks for it before the consent, and nothing about it may reach the server until the consent is recorded ([ADR 0007](../../../docs/architecture/decisions/0007-initiative-draft-before-consent.md), [ADR 0011](../../../docs/architecture/decisions/0011-initiative-identity-and-consent-per-initiative.md)). The form itself is still React Hook Form; the store only keeps the chosen initiative (`initiativeId`, `null` for a new one) and the validated profile fields between steps.
+- **Form values never go into Zustand** unless they are a draft that must survive a reload before it can be sent — the initiative profile is the one case: the wizard asks for it before the consent, and nothing about it may reach the server until the consent is recorded ([ADR 0007](../../../docs/architecture/decisions/0007-initiative-draft-before-consent.md), [ADR 0011](../../../docs/architecture/decisions/0011-initiative-identity-and-consent-per-initiative.md)). The form itself is still React Hook Form; the store only keeps the chosen initiative (`initiativeId`, `null` for a new one) and the form's values as typed, also half-filled, between steps.
 - **The questionnaire is not a React Hook Form form.** Its surface is 48 cards, per-dimension tabs with progress, a global progress bar and a summary step; components subscribe to the slice they need (`useAnswerForStatement`), and the draft survives navigation and reloads through `persist`.
 - **State shared by several siblings** moves up to the page (the radar highlight, `useRadarHighlight`) or, if it must survive navigation, into a store. It never goes into a context.
 
@@ -53,18 +53,19 @@ Every API function parses the response with a `@innlab/contracts` schema, throug
 
 ## Zustand
 
-Two stores, both drafts of user input, both persisted to `sessionStorage`:
+Two stores, both drafts of user input, persisted in the browser:
 
 | Store                        | Where                                                   | Holds                                                   |
 | ---------------------------- | ------------------------------------------------------- | ------------------------------------------------------- |
 | `useQuestionnaireDraftStore` | `features/questionnaire/store/questionnaire-draft.store.ts` | Likert values, justifications and the active tab    |
-| `useInitiativeDraftStore`    | `features/initiative/store/initiative-draft.store.ts`   | The chosen initiative and the validated profile, until the consent |
+| `useInitiativeDraftStore`    | `features/initiative/store/initiative-draft.store.ts`   | The accepted consent version, the chosen initiative and the profile as typed, until it is registered (`localStorage`) |
 
 Rules that hold for both:
 
 - **Scoped to one diagnostic.** `initialize(diagnosticId)` wipes the draft when it belongs to another diagnostic, so opening diagnostic B never shows A's answers.
 - **`partialize` lists what is persisted**; derived values are not stored.
-- **`sessionStorage`, not `localStorage`:** the draft must survive a reload within the session, and must not leak to the next person on a shared computer. What must outlive the session lives on the server: the questionnaire draft.
+- **The questionnaire draft in `sessionStorage`:** it must survive a reload within the session, and what must outlive the session lives on the server.
+- **The initiative draft in `localStorage`:** the profile is not on the server until it is registered, so it is kept on this browser across closing the tab, the browser or the session (not in another browser or a private window). Every change is kept, also of a half-filled form. Only the owner of the diagnostic can open its wizard, so another person signing in on the same browser does not see it; it is emptied when the profile is registered and discarded when another diagnostic is opened.
 - **Lifetime:** each draft is cleared once what it holds is saved on the server (the initiative once registered, the questionnaire once processed), and dies with the tab. The questionnaire draft does not die with it: `useServerDraftSync` saves it on the server while the user answers (`unsynced`, `syncedAt` and `revision` in the store track what the server has) and reads it back in a later session; the server's copy replaces the tab's only when it is newer and the tab has nothing unsaved. The server copy is the persistence of the draft, not server state shown elsewhere, so the store stays its single source while the wizard is open.
 - **The panel does not read the drafts.** Which diagnostic is in progress comes from the server (`GET /diagnostics/in-progress`), so «Continuar diagnóstico» appears on any device; starting a new one while it exists asks the user before discarding it.
 - **Subscribe to a slice**, never to the whole store: `useQuestionnaireDraftStore((s) => s.answers[statementId])`.

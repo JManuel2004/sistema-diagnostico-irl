@@ -33,14 +33,14 @@ afterAll(() => server.close());
 
 const NEW_INITIATIVE_ID = 'd3eebc99-9c0b-4ef8-bb6d-6bb9bd380a44';
 
-const COMMAND = {
+const VALUES = {
   name: 'AgroConecta',
   sectorId: '1',
-  customSector: null,
+  customSector: '',
   productType: 'App web',
   stageId: '2',
   declaredStage: 'Piloto completado',
-  teamSize: 3,
+  teamSize: '3',
   teamDescription: 'Fundadora y equipo',
   targetMarket: 'Productores de café',
   currentFunding: 'Ahorros',
@@ -194,7 +194,8 @@ async function fillInitiative(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
     screen.getByRole('option', { name: 'Agricultura, ganadería, caza, silvicultura y pesca' }),
   );
-  await user.selectOptions(screen.getByLabelText('¿En qué etapa está tu iniciativa?'), '2');
+  await user.click(screen.getByRole('combobox', { name: '¿En qué etapa está tu iniciativa?' }));
+  await user.click(screen.getByRole('option', { name: 'Validación' }));
   await user.type(
     screen.getByLabelText('¿En qué consiste tu iniciativa? ¿Es un producto o un servicio?'),
     'App web',
@@ -226,6 +227,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
     useInitiativeDraftStore.getState().clear();
     useQuestionnaireDraftStore.getState().clear();
     sessionStorage.clear();
+    localStorage.clear();
     scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
   });
 
@@ -443,7 +445,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
       useInitiativeDraftStore.getState().acceptTerms('v1');
       useInitiativeDraftStore.getState().save({
         initiativeId: null,
-        command: { ...COMMAND, name: 'Ajena' },
+        values: { ...VALUES, name: 'Ajena' },
       });
 
       renderWizard(step('iniciativa'));
@@ -699,7 +701,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
       );
 
       expect(
-        await screen.findByText(/Respuestas guardadas a las/, {}, { timeout: 3000 }),
+        await screen.findByText(/Tus respuestas se guardaron a las/, {}, { timeout: 3000 }),
       ).toBeInTheDocument();
       expect(api.savedDrafts.at(-1)).toEqual({
         entries: [{ statementId: '1', value: 3, justification: null }],
@@ -772,7 +774,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
       const api = backend({ initiatives: [initiativeSummaryFixture()] });
       useInitiativeDraftStore.getState().initialize(ID);
       useInitiativeDraftStore.getState().acceptTerms('v1');
-      useInitiativeDraftStore.getState().save({ initiativeId: INITIATIVE_ID, command: COMMAND });
+      useInitiativeDraftStore.getState().save({ initiativeId: INITIATIVE_ID, values: VALUES });
       const user = userEvent.setup();
 
       renderWizard();

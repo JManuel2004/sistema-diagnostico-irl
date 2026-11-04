@@ -71,7 +71,8 @@ export async function consentAndInitiative(page: Page, name: string): Promise<vo
   });
   await sector.fill('software');
   await page.getByRole('option', { name: /^Telecomunicaciones, programación informática/ }).click();
-  await page.getByLabel('¿En qué etapa está tu iniciativa?').selectOption({ index: 2 });
+  await page.getByRole('combobox', { name: '¿En qué etapa está tu iniciativa?' }).click();
+  await page.getByRole('option', { name: 'Validación' }).click();
   await page
     .getByLabel('¿En qué consiste tu iniciativa? ¿Es un producto o un servicio?')
     .fill('Plataforma web de trazabilidad');
