@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type JSX, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type JSX,
+  type KeyboardEvent,
+  type Ref,
+} from 'react';
 import { Check, ChevronDown, PenLine, Search } from 'lucide-react';
 import type { SectorOption } from '@innlab/contracts';
 import { cn } from '@/shared/lib/utils';
@@ -16,6 +24,8 @@ interface Props {
   readonly 'aria-describedby'?: string;
   readonly 'aria-invalid'?: boolean;
   readonly className?: string;
+  /** The form focuses the control through it when it has an error. */
+  readonly ref?: Ref<HTMLInputElement>;
 }
 
 /**
@@ -31,8 +41,8 @@ interface Props {
  * line, without accents); ↑/↓ move, Enter chooses, Escape closes and keeps
  * the choice. The list scrolls inside a box of at most 24rem (half the
  * window on a short screen), under the field and over the form, so it never
- * takes the whole page; opening it scrolls the page just enough to show it. Closed, the field shows the chosen sector with its code and,
- * under it, its full title, which a long section does not fit in the input.
+ * takes the whole page; opening it scrolls the page just enough to show it. Closed, the field shows the chosen sector with its code; a
+ * title too long for the input is read whole on hover.
  */
 export function SectorCombobox({
   sectors,
@@ -43,6 +53,7 @@ export function SectorCombobox({
   className,
   'aria-describedby': describedBy,
   'aria-invalid': invalid,
+  ref,
 }: Props): JSX.Element {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -130,6 +141,7 @@ export function SectorCombobox({
           />
         )}
         <input
+          ref={ref}
           id={id}
           type="text"
           role="combobox"
@@ -172,13 +184,6 @@ export function SectorCombobox({
           )}
         />
       </div>
-
-      {!open && selected && !selected.isOther && (
-        <p className="text-foreground mt-2 text-sm leading-snug">
-          <span className="text-muted-foreground">Sección {selected.code} · </span>
-          {selected.name}
-        </p>
-      )}
 
       <div
         ref={popupRef}

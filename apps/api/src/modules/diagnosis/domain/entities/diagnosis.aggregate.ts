@@ -98,9 +98,7 @@ export class Diagnosis {
    */
   get completed(): boolean {
     return (
-      this._state.value === 'PROFILE_GENERATED' ||
-      this._state.value === 'DEEP_ANALYSIS_DECLINED' ||
-      this.deepAnalysisAccepted
+      this._state.value === 'PROFILE_GENERATED' || this.deepAnalysisAccepted
     );
   }
 

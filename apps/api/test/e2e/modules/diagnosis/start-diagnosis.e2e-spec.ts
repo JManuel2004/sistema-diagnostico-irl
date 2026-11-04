@@ -25,8 +25,10 @@ import { authenticateAgainst } from '../../support/authenticated-app.js';
  *
  * `POST /api/v1/diagnostics` hands the authenticated user a new diagnostic
  * in `STARTED` (consent and initiative are the next steps). An unfinished
- * one from before is not resumed: it is deleted (DIAGIRL-26). Completed
- * diagnostics stay. Needs the migrated database.
+ * one keeps its draft on the server, so starting another asks first: 409
+ * `DIAGNOSIS_IN_PROGRESS`, and only with `discardInProgress=true` is the
+ * unfinished one deleted. Completed diagnostics stay. Needs the migrated
+ * database.
  *
  * The e2e suites run in parallel over the same database: this one uses its
  * own user so it never touches another suite's diagnostic.
@@ -44,8 +46,8 @@ describe('Iniciar diagnóstico (e2e)', () => {
     );
   }
 
-  async function start() {
-    const res = await agent.post('/api/v1/diagnostics').expect(201);
+  async function start(query = '') {
+    const res = await agent.post(`/api/v1/diagnostics${query}`).expect(201);
     return diagnosticSchema.parse(res.body);
   }
 
@@ -101,10 +103,9 @@ describe('Iniciar diagnóstico (e2e)', () => {
     expect((list.body as { id: string }[]).map((d) => d.id)).not.toContain(id);
   });
 
-  // DIAGIRL-26: an unfinished diagnostic of an earlier session is not offered.
   describe('si hay un diagnóstico sin terminar', () => {
-    it.each(['STARTED', 'WITH_INITIATIVE'])(
-      'lo elimina y crea uno nuevo desde el comienzo (estaba en %s)',
+    it.each(['STARTED', 'WITH_INITIATIVE', 'QUESTIONNAIRE_IN_PROGRESS'])(
+      'pregunta antes: responde 409 y no elimina nada (estaba en %s)',
       async (state) => {
         const previous = await start();
         await dataSource.query(
@@ -112,13 +113,37 @@ describe('Iniciar diagnóstico (e2e)', () => {
           [previous.id, state],
         );
 
-        const fresh = await start();
+        const res = await agent.post('/api/v1/diagnostics').expect(409);
 
-        expect(fresh.id).not.toBe(previous.id);
-        expect(fresh.state).toBe('STARTED');
+        expect((res.body as { code: string }).code).toBe(
+          'DIAGNOSIS_IN_PROGRESS',
+        );
         expect(await countDiagnostics()).toBe(1);
       },
     );
+
+    it('se ofrece para continuarlo, y con la decisión de descartarlo lo elimina y crea uno nuevo', async () => {
+      const previous = await start();
+      await dataSource.query(
+        `UPDATE irl_diagnostic.diagnostic SET state = 'WITH_INITIATIVE' WHERE id = $1`,
+        [previous.id],
+      );
+
+      const offered = await agent
+        .get('/api/v1/diagnostics/in-progress')
+        .expect(200);
+      expect(diagnosticSchema.parse(offered.body).id).toBe(previous.id);
+
+      const fresh = await start('?discardInProgress=true');
+
+      expect(fresh.id).not.toBe(previous.id);
+      expect(fresh.state).toBe('STARTED');
+      expect(await countDiagnostics()).toBe(1);
+    });
+  });
+
+  it('sin diagnóstico en curso, consultarlo responde 404', async () => {
+    await agent.get('/api/v1/diagnostics/in-progress').expect(404);
   });
 
   describe('cuando ya tiene diagnósticos con resultados', () => {
@@ -148,6 +173,8 @@ describe('Iniciar diagnóstico (e2e)', () => {
     const mine = await start();
 
     try {
+      // Someone else's diagnostic in progress is not offered to this user.
+      await otherAgent.get('/api/v1/diagnostics/in-progress').expect(404);
       const res = await otherAgent.post('/api/v1/diagnostics').expect(201);
       expect(diagnosticSchema.parse(res.body).id).not.toBe(mine.id);
       expect(await countDiagnostics()).toBe(1);

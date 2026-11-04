@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { InitialSchema1747526400001 } from './migrations/20260518001-InitialSchema.js';
 import { SectorCatalogColumns1793664000001 } from './migrations/20261103001-SectorCatalogColumns.js';
+import { DraftAnswer1793664000002 } from './migrations/20261103002-DraftAnswer.js';
 import { seedCatalog } from './seeds/seed-catalog.js';
 
 interface SchemaFingerprint {
@@ -49,14 +50,19 @@ async function schemaIsStale(dataSource: DataSource): Promise<boolean> {
  * starts with `migrationsRun: false`. Pending migrations run here, then
  * the seed. A database whose shape is older than `dimension.code` is
  * dropped and rebuilt. Anything later, such as the sector columns, is an
- * incremental migration so the diagnostics already stored stay.
+ * incremental migration so the diagnostics already stored stay. The
+ * questionnaire draft table is the same kind of change.
  */
 export async function prepareDatabase(url: string): Promise<void> {
   const dataSource = new DataSource({
     type: 'postgres',
     url,
     synchronize: false,
-    migrations: [InitialSchema1747526400001, SectorCatalogColumns1793664000001],
+    migrations: [
+      InitialSchema1747526400001,
+      SectorCatalogColumns1793664000001,
+      DraftAnswer1793664000002,
+    ],
     migrationsTableName: 'typeorm_migrations',
   });
 

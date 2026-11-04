@@ -105,7 +105,7 @@ describe('RequestDeepAnalysisUseCase', () => {
     },
   );
 
-  it.each(['STARTED', 'QUESTIONNAIRE_COMPLETE', 'DEEP_ANALYSIS_DECLINED'])(
+  it.each(['STARTED', 'QUESTIONNAIRE_COMPLETE'])(
     'returns a ConflictError when requested from %s',
     async (state) => {
       diagnostics.findById.mockResolvedValueOnce(diagnosisIn(state));

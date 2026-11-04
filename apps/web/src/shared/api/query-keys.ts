@@ -16,6 +16,9 @@ export const queryKeys = {
   diagnostic: {
     list: ['diagnostic', 'list'] as const,
     detail: (id: string) => ['diagnostic', 'detail', id] as const,
+    /** The caller's diagnostic still being filled in — `GET /diagnostics/in-progress`. */
+    inProgress: ['diagnostic', 'in-progress'] as const,
+    draft: (id: string) => ['diagnostic', id, 'questionnaire-draft'] as const,
     profile: (id: string) => ['diagnostic', id, 'profile'] as const,
     initiative: (id: string) => ['diagnostic', id, 'initiative'] as const,
     recommendation: (id: string) => ['diagnostic', id, 'recommendation'] as const,

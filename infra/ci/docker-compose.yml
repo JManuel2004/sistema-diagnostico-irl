@@ -1,0 +1,40 @@
+# Services the test runs need, on ports of their own so
+# a developer's stack (docker-compose.yml) and the local deployment
+# (infra/deploy) keep running. Jenkins reaches them through the host
+# (host.docker.internal).
+name: irl-ci
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: irl_user
+      POSTGRES_PASSWORD: irl_dev_password
+      POSTGRES_DB: irl_ci
+    ports:
+      - '5434:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U irl_user -d irl_ci']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - '1125:1025'
+      - '8125:8025'
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  auth-simulator:
+    build: ../../tools/auth-simulator
+    ports:
+      - '8190:8090'
+    environment:
+      AUTH_SIMULATOR_CONFIRM: ${AUTH_SIMULATOR_CONFIRM:-}
+      AUTH_SIMULATOR_ISSUER: http://host.docker.internal:8190
+      AUTH_SIMULATOR_INTERNAL_KEY: simulated-internal-key
+      # The browser tests serve the SPA on this port inside the Jenkins container.
+      AUTH_SIMULATOR_REDIRECT_ORIGINS: http://localhost:4174

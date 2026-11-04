@@ -17,8 +17,11 @@ import { uuidSchema } from '../common/uuid.schema.js';
  *     → QUESTIONNAIRE_IN_PROGRESS  (HU-07)
  *     → QUESTIONNAIRE_COMPLETE     (HU-10 / RF-06)
  *     → PROFILE_GENERATED          (HU-11 / RF-07)
- *     → DEEP_ANALYSIS_DECLINED | DEEP_ANALYSIS_IN_PROGRESS
- *          → DEEP_ANALYSIS_COMPLETE
+ *     → DEEP_ANALYSIS_IN_PROGRESS  (RF-11)
+ *     → DEEP_ANALYSIS_COMPLETE
+ *
+ * Not accepting the deep analysis records nothing: the diagnostic stays in
+ * PROFILE_GENERATED and can still accept it later.
  */
 export const DIAGNOSTIC_STATES = [
   'STARTED',
@@ -27,7 +30,6 @@ export const DIAGNOSTIC_STATES = [
   'QUESTIONNAIRE_IN_PROGRESS',
   'QUESTIONNAIRE_COMPLETE',
   'PROFILE_GENERATED',
-  'DEEP_ANALYSIS_DECLINED',
   'DEEP_ANALYSIS_IN_PROGRESS',
   'DEEP_ANALYSIS_COMPLETE',
 ] as const;

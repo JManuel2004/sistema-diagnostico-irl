@@ -155,13 +155,13 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
 
     expect(dto.resultType).toBe('RECOMMENDATION');
     expect(dto.primary?.name).toBe('Célula de Grado · Posgrado');
-    expect(dto.primary?.score).toBeCloseTo(4.55, 3);
+    expect(dto.primary?.score).toBeCloseTo(4.3, 3);
     expect(dto.primary?.adjustmentReason).toBeNull();
     // INC-02 put Academia a la Medida in position 2. It has no score and is
     // exempt from the threshold; Reto Express follows, above 2.5.
     expect(dto.alternatives.map((a) => [a.name, a.position, a.score])).toEqual([
       ['Academia a la Medida', 2, null],
-      ['Reto Express', 3, 3.3],
+      ['Reto Express', 3, 2.8],
     ]);
     expect(dto.alternatives[0].adjustmentReason).toContain(
       'brechas en tres o más dimensiones',
@@ -214,9 +214,10 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
       roadmap.phases.map((f) => [f.service?.name, f.service?.approximate]),
     ).toEqual([
       ['Célula de Grado · Posgrado', false],
-      // From Profundiza on, nothing lighter: no service of Profundiza or Alíate
-      // left reaches the phase's minimum, so the best one is approximate.
-      ['Consultoría Experta', true],
+      // From Profundiza on, nothing lighter. Consultoría Experta works Negocio
+      // as primary and reaches phase 2's minimum; nothing left works
+      // Financiación, so phase 3's best one is approximate.
+      ['Consultoría Experta', false],
       ['Célula Dedicada · Co.LAB', true],
     ]);
   });
@@ -246,14 +247,14 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     // Layer 2 — only scored services; adjustment-only ones never appear.
     expect(trace.rankingBeforeExceptions.map((r) => [r.name, r.score])).toEqual(
       [
-        ['Célula de Grado · Posgrado', 4.55],
-        ['Reto Express', 3.3],
-        ['Célula Dedicada · Co.LAB', 2.15],
-        ['Célula de Grado · Pregrado', 2.1],
+        ['Célula de Grado · Posgrado', 4.3],
+        ['Reto Express', 2.8],
+        ['Reto en el Aula', 2.8],
+        ['Célula Dedicada · Co.LAB', 2.5],
         ['Consultoría Experta', 2],
-        ['Reto en el Aula', 1.8],
-        ['Semillero con Propósito', 1.45],
-        ['Talento In-House', 0.9],
+        ['Semillero con Propósito', 1.3],
+        ['Célula de Grado · Pregrado', 0.8],
+        ['Talento In-House', 0.5],
       ],
     );
 
@@ -279,15 +280,15 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
         r.includedBy?.ruleCode ?? null,
       ]),
     ).toEqual([
-      [1, 'Célula de Grado · Posgrado', 4.55, null],
+      [1, 'Célula de Grado · Posgrado', 4.3, null],
       [2, 'Academia a la Medida', null, 'INC-02'],
-      [3, 'Reto Express', 3.3, null],
-      [4, 'Célula Dedicada · Co.LAB', 2.15, null],
-      [5, 'Célula de Grado · Pregrado', 2.1, null],
+      [3, 'Reto Express', 2.8, null],
+      [4, 'Reto en el Aula', 2.8, null],
+      [5, 'Célula Dedicada · Co.LAB', 2.5, null],
       [6, 'Consultoría Experta', 2, null],
-      [7, 'Reto en el Aula', 1.8, null],
-      [8, 'Semillero con Propósito', 1.45, null],
-      [9, 'Talento In-House', 0.9, null],
+      [7, 'Semillero con Propósito', 1.3, null],
+      [8, 'Célula de Grado · Pregrado', 0.8, null],
+      [9, 'Talento In-House', 0.5, null],
     ]);
     // The calculated winner is still first: the result is not the adjustment's.
     expect(trace.adjustedByException).toBe(false);

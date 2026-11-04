@@ -130,4 +130,56 @@ describe('questionnaire draft store', () => {
       expect(parsed.state.dirty).toBeUndefined();
     });
   });
+
+  describe('what the server has (unsynced, syncedAt)', () => {
+    it('every local change is unsynced and counts as a new revision', () => {
+      const store = useQuestionnaireDraftStore.getState();
+      store.initialize('diag-A');
+      store.setAnswer('s1', 3);
+      store.setJustification('s1', 'Porque sí');
+
+      const s = useQuestionnaireDraftStore.getState();
+      expect(s.unsynced).toBe(true);
+      expect(s.revision).toBe(2);
+    });
+
+    it('a save marks the draft as synced only if nothing changed meanwhile', () => {
+      const store = useQuestionnaireDraftStore.getState();
+      store.initialize('diag-A');
+      store.setAnswer('s1', 3);
+      const sent = useQuestionnaireDraftStore.getState().revision;
+      store.setAnswer('s2', 4);
+
+      useQuestionnaireDraftStore.getState().markSynced('2026-10-16T12:00:00.000Z', sent);
+      expect(useQuestionnaireDraftStore.getState().unsynced).toBe(true);
+
+      const latest = useQuestionnaireDraftStore.getState().revision;
+      useQuestionnaireDraftStore.getState().markSynced('2026-10-16T12:00:05.000Z', latest);
+      expect(useQuestionnaireDraftStore.getState().unsynced).toBe(false);
+      expect(useQuestionnaireDraftStore.getState().syncedAt).toBe('2026-10-16T12:00:05.000Z');
+    });
+
+    it('hydrate replaces the draft with the server one, as synced', () => {
+      const store = useQuestionnaireDraftStore.getState();
+      store.initialize('diag-A');
+      store.hydrate({ s1: 2 }, { s1: 'Desde otro equipo' }, '2026-10-16T12:00:00.000Z');
+
+      const s = useQuestionnaireDraftStore.getState();
+      expect(s.answers).toEqual({ s1: 2 });
+      expect(s.justifications).toEqual({ s1: 'Desde otro equipo' });
+      expect(s.unsynced).toBe(false);
+      expect(s.syncedAt).toBe('2026-10-16T12:00:00.000Z');
+    });
+
+    it('persists unsynced and syncedAt, so a reload still saves what the server lacks', () => {
+      const store = useQuestionnaireDraftStore.getState();
+      store.initialize('diag-A');
+      store.setAnswer('s1', 5);
+
+      const raw = sessionStorage.getItem('innlab.questionnaire-draft.v1');
+      const parsed = JSON.parse(raw!) as { state: { unsynced: boolean; syncedAt: string | null } };
+      expect(parsed.state.unsynced).toBe(true);
+      expect(parsed.state.syncedAt).toBeNull();
+    });
+  });
 });

@@ -44,4 +44,14 @@ describe('PdfkitReportRenderer', () => {
     const kth = pdf.split(hex('KTH')).length - 1;
     expect(kth).toBeGreaterThanOrEqual(pages);
   });
+
+  // INNLAB asked to keep red out of the results: the red of the design
+  // system (#C0392B) is never used as a fill or a stroke.
+  it('does not paint anything in red', async () => {
+    const pdf = await rendered();
+
+    expect(pdf).not.toMatch(/0\.75294\d* 0\.22352\d* 0\.16862\d*\s+(scn|SCN)/);
+    // The attention tone is used instead.
+    expect(pdf).toMatch(/0\.70588\d* 0\.32549\d* 0\.03529\d*\s+(scn|SCN)/);
+  });
 });

@@ -70,11 +70,12 @@ export type InitiativeStage = z.infer<typeof initiativeStageSchema>;
 /** Maximum number of characters of the profile's free-text fields. */
 export const INITIATIVE_TEXT_MAX = 500;
 
-const requiredText = (label: string) =>
+/** `label` is the field's name with its article; `required` agrees with it in gender. */
+const requiredText = (label: string, required: 'obligatorio' | 'obligatoria') =>
   z
     .string()
     .trim()
-    .min(1, `${label} es obligatorio`)
+    .min(1, `${label} es ${required}`)
     .max(
       INITIATIVE_TEXT_MAX,
       `${label} no puede exceder ${String(INITIATIVE_TEXT_MAX)} caracteres`,
@@ -119,13 +120,17 @@ export const registerInitiativeSchema = z
       .nullable()
       .optional()
       .describe('The user’s own sector, when the chosen sector is «Otro»'),
-    productType: requiredText('El tipo de producto o servicio'),
+    productType: requiredText('El tipo de producto o servicio', 'obligatorio'),
     stageId: z.string().min(1).describe('ID of the catalog stage'),
-    declaredStage: requiredText('La etapa declarada'),
-    teamSize: z.number().int().min(1, 'El equipo tiene al menos una persona').max(10000),
-    teamDescription: requiredText('La descripción del equipo'),
-    targetMarket: requiredText('El mercado objetivo'),
-    currentFunding: requiredText('El financiamiento actual'),
+    declaredStage: requiredText('La etapa declarada', 'obligatoria'),
+    teamSize: z
+      .number({ invalid_type_error: 'Escribe el número de personas en cifras' })
+      .int('Escribe un número entero de personas, sin decimales')
+      .min(1, 'El equipo tiene al menos una persona')
+      .max(10000, 'Escribe un número de personas menor a 10.000'),
+    teamDescription: requiredText('La descripción del equipo', 'obligatoria'),
+    targetMarket: requiredText('El mercado objetivo', 'obligatorio'),
+    currentFunding: requiredText('El financiamiento actual', 'obligatorio'),
   })
   .describe('Command that registers the profile of an initiative');
 

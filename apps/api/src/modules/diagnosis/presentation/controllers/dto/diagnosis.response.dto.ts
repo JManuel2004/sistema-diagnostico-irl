@@ -10,11 +10,13 @@ import {
   type DiagnosticState,
   type DimensionCode,
   type DimensionResult,
+  type DraftEntry,
   type Gaps,
   type GlobalLevel,
   type ImbalanceClassification,
   type ImbalancePairResult,
   type MaturityProfileResponse,
+  type QuestionnaireDraft,
   type SubmitQuestionnaireResponse,
 } from '@innlab/contracts';
 
@@ -54,6 +56,26 @@ export class SubmitQuestionnaireResponseDto implements SubmitQuestionnaireRespon
   @ApiProperty({ minimum: 0, maximum: 48 }) answersRecorded!: number;
   @ApiProperty({ enum: ['QUESTIONNAIRE_COMPLETE'] })
   state!: 'QUESTIONNAIRE_COMPLETE';
+}
+
+class DraftEntryResponseDto implements DraftEntry {
+  @ApiProperty({ example: '1' }) statementId!: string;
+  @ApiProperty({ minimum: 1, maximum: 5, nullable: true, type: Number })
+  value!: number | null;
+  @ApiProperty({ nullable: true, type: String }) justification!: string | null;
+}
+
+export class QuestionnaireDraftResponseDto implements QuestionnaireDraft {
+  @ApiProperty({ format: 'uuid' }) diagnosticId!: string;
+  @ApiProperty({ type: [DraftEntryResponseDto], maxItems: 48 })
+  entries!: DraftEntryResponseDto[];
+  @ApiProperty({
+    format: 'date-time',
+    nullable: true,
+    type: String,
+    description: 'When the draft was last saved; null while nothing was saved',
+  })
+  updatedAt!: string | null;
 }
 
 class DimensionResultDto implements DimensionResult {

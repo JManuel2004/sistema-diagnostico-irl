@@ -35,7 +35,32 @@ const RISKS: Readonly<Partial<Record<`${DimensionCode}→${DimensionCode}`, stri
     'Proteger una tecnología que todavía puede cambiar mucho: la protección puede quedar desactualizada antes de usarse.',
 };
 
+/**
+ * What an initiative risks when both dimensions of an imbalanced pair are in
+ * gap (level 3 or lower): neither one runs ahead, both are weak, and the
+ * risk is of the pair as a whole. Keyed by the pair in the framework's order.
+ */
+const BOTH_IN_GAP_RISKS: Readonly<Partial<Record<`${DimensionCode}–${DimensionCode}`, string>>> = {
+  'TRL–CRL':
+    'Ni la solución ni el mercado están probados todavía: lo que avances en una puede perderse si la otra no la acompaña.',
+  'TRL–BRL':
+    'Una solución todavía inmadura y sin modelo de negocio: aún no hay con qué demostrar que la iniciativa es viable.',
+  'CRL–BRL':
+    'Sin clientes validados ni un modelo de negocio claro, no hay evidencia de que alguien vaya a pagar por la solución.',
+  'TmRL–FRL':
+    'Un equipo incompleto y sin recursos para sostenerse: la iniciativa depende del esfuerzo de pocas personas y puede detenerse.',
+  'BRL–IPRL':
+    'Un modelo de negocio sin definir y sin proteger lo que lo diferencia: lo que construyas puede copiarse antes de generar ingresos.',
+  'TRL–IPRL':
+    'Una tecnología todavía en desarrollo, sin protección ni acuerdos sobre quién es su dueño: puede haber disputas cuando empiece a tener valor.',
+};
+
 /** The risk of `ahead` running ahead of `behind`, or `null` for a pair outside the six. */
 export function imbalanceRisk(ahead: DimensionCode, behind: DimensionCode): string | null {
   return RISKS[`${ahead}→${behind}`] ?? null;
+}
+
+/** The risk of a pair whose two dimensions are in gap, or `null` for a pair outside the six. */
+export function bothInGapRisk(left: DimensionCode, right: DimensionCode): string | null {
+  return BOTH_IN_GAP_RISKS[`${left}–${right}`] ?? BOTH_IN_GAP_RISKS[`${right}–${left}`] ?? null;
 }

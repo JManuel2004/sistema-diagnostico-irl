@@ -11,12 +11,14 @@ import { AnswerOrm } from './infrastructure/database/orm-entities/answer.orm-ent
 import { StatementOrm } from './infrastructure/database/orm-entities/statement.orm-entity.js';
 import { DimensionResultOrm } from './infrastructure/database/orm-entities/dimension-result.orm-entity.js';
 import { ImbalanceAnalysisOrm } from './infrastructure/database/orm-entities/imbalance-analysis.orm-entity.js';
+import { DraftAnswerOrm } from './infrastructure/database/orm-entities/draft-answer.orm-entity.js';
 
 import { TypeOrmDiagnosisRepository } from './infrastructure/database/repositories/typeorm-diagnosis.repository.js';
 import { TypeOrmAnswerSheetRepository } from './infrastructure/database/repositories/typeorm-answer-sheet.repository.js';
 import { TypeOrmStatementCatalogRepository } from './infrastructure/database/repositories/typeorm-statement-catalog.repository.js';
 import { TypeOrmMaturityProfileRepository } from './infrastructure/database/repositories/typeorm-maturity-profile.repository.js';
 import { TypeOrmImbalanceRepository } from './infrastructure/database/repositories/typeorm-imbalance.repository.js';
+import { TypeOrmQuestionnaireDraftRepository } from './infrastructure/database/repositories/typeorm-questionnaire-draft.repository.js';
 
 import { DIAGNOSIS_REPOSITORY } from './domain/repositories/diagnosis.repository.port.js';
 import { ANSWER_SHEET_REPOSITORY } from './domain/repositories/answer-sheet.repository.port.js';
@@ -24,6 +26,7 @@ import { STATEMENT_CATALOG_REPOSITORY } from './domain/repositories/statement-ca
 import type { StatementCatalogPort } from './domain/repositories/statement-catalog.port.js';
 import { MATURITY_PROFILE_REPOSITORY } from './domain/repositories/maturity-profile.repository.port.js';
 import { IMBALANCE_REPOSITORY } from './domain/repositories/imbalance.repository.port.js';
+import { QUESTIONNAIRE_DRAFT_REPOSITORY } from './domain/repositories/questionnaire-draft.repository.port.js';
 
 import { IrlCalculatorService } from './domain/services/irl-calculator.service.js';
 import { ImbalanceEvaluatorService } from './domain/services/imbalance-evaluator.service.js';
@@ -45,9 +48,13 @@ import { DeepAnalysisResultListener } from './infrastructure/messaging/deep-anal
 import { StartDiagnosisUseCase } from './application/use-cases/start-diagnosis.use-case.js';
 import { RequestDeepAnalysisUseCase } from './application/use-cases/request-deep-analysis.use-case.js';
 import { GetQuestionnaireStructureQuery } from './application/use-cases/get-questionnaire-structure.query.js';
+import { SaveQuestionnaireDraftUseCase } from './application/use-cases/save-questionnaire-draft.use-case.js';
+import { GetQuestionnaireDraftQuery } from './application/use-cases/get-questionnaire-draft.query.js';
+import { GetInProgressDiagnosisQuery } from './application/use-cases/get-in-progress-diagnosis.query.js';
 
 import { DiagnosisController } from './presentation/controllers/diagnosis.controller.js';
 import { QuestionnaireController } from './presentation/controllers/questionnaire.controller.js';
+import { QuestionnaireDraftController } from './presentation/controllers/questionnaire-draft.controller.js';
 import { MaturityProfileController } from './presentation/controllers/maturity-profile.controller.js';
 import { QuestionnaireCatalogController } from './presentation/controllers/questionnaire-catalog.controller.js';
 
@@ -74,6 +81,7 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
       StatementOrm,
       DimensionResultOrm,
       ImbalanceAnalysisOrm,
+      DraftAnswerOrm,
     ]),
     IrlTaxonomyModule,
   ],
@@ -99,6 +107,10 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
       useClass: TypeOrmMaturityProfileRepository,
     },
     { provide: IMBALANCE_REPOSITORY, useClass: TypeOrmImbalanceRepository },
+    {
+      provide: QUESTIONNAIRE_DRAFT_REPOSITORY,
+      useClass: TypeOrmQuestionnaireDraftRepository,
+    },
     IrlCalculatorService,
     ImbalanceEvaluatorService,
     applicationProvider(FinalizeInitialDiagnosisUseCase, [
@@ -106,6 +118,20 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
       ANSWER_SHEET_REPOSITORY,
       SubmitQuestionnaireUseCase,
       ComputeMaturityProfileUseCase,
+      TAXONOMY_REPOSITORY,
+      QUESTIONNAIRE_DRAFT_REPOSITORY,
+    ]),
+    applicationProvider(SaveQuestionnaireDraftUseCase, [
+      DIAGNOSIS_REPOSITORY,
+      QUESTIONNAIRE_DRAFT_REPOSITORY,
+      STATEMENT_CATALOG_REPOSITORY,
+    ]),
+    applicationProvider(GetQuestionnaireDraftQuery, [
+      DIAGNOSIS_REPOSITORY,
+      QUESTIONNAIRE_DRAFT_REPOSITORY,
+    ]),
+    applicationProvider(GetInProgressDiagnosisQuery, [
+      DIAGNOSIS_REPOSITORY,
       TAXONOMY_REPOSITORY,
     ]),
     applicationProvider(SubmitQuestionnaireUseCase, [
@@ -170,6 +196,7 @@ import { QuestionnaireCatalogController } from './presentation/controllers/quest
   controllers: [
     DiagnosisController,
     QuestionnaireController,
+    QuestionnaireDraftController,
     MaturityProfileController,
     QuestionnaireCatalogController,
   ],

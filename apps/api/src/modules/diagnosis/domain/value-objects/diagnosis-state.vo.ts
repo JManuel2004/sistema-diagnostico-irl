@@ -12,8 +12,11 @@ import { InvariantViolationError } from '../../../../shared/kernel/domain/errors
  *     → QUESTIONNAIRE_IN_PROGRESS  (RF-05 — questionnaire started)
  *     → QUESTIONNAIRE_COMPLETE     (RF-06 — all 48 answers in)
  *     → PROFILE_GENERATED          (RF-07/08 — IRL levels and bottleneck computed)
- *     → DEEP_ANALYSIS_DECLINED | DEEP_ANALYSIS_IN_PROGRESS
- *          → DEEP_ANALYSIS_COMPLETE
+ *     → DEEP_ANALYSIS_IN_PROGRESS  (RF-11 — the deep analysis is accepted)
+ *     → DEEP_ANALYSIS_COMPLETE     (both of its results are saved)
+ *
+ * Not accepting the deep analysis records nothing: the diagnostic stays in
+ * `PROFILE_GENERATED`, and the analysis can still be accepted later.
  *
  * Each transition's *trigger* is feature work (a use case will call
  * `next()` or `assertCanTransitionTo()`). The state machine itself is
@@ -27,7 +30,6 @@ export type DiagnosisStateName =
   | 'QUESTIONNAIRE_IN_PROGRESS'
   | 'QUESTIONNAIRE_COMPLETE'
   | 'PROFILE_GENERATED'
-  | 'DEEP_ANALYSIS_DECLINED'
   | 'DEEP_ANALYSIS_IN_PROGRESS'
   | 'DEEP_ANALYSIS_COMPLETE';
 
@@ -38,7 +40,6 @@ export const DIAGNOSIS_STATES: readonly DiagnosisStateName[] = [
   'QUESTIONNAIRE_IN_PROGRESS',
   'QUESTIONNAIRE_COMPLETE',
   'PROFILE_GENERATED',
-  'DEEP_ANALYSIS_DECLINED',
   'DEEP_ANALYSIS_IN_PROGRESS',
   'DEEP_ANALYSIS_COMPLETE',
 ];
@@ -52,8 +53,7 @@ const TRANSITIONS: Readonly<
   WITH_INITIATIVE: ['QUESTIONNAIRE_IN_PROGRESS'],
   QUESTIONNAIRE_IN_PROGRESS: ['QUESTIONNAIRE_COMPLETE'],
   QUESTIONNAIRE_COMPLETE: ['PROFILE_GENERATED'],
-  PROFILE_GENERATED: ['DEEP_ANALYSIS_DECLINED', 'DEEP_ANALYSIS_IN_PROGRESS'],
-  DEEP_ANALYSIS_DECLINED: [],
+  PROFILE_GENERATED: ['DEEP_ANALYSIS_IN_PROGRESS'],
   DEEP_ANALYSIS_IN_PROGRESS: ['DEEP_ANALYSIS_COMPLETE'],
   DEEP_ANALYSIS_COMPLETE: [],
 };

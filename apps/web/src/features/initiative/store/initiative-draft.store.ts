@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import type { InitiativeProfileFields } from '../lib/form-values';
+import type { InitiativeFormValues } from '../lib/form-values';
 
 /**
  * Browser state between the consent and the initiative form.
@@ -10,20 +10,23 @@ import type { InitiativeProfileFields } from '../lib/form-values';
  * chooses or creates that one on the next screen (RF-03, RNF-06). Until
  * then `acceptedTermsVersion` remembers the text they accepted.
  *
- * The profile form also lives here, so going back to the consent does not
- * wipe what they typed. Nothing in this store is sent until they continue
- * from the initiative step. `initiativeId` is the existing initiative they
- * chose, or the one just created, or `null` for a new one. Keeping the
- * created id means a retry after a failed profile registration does not
- * create another.
+ * The profile form also lives here, as typed: every change is kept, also
+ * of a half-filled form, so going back to the consent, reloading or closing
+ * the browser does not wipe it. Nothing in this store is sent until they
+ * continue from the initiative step. `initiativeId` is the existing
+ * initiative they chose, or the one just created, or `null` for a new one.
+ * Keeping the created id means a retry after a failed profile registration
+ * does not create another.
  *
- * It persists in `sessionStorage`, like the questionnaire draft: it
- * survives an F5 and dies with the tab. It is emptied as soon as the
- * profile is registered.
+ * It persists in `localStorage`: it outlives the tab and the session on
+ * this browser, not another browser or a private window. Only the owner of
+ * the diagnostic can open its wizard, so another person signing in on the
+ * same browser never sees it. It is emptied as soon as the profile is
+ * registered, and switching diagnostic discards it.
  */
 export interface InitiativeDraft {
   readonly initiativeId: string | null;
-  readonly command: InitiativeProfileFields;
+  readonly values: InitiativeFormValues;
 }
 
 interface State {
@@ -46,7 +49,7 @@ interface Actions {
 
 type DraftStore = State & Actions;
 
-const STORAGE_KEY = 'innlab.initiative-draft.v2';
+const STORAGE_KEY = 'innlab.initiative-draft.v3';
 const INITIAL: State = { diagnosticId: null, draft: null, acceptedTermsVersion: null };
 
 export const useInitiativeDraftStore = create<DraftStore>()(
@@ -72,16 +75,8 @@ export const useInitiativeDraftStore = create<DraftStore>()(
     }),
     {
       name: STORAGE_KEY,
-      storage: createJSONStorage(() => sessionStorage),
-      version: 2,
-      migrate(persisted) {
-        const state = persisted as Partial<State>;
-        return {
-          diagnosticId: state.diagnosticId ?? null,
-          draft: state.draft ?? null,
-          acceptedTermsVersion: state.acceptedTermsVersion ?? null,
-        };
-      },
+      storage: createJSONStorage(() => localStorage),
+      version: 3,
       partialize: (s) => ({
         diagnosticId: s.diagnosticId,
         draft: s.draft,

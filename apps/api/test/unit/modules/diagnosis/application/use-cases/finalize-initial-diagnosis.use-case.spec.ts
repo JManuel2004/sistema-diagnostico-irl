@@ -8,6 +8,7 @@ import { Diagnosis } from '../../../../../../src/modules/diagnosis/domain/entiti
 import type { SubmitQuestionnaireUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/submit-questionnaire.use-case.js';
 import type { ComputeMaturityProfileUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/compute-maturity-profile.use-case.js';
 import type { AnswerSheetRepositoryPort } from '../../../../../../src/modules/diagnosis/domain/repositories/answer-sheet.repository.port.js';
+import type { QuestionnaireDraftRepositoryPort } from '../../../../../../src/modules/diagnosis/domain/repositories/questionnaire-draft.repository.port.js';
 import { AnswerSheet } from '../../../../../../src/modules/diagnosis/domain/entities/answer-sheet.aggregate.js';
 import { MaturityProfile } from '../../../../../../src/modules/diagnosis/domain/entities/maturity-profile.aggregate.js';
 import { DimensionResult } from '../../../../../../src/modules/diagnosis/domain/value-objects/dimension-result.vo.js';
@@ -75,6 +76,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
   let computeProfile: jest.Mocked<
     Pick<ComputeMaturityProfileUseCase, 'execute'>
   >;
+  let drafts: jest.Mocked<QuestionnaireDraftRepositoryPort>;
 
   beforeEach(() => {
     diagnostics = {
@@ -105,6 +107,12 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
       ),
     };
 
+    drafts = {
+      findByDiagnosticId: jest.fn(),
+      replace: jest.fn(),
+      deleteByDiagnosticId: jest.fn(() => Promise.resolve(undefined)),
+    };
+
     useCase = new FinalizeInitialDiagnosisUseCase(
       diagnostics,
       answerSheets,
@@ -114,6 +122,7 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
         findAllDimensions: () => Promise.resolve(aDimensionCatalog()),
         findLevelDescriptions: () => Promise.resolve(LevelDescriptions.empty()),
       } as unknown as TaxonomyRepositoryPort,
+      drafts,
     );
   });
 
@@ -151,6 +160,11 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
     if (!result.ok) throw new Error('expected ok result');
     expect(result.value.diagnosticId).toBe(DIAGNOSTIC_ID);
     expect(result.value.dimensionResults).toHaveLength(6);
+    // The answers are saved for good: the server draft is deleted after.
+    expect(drafts.deleteByDiagnosticId).toHaveBeenCalledWith(DIAGNOSTIC_ID);
+    expect(
+      drafts.deleteByDiagnosticId.mock.invocationCallOrder[0],
+    ).toBeGreaterThan(diagnostics.save.mock.invocationCallOrder[0]);
   });
 
   // The initiative step is followed directly by the questionnaire, so
@@ -281,6 +295,8 @@ describe('FinalizeInitialDiagnosisUseCase', () => {
     expect(result.error).toBe(submissionError);
     expect(computeProfile.execute).not.toHaveBeenCalled();
     expect(diagnostics.save).not.toHaveBeenCalled();
+    // The draft is kept: the user can still finish from it.
+    expect(drafts.deleteByDiagnosticId).not.toHaveBeenCalled();
   });
 
   it('does not transition state if computation fails', async () => {

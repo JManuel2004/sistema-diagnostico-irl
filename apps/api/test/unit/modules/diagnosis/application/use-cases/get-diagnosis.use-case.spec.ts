@@ -49,7 +49,6 @@ describe('GetDiagnosisUseCase', () => {
     ['WITH_INITIATIVE', false],
     ['QUESTIONNAIRE_IN_PROGRESS', false],
     ['PROFILE_GENERATED', false],
-    ['DEEP_ANALYSIS_DECLINED', false],
     ['DEEP_ANALYSIS_IN_PROGRESS', true],
     ['DEEP_ANALYSIS_COMPLETE', true],
   ])('in %s the deep analysis accepted flag is %s', async (state, accepted) => {
@@ -68,7 +67,6 @@ describe('GetDiagnosisUseCase', () => {
   // accepted analysis still in progress has no report yet.
   it.each([
     ['PROFILE_GENERATED', false],
-    ['DEEP_ANALYSIS_DECLINED', false],
     ['DEEP_ANALYSIS_IN_PROGRESS', false],
     ['DEEP_ANALYSIS_COMPLETE', true],
   ])(
@@ -94,7 +92,6 @@ describe('GetDiagnosisUseCase', () => {
     ['QUESTIONNAIRE_IN_PROGRESS', false],
     ['QUESTIONNAIRE_COMPLETE', false],
     ['PROFILE_GENERATED', true],
-    ['DEEP_ANALYSIS_DECLINED', true],
     ['DEEP_ANALYSIS_IN_PROGRESS', true],
     ['DEEP_ANALYSIS_COMPLETE', true],
   ])('in %s the completed flag is %s', async (state, completed) => {

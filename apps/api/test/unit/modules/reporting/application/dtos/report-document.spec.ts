@@ -11,7 +11,13 @@ function textOf(blocks: readonly ReportBlock[]): string {
   return blocks
     .map((b) => {
       if (b.kind === 'field') return `${b.label}: ${b.value}`;
-      if (b.kind === 'radar' || b.kind === 'route') return '';
+      if (
+        b.kind === 'route' ||
+        b.kind === 'summary' ||
+        b.kind === 'timeline' ||
+        b.kind === 'pageBreak'
+      )
+        return '';
       if (b.kind === 'answers') return b.rows.map((r) => r.text).join('\n');
       return b.text;
     })
@@ -37,22 +43,20 @@ describe('buildReportDocument', () => {
     ]);
   });
 
-  it('draws the profile as a radar of the six levels, each point named', () => {
-    const radar = buildReportDocument(aReport()).blocks.find(
-      (b) => b.kind === 'radar',
-    );
+  it('draws the radar once, on the summary page, with the six levels', () => {
+    const summary = buildReportDocument(aReport()).blocks[0];
+    if (summary.kind !== 'summary') throw new Error('expected the summary');
 
-    expect(radar).toEqual({
-      kind: 'radar',
-      points: [
-        { dimensionCode: 'TRL', label: 'Tecnología', level: 6 },
-        { dimensionCode: 'CRL', label: 'Cliente', level: 4 },
-        { dimensionCode: 'BRL', label: 'Negocio', level: 3 },
-        { dimensionCode: 'IPRL', label: 'Propiedad intelectual', level: 1 },
-        { dimensionCode: 'TmRL', label: 'Equipo', level: 5 },
-        { dimensionCode: 'FRL', label: 'Financiación', level: 2 },
-      ],
-    });
+    expect(
+      summary.summary.levels.map((l) => [l.dimensionCode, l.label, l.level]),
+    ).toEqual([
+      ['TRL', 'Tecnología', 6],
+      ['CRL', 'Cliente', 4],
+      ['BRL', 'Negocio', 3],
+      ['IPRL', 'Propiedad intelectual', 1],
+      ['TmRL', 'Equipo', 5],
+      ['FRL', 'Financiación', 2],
+    ]);
   });
 
   it('draws each dimension today and at the end of the route', () => {
@@ -140,12 +144,57 @@ describe('buildReportDocument', () => {
   it('includes the recommendation with its justification and the roadmap with each phase service', () => {
     const text = textOf(buildReportDocument(aReport()).blocks);
 
-    expect(text).toContain('Célula de Grado · Posgrado');
     expect(text).toContain(
       'Por qué este servicio: Negocio y Propiedad intelectual',
     );
-    expect(text).toContain('Servicio: Célula de Grado · Posgrado (Profundiza)');
-    expect(text).toContain('Cliente: del nivel 4 al 5');
+    // The service of each phase is on the line of phases; the detail says why.
+    expect(text).toContain('Cliente: está por debajo de lo esperado');
+  });
+
+  // The summary page says the key facts once; the detail does not repeat them.
+  it('does not repeat in the detail what the summary page or the foot already say', () => {
+    const document = buildReportDocument(aReport());
+    const fields = document.blocks.flatMap((b) =>
+      b.kind === 'field' ? [b.label] : [],
+    );
+    const text = textOf(document.blocks);
+
+    // The strongest dimension and the bottleneck are summary indicators.
+    expect(fields).not.toContain('Dimensión más fuerte');
+    expect(fields).not.toContain('Cuello de botella');
+    // The service's level, scope and alternatives are in the summary box.
+    expect(fields).not.toContain('Nivel');
+    expect(fields).not.toContain('Alcance y entregables');
+    expect(fields).not.toContain('Otras opciones del portafolio');
+    // The service of each phase and its levels are on the line of phases.
+    expect(fields).not.toContain('Servicio');
+    expect(text).not.toMatch(/del nivel \d+ al \d+/);
+    // The completion date is in the band; the notice, at every page's foot.
+    expect(fields).not.toContain('Análisis profundo completado');
+    expect(text).not.toContain(document.footer);
+    expect(document.banner.meta).not.toContain('KTH');
+  });
+
+  it('says the size of the team once when its description already starts with it', () => {
+    const repeated = buildReportDocument(
+      aReport({
+        initiative: {
+          ...anInitiative(),
+          teamSize: 3,
+          teamDescription: '3 personas — fundadora y dos ingenieros',
+        },
+      }),
+    ).blocks.find((b) => b.kind === 'field' && b.label === 'Equipo');
+    const plain = buildReportDocument(aReport()).blocks.find(
+      (b) => b.kind === 'field' && b.label === 'Equipo',
+    );
+
+    expect(repeated).toMatchObject({
+      value: '3 personas — fundadora y dos ingenieros',
+    });
+    expect(plain).toMatchObject({
+      value: '3 personas. Fundadora, coordinadora y desarrollador externo',
+    });
   });
 
   it('contains only the information of the diagnostic it was built from', () => {
@@ -156,6 +205,77 @@ describe('buildReportDocument', () => {
 
     expect(text).toContain('Otra Iniciativa');
     expect(text).not.toContain('AgroConecta');
+  });
+});
+
+describe('buildReportDocument — the summary page', () => {
+  it('opens with a summary page of the key indicators, and the rest starts on the next page', () => {
+    const blocks = buildReportDocument(aReport()).blocks;
+
+    expect(blocks[0].kind).toBe('summary');
+    expect(blocks[1].kind).toBe('pageBreak');
+    if (blocks[0].kind !== 'summary') throw new Error('expected the summary');
+    expect(
+      blocks[0].summary.indicators.map((i) => [i.label, i.value, i.caption]),
+    ).toEqual([
+      ['Nivel IRL global', '3,5', 'de 9'],
+      ['Dimensión más fuerte', 'Tecnología', 'nivel 6'],
+      ['Cuello de botella', 'Propiedad intelectual', 'nivel 1'],
+      ['Atención prioritaria', 'Negocio', 'estado crítico'],
+    ]);
+    expect(blocks[0].summary.indicators[3].attention).toBe(true);
+  });
+
+  it('tags each level bar with why it stands out, in words', () => {
+    const summary = buildReportDocument(aReport()).blocks[0];
+    if (summary.kind !== 'summary') throw new Error('expected the summary');
+
+    expect(
+      summary.summary.levels.map((l) => [l.dimensionCode, l.level, l.tag]),
+    ).toEqual([
+      ['TRL', 6, null],
+      ['CRL', 4, null],
+      ['BRL', 3, 'atención prioritaria'],
+      ['IPRL', 1, 'cuello de botella'],
+      ['TmRL', 5, null],
+      ['FRL', 2, 'en brecha'],
+    ]);
+  });
+
+  it('highlights the recommended service with its alternatives, and explains the terms', () => {
+    const summary = buildReportDocument(aReport()).blocks[0];
+    if (summary.kind !== 'summary') throw new Error('expected the summary');
+
+    expect(summary.summary.recommendation?.name).toBe(
+      'Célula de Grado · Posgrado',
+    );
+    expect(summary.summary.recommendation?.tier).toBe('Profundiza');
+    expect(summary.summary.glossary.map((g) => g.term)).toEqual([
+      'Nivel IRL',
+      'Cuello de botella',
+      'Brecha',
+      'Desequilibrio',
+      'Atención prioritaria',
+    ]);
+  });
+
+  it('draws the route as a line of phases, each with its service and the rise of each dimension', () => {
+    const timeline = buildReportDocument(aReport()).blocks.find(
+      (b) => b.kind === 'timeline',
+    );
+    if (timeline?.kind !== 'timeline') throw new Error('expected the timeline');
+
+    expect(timeline.phases[0]).toMatchObject({
+      order: 1,
+      service: 'Célula de Grado · Posgrado',
+      tier: 'Profundiza',
+    });
+    expect(timeline.phases[0].steps).toContainEqual({
+      dimensionCode: 'CRL',
+      label: 'Cliente',
+      from: 4,
+      to: 5,
+    });
   });
 });
 

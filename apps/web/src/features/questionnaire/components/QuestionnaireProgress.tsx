@@ -7,17 +7,13 @@ import {
 
 /**
  * `QuestionnaireProgress` — top band with the questionnaire's overall
- * progress and the draft indicator.
+ * progress.
  *
  * The aggregate (`X / 48 afirmaciones completas`, `% completado`, bar; a
  * statement is complete with its Likert answer; the justification is optional)
- * lives at the top so progress is not hidden inside each dimension. The
- * chip says what really happens to the draft (HU-09): it is kept in this
- * tab (`sessionStorage`) and does not reach the server until «Procesar
- * diagnóstico»; it promises no saving across sessions or tabs.
- *
- * On mobile the draft notice is hidden: its `title` stays in the DOM, and
- * the bar and the percentage are enough in a 358px row.
+ * lives at the top so progress is not hidden inside each dimension. Whether
+ * the answers are saved is said by `DraftSaveStatus`, next to it in the
+ * wizard: the draft is saved on the server while the user answers.
  *
  * The component is presentational: it derives everything from the store
  * and mutates no state.
@@ -50,21 +46,9 @@ export function QuestionnaireProgress({ dimensions }: Props) {
           </span>
         </p>
 
-        <div className="flex items-center gap-4">
-          <p className="text-muted-foreground text-sm tabular-nums" aria-live="polite">
-            {pct}% completado
-          </p>
-          <span
-            className="text-muted-foreground hidden items-center gap-2 text-sm sm:inline-flex"
-            title="Tu borrador se conserva mientras no cierres esta pestaña. Se envía al procesar el diagnóstico."
-          >
-            <span
-              aria-hidden="true"
-              className="bg-dimension-brl inline-block size-2 rounded-full"
-            />
-            Borrador guardado en esta pestaña
-          </span>
-        </div>
+        <p className="text-muted-foreground text-sm tabular-nums" aria-live="polite">
+          {pct}% completado
+        </p>
       </div>
 
       <div

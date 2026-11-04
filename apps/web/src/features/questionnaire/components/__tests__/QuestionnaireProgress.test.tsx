@@ -51,14 +51,11 @@ describe('QuestionnaireProgress', () => {
     ).toBeInTheDocument();
   });
 
-  // The draft lives in `sessionStorage` and reaches the server
-  // only when the diagnostic is processed, so the chip says exactly that
-  // instead of promising an automatic save.
-  it('dice dónde vive el borrador, sin prometer guardado entre sesiones', () => {
+  // The draft is saved on the server while the user answers; the band no
+  // longer says it lives only in this tab (`DraftSaveStatus` tells the save).
+  it('no dice que el borrador viva solo en esta pestaña', () => {
     render(<QuestionnaireProgress dimensions={dimensions} />);
 
-    expect(screen.getByText('Borrador guardado en esta pestaña')).toBeInTheDocument();
-    expect(screen.queryByText('Guardado automático')).not.toBeInTheDocument();
-    expect(screen.getByTitle(/mientras no cierres esta pestaña/)).toBeInTheDocument();
+    expect(screen.queryByText(/esta pestaña/)).not.toBeInTheDocument();
   });
 });

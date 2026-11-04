@@ -64,6 +64,20 @@ function renderPage() {
   );
 }
 
+/**
+ * The section titled `name`, opened as the user opens it: with the button
+ * of its title. The initiative, the profile and the recommendation start
+ * open; the rest start folded.
+ */
+async function openSection(name: string): Promise<HTMLElement> {
+  const section = await screen.findByRole('region', { name });
+  const toggle = within(section).getByRole('button', { name });
+  if (toggle.getAttribute('aria-expanded') === 'false') {
+    await userEvent.setup().click(toggle);
+  }
+  return section;
+}
+
 describe('ReportPage — con el análisis profundo completo', () => {
   it('se titula con el nombre de la iniciativa y dice cuándo se completó el análisis', async () => {
     backend({ completed: true });
@@ -119,9 +133,7 @@ describe('ReportPage — con el análisis profundo completo', () => {
 
     renderPage();
 
-    const section = await screen.findByRole('region', {
-      name: 'Brechas, alertas y desequilibrios',
-    });
+    const section = await openSection('Brechas, alertas y desequilibrios');
     expect(
       within(section).getByRole('region', { name: 'Qué tan parejo avanza AgroConecta' }),
     ).toBeInTheDocument();
@@ -147,7 +159,7 @@ describe('ReportPage — con el análisis profundo completo', () => {
 
     renderPage();
 
-    const section = await screen.findByRole('region', { name: 'Ruta de escalamiento' });
+    const section = await openSection('Ruta de escalamiento');
     expect(within(section).getByRole('heading', { name: 'Fase 1' })).toBeInTheDocument();
     expect(within(section).getByRole('heading', { name: 'Fase 3' })).toBeInTheDocument();
     expect(within(section).getByText('Al terminar la ruta')).toBeInTheDocument();
@@ -158,7 +170,7 @@ describe('ReportPage — con el análisis profundo completo', () => {
 
     renderPage();
 
-    const section = await screen.findByRole('region', { name: 'Marco de referencia' });
+    const section = await openSection('Marco de referencia');
     expect(within(section).getByText(/KTH Innovation Readiness Level/)).toBeInTheDocument();
     expect(
       within(section).getByText('Marco IRL © KTH Innovation. Licencia CC BY-NC-SA 4.0.'),
@@ -187,7 +199,7 @@ describe('ReportPage — las respuestas al cuestionario', () => {
 
     renderPage();
 
-    const section = await screen.findByRole('region', { name: 'Respuestas al cuestionario' });
+    const section = await openSection('Respuestas al cuestionario');
     const grid = within(section).getByRole('table');
     const cells = within(grid).getAllByRole('button');
     expect(cells).toHaveLength(48);
@@ -206,7 +218,7 @@ describe('ReportPage — las respuestas al cuestionario', () => {
 
     renderPage();
 
-    const section = await screen.findByRole('region', { name: 'Respuestas al cuestionario' });
+    const section = await openSection('Respuestas al cuestionario');
     const tabs = within(section).getAllByRole('tab');
     expect(tabs).toHaveLength(6);
     expect(tabs[0]).toHaveTextContent('Tecnología');
@@ -222,12 +234,118 @@ describe('ReportPage — las respuestas al cuestionario', () => {
 
     renderPage();
 
-    const section = await screen.findByRole('region', { name: 'Respuestas al cuestionario' });
+    const section = await openSection('Respuestas al cuestionario');
     await user.click(within(section).getByRole('button', { name: /^Financiación, afirmación 3:/ }));
 
     const panel = within(section).getByRole('tabpanel');
     expect(within(panel).getByText('Afirmación 3 de FRL')).toBeInTheDocument();
     expect(within(section).getByRole('tab', { selected: true })).toHaveTextContent('Financiación');
+  });
+});
+
+describe('ReportPage — secciones plegables', () => {
+  const TITLES = [
+    'Datos de la iniciativa',
+    'Perfil de seis dimensiones',
+    'Brechas, alertas y desequilibrios',
+    'Recomendación del portafolio INNLAB',
+    'Ruta de escalamiento',
+    'Respuestas al cuestionario',
+    'Marco de referencia',
+  ];
+
+  function toggleOf(title: string): HTMLElement {
+    return screen.getByRole('button', { name: title });
+  }
+
+  it('abre primero la iniciativa, el perfil y la recomendación; el resto empieza plegado', async () => {
+    backend({ completed: true });
+
+    renderPage();
+    await screen.findByRole('region', { name: 'Datos de la iniciativa' });
+
+    const open = TITLES.filter((t) => toggleOf(t).getAttribute('aria-expanded') === 'true');
+    expect(open).toEqual([
+      'Datos de la iniciativa',
+      'Perfil de seis dimensiones',
+      'Recomendación del portafolio INNLAB',
+    ]);
+    // A folded section keeps its title and description, but not its content.
+    const roadmap = screen.getByRole('region', { name: 'Ruta de escalamiento' });
+    expect(within(roadmap).queryByRole('heading', { name: 'Fase 1' })).not.toBeInTheDocument();
+  });
+
+  it('cada título dice qué contenido controla y si está abierto', async () => {
+    backend({ completed: true });
+
+    renderPage();
+    await screen.findByRole('region', { name: 'Datos de la iniciativa' });
+
+    const toggle = toggleOf('Ruta de escalamiento');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveAttribute('aria-controls', 'report-roadmap-content');
+    expect(document.getElementById('report-roadmap-content')).not.toBeNull();
+    // The button lives inside the section's heading (WAI-ARIA accordion).
+    expect(toggle.closest('h2')).not.toBeNull();
+  });
+
+  it('se abre y se pliega con el teclado (Enter y Espacio)', async () => {
+    backend({ completed: true });
+    const user = userEvent.setup();
+
+    renderPage();
+    await screen.findByRole('region', { name: 'Datos de la iniciativa' });
+
+    const toggle = toggleOf('Ruta de escalamiento');
+    toggle.focus();
+    await user.keyboard('{Enter}');
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('heading', { name: 'Fase 1' })).toBeInTheDocument();
+
+    await user.keyboard(' ');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('heading', { name: 'Fase 1' })).not.toBeInTheDocument();
+  });
+
+  it('«Expandir todas» abre todas y «Contraer todas» las pliega', async () => {
+    backend({ completed: true });
+    const user = userEvent.setup();
+
+    renderPage();
+    await screen.findByRole('region', { name: 'Datos de la iniciativa' });
+
+    await user.click(screen.getByRole('button', { name: 'Expandir todas' }));
+    for (const t of TITLES) expect(toggleOf(t)).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: 'Expandir todas' })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Contraer todas' }));
+    for (const t of TITLES) expect(toggleOf(t)).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: 'Contraer todas' })).toBeDisabled();
+  });
+
+  it('elegir una sección plegada en la barra la abre', async () => {
+    backend({ completed: true });
+    const user = userEvent.setup();
+
+    renderPage();
+    const nav = await screen.findByRole('navigation', { name: 'Secciones del reporte' });
+
+    await user.click(within(nav).getByRole('link', { name: 'Respuestas' }));
+
+    expect(toggleOf('Respuestas al cuestionario')).toHaveAttribute('aria-expanded', 'true');
+    const section = screen.getByRole('region', { name: 'Respuestas al cuestionario' });
+    expect(within(section).getByRole('table')).toBeInTheDocument();
+  });
+
+  it('plegar secciones no cambia la descarga: el PDF sigue disponible y completo', async () => {
+    backend({ completed: true });
+    const user = userEvent.setup();
+
+    renderPage();
+    await screen.findByRole('region', { name: 'Datos de la iniciativa' });
+    await user.click(screen.getByRole('button', { name: 'Contraer todas' }));
+
+    expect(screen.getByRole('button', { name: /Descargar reporte/ })).toBeEnabled();
   });
 });
 

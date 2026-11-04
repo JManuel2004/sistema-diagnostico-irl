@@ -36,7 +36,11 @@ export const initiativeFormSchema = registerInitiativeSchema.omit({ initiativeId
     .string()
     .trim()
     .min(1, 'El tamaño del equipo es obligatorio')
-    .pipe(z.coerce.number().pipe(registerInitiativeSchema.shape.teamSize)),
+    .pipe(
+      z.coerce
+        .number({ invalid_type_error: 'Escribe el número de personas en cifras' })
+        .pipe(registerInitiativeSchema.shape.teamSize),
+    ),
 });
 
 /**
@@ -104,15 +108,7 @@ export function initiativeToFormValues(initiative: Initiative): InitiativeFormVa
   };
 }
 
-/** The profile fields when the form is valid, or `null` while it is not. */
-export function profileFieldsFromForm(
-  values: InitiativeFormValues,
-): InitiativeProfileFields | null {
-  const parsed = initiativeFormSchema.safeParse(values);
-  return parsed.success ? parsed.data : null;
-}
-
-/** The draft stored in the browser, to fill the form again. */
+/** The profile fields as the form holds them, to keep a submitted one in the draft. */
 export function commandToFormValues(command: InitiativeProfileFields): InitiativeFormValues {
   return {
     name: command.name,

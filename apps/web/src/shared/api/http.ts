@@ -132,6 +132,16 @@ export async function postParsed<T>(
   return schema.parse(data);
 }
 
+/** PUT to our backend and validate the response against its contract. */
+export async function putParsed<T>(
+  url: string,
+  body: unknown,
+  schema: ZodType<T, ZodTypeDef, unknown>,
+): Promise<T> {
+  const { data } = await http.put<unknown>(url, body);
+  return schema.parse(data);
+}
+
 /** A file served by our backend, with the name it suggests saving it under. */
 export interface DownloadedFile {
   readonly blob: Blob;

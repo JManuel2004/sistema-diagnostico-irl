@@ -1,0 +1,13 @@
+# Build contexts that start at the repository root (infra/deploy/*.Dockerfile).
+**/node_modules
+**/dist
+**/dist-e2e
+**/build
+**/coverage
+**/test-results
+**/playwright-report
+**/.env
+**/.env.local
+**/.env.*.local
+.git
+reports

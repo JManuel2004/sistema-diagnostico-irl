@@ -1,23 +1,24 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useInitiativeDraftStore, type InitiativeDraft } from '../initiative-draft.store';
 
-const COMMAND: InitiativeDraft['command'] = {
+const VALUES: InitiativeDraft['values'] = {
   name: 'AgroConecta',
   sectorId: '1',
+  customSector: '',
   productType: 'App web',
   stageId: '2',
   declaredStage: 'Piloto completado',
-  teamSize: 3,
+  teamSize: '3',
   teamDescription: 'Fundadora y equipo',
   targetMarket: 'Productores de café',
   currentFunding: 'Ahorros',
 };
 
-const DRAFT: InitiativeDraft = { initiativeId: null, command: COMMAND };
+const DRAFT: InitiativeDraft = { initiativeId: null, values: VALUES };
 
 describe('initiative draft store', () => {
   beforeEach(() => {
-    sessionStorage.clear();
+    localStorage.clear();
     useInitiativeDraftStore.setState({
       diagnosticId: null,
       draft: null,
@@ -34,7 +35,7 @@ describe('initiative draft store', () => {
 
   it('conserva la iniciativa elegida, o la que el paso 2 creó, junto al formulario', () => {
     useInitiativeDraftStore.getState().initialize('d1');
-    useInitiativeDraftStore.getState().save({ initiativeId: 'i1', command: COMMAND });
+    useInitiativeDraftStore.getState().save({ initiativeId: 'i1', values: VALUES });
 
     expect(useInitiativeDraftStore.getState().draft?.initiativeId).toBe('i1');
   });
@@ -80,11 +81,19 @@ describe('initiative draft store', () => {
     expect(useInitiativeDraftStore.getState().acceptedTermsVersion).toBeNull();
   });
 
-  it('vive en sessionStorage, no en localStorage: muere con la pestaña', () => {
+  it('guarda también un formulario a medio llenar', () => {
+    useInitiativeDraftStore.getState().initialize('d1');
+    useInitiativeDraftStore
+      .getState()
+      .save({ initiativeId: null, values: { ...VALUES, teamSize: '', stageId: '' } });
+
+    expect(useInitiativeDraftStore.getState().draft?.values.name).toBe('AgroConecta');
+  });
+
+  it('vive en localStorage: sobrevive a cerrar la pestaña y la sesión', () => {
     useInitiativeDraftStore.getState().initialize('d1');
     useInitiativeDraftStore.getState().save(DRAFT);
 
-    expect(sessionStorage.getItem('innlab.initiative-draft.v2')).toContain('AgroConecta');
-    expect(localStorage.getItem('innlab.initiative-draft.v2')).toBeNull();
+    expect(localStorage.getItem('innlab.initiative-draft.v3')).toContain('AgroConecta');
   });
 });
