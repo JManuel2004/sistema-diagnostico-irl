@@ -118,7 +118,7 @@ export const SERVICES: readonly ServiceSeed[] = [
     description:
       'Tu organización plantea un reto y equipos de estudiantes lo atacan en formato intensivo: desde una tarde de ideación hasta un sprint de 5 días continuos. Puede ser abierto (convocatoria a toda la comunidad universitaria) o cerrado (un curso o grupo seleccionado). Terminas con un banco de ideas y prototipos tempranos.',
     scope:
-      'Banco de ideas, conceptos y prototipos tempranos (TRL 3–5) + informe síntesis del sprint.',
+      'Banco de ideas, conceptos y prototipos tempranos + informe síntesis del sprint.',
     tier: 'descubre',
     adjustmentOnly: false,
   },
@@ -139,7 +139,7 @@ export const SERVICES: readonly ServiceSeed[] = [
     description:
       'Tu reto entra como proyecto oficial de una materia: todos los equipos del curso trabajan sobre él durante semanas, guiados por el profesor. En pregrado (4–18 semanas) exploran y prototipan; en posgrado (5–7 semanas, con estudiantes de maestría) lo abordan con mirada estratégica. Resultado: un banco de ideas amplio con varios caminos de solución.',
     scope:
-      'Banco de ideas y prototipos con madurez TRL 4–6, presentados ante tu equipo.',
+      'Banco de ideas y prototipos, presentados ante tu equipo.',
     tier: 'co-crea',
     adjustmentOnly: false,
   },
@@ -149,7 +149,7 @@ export const SERVICES: readonly ServiceSeed[] = [
     description:
       'Estudiantes de semilleros de innovación e investigación — acompañados por un experto mentor — trabajan tu reto en paralelo a sus estudios, con dedicación semanal constante. Más profundidad que un reto de aula, más flexibilidad que una célula de tiempo completo.',
     scope:
-      'Prototipos avanzados y pruebas con usuarios (TRL 6–7), con entregas periódicas.',
+      'Prototipos avanzados y pruebas con usuarios, con entregas periódicas.',
     tier: 'co-crea',
     adjustmentOnly: false,
   },
@@ -159,7 +159,7 @@ export const SERVICES: readonly ServiceSeed[] = [
     description:
       'Equipos de estudiantes de últimos semestres dedican su proyecto de grado a tu desafío: medio año de investigación profunda y medio de implementación, con tutor y asesores expertos. El resultado llega a prototipos avanzados, listos para validación de mercado.',
     scope:
-      'Informe de investigación + prototipo avanzado (TRL 6–7) previo a comprobación de mercado.',
+      'Informe de investigación + prototipo avanzado previo a comprobación de mercado.',
     tier: 'profundiza',
     adjustmentOnly: false,
   },
@@ -169,7 +169,7 @@ export const SERVICES: readonly ServiceSeed[] = [
     description:
       'Estudiantes de maestría (Gestión de la Innovación, Experiencia de Usuario) convierten tu reto en su trabajo de grado: análisis con profundidad profesional, marcos estratégicos y validación. Perfil senior: la mayoría ya lidera equipos en sus propias organizaciones.',
     scope:
-      'Diagnóstico, estrategia y conceptos validados (TRL 3–5) con calidad de consultoría.',
+      'Diagnóstico, estrategia y conceptos validados con calidad de consultoría.',
     tier: 'profundiza',
     adjustmentOnly: false,
   },
@@ -189,7 +189,7 @@ export const SERVICES: readonly ServiceSeed[] = [
     description:
       'Un equipo de 2 a 5 practicantes con un experto de la Universidad se instala en tu organización para desarrollar proyectos de innovación de forma continua. Capacidad dedicada, con estándar académico y ritmo de industria.',
     scope:
-      'Proyectos desarrollados hasta prototipo avanzado y validación (TRL 6–7) dentro de tu operación.',
+      'Proyectos desarrollados hasta prototipo avanzado y validación dentro de tu operación.',
     tier: 'profundiza',
     adjustmentOnly: false,
   },
@@ -198,7 +198,7 @@ export const SERVICES: readonly ServiceSeed[] = [
     subtitle: 'Consultoría colaborativa',
     description:
       'Trabajo directo de los profesionales de la Universidad — con estudiantes monitores — para desarrollar soluciones con calidad lista para el mercado: productos, servicios, experiencias digitales, analítica y culturas de innovación.',
-    scope: 'Desarrollo profesional listo para el mercado (TRL 7–9).',
+    scope: 'Desarrollo profesional listo para el mercado.',
     tier: 'aliate',
     adjustmentOnly: false,
   },
@@ -208,7 +208,7 @@ export const SERVICES: readonly ServiceSeed[] = [
     description:
       'Una célula estable de expertos y talento Icesi trabaja durante un año como el laboratorio de innovación de tu organización: backlog conjunto, ciclos continuos de desarrollo y resultados de alta madurez. Tú pones los retos; el campus pone el laboratorio.',
     scope:
-      'Portafolio continuo de soluciones de alta madurez (TRL 7–8) durante todo el año.',
+      'Portafolio continuo de soluciones de alta madurez durante todo el año.',
     tier: 'aliate',
     adjustmentOnly: false,
   },

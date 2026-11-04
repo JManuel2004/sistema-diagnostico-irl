@@ -7,7 +7,7 @@ const CARDS: Record<string, Omit<ServiceDetail, 'idService' | 'name'>> = {
     description:
       'Tu organización plantea un reto y equipos de estudiantes lo atacan en formato intensivo.',
     scope:
-      'Banco de ideas, conceptos y prototipos tempranos (TRL 3–5) + informe síntesis del sprint.',
+      'Banco de ideas, conceptos y prototipos tempranos + informe síntesis del sprint.',
     band: { minLevel: 3, maxLevel: 5 },
     tier: {
       code: 'descubre',
@@ -33,7 +33,7 @@ const CARDS: Record<string, Omit<ServiceDetail, 'idService' | 'name'>> = {
   'Reto en el Aula': {
     subtitle: 'Proyectos académicos integradores (pregrado y posgrado)',
     description: 'Tu reto entra como proyecto oficial de una materia.',
-    scope: 'Banco de ideas y prototipos con madurez TRL 4–6, presentados ante tu equipo.',
+    scope: 'Banco de ideas y prototipos, presentados ante tu equipo.',
     band: { minLevel: 4, maxLevel: 6 },
     tier: {
       code: 'co-crea',
@@ -46,7 +46,7 @@ const CARDS: Record<string, Omit<ServiceDetail, 'idService' | 'name'>> = {
   'Semillero con Propósito': {
     subtitle: 'Co.seeds — semilleros de innovación',
     description: 'Estudiantes de semilleros trabajan tu reto en paralelo a sus estudios.',
-    scope: 'Prototipos avanzados y pruebas con usuarios (TRL 6–7), con entregas periódicas.',
+    scope: 'Prototipos avanzados y pruebas con usuarios, con entregas periódicas.',
     band: { minLevel: 6, maxLevel: 7 },
     tier: {
       code: 'co-crea',
@@ -59,7 +59,7 @@ const CARDS: Record<string, Omit<ServiceDetail, 'idService' | 'name'>> = {
   'Consultoría Experta': {
     subtitle: 'Consultoría colaborativa',
     description: 'Trabajo directo de los profesionales de la Universidad.',
-    scope: 'Desarrollo profesional listo para el mercado (TRL 7–9).',
+    scope: 'Desarrollo profesional listo para el mercado.',
     band: { minLevel: 7, maxLevel: 9 },
     tier: {
       code: 'aliate',

@@ -133,7 +133,7 @@ describe('Catalog seed (integration)', () => {
     expect(reto).toEqual({
       subtitle: 'Hackatón · Design Sprint · Challenge',
       scope:
-        'Banco de ideas, conceptos y prototipos tempranos (TRL 3–5) + informe síntesis del sprint.',
+        'Banco de ideas, conceptos y prototipos tempranos + informe síntesis del sprint.',
       tier: 'Descubre',
     });
   });

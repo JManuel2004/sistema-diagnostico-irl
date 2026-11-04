@@ -189,7 +189,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
     expect(dto.primary).toMatchObject({
       subtitle: 'TdG — Trabajos de Grado (maestrías en Innovación y UX)',
       scope:
-        'Diagnóstico, estrategia y conceptos validados (TRL 3–5) con calidad de consultoría.',
+        'Diagnóstico, estrategia y conceptos validados con calidad de consultoría.',
       band: { minLevel: 3, maxLevel: 5 },
       tier: {
         code: 'profundiza',

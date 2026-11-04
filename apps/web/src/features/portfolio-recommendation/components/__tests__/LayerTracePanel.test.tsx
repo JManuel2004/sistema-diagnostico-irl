@@ -624,7 +624,7 @@ describe('RecommendationSummary', () => {
       screen.getAllByRole('heading', { name: 'Alcance y entregables' })[0],
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Desarrollo profesional listo para el mercado (TRL 7–9).'),
+      screen.getByText('Desarrollo profesional listo para el mercado.'),
     ).toBeInTheDocument();
   });
 

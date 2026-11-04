@@ -63,7 +63,8 @@ describe('Seed de enrutamiento — portafolio oficial', () => {
   it('cada servicio trae nombre, subtítulo, descripción, alcance y nivel, separados', () => {
     const reto = SERVICES.find((s) => s.name === 'Reto Express')!;
     expect(reto.subtitle).toBe('Hackatón · Design Sprint · Challenge');
-    expect(reto.scope).toContain('prototipos tempranos (TRL 3–5)');
+    expect(reto.scope).toContain('prototipos tempranos');
+    expect(reto.scope).not.toMatch(/TRL/);
     expect(reto.tier).toBe('descubre');
     // The name never carries the subtitle glued to it.
     for (const s of SERVICES) expect(s.name).not.toContain(s.subtitle);

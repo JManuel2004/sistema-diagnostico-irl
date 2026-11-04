@@ -763,9 +763,8 @@ describe('ResultsPage — el análisis profundo se entiende sin conocer el siste
     await user.click(screen.getByRole('button', { name: /Cómo se armó este plan/ }));
     await screen.findByText('Se dejó Consultoría Experta como primera opción');
 
-    // The portfolio's own texts are catalog data shown as they are: «Qué
-    // puede lograr» says «TRL 3–5». What must not appear is a code the page
-    // adds on its own.
+    // The portfolio's own texts are catalog data shown as they are. What
+    // must not appear is a code the page adds on its own.
     const catalogTexts = [
       ...agroconectaRoadmapFixture().phases.flatMap((p) => (p.service ? [p.service.scope] : [])),
       RECOMMENDATION.primary.scope,
