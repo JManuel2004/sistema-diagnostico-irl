@@ -49,7 +49,11 @@ async function mailpit<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-describe('Correo del reporte a INNLAB (e2e, buzón de pruebas real)', () => {
+// This suite talks to Mailpit over SMTP. The deploy sends through Resend,
+// and GitHub Actions has no Mailpit, so the suite stays local.
+const describeInbox = process.env.CI === 'true' ? describe.skip : describe;
+
+describeInbox('Correo del reporte a INNLAB (e2e, buzón de pruebas real)', () => {
   let booted: BootedApp;
   let diagnosticId: string;
   let initiativeId: string;
