@@ -257,7 +257,9 @@ function FullReport({ report }: { readonly report: DiagnosticReport }): JSX.Elem
 
 /**
  * A sticky bar to each section, marking the one being read, like the
- * results'. Choosing a folded section opens it.
+ * results'. Choosing a folded section opens it. The seven fit the page's
+ * width; on a narrow screen the bar scrolls sideways without showing a
+ * scrollbar.
  */
 function ReportSectionNav({ sections }: { readonly sections: ReportSections }): JSX.Element {
   const active = useActiveSection(SECTION_IDS);
@@ -265,9 +267,9 @@ function ReportSectionNav({ sections }: { readonly sections: ReportSections }): 
   return (
     <nav
       aria-label="Secciones del reporte"
-      className="border-border bg-background/95 supports-[backdrop-filter]:bg-background/90 sticky top-16 z-10 -mx-4 -mb-6 overflow-x-auto border-y px-4 shadow-[0_6px_16px_-10px_rgba(43,43,61,0.18)] backdrop-blur sm:-mx-8 sm:-mb-10 sm:px-8 md:top-[4.75rem]"
+      className="border-border bg-background/95 supports-[backdrop-filter]:bg-background/90 sticky top-16 z-10 -mx-4 -mb-6 overflow-x-auto border-y px-4 shadow-[0_6px_16px_-10px_rgba(43,43,61,0.18)] backdrop-blur [scrollbar-width:none] sm:-mx-8 sm:-mb-10 sm:px-8 md:top-[4.75rem] [&::-webkit-scrollbar]:hidden"
     >
-      <ul className="flex min-w-max gap-6">
+      <ul className="flex min-w-max justify-between gap-4">
         {SECTIONS.map((section) => (
           <li key={section.id}>
             <a

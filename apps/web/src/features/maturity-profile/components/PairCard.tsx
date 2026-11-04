@@ -8,7 +8,7 @@ import type {
 import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { Badge } from '@/shared/ui/badge';
 import { LevelBar } from '@/shared/ui/level-bar';
-import { imbalanceRisk } from '../utils/imbalance-risks';
+import { bothInGapRisk, imbalanceRisk } from '../utils/imbalance-risks';
 import type { HighlightHandler } from './MaturityProfileSummary';
 
 /**
@@ -18,7 +18,8 @@ import type { HighlightHandler } from './MaturityProfileSummary';
  * and a sentence anyone can understand, without codes or symbols. A pair
  * with an alert also says what the initiative risks while it stays apart
  * (`imbalanceRisk`), so the reader knows why closing it matters; when both
- * dimensions are in gap there is no one ahead, and no risk of the pair.
+ * dimensions are in gap there is no one ahead, and the risk is of the two
+ * being weak together (`bothInGapRisk`).
  */
 interface Props {
   readonly pair: ImbalancePairResult;
@@ -99,11 +100,13 @@ export function PairCard({ pair, names, levels, bothInGap, onHighlight }: Props)
   const higher = leftLevel >= rightLevel ? left : right;
   const lower = leftLevel >= rightLevel ? right : left;
   const risk =
-    pair.classification !== 'acceptable' && !bothInGap && pair.difference > 0
-      ? leftLevel >= rightLevel
-        ? imbalanceRisk(pair.left, pair.right)
-        : imbalanceRisk(pair.right, pair.left)
-      : null;
+    pair.classification === 'acceptable' || pair.difference === 0
+      ? null
+      : bothInGap
+        ? bothInGapRisk(pair.left, pair.right)
+        : leftLevel >= rightLevel
+          ? imbalanceRisk(pair.left, pair.right)
+          : imbalanceRisk(pair.right, pair.left);
 
   let headline: string;
   if (pair.difference === 0) headline = 'Van exactamente al mismo nivel.';
