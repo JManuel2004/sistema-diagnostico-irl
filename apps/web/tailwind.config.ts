@@ -86,6 +86,7 @@ const config: Config = {
 
         dimension: PALETTE.dimension,
         likert: PALETTE.likert,
+        maturity: PALETTE.maturity,
       },
       // Straight corners everywhere, like innlab.org. `rounded-full` is still
       // available for circles (Likert scale, steps, dots).

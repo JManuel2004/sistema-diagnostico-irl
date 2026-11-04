@@ -7,6 +7,7 @@ import { Tooltip } from '@/shared/ui/tooltip';
 import { GlossaryTerm } from '@/shared/ui/glossary-term';
 import { LevelBar } from '@/shared/ui/level-bar';
 import { formatOneDecimal } from '@/shared/lib/format';
+import { maturityBand, maturitySegmentClass } from '@/shared/lib/maturity-scale';
 
 /**
  * Header of the results: the profile belongs to **an initiative**, so the
@@ -16,7 +17,9 @@ import { formatOneDecimal } from '@/shared/lib/format';
  * of the profile. The average has decimals; its meaning is the one of the
  * whole level the backend rounds it to (`globalLevel`, half up: 3,5 → 4),
  * read in a tooltip over the score itself, so the card stays a number and
- * not a paragraph.
+ * not a paragraph. The number and its bar take the color of its maturity
+ * band (red to green, like the framework's thermometer), with the band's
+ * word next to them.
  *
  * The name and the description arrive as text: this component does not
  * know where they come from (the initiative belongs to another feature and
@@ -51,6 +54,7 @@ export function ProfileHero({
   children,
 }: Props): JSX.Element {
   const names = new Map(dimensionResults.map((r) => [r.dimensionCode, r.shortName]));
+  const band = maturityBand(globalLevel?.level ?? globalAverage);
   const label = (codes: readonly string[]): string =>
     codes.map((c) => names.get(c as DimensionResult['dimensionCode']) ?? c).join(', ');
 
@@ -69,10 +73,15 @@ export function ProfileHero({
             {description}
           </p>
         )}
-        {(sectorName !== undefined || stageName !== undefined) && (
-          <p className="mt-4 flex flex-wrap items-center gap-2">
-            {sectorName !== undefined && <Badge tone="info">{sectorName}</Badge>}
-            {stageName !== undefined && <Badge>Etapa: {stageName}</Badge>}
+        {sectorName !== undefined && (
+          <p className="text-muted-foreground mt-4 max-w-prose text-base leading-snug">
+            <span className="text-foreground font-semibold">Sector: </span>
+            {sectorName}
+          </p>
+        )}
+        {stageName !== undefined && (
+          <p className="mt-3 flex flex-wrap items-center gap-2">
+            <Badge>Etapa: {stageName}</Badge>
           </p>
         )}
         {children}
@@ -97,14 +106,16 @@ export function ProfileHero({
                 <button
                   type="button"
                   aria-label={`${formatOneDecimal(globalAverage)} de 9: qué significa`}
-                  className="text-azul-icesi inline-flex cursor-help items-start gap-1 text-6xl font-extrabold tabular-nums leading-none tracking-[-0.04em] sm:text-[4.75rem]"
+                  className={`${band.textInk} inline-flex cursor-help items-start gap-1 text-6xl font-extrabold tabular-nums leading-none tracking-[-0.04em] sm:text-[4.75rem]`}
                 >
                   {formatOneDecimal(globalAverage)}
                   <Info className="mt-1 size-5 shrink-0" aria-hidden="true" />
                 </button>
               </Tooltip>
             ) : (
-              <span className="text-azul-icesi text-6xl font-extrabold tabular-nums leading-none tracking-[-0.04em] sm:text-[4.75rem]">
+              <span
+                className={`${band.textInk} text-6xl font-extrabold tabular-nums leading-none tracking-[-0.04em] sm:text-[4.75rem]`}
+              >
                 {formatOneDecimal(globalAverage)}
               </span>
             )}
@@ -112,10 +123,12 @@ export function ProfileHero({
           </p>
           <LevelBar
             level={globalLevel?.level ?? Math.round(globalAverage)}
-            fillClass="bg-azul-icesi"
+            fillClass={band.bg}
+            segmentFill={maturitySegmentClass}
             className="mt-4"
           />
-          <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
+          <p className={`${band.textInk} mt-2 text-sm font-bold`}>{band.label}</p>
+          <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
             Es el promedio de tus seis dimensiones en la escala de 1 a 9.
           </p>
 

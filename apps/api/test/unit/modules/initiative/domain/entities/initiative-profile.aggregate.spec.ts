@@ -11,6 +11,7 @@ function input(over: Record<string, unknown> = {}) {
     initiativeId: Uuid.create(INITIATIVE_ID),
     diagnosticId: Uuid.create(DIAGNOSTIC_ID),
     sectorId: '1',
+    sectorIsOther: false,
     name: 'AgroConecta',
     productType: 'Aplicación web',
     stageId: '2',
@@ -24,6 +25,38 @@ function input(over: Record<string, unknown> = {}) {
 }
 
 describe('InitiativeProfile', () => {
+  describe('register — the sector', () => {
+    it('with the «Otro» sector keeps the user’s own sector, trimmed', () => {
+      const profile = InitiativeProfile.register(
+        input({ sectorIsOther: true, customSector: '  Industria aeroespacial ' }),
+      );
+
+      expect(profile.customSector).toBe('Industria aeroespacial');
+    });
+
+    it('with the «Otro» sector requires the user’s own sector', () => {
+      for (const customSector of [undefined, null, '', '   ']) {
+        expect(() =>
+          InitiativeProfile.register(input({ sectorIsOther: true, customSector })),
+        ).toThrow(InvariantViolationError);
+      }
+    });
+
+    it('rejects an own sector longer than 120 characters', () => {
+      expect(() =>
+        InitiativeProfile.register(input({ sectorIsOther: true, customSector: 'x'.repeat(121) })),
+      ).toThrow(InvariantViolationError);
+    });
+
+    it('with a CIIU section discards any own sector left from «Otro»', () => {
+      const profile = InitiativeProfile.register(
+        input({ sectorIsOther: false, customSector: 'Nanotecnología' }),
+      );
+
+      expect(profile.customSector).toBeNull();
+    });
+  });
+
   describe('register', () => {
     it('creates an initiative with the whole profile', () => {
       const initiative = InitiativeProfile.register(input());
@@ -96,6 +129,7 @@ describe('InitiativeProfile', () => {
         initiativeId: INITIATIVE_ID,
         diagnosticId: DIAGNOSTIC_ID,
         sectorId: '3',
+        customSector: null,
         name: 'AgroConecta',
         productType: 'Aplicación web',
         stageId: '2',

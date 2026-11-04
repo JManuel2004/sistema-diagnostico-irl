@@ -11,6 +11,7 @@ import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { formatOneDecimal } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/utils';
 import { Chip } from '@/shared/ui/chip';
+import { LevelBar } from '@/shared/ui/level-bar';
 import { FALLBACK_SUBJECT } from '@/shared/lib/copy';
 
 interface Props {
@@ -26,11 +27,6 @@ interface Props {
   readonly subject?: string;
 }
 
-const LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
-
-/** Position of a level on the 1–9 scale, as a percentage of the track. */
-const position = (level: number): string => `${String(((level - 1) / 8) * 100)}%`;
-
 const PAIR_WORD: Record<ImbalancePairResult['classification'], string> = {
   critical: 'crítico',
   moderate: 'moderado',
@@ -43,8 +39,11 @@ const PAIR_WORD: Record<ImbalancePairResult['classification'], string> = {
  *
  *  - Two or three figures: the imbalances with an alert, the global IRL
  *    level and how many dimensions go up.
- *  - Each dimension on the 1–9 scale: a hollow dot where it is today, a
- *    filled one where the route leaves it, and the segment between them.
+ *  - Each dimension on the 1–9 scale as the segmented bar used across the
+ *    product: solid up to today's level and a soft tone up to where the
+ *    route leaves it, with both numbers. A bar of segments reads as a
+ *    result; the earlier dots on a track looked like a slider the user
+ *    could move (client validation).
  *  - The pairs that have to advance together, with their difference today
  *    (and its classification, from the profile) and at the end. Hovering a
  *    pair leaves only its two dimensions lit on the scale.
@@ -137,12 +136,12 @@ export function RoadmapEnding({
         </div>
         <p className="text-muted-foreground flex gap-5 text-sm" aria-hidden="true">
           <span className="inline-flex items-center gap-2">
-            <span className="border-muted-foreground bg-background size-3.5 rounded-full border-2" />
+            <span className="bg-foreground h-2 w-5 rounded-sm" />
             Hoy
           </span>
           <span className="inline-flex items-center gap-2">
-            <span className="bg-foreground size-3.5 rounded-full" />
-            Al terminar
+            <span className="bg-foreground/25 h-2 w-5 rounded-sm" />
+            Lo que sube con la ruta
           </span>
         </p>
       </div>
@@ -180,17 +179,7 @@ export function RoadmapEnding({
         <div className="min-w-0 flex-[999_1_30rem]">
           <div className="border-border grid grid-cols-[9rem_minmax(0,1fr)_3rem] items-center gap-3 border-b pb-1.5 sm:grid-cols-[11rem_minmax(0,1fr)_3rem]">
             <span className="text-muted-foreground text-sm font-bold">Dimensión</span>
-            <span className="relative mx-2 h-5" aria-hidden="true">
-              {LEVELS.map((level) => (
-                <span
-                  key={level}
-                  className="text-muted-foreground absolute -translate-x-1/2 text-sm font-semibold"
-                  style={{ left: position(level) }}
-                >
-                  {level}
-                </span>
-              ))}
-            </span>
+            <span className="text-muted-foreground text-sm font-bold">Nivel, de 1 a 9</span>
             <span className="text-muted-foreground text-right text-sm font-bold">Sube</span>
           </div>
           <ul>
@@ -204,7 +193,7 @@ export function RoadmapEnding({
                 <li
                   key={code}
                   className={cn(
-                    'border-border/60 grid h-11 grid-cols-[9rem_minmax(0,1fr)_3rem] items-center gap-3 border-b transition-opacity sm:grid-cols-[11rem_minmax(0,1fr)_3rem]',
+                    'border-border/60 grid min-h-11 grid-cols-[9rem_minmax(0,1fr)_3rem] items-center gap-3 border-b py-2 transition-opacity sm:grid-cols-[11rem_minmax(0,1fr)_3rem]',
                     faded && 'opacity-30',
                   )}
                 >
@@ -212,29 +201,13 @@ export function RoadmapEnding({
                     <span className={`${visual.bg} size-2.5 shrink-0 rounded-full`} />
                     {name(code)}
                   </span>
-                  <span
-                    role="img"
-                    aria-label={`${name(code)}: hoy nivel ${String(from)}, al terminar nivel ${String(to)}`}
-                    className="relative mx-2 h-5"
-                  >
-                    <span className="bg-border absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2" />
-                    <span
-                      className={`${visual.soft} absolute top-1/2 h-1.5 -translate-y-1/2`}
-                      style={{ left: position(from), width: `${String((up / 8) * 100)}%` }}
-                    />
-                    <span
-                      className="border-muted-foreground bg-background absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
-                      style={{ left: position(from) }}
-                    />
-                    <span
-                      className="border-background absolute top-1/2 size-[1.125rem] -translate-x-1/2 -translate-y-1/2 rounded-full border-2"
-                      style={{
-                        left: position(to),
-                        backgroundColor: visual.fill,
-                        boxShadow: `0 0 0 1px ${visual.color}`,
-                      }}
-                    />
-                  </span>
+                  <LevelBar
+                    level={from}
+                    targetLevel={up > 0 ? to : undefined}
+                    fillClass={visual.bg}
+                    softClass={visual.soft}
+                    label={`${name(code)}: hoy nivel ${String(from)}, al terminar nivel ${String(to)}`}
+                  />
                   <span
                     className={cn(
                       'text-right text-base font-extrabold tabular-nums',

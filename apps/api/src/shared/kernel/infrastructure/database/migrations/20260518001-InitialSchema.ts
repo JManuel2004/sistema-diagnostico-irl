@@ -199,10 +199,17 @@ const UP: readonly string[] = [
   // ── irl_catalog: initiative ───────────────────────────────────────────
   `CREATE TABLE irl_catalog.sector (
       id bigint GENERATED ALWAYS AS IDENTITY,
-      name character varying(120) NOT NULL,
+      code character varying(4),
+      name character varying(200) NOT NULL,
+      classification character varying(40) NOT NULL,
+      is_other boolean DEFAULT false NOT NULL,
+      description character varying(160) DEFAULT '' NOT NULL,
+      keywords text[] DEFAULT '{}' NOT NULL,
       is_active boolean DEFAULT true NOT NULL,
       CONSTRAINT pk_sector PRIMARY KEY (id),
-      CONSTRAINT uq_sector_name UNIQUE (name)
+      CONSTRAINT uq_sector_name UNIQUE (name),
+      CONSTRAINT uq_sector_code UNIQUE (code),
+      CONSTRAINT ck_sector_other_without_code CHECK (NOT is_other OR code IS NULL)
   )`,
   `CREATE TABLE irl_catalog.initiative_stage (
       id bigint GENERATED ALWAYS AS IDENTITY,
@@ -357,7 +364,7 @@ const UP: readonly string[] = [
       CONSTRAINT pk_diagnostic PRIMARY KEY (id),
       CONSTRAINT ck_diagnostic_state CHECK (state IN (
         'STARTED', 'WITH_CONSENT', 'WITH_INITIATIVE', 'QUESTIONNAIRE_IN_PROGRESS',
-        'QUESTIONNAIRE_COMPLETE', 'PROFILE_GENERATED', 'DEEP_ANALYSIS_DECLINED',
+        'QUESTIONNAIRE_COMPLETE', 'PROFILE_GENERATED',
         'DEEP_ANALYSIS_IN_PROGRESS', 'DEEP_ANALYSIS_COMPLETE'
       )),
       CONSTRAINT fk_diagnostic_framework_version FOREIGN KEY (id_framework_version) REFERENCES irl_catalog.framework_version (id)
@@ -377,6 +384,22 @@ const UP: readonly string[] = [
       CONSTRAINT ck_answer_likert_value CHECK (likert_value BETWEEN 1 AND 5),
       CONSTRAINT fk_answer_diagnostic FOREIGN KEY (id_diagnostic) REFERENCES irl_diagnostic.diagnostic (id) ON DELETE CASCADE,
       CONSTRAINT fk_answer_statement FOREIGN KEY (id_statement) REFERENCES irl_catalog.statement (id_statement)
+  )`,
+  // What the user has answered so far of a diagnostic still being filled in,
+  // so it survives closing the session. An entry may hold only the level,
+  // only the justification, or both; it goes with the diagnostic.
+  `CREATE TABLE irl_diagnostic.draft_answer (
+      id_diagnostic uuid NOT NULL,
+      id_statement bigint NOT NULL,
+      likert_value integer,
+      justification character varying(1000),
+      updated_at timestamp with time zone DEFAULT now() NOT NULL,
+      CONSTRAINT pk_draft_answer PRIMARY KEY (id_diagnostic, id_statement),
+      CONSTRAINT ck_draft_answer_not_empty CHECK (likert_value IS NOT NULL OR justification IS NOT NULL),
+      CONSTRAINT ck_draft_answer_justification CHECK (justification IS NULL OR justification ~ '\\S'),
+      CONSTRAINT ck_draft_answer_likert_value CHECK (likert_value IS NULL OR likert_value BETWEEN 1 AND 5),
+      CONSTRAINT fk_draft_answer_diagnostic FOREIGN KEY (id_diagnostic) REFERENCES irl_diagnostic.diagnostic (id) ON DELETE CASCADE,
+      CONSTRAINT fk_draft_answer_statement FOREIGN KEY (id_statement) REFERENCES irl_catalog.statement (id_statement)
   )`,
   `CREATE TABLE irl_diagnostic.dimension_result (
       id bigint GENERATED ALWAYS AS IDENTITY,
@@ -432,6 +455,7 @@ const UP: readonly string[] = [
       id_initiative uuid NOT NULL,
       id_diagnostic uuid NOT NULL,
       id_sector bigint NOT NULL,
+      custom_sector character varying(120),
       name character varying(200) NOT NULL,
       product_type character varying(500) NOT NULL,
       id_stage bigint NOT NULL,

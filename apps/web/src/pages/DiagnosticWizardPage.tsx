@@ -14,6 +14,7 @@ import {
   selectDraftDiagnosticId as selectQuestionnaireDiagnosticId,
   selectInitialize as selectQuestionnaireInitialize,
   useQuestionnaireDraftStore,
+  useServerDraftSync,
 } from '@features/questionnaire';
 import { PageShell } from '@/shared/ui/page-shell';
 import { buttonVariants } from '@/shared/ui/button';
@@ -74,12 +75,22 @@ export default function DiagnosticWizardPage(): JSX.Element {
     if (typeof window.scrollTo === 'function') window.scrollTo({ top: 0 });
   }, [step]);
 
+  const draftsReady =
+    diagnosticId !== undefined &&
+    initiativeDraftOwner === diagnosticId &&
+    questionnaireDraftOwner === diagnosticId;
+  // The questionnaire draft is saved on the server once there is a
+  // questionnaire to answer: after the initiative, before the profile.
+  const draftSync = useServerDraftSync(
+    diagnosticId ?? '',
+    draftsReady && Boolean(initiative.data) && diagnostic.data?.completed === false,
+  );
+
   if (!diagnosticId) return <Navigate to={paths.landing} replace />;
 
-  const pending = diagnostic.isPending || initiative.isPending || initiatives.isPending;
+  const pending =
+    diagnostic.isPending || initiative.isPending || initiatives.isPending || !draftSync.ready;
   const failed = diagnostic.isError || initiative.isError || initiatives.isError;
-  const draftsReady =
-    initiativeDraftOwner === diagnosticId && questionnaireDraftOwner === diagnosticId;
 
   if (diagnostic.data?.completed) {
     return <Navigate to={paths.results(diagnosticId)} replace />;
@@ -133,7 +144,11 @@ export default function DiagnosticWizardPage(): JSX.Element {
           />
         )}
         {step === 'cuestionario' && (
-          <QuestionnaireStep diagnosticId={diagnosticId} frameworkVersion={frameworkVersion} />
+          <QuestionnaireStep
+            diagnosticId={diagnosticId}
+            frameworkVersion={frameworkVersion}
+            saveStatus={draftSync.status}
+          />
         )}
         {step === 'resumen' && (
           <SummaryStep diagnosticId={diagnosticId} frameworkVersion={frameworkVersion} />

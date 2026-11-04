@@ -1,6 +1,11 @@
 import { Suspense, useState, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { QuestionnaireView, useQuestionnaireCompletion } from '@features/questionnaire';
+import {
+  DraftSaveStatus,
+  QuestionnaireView,
+  useQuestionnaireCompletion,
+  type DraftSaveState,
+} from '@features/questionnaire';
 import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
 import { Button, buttonVariants } from '@/shared/ui/button';
@@ -11,6 +16,8 @@ interface Props {
   readonly diagnosticId: string;
   /** The IRL framework version the diagnostic is answered with. */
   readonly frameworkVersion: string;
+  /** Whether the answers are saved on the server. */
+  readonly saveStatus: DraftSaveState;
 }
 
 /**
@@ -19,11 +26,16 @@ interface Props {
  * It blocks moving on to the summary if anything is missing (RF-06): each
  * statement needs **its answer**; the justification is optional. Trying to move on
  * incomplete lists which dimensions are missing (on top of the tabs' X/8
- * indicators) and the warning stays until nothing is missing. Nothing is
- * sent to the server here: the draft lives in the browser until «Procesar
- * diagnóstico» (step 4).
+ * indicators) and the warning stays until nothing is missing. The answers
+ * are saved on the server as a draft while the user answers, so they can
+ * close the session and continue later; they are processed only with
+ * «Procesar diagnóstico» (step 4).
  */
-export function QuestionnaireStep({ diagnosticId, frameworkVersion }: Props): JSX.Element {
+export function QuestionnaireStep({
+  diagnosticId,
+  frameworkVersion,
+  saveStatus,
+}: Props): JSX.Element {
   const navigate = useNavigate();
   const { catalog, incompleteDimensions, completedIn, isComplete } =
     useQuestionnaireCompletion(frameworkVersion);
@@ -46,7 +58,8 @@ export function QuestionnaireStep({ diagnosticId, frameworkVersion }: Props): JS
     <>
       <PageHeader
         title="Cuestionario IRL"
-        description="Responde 8 afirmaciones por dimensión con la escala Likert de 1 a 5 y explica en cada una por qué elegiste ese nivel. Sé lo más objetivo posible; la honestidad en las respuestas garantiza un diagnóstico más preciso y útil."
+        fullWidthDescription
+        description="Este paso mide qué tan madura está tu iniciativa en las seis dimensiones del marco IRL (Innovation Readiness Level) de KTH: tecnología, cliente, negocio, propiedad intelectual, equipo y financiación. Cada pestaña es una dimensión con afirmaciones sobre lo que tu iniciativa hace hoy: en cada una, elige qué tan de acuerdo estás con que la describe y, si quieres, cuenta por qué. Sé lo más objetivo posible; la honestidad en las respuestas garantiza un diagnóstico más preciso y útil."
       />
 
       {QuestionnaireAutofill && catalog && (
@@ -56,6 +69,10 @@ export function QuestionnaireStep({ diagnosticId, frameworkVersion }: Props): JS
           </div>
         </Suspense>
       )}
+
+      <div className="mb-4">
+        <DraftSaveStatus status={saveStatus} />
+      </div>
 
       <QuestionnaireView frameworkVersion={frameworkVersion} />
 

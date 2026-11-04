@@ -37,6 +37,8 @@ export default {
       // one writing.
       displayName: 'e2e',
       testMatch: ['<rootDir>/test/e2e/**/*.e2e-spec.ts'],
+      // No suite mails with the `.env` settings (see the file).
+      setupFiles: ['<rootDir>/test/e2e/no-real-mail.setup.ts'],
       preset: 'ts-jest/presets/default-esm',
       testEnvironment: 'node',
       moduleNameMapper: { '^(\\.{1,2}/.*)\\.js$': '$1' },

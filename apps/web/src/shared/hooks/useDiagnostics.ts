@@ -3,7 +3,11 @@ import { useParams } from 'react-router-dom';
 import { queryKeys } from '@/shared/api/query-keys';
 import { STALE_TIME } from '@/shared/api/query-client';
 import { useDiagnosticQuery } from './useDiagnosticQuery';
-import { getDiagnostic, listMyDiagnostics } from '@/shared/api/diagnostic.api';
+import {
+  getDiagnostic,
+  getInProgressDiagnostic,
+  listMyDiagnostics,
+} from '@/shared/api/diagnostic.api';
 
 /**
  * One diagnostic of the user. It carries `state`, `deepAnalysisAccepted` and
@@ -33,6 +37,19 @@ export function useMyDiagnostics(enabled = true) {
  * wizard has no results or panel to show. `undefined` while loading or if
  * the user has none finished.
  */
+/**
+ * The user's diagnostic still being filled in (`null` when none). Its
+ * answers are saved on the server, so it is offered from any session.
+ */
+export function useInProgressDiagnostic(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.diagnostic.inProgress,
+    queryFn: getInProgressDiagnostic,
+    enabled,
+    staleTime: STALE_TIME.diagnostic,
+  });
+}
+
 export function useActiveDiagnosticId(): string | undefined {
   const { id } = useParams<{ id: string }>();
   // Inside a diagnostic there is no need to ask for the list.

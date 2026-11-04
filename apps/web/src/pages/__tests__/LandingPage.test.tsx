@@ -96,11 +96,13 @@ describe('LandingPage — portada pública', () => {
     });
   });
 
-  // The landing promised more than the draft does.
-  it('no promete conservar el progreso entre sesiones', () => {
+  // The answers are saved on the server while the user answers (RF-19), so
+  // the landing can say the questionnaire takes one or several sessions; the
+  // time it takes is not shown (client validation).
+  it('dice que se puede responder en varias sesiones y no muestra el tiempo estimado', () => {
     renderPage();
 
-    expect(screen.queryByText(/entre sesiones/)).not.toBeInTheDocument();
-    expect(screen.getByText(/mientras mantengas abierta la pestaña/)).toBeInTheDocument();
+    expect(screen.getByText(/puedes responder en una o en varias sesiones/)).toBeInTheDocument();
+    expect(screen.queryByText(/minutos/)).not.toBeInTheDocument();
   });
 });

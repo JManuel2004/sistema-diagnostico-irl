@@ -18,17 +18,18 @@ export class TypeOrmInitiativeCatalogRepository implements InitiativeCatalogPort
     private readonly stages: Repository<InitiativeStageOrm>,
   ) {}
 
+  /** The active sectors by code, A to V, with «Otro» last. */
   async findAllSectors(): Promise<SectorCatalogEntry[]> {
     const rows = await this.sectors.find({
       where: { isActive: true },
-      order: { name: 'ASC' },
+      order: { isOther: 'ASC', code: 'ASC', name: 'ASC' },
     });
-    return rows.map((r) => ({ id: r.id, name: r.name }));
+    return rows.map(toSectorEntry);
   }
 
   async findSectorById(id: string): Promise<SectorCatalogEntry | null> {
     const row = await this.sectors.findOne({ where: { id } });
-    return row ? { id: row.id, name: row.name } : null;
+    return row ? toSectorEntry(row) : null;
   }
 
   async findAllStages(): Promise<InitiativeStageCatalogEntry[]> {
@@ -46,11 +47,29 @@ export class TypeOrmInitiativeCatalogRepository implements InitiativeCatalogPort
 
   async findStageById(id: string): Promise<InitiativeStageCatalogEntry | null> {
     const row = await this.stages.findOne({ where: { id } });
-    return row ? { id: row.id, code: row.code, name: row.name, sequence: row.sequence } : null;
+    return row
+      ? { id: row.id, code: row.code, name: row.name, sequence: row.sequence }
+      : null;
   }
 
-  async findStageByCode(code: string): Promise<InitiativeStageCatalogEntry | null> {
+  async findStageByCode(
+    code: string,
+  ): Promise<InitiativeStageCatalogEntry | null> {
     const row = await this.stages.findOne({ where: { code } });
-    return row ? { id: row.id, code: row.code, name: row.name, sequence: row.sequence } : null;
+    return row
+      ? { id: row.id, code: row.code, name: row.name, sequence: row.sequence }
+      : null;
   }
+}
+
+function toSectorEntry(row: SectorOrm): SectorCatalogEntry {
+  return {
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    classification: row.classification,
+    isOther: row.isOther,
+    description: row.description,
+    keywords: row.keywords,
+  };
 }

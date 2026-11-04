@@ -1,0 +1,31 @@
+[
+  {
+    "id": "5b8e7c1a-3f2d-4e6a-9b1c-7d4e2f8a6c01",
+    "email": "lider.agro@demo.innlab.local",
+    "name": "Laura",
+    "lastName": "Gómez",
+    "company": {
+      "id": "c0a1b2c3-d4e5-4f60-8a71-9b8c7d6e5f01",
+      "name": "AgroConecta (demo)",
+      "role": "OWNER"
+    }
+  },
+  {
+    "id": "8d2f4a6c-1e3b-4c5d-8e7f-9a0b1c2d3e02",
+    "email": "lider.salud@demo.innlab.local",
+    "name": "Andrés",
+    "lastName": "Ríos",
+    "company": {
+      "id": "c0a1b2c3-d4e5-4f60-8a71-9b8c7d6e5f02",
+      "name": "SaludVital (demo)",
+      "role": "MEMBER"
+    }
+  },
+  {
+    "id": "2c4e6a8b-0d1f-4a3c-9e5b-7d9f1a3c5e03",
+    "email": "sin.empresa@demo.innlab.local",
+    "name": "Camila",
+    "lastName": "Torres",
+    "company": null
+  }
+]

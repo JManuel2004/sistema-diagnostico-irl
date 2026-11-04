@@ -1,0 +1,91 @@
+# Local deployment of the whole system in SIMULATED sign-in mode: the SPA,
+# the API, its database, the test inbox and the sign-in simulator, each in
+# its own container, with ports that do not collide with the development
+# stack. Jenkins deploys it in its last stage; by hand:
+#
+#   AUTH_SIMULATOR_CONFIRM=simulated-sign-in-only \
+#     docker compose -f infra/deploy/docker-compose.yml -p irl-deploy up -d --build
+#
+#   Application   http://localhost:8080
+#   Sign-in       http://localhost:8091 (simulated: pick a test user)
+#   Mail inbox    http://localhost:8026
+#
+# The simulator signs in anyone as a test user: this deployment is for
+# demos and checks, never for real users.
+name: irl-deploy
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: irl_user
+      POSTGRES_PASSWORD: irl_dev_password
+      POSTGRES_DB: irl_diagnostic
+    volumes:
+      - irl-deploy-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U irl_user -d irl_diagnostic']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - '8026:8025'
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  auth-simulator:
+    build: ../../tools/auth-simulator
+    ports:
+      - '8091:8090'
+    environment:
+      AUTH_SIMULATOR_CONFIRM: ${AUTH_SIMULATOR_CONFIRM:-}
+      AUTH_SIMULATOR_ISSUER: http://localhost:8091
+      AUTH_SIMULATOR_INTERNAL_KEY: simulated-internal-key
+      AUTH_SIMULATOR_REDIRECT_ORIGINS: http://localhost:8080
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/deploy/api.Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      auth-simulator:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      APP_PORT: 3000
+      WEB_ORIGIN: http://localhost:8080
+      DATABASE_URL: postgresql://irl_user:irl_dev_password@db:5432/irl_diagnostic
+      # The API reaches the simulator by its service name; the issuer is the
+      # address the browser sees, compared as text.
+      COGNITO_JWKS_URI: http://auth-simulator:8090/.well-known/jwks.json
+      COGNITO_ISSUER: http://localhost:8091
+      INNLAB_API_BASE_URL: http://auth-simulator:8090/api
+      CORE_INTERNAL_KEY: simulated-internal-key
+      REPORT_NOTIFY_TO: innlab@innlab.example.com
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_FROM: noreply@innlab.example.com
+      LOG_LEVEL: info
+
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/deploy/web.Dockerfile
+      args:
+        VITE_API_BASE_URL: /api/v1
+        VITE_CORE_URL: http://localhost:8091
+        VITE_CORE_API_URL: http://localhost:8091/api
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '8080:80'
+
+volumes:
+  irl-deploy-data:

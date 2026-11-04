@@ -49,6 +49,8 @@ const PROFILE: MaturityProfileResponse = {
 async function fakeBackend(page: Page): Promise<string[]> {
   const calls: string[] = [];
   let created = false;
+  let started = false;
+  let draft: { entries: unknown[]; updatedAt: string | null } = { entries: [], updatedAt: null };
   let initiative = false;
   let completed = false;
 
@@ -88,7 +90,17 @@ async function fakeBackend(page: Page): Promise<string[]> {
         return json(route, ME_CONTEXT);
       case 'POST /diagnostics':
         calls.push('start');
+        started = true;
         return json(route, diagnostic(), 201);
+      case 'GET /diagnostics/in-progress':
+        return started && !completed ? json(route, diagnostic()) : notFound(route);
+      case 'GET /diagnostics/:id/questionnaire/draft':
+        return json(route, { diagnosticId: ID, ...draft });
+      case 'PUT /diagnostics/:id/questionnaire/draft': {
+        const body = request.postDataJSON() as { entries: unknown[] };
+        draft = { entries: body.entries, updatedAt: new Date().toISOString() };
+        return json(route, { diagnosticId: ID, ...draft });
+      }
       case 'GET /diagnostics':
         // Only completed diagnostics are listed (DIAGIRL-26).
         return json(
@@ -176,14 +188,27 @@ test('from the landing to the results through the four wizard steps', async ({ p
     page.getByRole('heading', { level: 1, name: 'Cuéntanos de tu iniciativa' }),
   ).toBeVisible();
   await page.getByLabel('Nombre de la iniciativa').fill('AgroConecta');
-  await page.getByLabel('Sector').selectOption(SECTORS[0].id);
-  await page.getByLabel('Etapa', { exact: true }).selectOption(STAGES[1].id);
-  await page.getByLabel('Tipo de producto o servicio').fill('Plataforma web');
-  await page.getByLabel('Etapa declarada').fill('Piloto con tres productores');
-  await page.getByLabel('Personas en el equipo').fill('3');
-  await page.getByLabel('Equipo', { exact: true }).fill('Fundadora y dos ingenieros');
-  await page.getByLabel('Mercado objetivo').fill('Productores de café');
-  await page.getByLabel('Financiamiento actual').fill('Ahorros propios');
+  // The sector is searched: typing filters the CIIU sections, Enter chooses.
+  const sector = page.getByRole('combobox', {
+    name: '¿A qué sector económico pertenece tu iniciativa?',
+  });
+  await sector.fill('agricultura');
+  await sector.press('Enter');
+  await expect(sector).toHaveValue(SECTORS[0].name);
+  await page.getByRole('combobox', { name: '¿En qué etapa está tu iniciativa?' }).click();
+  await page.getByRole('option', { name: STAGES[1].name }).click();
+  await page
+    .getByLabel('¿En qué consiste tu iniciativa? ¿Es un producto o un servicio?')
+    .fill('Plataforma web');
+  await page
+    .getByLabel('Cuéntanos con tus palabras en qué punto está')
+    .fill('Piloto con tres productores');
+  await page.getByLabel('¿Cuántas personas conforman el equipo?').fill('3');
+  await page.getByLabel('¿Qué hace cada persona del equipo?').fill('Fundadora y dos ingenieros');
+  await page
+    .getByLabel('¿Cuál es el mercado objetivo de tu iniciativa?')
+    .fill('Productores de café');
+  await page.getByLabel('¿Cómo se financia hoy tu iniciativa?').fill('Ahorros propios');
   await page.getByRole('button', { name: 'Continuar' }).click();
   await expect(page.getByText('Consentimiento registrado.')).toBeVisible();
 
@@ -208,8 +233,9 @@ test('from the landing to the results through the four wizard steps', async ({ p
   ).toBeVisible();
   await page.getByRole('button', { name: 'Procesar diagnóstico' }).click();
 
-  // The results, the first screen with navigation.
-  await expect(page).toHaveURL(`/diagnosticos/${ID}/resultados`);
+  // The results, the first screen with navigation, after the processing
+  // screen's minimum of 10 s (`PROCESSING_VISIBLE_MS`).
+  await expect(page).toHaveURL(`/diagnosticos/${ID}/resultados`, { timeout: 20_000 });
   await expect(page.getByText('Diagnóstico procesado.')).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Principal' })).toBeVisible();
   expect(calls).toEqual(['start', 'create', 'initiative:created', 'finalize:48']);

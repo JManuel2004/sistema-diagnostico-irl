@@ -2,17 +2,17 @@ import {
   initiativeSchema,
   initiativeStageSchema,
   initiativeSummarySchema,
-  sectorSchema,
+  sectorOptionSchema,
   type Initiative,
   type InitiativeStage,
   type InitiativeSummary,
   type RegisterInitiativeCommand,
-  type Sector,
+  type SectorOption,
 } from '@innlab/contracts';
 import { getParsed, getParsedOrNull, postParsed } from '@/shared/api/http';
 
-export function getSectors(): Promise<Sector[]> {
-  return getParsed('/initiative-catalog/sectors', sectorSchema.array());
+export function getSectors(): Promise<SectorOption[]> {
+  return getParsed('/initiative-catalog/sectors', sectorOptionSchema.array());
 }
 
 export function getStages(): Promise<InitiativeStage[]> {

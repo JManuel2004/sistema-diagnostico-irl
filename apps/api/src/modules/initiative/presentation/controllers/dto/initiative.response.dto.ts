@@ -7,11 +7,40 @@ import type {
   InitiativeStage,
   InitiativeSummary,
   Sector,
+  SectorOption,
 } from '@innlab/contracts';
 
 export class SectorResponseDto implements Sector {
   @ApiProperty({ example: '1' }) id!: string;
-  @ApiProperty({ example: 'Agroindustria / AgriTech' }) name!: string;
+  @ApiProperty({
+    example: 'A',
+    nullable: true,
+    type: String,
+    description: 'Section code of the CIIU; null for «Otro»',
+  })
+  code!: string | null;
+  @ApiProperty({
+    example: 'Agricultura, ganadería, caza, silvicultura y pesca',
+  })
+  name!: string;
+  @ApiProperty({ example: 'CIIU Rev. 5 A.C.' }) classification!: string;
+  @ApiProperty({ description: 'Whether it is «Otro sector (especificar)»' })
+  isOther!: boolean;
+}
+
+export class SectorOptionResponseDto
+  extends SectorResponseDto
+  implements SectorOption
+{
+  @ApiProperty({
+    example:
+      'Cultivos agrícolas, cría de animales, silvicultura y extracción de madera, pesca y acuicultura.',
+    description:
+      'What the section groups, in a line; for «Otro», when to choose it',
+  })
+  description!: string;
+  @ApiProperty({ type: [String], example: ['agro', 'cultivos', 'agritech'] })
+  keywords!: string[];
 }
 
 export class InitiativeStageResponseDto implements InitiativeStage {
@@ -33,6 +62,12 @@ export class InitiativeResponseDto implements Initiative {
   @ApiProperty({ format: 'uuid' }) diagnosticId!: string;
   @ApiProperty() name!: string;
   @ApiProperty({ type: SectorResponseDto }) sector!: SectorResponseDto;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'The user’s own sector; only with the «Otro» sector',
+  })
+  customSector!: string | null;
   @ApiProperty() productType!: string;
   @ApiProperty({ type: InitiativeStageResponseDto })
   stage!: InitiativeStageResponseDto;

@@ -6,8 +6,9 @@ import { Chip } from './chip';
 /**
  * `ServiceDetails` — the card of a portfolio service, the same wherever a
  * service is shown: the recommendation, its alternatives and each phase of
- * the roadmap. It says what the service is, what it can achieve and which
- * initiatives it suits, all from the catalog the response carries.
+ * the roadmap. It says what the service is, what it delivers («Alcance y
+ * entregables», the catalog's scope) and which initiatives it suits, all
+ * from the catalog the response carries.
  *
  * It renders the body only; the name and its heading belong to the
  * container, which decides the heading level. The tier and the band are
@@ -45,7 +46,7 @@ export function ServiceDetails({ service, withDescription = true }: Props): JSX.
       <div>
         <h4 className="text-foreground flex items-center gap-1.5 text-base font-bold">
           <Target className="text-azul-icesi size-4 shrink-0" aria-hidden="true" />
-          Qué puede lograr
+          Alcance y entregables
         </h4>
         <p className="text-muted-foreground mt-1 max-w-prose text-base leading-relaxed">
           {service.scope}

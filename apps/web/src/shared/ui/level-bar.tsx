@@ -14,28 +14,38 @@ interface LevelBarProps {
   readonly level: number;
   /** Background class of the full color (`getDimensionVisual().bg`). */
   readonly fillClass: string;
+  /**
+   * The full color of each reached segment, when it changes along the scale
+   * (the maturity thermometer of the global level). Overrides `fillClass`.
+   */
+  readonly segmentFill?: (segment: number) => string;
   /** Background class of the soft tone for the stretch up to the target. */
   readonly softClass?: string;
   readonly targetLevel?: number;
   readonly thresholdLevel?: number;
   /** How many segments the scale has: 9 for the IRL, 5 for the Likert. */
   readonly segments?: number;
+  /** The accessible text of the bar, when the default «Nivel n de 9» says too little. */
+  readonly label?: string;
   readonly className?: string;
 }
 
 export function LevelBar({
   level,
   fillClass,
+  segmentFill,
   softClass,
   targetLevel,
   thresholdLevel,
   segments = 9,
+  label: labelOverride,
   className,
 }: LevelBarProps): JSX.Element {
   const label =
-    targetLevel === undefined
+    labelOverride ??
+    (targetLevel === undefined
       ? `Nivel ${String(level)} de ${String(segments)}`
-      : `Nivel ${String(level)} de ${String(segments)}, con meta en el nivel ${String(targetLevel)}`;
+      : `Nivel ${String(level)} de ${String(segments)}, con meta en el nivel ${String(targetLevel)}`);
 
   return (
     <div role="img" aria-label={label} className={cn('flex gap-1', className)}>
@@ -48,7 +58,11 @@ export function LevelBar({
             aria-hidden="true"
             className={cn(
               'h-2 flex-1 rounded-sm',
-              reached ? fillClass : towardTarget && softClass ? softClass : 'bg-border',
+              reached
+                ? (segmentFill?.(segment) ?? fillClass)
+                : towardTarget && softClass
+                  ? softClass
+                  : 'bg-border',
               thresholdLevel === segment && 'ring-foreground/40 ring-1 ring-offset-1',
             )}
           />

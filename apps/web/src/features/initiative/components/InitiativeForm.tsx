@@ -1,24 +1,32 @@
-import { Suspense, useEffect, useRef, type JSX, type ReactNode } from 'react';
-import { Controller, useForm, type Control, type FieldPath } from 'react-hook-form';
+import { Suspense, useEffect, useMemo, useRef, useState, type JSX, type ReactNode } from 'react';
+import { Controller, useForm, useWatch, type Control, type FieldPath } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { INITIATIVE_TEXT_MAX, type InitiativeStage, type Sector } from '@innlab/contracts';
+import {
+  CUSTOM_SECTOR_MAX,
+  INITIATIVE_TEXT_MAX,
+  type InitiativeStage,
+  type SectorOption,
+} from '@innlab/contracts';
 import { Alert } from '@/shared/ui/alert';
 import { Button } from '@/shared/ui/button';
-import { Field, Input, Select, Textarea } from '@/shared/ui/field';
+import { Field, Input, Textarea } from '@/shared/ui/field';
+import { notify } from '@/shared/ui/notify';
 import { InitiativeAutofill } from '@/dev/dev-autofill';
 import {
   EMPTY_INITIATIVE_FORM,
-  initiativeFormSchema,
+  initiativeFormSchemaFor,
   type InitiativeFormValues,
   type InitiativeProfileFields,
 } from '../lib/form-values';
+import { SectorCombobox } from './SectorCombobox';
+import { StageSelect } from './StageSelect';
 
 type Values = InitiativeFormValues;
 
 type FormControl = Control<Values, unknown, InitiativeProfileFields>;
 
 export interface InitiativeFormProps {
-  readonly sectors: readonly Sector[];
+  readonly sectors: readonly SectorOption[];
   readonly stages: readonly InitiativeStage[];
   /** Values of an already registered initiative, to edit it. */
   readonly initial?: Values;
@@ -38,13 +46,23 @@ export interface InitiativeFormProps {
  * Form of the initiative profile (HU-06 / RF-04).
  *
  * Every field is mandatory. It is a `react-hook-form` form validated by
- * `initiativeFormSchema`, which is the contract's `registerInitiativeSchema`
+ * `initiativeFormSchemaFor`, which is the contract's `registerInitiativeSchema`
  * — the same one the backend applies — so the message shown is the
  * contract's. The fields hold text and `teamSize` becomes a number on
  * validation; `onSubmit` receives the profile fields ready to send.
  *
  * The nine fields are grouped in three blocks (the initiative, the team,
- * market and funding); sector and stage are native `<select>`s.
+ * market and funding). The sector is searched in a combobox
+ * (`SectorCombobox`) over the 22 sections of the DANE's CIIU Rev. 5 A.C.;
+ * with «Otro sector (especificar)» a text field asks for the user's own
+ * sector, and leaving «Otro» empties and hides it, so no stale text is sent.
+ * The stage is a list whose options say what each stage means
+ * (`StageSelect`). Each label is the question the field answers, so the
+ * answer is precise (client validation of RF-04): the team is asked as how
+ * many people and what role each one plays. Every free text says what to
+ * write and gives an example in its grey placeholder; under it, only how
+ * many characters it has of the maximum. Submitting with errors announces
+ * it in a toast and moves the focus to the first field to correct.
  */
 export function InitiativeForm({
   sectors,
@@ -56,16 +74,25 @@ export function InitiativeForm({
   onDraftChange,
   secondaryAction,
 }: InitiativeFormProps): JSX.Element {
+  const otherSectorIds = useMemo(
+    () => new Set(sectors.filter((s) => s.isOther).map((s) => s.id)),
+    [sectors],
+  );
+  const schema = useMemo(() => initiativeFormSchemaFor(otherSectorIds), [otherSectorIds]);
   const {
     control,
     handleSubmit,
     reset,
+    setValue,
+    clearErrors,
     subscribe,
     formState: { errors },
   } = useForm<Values, unknown, InitiativeProfileFields>({
-    resolver: zodResolver(initiativeFormSchema),
+    resolver: zodResolver(schema),
     defaultValues: initial ?? EMPTY_INITIATIVE_FORM,
   });
+  const sectorId = useWatch({ control, name: 'sectorId' });
+  const isOtherSector = otherSectorIds.has(sectorId);
   const onDraftChangeRef = useRef(onDraftChange);
   useEffect(() => {
     onDraftChangeRef.current = onDraftChange;
@@ -81,12 +108,12 @@ export function InitiativeForm({
     });
   }, [onDraftChange, subscribe]);
 
-  const limit = `Máximo ${String(INITIATIVE_TEXT_MAX)} caracteres`;
-
   return (
     <form
       onSubmit={(event) => {
-        void handleSubmit(onSubmit)(event);
+        void handleSubmit(onSubmit, () => {
+          notify.error('No pudimos continuar: revisa los campos marcados.');
+        })(event);
       }}
       noValidate
       className="flex flex-col gap-10"
@@ -114,43 +141,93 @@ export function InitiativeForm({
           control={control}
           name="name"
           label="Nombre de la iniciativa"
+          placeholder="El nombre con el que se conoce. Por ejemplo: AgroConecta"
           error={errors.name?.message}
           maxLength={120}
         />
 
-        <div className="grid gap-5 sm:grid-cols-2 sm:items-start">
-          <SelectField
-            control={control}
-            name="sectorId"
-            label="Sector"
+        <div className="flex flex-col gap-3">
+          <Field
+            label="¿A qué sector económico pertenece tu iniciativa?"
+            hint="Elige el sector económico de la actividad principal de tu iniciativa."
             error={errors.sectorId?.message}
-            placeholder="Selecciona un sector"
-            options={sectors}
-          />
-          <SelectField
-            control={control}
-            name="stageId"
-            label="Etapa"
-            hint="La etapa del catálogo de INNLAB más cercana a la tuya."
-            error={errors.stageId?.message}
-            placeholder="Selecciona una etapa"
-            options={stages}
-          />
+          >
+            {(c) => (
+              <Controller<Values, 'sectorId', InitiativeProfileFields>
+                control={control}
+                name="sectorId"
+                render={({ field }) => (
+                  <SectorCombobox
+                    {...c}
+                    ref={field.ref}
+                    sectors={sectors}
+                    value={field.value}
+                    onBlur={field.onBlur}
+                    onChange={(id) => {
+                      field.onChange(id);
+                      // Leaving «Otro» drops the text typed for it.
+                      if (!otherSectorIds.has(id)) {
+                        setValue('customSector', '');
+                        clearErrors('customSector');
+                      }
+                    }}
+                  />
+                )}
+              />
+            )}
+          </Field>
+          <SectorGuide />
         </div>
+
+        {isOtherSector && (
+          <TextField
+            control={control}
+            name="customSector"
+            label="¿A qué sector pertenece tu iniciativa?"
+            placeholder="Describe brevemente el sector económico. Por ejemplo: biotecnología aplicada a la agricultura o economía circular."
+            error={errors.customSector?.message}
+            maxLength={CUSTOM_SECTOR_MAX}
+            multiline
+          />
+        )}
+
+        <Field
+          label="¿En qué etapa está tu iniciativa?"
+          hint="Elige la etapa que mejor describe a tu iniciativa hoy."
+          error={errors.stageId?.message}
+          className="sm:max-w-md"
+        >
+          {(c) => (
+            <Controller<Values, 'stageId', InitiativeProfileFields>
+              control={control}
+              name="stageId"
+              render={({ field }) => (
+                <StageSelect
+                  {...c}
+                  ref={field.ref}
+                  stages={stages}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                />
+              )}
+            />
+          )}
+        </Field>
 
         <TextField
           control={control}
           name="productType"
-          label="Tipo de producto o servicio"
-          hint={limit}
+          label="¿En qué consiste tu iniciativa? ¿Es un producto o un servicio?"
+          placeholder="Describe qué ofrece y a quién. Por ejemplo: una aplicación web que ayuda a pequeños productores a registrar la trazabilidad de sus cosechas."
           error={errors.productType?.message}
           multiline
         />
         <TextField
           control={control}
           name="declaredStage"
-          label="Etapa declarada"
-          hint={`Cuéntala con tus palabras. ${limit}`}
+          label="Cuéntanos con tus palabras en qué punto está"
+          placeholder="Si es una idea, qué tan desarrollada está; si ya está en desarrollo, qué has construido o probado. Por ejemplo: tenemos un prototipo funcional que probamos con 10 productores durante un mes."
           error={errors.declaredStage?.message}
           multiline
         />
@@ -159,45 +236,45 @@ export function InitiativeForm({
       <FormSection
         id="initiative-group-team"
         title="El equipo"
-        description="Quiénes la impulsan hoy y con qué dedicación."
+        description="Cuántas personas la impulsan hoy y qué rol cumple cada una."
       >
-        <div className="grid gap-5 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-start">
-          <TextField
-            control={control}
-            name="teamSize"
-            label="Personas en el equipo"
-            error={errors.teamSize?.message}
-            type="number"
-          />
-          <TextField
-            control={control}
-            name="teamDescription"
-            label="Equipo"
-            hint={`Quiénes son y qué dedicación tienen. ${limit}`}
-            error={errors.teamDescription?.message}
-            multiline
-          />
-        </div>
+        <TextField
+          control={control}
+          name="teamSize"
+          label="¿Cuántas personas conforman el equipo?"
+          placeholder="Por ejemplo: 3"
+          error={errors.teamSize?.message}
+          type="number"
+          className="sm:max-w-sm"
+        />
+        <TextField
+          control={control}
+          name="teamDescription"
+          label="¿Qué hace cada persona del equipo?"
+          placeholder="Indica el rol de cada persona. Por ejemplo: una fundadora a cargo del negocio, un desarrollador y una agrónoma que asesora el producto."
+          error={errors.teamDescription?.message}
+          multiline
+        />
       </FormSection>
 
       <FormSection
         id="initiative-group-market"
         title="Mercado y financiamiento"
-        description="A quién se dirige y con qué recursos cuenta."
+        description="A quién se dirige y con qué recursos cuenta hoy."
       >
         <TextField
           control={control}
           name="targetMarket"
-          label="Mercado objetivo"
-          hint={limit}
+          label="¿Cuál es el mercado objetivo de tu iniciativa?"
+          placeholder="A quién le vendes o a quién atiendes, y dónde están. Por ejemplo: pequeños productores de café del Valle del Cauca y las cooperativas que les compran."
           error={errors.targetMarket?.message}
           multiline
         />
         <TextField
           control={control}
           name="currentFunding"
-          label="Financiamiento actual"
-          hint={limit}
+          label="¿Cómo se financia hoy tu iniciativa?"
+          placeholder="Si todavía no tiene financiación, cuéntalo también. Por ejemplo: recursos propios de los fundadores y una convocatoria de innovación ganada este año."
           error={errors.currentFunding?.message}
           multiline
         />
@@ -226,41 +303,63 @@ interface FieldBaseProps {
   readonly control: FormControl;
   readonly name: FieldPath<Values>;
   readonly label: string;
-  readonly hint?: string;
   readonly error?: string;
+  readonly className?: string;
 }
 
 /**
  * A text field bound to the form. Controlled on purpose: `Textarea` grows
  * with its value, so it has to receive it, also when the form is reset.
+ * Under a text field, the only line is how many characters it has of its
+ * maximum; what to write goes in the placeholder.
  */
 function TextField({
   control,
   name,
   label,
-  hint,
   error,
+  className,
+  placeholder,
   multiline = false,
   type,
   maxLength = INITIATIVE_TEXT_MAX,
 }: FieldBaseProps & {
+  /** An example answer, in grey while the field is empty. */
+  readonly placeholder?: string;
   readonly multiline?: boolean;
   readonly type?: 'number';
   readonly maxLength?: number;
 }): JSX.Element {
+  const value = useWatch<Values, FieldPath<Values>, InitiativeProfileFields>({ control, name });
+  const counter =
+    type === 'number' ? undefined : `${String(value.length)} de ${String(maxLength)} caracteres`;
   return (
-    <Field label={label} hint={hint} error={error}>
+    <Field label={label} hint={counter} error={error} className={className}>
       {(c) => (
         <Controller<Values, FieldPath<Values>, InitiativeProfileFields>
           control={control}
           name={name}
           render={({ field }) =>
             multiline ? (
-              <Textarea {...c} {...field} rows={2} maxLength={maxLength} />
+              <Textarea
+                {...c}
+                {...field}
+                rows={2}
+                maxLength={maxLength}
+                placeholder={placeholder}
+              />
             ) : type === 'number' ? (
-              <Input {...c} {...field} type="number" min={1} inputMode="numeric" />
+              <Input
+                {...c}
+                {...field}
+                type="number"
+                min={1}
+                step={1}
+                inputMode="numeric"
+                placeholder={placeholder}
+              />
             ) : (
-              <Input {...c} {...field} maxLength={maxLength} />
+              <Input {...c} {...field} maxLength={maxLength} placeholder={placeholder} />
             )
           }
         />
@@ -269,37 +368,87 @@ function TextField({
   );
 }
 
-function SelectField({
-  control,
-  name,
-  label,
-  hint,
-  error,
-  placeholder,
-  options,
-}: FieldBaseProps & {
-  readonly placeholder: string;
-  readonly options: readonly { readonly id: string; readonly name: string }[];
-}): JSX.Element {
+/**
+ * How to choose the sector when the initiative uses technology: by its main
+ * economic activity, not by the technology it uses nor by the industry it
+ * serves. A link under the field opens it in a modal, so it is there for
+ * whoever doubts and does not push the form down for whoever does not.
+ *
+ * Built on the native `<dialog>` opened with `showModal()`: the browser makes
+ * the rest of the page inert, keeps the focus inside and closes it with
+ * Escape.
+ */
+function SectorGuide(): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const element = dialog.current;
+    if (element === null) return;
+    if (open && !element.open) element.showModal();
+    else if (!open && element.open) element.close();
+  }, [open]);
+
   return (
-    <Field label={label} hint={hint} error={error}>
-      {(c) => (
-        <Controller<Values, FieldPath<Values>, InitiativeProfileFields>
-          control={control}
-          name={name}
-          render={({ field }) => (
-            <Select {...c} {...field}>
-              <option value="">{placeholder}</option>
-              {options.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </Select>
-          )}
-        />
-      )}
-    </Field>
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true);
+        }}
+        className="text-azul-icesi self-start text-sm font-semibold underline-offset-4 hover:underline"
+      >
+        ¿Tu iniciativa usa tecnología? Así eliges el sector
+      </button>
+      <dialog
+        ref={dialog}
+        aria-labelledby="sector-guide-title"
+        onCancel={(event) => {
+          event.preventDefault();
+          setOpen(false);
+        }}
+        className="bg-card text-foreground m-auto w-[min(40rem,calc(100vw-2rem))] rounded-2xl border-0 p-0 shadow-xl backdrop:bg-black/45"
+      >
+        <div className="flex flex-col gap-4 p-6 text-sm leading-relaxed sm:p-8">
+          <h2 id="sector-guide-title" className="text-foreground text-xl font-bold">
+            Cómo elegir el sector si tu iniciativa usa tecnología
+          </h2>
+          <p className="text-muted-foreground">
+            Elige el sector por la{' '}
+            <span className="text-foreground font-semibold">actividad principal</span> de tu
+            iniciativa, no por la tecnología que usa ni por la industria a la que atiende.
+            Desarrollar y vender software es la sección K; usarlo como herramienta, no.
+          </p>
+          <ul className="text-muted-foreground flex list-disc flex-col gap-1.5 pl-5">
+            <li>
+              Software para cultivos: si lo desarrollas y lo vendes, K; si produces alimentos y lo
+              usas, A.
+            </li>
+            <li>
+              Plataforma de educación virtual: si prestas el servicio educativo, Q; si vendes el
+              software educativo, K.
+            </li>
+            <li>
+              Historias clínicas digitales: si prestas atención médica, R; si vendes la solución
+              informática, K.
+            </li>
+            <li>
+              Tienda virtual: si vendes productos, G; si construyes la infraestructura para que
+              otros vendan, K.
+            </li>
+          </ul>
+          <Button
+            type="button"
+            className="self-end"
+            onClick={() => {
+              setOpen(false);
+            }}
+          >
+            Entendido
+          </Button>
+        </div>
+      </dialog>
+    </>
   );
 }
 

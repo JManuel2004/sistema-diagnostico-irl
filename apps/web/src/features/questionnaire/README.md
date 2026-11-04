@@ -9,7 +9,7 @@ The IRL questionnaire in the browser: the 48 statements grouped by dimension, th
 | `api/`        | `questionnaire-catalog.api.ts` — the questionnaire structure, parsed with `@innlab/contracts`              |
 | `components/` | `QuestionnaireView` (tabs, panel, navigation, progress), `StatementCard`, `LikertScale`, `AnswersSummary` |
 | `hooks/`      | `useQuestionnaireStructure`, `useQuestionnaireCompletion`, `useAnswerForStatement`                         |
-| `store/`      | `questionnaire-draft.store.ts` — the Zustand draft, persisted to `sessionStorage`                          |
+| `store/`      | `questionnaire-draft.store.ts` — the Zustand draft, persisted to `sessionStorage` and saved on the server  |
 | `lib/`        | `likert-options.ts` — the five Likert labels shown to the user                                            |
 
 Public surface (`index.ts`): `QuestionnaireView`, `AnswersSummary`, `useQuestionnaireDraftStore` and its selectors, `useQuestionnaireCompletion`, `useQuestionnaireStructure`.
@@ -24,4 +24,4 @@ Public surface (`index.ts`): `QuestionnaireView`, `AnswersSummary`, `useQuestion
 
 ## Out of scope
 
-Server-side drafts: closing the tab discards the answers not yet processed, by design.
+The draft is saved on the server (`useServerDraftSync`, `GET`/`PUT /diagnostics/:id/questionnaire/draft`): a second after the user stops answering, when the tab is hidden and when the wizard closes; a failure is retried and the tab keeps the answers meanwhile. A later session or another device reads it back, and the server's draft wins over the tab's only when it is newer and the tab has nothing unsaved. `DraftSaveStatus` tells the user whether the answers are saved.

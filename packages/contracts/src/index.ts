@@ -17,6 +17,7 @@ export * from './diagnosis/questionnaire-structure.schema.js';
 export * from './diagnosis/likert.schema.js';
 export * from './diagnosis/statement.schema.js';
 export * from './diagnosis/answer.schema.js';
+export * from './diagnosis/questionnaire-draft.schema.js';
 export * from './diagnosis/submission.schema.js';
 export * from './diagnosis/dimension-result.schema.js';
 export * from './diagnosis/bottleneck.schema.js';

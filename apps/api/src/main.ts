@@ -40,6 +40,9 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: cfg.webOrigin,
     credentials: true,
+    // @fastify/cors allows only GET, HEAD and POST unless told otherwise;
+    // the questionnaire draft is saved with PUT.
+    methods: ['GET', 'HEAD', 'POST', 'PUT'],
     // The SPA reads the name of a downloaded report from it; a cross-origin
     // response hides every header not listed here.
     exposedHeaders: ['Content-Disposition'],

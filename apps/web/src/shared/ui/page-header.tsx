@@ -1,4 +1,5 @@
 import type { JSX, ReactNode } from 'react';
+import { cn } from '@/shared/lib/utils';
 
 /**
  * `PageHeader` — title block of every screen: overline, title (`text-h1`,
@@ -10,6 +11,11 @@ interface PageHeaderProps {
   readonly overline?: string;
   readonly title: string;
   readonly description?: string;
+  /**
+   * The description spans the content's width instead of a reading measure:
+   * for a screen whose content is wide, so the text lines up with it.
+   */
+  readonly fullWidthDescription?: boolean;
   /** Below the description: e.g. `ResultMeta`. */
   readonly children?: ReactNode;
 }
@@ -18,6 +24,7 @@ export function PageHeader({
   overline,
   title,
   description,
+  fullWidthDescription = false,
   children,
 }: PageHeaderProps): JSX.Element {
   return (
@@ -25,7 +32,12 @@ export function PageHeader({
       {overline !== undefined && <p className="text-eyebrow mb-3">{overline}</p>}
       <h1 className="text-h1 text-foreground max-sm:text-[1.875rem]">{title}</h1>
       {description !== undefined && (
-        <p className="text-muted-foreground mt-3 max-w-prose text-base leading-relaxed sm:text-lg">
+        <p
+          className={cn(
+            'text-muted-foreground mt-3 text-base leading-relaxed sm:text-lg',
+            !fullWidthDescription && 'max-w-prose',
+          )}
+        >
           {description}
         </p>
       )}

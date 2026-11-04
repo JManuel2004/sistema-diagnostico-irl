@@ -258,7 +258,7 @@ describe('ResultsPage — sin análisis profundo', () => {
     renderPage();
 
     await screen.findByRole('group', { name: /Cuello de botella/ });
-    expect(screen.queryByRole('heading', { name: /plan de escalamiento/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /ruta de escalamiento/ })).not.toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: /servicio de INNLAB para/ }),
     ).not.toBeInTheDocument();
@@ -356,7 +356,7 @@ describe('ResultsPage — con análisis profundo', () => {
       within(bar)
         .getAllByRole('link')
         .map((l) => l.textContent),
-    ).toEqual(['Perfil', 'Desequilibrios y alertas', 'Servicio INNLAB', 'Roadmap']);
+    ).toEqual(['Perfil', 'Desequilibrios y alertas', 'Servicio INNLAB', 'Ruta de escalamiento']);
   });
 
   it('muestra, además del perfil, los pares desequilibrados, el estado crítico, el roadmap y la recomendación', async () => {
@@ -391,7 +391,7 @@ describe('ResultsPage — con análisis profundo', () => {
         'Cómo leer estos resultados',
         'Tu radar IRL',
         'Desequilibrios y alertas',
-        'El plan de escalamiento de AgroConecta',
+        'La ruta de escalamiento de AgroConecta',
         'El servicio de INNLAB para AgroConecta',
       ]),
     );
@@ -476,7 +476,9 @@ describe('ResultsPage — con análisis profundo', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/No fue posible generar el roadmap/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/No fue posible generar la ruta de escalamiento/),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Intentar de nuevo' })).toBeInTheDocument();
     // The recommendation, which did exist, is still shown.
     expect(await screen.findByRole('heading', { name: 'Consultoría Experta' })).toBeInTheDocument();
@@ -598,7 +600,9 @@ describe('ResultsPage — la iniciativa como protagonista', () => {
     expect(
       screen.getByText('Aplicación web y módulo de trazabilidad para cooperativas'),
     ).toBeInTheDocument();
-    expect(screen.getByText('Agroindustria / AgriTech')).toBeInTheDocument();
+    expect(
+      screen.getByText('A. Agricultura, ganadería, caza, silvicultura y pesca', { exact: false }),
+    ).toBeInTheDocument();
   });
 
   it('muestra al lado el nivel IRL global que calcula el backend', async () => {

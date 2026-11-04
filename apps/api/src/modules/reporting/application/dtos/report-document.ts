@@ -21,15 +21,6 @@ export type ReportBlock =
   | { readonly kind: 'field'; readonly label: string; readonly value: string }
   | { readonly kind: 'bullet'; readonly text: string }
   | { readonly kind: 'alert'; readonly text: string }
-  /** The six levels on the 1–9 scale, as a radar; each point named. */
-  | {
-      readonly kind: 'radar';
-      readonly points: readonly {
-        readonly dimensionCode: DimensionCode;
-        readonly label: string;
-        readonly level: number;
-      }[];
-    }
   /** Each dimension today and at the end of the route, on the 1–9 scale. */
   | {
       readonly kind: 'route';
@@ -40,6 +31,15 @@ export type ReportBlock =
         readonly end: number;
       }[];
     }
+  /**
+   * The first page: the key indicators, the profile as a radar and as level
+   * bars, the recommended service and what the technical terms mean.
+   */
+  | { readonly kind: 'summary'; readonly summary: ReportSummary }
+  /** The route as a line of phases: each with its service and its rises. */
+  | { readonly kind: 'timeline'; readonly phases: readonly TimelinePhase[] }
+  /** What follows starts on a new page. */
+  | { readonly kind: 'pageBreak' }
   /** The statements of one dimension with the 1–5 value the user gave. */
   | {
       readonly kind: 'answers';
@@ -54,10 +54,64 @@ export type ReportBlock =
       }[];
     };
 
+/** One of the four indicators at the top of the summary. */
+export interface ReportIndicator {
+  readonly label: string;
+  readonly value: string;
+  readonly caption: string;
+  readonly detail: string;
+  /** Needs attention first: drawn with the attention tone and a mark. */
+  readonly attention: boolean;
+}
+
+export interface ReportSummary {
+  readonly indicators: readonly ReportIndicator[];
+  readonly levels: readonly {
+    readonly dimensionCode: DimensionCode;
+    readonly label: string;
+    readonly level: number;
+    /** Why it stands out, in words; null when it does not. */
+    readonly tag: string | null;
+    readonly attention: boolean;
+  }[];
+  readonly recommendation: {
+    readonly name: string;
+    readonly subtitle: string;
+    readonly tier: string;
+    readonly scope: string;
+    readonly alternatives: readonly string[];
+  } | null;
+  /** Said when there is no recommendation. */
+  readonly noRecommendation: string | null;
+  readonly glossary: readonly {
+    readonly term: string;
+    readonly text: string;
+  }[];
+}
+
+export interface TimelinePhase {
+  readonly order: number;
+  readonly service: string | null;
+  readonly tier: string | null;
+  readonly approximate: boolean;
+  readonly steps: readonly {
+    readonly dimensionCode: DimensionCode;
+    readonly label: string;
+    readonly from: number;
+    readonly to: number;
+  }[];
+}
+
 export interface ReportDocumentModel {
   /** The document's title (also its PDF metadata). */
   readonly title: string;
   readonly subtitle: string;
+  /** The band at the top of the first page. */
+  readonly banner: {
+    readonly heading: string;
+    readonly initiative: string;
+    readonly meta: string;
+  };
   readonly blocks: readonly ReportBlock[];
   /** The attribution of the KTH framework, at the foot of every page (RNF-09). */
   readonly footer: string;
@@ -119,6 +173,17 @@ function inclusionSentence(d: RoadmapDimensionTarget): string {
   return `${listNames(dependents)} ${dependents.length === 1 ? 'necesita' : 'necesitan'} que suba para poder avanzar.`;
 }
 
+/**
+ * «3 personas. Fundadora y dos ingenieros», unless the description already
+ * starts with the count («3 personas — …»): then it is said once.
+ */
+function teamText(size: number, description: string): string {
+  const count = `${String(size)} ${size === 1 ? 'persona' : 'personas'}`;
+  return description.trim().toLowerCase().startsWith(count)
+    ? description
+    : `${count}. ${description}`;
+}
+
 export function buildReportDocument(
   report: DiagnosticReport,
 ): ReportDocumentModel {
@@ -135,11 +200,111 @@ export function buildReportDocument(
     blocks.push(...items);
   };
 
+  // Summary page: what a reader needs first.
+  const critical = new Set(profile.criticalState.dimensions);
+  const bottleneck = new Set(profile.bottleneck.dimensions);
+  const gaps = new Set(profile.gaps.dimensions);
+  const gapCount = profile.gaps.dimensions.length;
+  push(
+    {
+      kind: 'summary',
+      summary: {
+        indicators: [
+          {
+            label: 'Nivel IRL global',
+            value: oneDecimal(profile.globalAverage),
+            caption: 'de 9',
+            detail: 'Promedio de las seis dimensiones',
+            attention: false,
+          },
+          {
+            label: 'Dimensión más fuerte',
+            value: namesOf(profile.strength.dimensions),
+            caption: `nivel ${String(profile.strength.level)}`,
+            detail: 'Lo que más ha avanzado',
+            attention: false,
+          },
+          {
+            label: 'Cuello de botella',
+            value: namesOf(profile.bottleneck.dimensions),
+            caption: `nivel ${String(profile.bottleneck.level)}`,
+            detail: 'Lo que más frena el avance',
+            attention: false,
+          },
+          critical.size > 0
+            ? {
+                label: 'Atención prioritaria',
+                value: namesOf([...critical]),
+                caption: 'estado crítico',
+                detail: `${String(gapCount)} ${gapCount === 1 ? 'dimensión' : 'dimensiones'} en brecha`,
+                attention: true,
+              }
+            : {
+                label: 'Atención prioritaria',
+                value: 'Ninguna',
+                caption: 'sin estado crítico',
+                detail: `${String(gapCount)} ${gapCount === 1 ? 'dimensión' : 'dimensiones'} en brecha`,
+                attention: false,
+              },
+        ],
+        levels: profile.dimensionResults.map((r) => ({
+          dimensionCode: r.dimensionCode,
+          label: r.shortName,
+          level: r.irlLevel,
+          tag: critical.has(r.dimensionCode)
+            ? 'atención prioritaria'
+            : bottleneck.has(r.dimensionCode)
+              ? 'cuello de botella'
+              : gaps.has(r.dimensionCode)
+                ? 'en brecha'
+                : null,
+          attention: critical.has(r.dimensionCode),
+        })),
+        recommendation: recommendation.primary
+          ? {
+              name: recommendation.primary.name,
+              subtitle: recommendation.primary.subtitle,
+              tier: recommendation.primary.tier.name,
+              scope: recommendation.primary.scope,
+              alternatives: recommendation.alternatives.map((a) => a.name),
+            }
+          : null,
+        noRecommendation: recommendation.primary
+          ? null
+          : (recommendation.noRecommendationReason ??
+            'Ningún servicio del portafolio corresponde a este perfil.'),
+        glossary: [
+          {
+            term: 'Nivel IRL',
+            text: 'madurez de 1 (idea) a 9 (lista para escalar) en cada dimensión.',
+          },
+          {
+            term: 'Cuello de botella',
+            text: 'la dimensión con el nivel más bajo: la que más frena.',
+          },
+          {
+            term: 'Brecha',
+            text: `una dimensión en nivel ${String(profile.gaps.threshold)} o menos.`,
+          },
+          {
+            term: 'Desequilibrio',
+            text: 'diferencia de niveles entre dos dimensiones que deberían avanzar juntas.',
+          },
+          {
+            term: 'Atención prioritaria',
+            text: 'una dimensión clave (cliente, negocio o equipo) en brecha: el estado crítico.',
+          },
+        ],
+      },
+    },
+    { kind: 'pageBreak' },
+  );
+
   // Initiative.
   push(
     { kind: 'heading', text: 'Datos de la iniciativa' },
     { kind: 'field', label: 'Nombre', value: initiative.name },
-    { kind: 'field', label: 'Sector', value: initiative.sector.name },
+    { kind: 'field', label: 'Sector', value: sectorLabel(initiative) },
     {
       kind: 'field',
       label: 'Producto o servicio',
@@ -153,7 +318,7 @@ export function buildReportDocument(
     {
       kind: 'field',
       label: 'Equipo',
-      value: `${String(initiative.teamSize)} ${initiative.teamSize === 1 ? 'persona' : 'personas'}. ${initiative.teamDescription}`,
+      value: teamText(initiative.teamSize, initiative.teamDescription),
     },
     {
       kind: 'field',
@@ -169,35 +334,17 @@ export function buildReportDocument(
 
   // Profile of six dimensions.
   push(
+    // The numbers, the radar, the strongest dimension and the bottleneck
+    // are on the summary page; here, what each level means.
     { kind: 'heading', text: 'Perfil de seis dimensiones' },
-    {
-      kind: 'paragraph',
-      text: 'El nivel de madurez de la iniciativa en cada dimensión del marco IRL, en una escala de 1 a 9.',
-    },
-    {
-      kind: 'field',
-      label: 'Nivel IRL global',
-      value: `${oneDecimal(profile.globalAverage)} de 9${profile.globalLevel.description ? `. ${profile.globalLevel.description}` : ''}`,
-    },
-    {
-      kind: 'field',
-      label: 'Dimensión más fuerte',
-      value: `${namesOf(profile.strength.dimensions)}, nivel ${String(profile.strength.level)}`,
-    },
-    {
-      kind: 'field',
-      label: 'Cuello de botella',
-      value: `${namesOf(profile.bottleneck.dimensions)}, nivel ${String(profile.bottleneck.level)}`,
-    },
-    {
-      kind: 'radar',
-      points: profile.dimensionResults.map((r) => ({
-        dimensionCode: r.dimensionCode,
-        label: r.shortName,
-        level: r.irlLevel,
-      })),
-    },
   );
+  if (profile.globalLevel.description) {
+    push({
+      kind: 'field',
+      label: `Qué significa el nivel global ${oneDecimal(profile.globalAverage)}`,
+      value: profile.globalLevel.description,
+    });
+  }
   for (const r of profile.dimensionResults) {
     push(
       {
@@ -252,18 +399,14 @@ export function buildReportDocument(
   }
 
   // Recommendation.
-  push({ kind: 'heading', text: 'Recomendación del portafolio INNLAB' });
+  // The service, its level, what it achieves and the alternatives are on
+  // the summary page; here, what it is about and why it was chosen.
   if (recommendation.primary) {
     const s = recommendation.primary;
-    push(
-      { kind: 'subheading', text: s.name },
-      { kind: 'paragraph', text: s.subtitle },
-      { kind: 'field', label: 'Nivel', value: s.tier.name },
-    );
+    push({ kind: 'heading', text: 'Recomendación del portafolio INNLAB' });
     if (s.description) {
       push({ kind: 'field', label: 'De qué se trata', value: s.description });
     }
-    push({ kind: 'field', label: 'Qué puede lograr', value: s.scope });
     if (recommendation.justification) {
       push({
         kind: 'field',
@@ -277,39 +420,53 @@ export function buildReportDocument(
         text: `El centro lo sugiere: ${s.adjustmentReason}`,
       });
     }
-  } else {
-    push({
-      kind: 'paragraph',
-      text:
-        recommendation.noRecommendationReason ??
-        'Ningún servicio del portafolio corresponde a este perfil.',
-    });
-  }
-  if (recommendation.alternatives.length > 0) {
-    push({
-      kind: 'field',
-      label: 'Otras opciones del portafolio',
-      value: `${listNames(recommendation.alternatives.map((a) => a.name))}.`,
-    });
+  } else if (recommendation.alternatives.length > 0) {
+    // Without a recommendation the summary says why; the options are only here.
+    push(
+      { kind: 'heading', text: 'Recomendación del portafolio INNLAB' },
+      {
+        kind: 'field',
+        label: 'Otras opciones del portafolio',
+        value: `${listNames(recommendation.alternatives.map((a) => a.name))}.`,
+      },
+    );
   }
 
   // Roadmap.
-  push({ kind: 'heading', text: 'Roadmap de escalamiento' });
+  push({ kind: 'heading', text: 'Ruta de escalamiento' });
   if (roadmap.phases.length === 0) {
     push({
       kind: 'paragraph',
       text: 'Todas las dimensiones alcanzan el nivel que se espera de ellas: no hace falta una ruta de escalamiento.',
     });
   }
-  for (const phase of roadmap.phases) {
-    push({ kind: 'subheading', text: `Fase ${String(phase.order)}` });
+  if (roadmap.phases.length > 0) {
     push({
-      kind: 'field',
-      label: 'Servicio',
-      value: phase.service
-        ? `${phase.service.name} (${phase.service.tier.name})${phase.service.approximate ? '. Es el más cercano disponible: ninguno alcanza el mínimo para esta fase.' : ''}`
-        : 'Ninguno del portafolio corresponde a esta fase.',
+      kind: 'timeline',
+      phases: roadmap.phases.map((phase) => ({
+        order: phase.order,
+        service: phase.service?.name ?? null,
+        tier: phase.service?.tier.name ?? null,
+        approximate: phase.service?.approximate ?? false,
+        steps: phase.dimensions.map((d) => ({
+          dimensionCode: d.dimensionCode,
+          label: d.shortName,
+          from: d.currentLevel,
+          to: d.targetLevel,
+        })),
+      })),
     });
+  }
+  for (const phase of roadmap.phases) {
+    // The service and the levels of each phase are on the line of phases
+    // above; here, why each dimension is worked.
+    push({ kind: 'subheading', text: `Fase ${String(phase.order)}` });
+    if (phase.service?.approximate) {
+      push({
+        kind: 'paragraph',
+        text: 'Ningún servicio alcanza el mínimo para esta fase: se propone el más cercano disponible.',
+      });
+    }
     for (const d of phase.dimensions) {
       const continues =
         d.targetLevel < d.finalTargetLevel
@@ -317,7 +474,7 @@ export function buildReportDocument(
           : '';
       push({
         kind: 'bullet',
-        text: `${d.shortName}: del nivel ${String(d.currentLevel)} al ${String(d.targetLevel)}; ${inclusionSentence(d)}${continues}`,
+        text: `${d.shortName}: ${inclusionSentence(d)}${continues}`,
       });
     }
   }
@@ -380,12 +537,8 @@ export function buildReportDocument(
       kind: 'paragraph',
       text: `Este diagnóstico aplica el marco ${attribution.framework}, de ${attribution.owner} (versión ${report.frameworkVersion}).`,
     },
-    {
-      kind: 'field',
-      label: 'Análisis profundo completado',
-      value: formatReportDate(report.completedAt),
-    },
-    { kind: 'paragraph', text: attribution.notice },
+    // The completion date is in the band, and the notice at the foot of
+    // every page: here, only the license's address.
     {
       kind: 'field',
       label: `Licencia ${attribution.license}`,
@@ -396,6 +549,11 @@ export function buildReportDocument(
   return {
     title: `Reporte del diagnóstico IRL: ${initiative.name}`,
     subtitle: `Análisis profundo completado el ${formatReportDate(report.completedAt)}`,
+    banner: {
+      heading: 'Reporte del diagnóstico IRL',
+      initiative: initiative.name,
+      meta: `Análisis profundo completado el ${formatReportDate(report.completedAt)}`,
+    },
     blocks,
     footer: attribution.notice,
   };
@@ -416,4 +574,14 @@ export function reportFileName(report: DiagnosticReport): string {
     timeZone: TIME_ZONE,
   });
   return `reporte-irl-${slug || 'iniciativa'}-${day}.pdf`;
+}
+
+/**
+ * The sector as the report names it: the CIIU section with its code
+ * («A. Agricultura, …»), or the user's own sector when they chose «Otro».
+ */
+function sectorLabel(initiative: DiagnosticReport['initiative']): string {
+  const { sector, customSector } = initiative;
+  if (sector.isOther) return `Otro sector: ${customSector ?? 'sin especificar'}`;
+  return sector.code ? `${sector.code}. ${sector.name}` : sector.name;
 }

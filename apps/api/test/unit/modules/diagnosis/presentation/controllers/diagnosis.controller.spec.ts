@@ -4,6 +4,8 @@ import type { FinalizeInitialDiagnosisUseCase } from '../../../../../../src/modu
 import type { RequestDeepAnalysisUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/request-deep-analysis.use-case.js';
 import type { GetDiagnosisUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/get-diagnosis.use-case.js';
 import type { StartDiagnosisUseCase } from '../../../../../../src/modules/diagnosis/application/use-cases/start-diagnosis.use-case.js';
+import type { GetInProgressDiagnosisQuery } from '../../../../../../src/modules/diagnosis/application/use-cases/get-in-progress-diagnosis.query.js';
+import { DiagnosisInProgressError } from '../../../../../../src/modules/diagnosis/domain/exceptions/diagnosis-in-progress.error.js';
 import { Result } from '../../../../../../src/shared/kernel/domain/result.js';
 import { NotFoundError } from '../../../../../../src/shared/kernel/domain/errors/not-found.error.js';
 import type { MaturityProfileResponse } from '@innlab/contracts';
@@ -20,17 +22,20 @@ describe('DiagnosisController', () => {
   >;
   let mockStart: jest.Mocked<Pick<StartDiagnosisUseCase, 'execute'>>;
   let mockGet: jest.Mocked<Pick<GetDiagnosisUseCase, 'execute'>>;
+  let mockInProgress: jest.Mocked<Pick<GetInProgressDiagnosisQuery, 'execute'>>;
 
   beforeEach(() => {
     mockUseCase = { execute: jest.fn() };
     mockDeepAnalysis = { execute: jest.fn() };
     mockStart = { execute: jest.fn() };
     mockGet = { execute: jest.fn() };
+    mockInProgress = { execute: jest.fn() };
     controller = new DiagnosisController(
       mockUseCase as unknown as FinalizeInitialDiagnosisUseCase,
       mockDeepAnalysis as unknown as RequestDeepAnalysisUseCase,
       mockStart as unknown as StartDiagnosisUseCase,
       mockGet as unknown as GetDiagnosisUseCase,
+      mockInProgress as unknown as GetInProgressDiagnosisQuery,
     );
   });
 
@@ -78,12 +83,47 @@ describe('DiagnosisController', () => {
       createdAt: '2026-01-01T00:00:00.000Z',
       frameworkVersion: 'KTH-IRL-1.0',
     };
-    mockStart.execute.mockResolvedValueOnce(created);
+    mockStart.execute.mockResolvedValueOnce(Result.ok(created));
 
-    const result = await controller.start({ id: 'user-1' });
+    const result = await controller.start({}, { id: 'user-1' });
 
-    expect(mockStart.execute).toHaveBeenCalledWith({ userId: 'user-1' });
+    expect(mockStart.execute).toHaveBeenCalledWith({
+      userId: 'user-1',
+      discardInProgress: false,
+    });
     expect(result).toBe(created);
+  });
+
+  it('passes the choice to discard the diagnostic in progress', async () => {
+    mockStart.execute.mockResolvedValueOnce(
+      Result.err(new DiagnosisInProgressError(DIAGNOSTIC_ID)),
+    );
+
+    await expect(
+      controller.start({ discardInProgress: 'false' }, { id: 'user-1' }),
+    ).rejects.toBeInstanceOf(DiagnosisInProgressError);
+
+    mockStart.execute.mockResolvedValueOnce(
+      Result.err(new DiagnosisInProgressError('x')),
+    );
+    await controller
+      .start({ discardInProgress: 'true' }, { id: 'user-1' })
+      .catch(() => undefined);
+    expect(mockStart.execute).toHaveBeenLastCalledWith({
+      userId: 'user-1',
+      discardInProgress: true,
+    });
+  });
+
+  it('reads the diagnostic in progress of the caller', async () => {
+    mockInProgress.execute.mockResolvedValueOnce(
+      Result.err(new NotFoundError('Diagnosis in progress', 'user-1')),
+    );
+
+    await expect(
+      controller.inProgress({ id: 'user-1' }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+    expect(mockInProgress.execute).toHaveBeenCalledWith('user-1');
   });
 
   it('reads a diagnostic of the caller, passing the caller id', async () => {

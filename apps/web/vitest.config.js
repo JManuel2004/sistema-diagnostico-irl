@@ -14,7 +14,7 @@ export default mergeConfig(
       },
       setupFiles: ['./src/test/setup.ts'],
       // Playwright specs run with `pnpm test:e2e`, not with Vitest.
-      exclude: [...configDefaults.exclude, 'tests/e2e/**'],
+      exclude: [...configDefaults.exclude, 'tests/e2e/**', 'tests/full-stack/**'],
       css: false,
       coverage: {
         provider: 'v8',

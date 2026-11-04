@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -14,6 +14,7 @@ import type {
 import { FinalizeInitialDiagnosisUseCase } from '../../application/use-cases/finalize-initial-diagnosis.use-case.js';
 import { GetDiagnosisUseCase } from '../../application/use-cases/get-diagnosis.use-case.js';
 import { StartDiagnosisUseCase } from '../../application/use-cases/start-diagnosis.use-case.js';
+import { GetInProgressDiagnosisQuery } from '../../application/use-cases/get-in-progress-diagnosis.query.js';
 import { RequestDeepAnalysisUseCase } from '../../application/use-cases/request-deep-analysis.use-case.js';
 import { CurrentUser } from '../../../../shared/identity/presentation/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../../../shared/identity/application/dtos/authenticated-user.js';
@@ -21,6 +22,7 @@ import { unwrapResult } from '../../../../shared/kernel/application/unwrap-resul
 import { DiagnosticIdParam } from '../../../../shared/kernel/presentation/dto/diagnostic-id.param.js';
 import { ApiErrors } from '../../../../shared/kernel/presentation/api-errors.decorator.js';
 import { AnswersRequestDto } from './dto/answers.request.dto.js';
+import { StartDiagnosisQuery } from './dto/start-diagnosis.query.js';
 import {
   AcceptDeepAnalysisResponseDto,
   DiagnosticResponseDto,
@@ -36,19 +38,46 @@ export class DiagnosisController {
     private readonly requestDeepAnalysis: RequestDeepAnalysisUseCase,
     private readonly startDiagnosis: StartDiagnosisUseCase,
     private readonly getDiagnosis: GetDiagnosisUseCase,
+    private readonly getInProgress: GetInProgressDiagnosisQuery,
   ) {}
 
   @Post()
   @ApiOperation({
     summary: 'Start a new diagnostic',
     description:
-      'Deletes the caller’s unfinished diagnostics (an unfinished one is not resumed from a ' +
-      'later session) and creates a new one in `STARTED`; completed ones stay (HU-04, DIAGIRL-26).',
+      'Creates a new diagnostic in `STARTED`; completed ones stay (HU-04, DIAGIRL-26). An ' +
+      'unfinished one keeps its draft and is continued from any session, so while the caller ' +
+      'has one this answers 409 `DIAGNOSIS_IN_PROGRESS`. With `discardInProgress=true` the ' +
+      'unfinished ones are deleted first, with their draft.',
   })
   @ApiCreatedResponse({ type: DiagnosticResponseDto })
-  @ApiErrors()
-  start(@CurrentUser() user: AuthenticatedUser): Promise<Diagnostic> {
-    return this.startDiagnosis.execute({ userId: user.id });
+  @ApiErrors(409, 422)
+  async start(
+    @Query() { discardInProgress }: StartDiagnosisQuery,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<Diagnostic> {
+    return unwrapResult(
+      await this.startDiagnosis.execute({
+        userId: user.id,
+        discardInProgress: discardInProgress === 'true',
+      }),
+    );
+  }
+
+  // Declared before `:id` so the literal segment is not read as an id.
+  @Get('in-progress')
+  @ApiOperation({
+    summary: 'Read the caller’s diagnostic in progress',
+    description:
+      'The most recently started diagnostic without a maturity profile yet; 404 when there is ' +
+      'none. The panel offers to continue it from any session.',
+  })
+  @ApiOkResponse({ type: DiagnosticResponseDto })
+  @ApiErrors(404)
+  async inProgress(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<Diagnostic> {
+    return unwrapResult(await this.getInProgress.execute(user.id));
   }
 
   @Get(':id')

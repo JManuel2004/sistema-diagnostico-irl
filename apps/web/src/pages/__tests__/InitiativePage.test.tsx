@@ -87,10 +87,13 @@ describe('InitiativePage — corregir la iniciativa ya registrada (HU-06)', () =
     await waitFor(() => {
       expect(name).toHaveValue('AgroConecta v2');
     });
-    expect(screen.getByLabelText('Sector')).toHaveValue('1');
-    expect(screen.getByLabelText('Etapa')).toHaveValue('2');
-    expect(screen.getByLabelText('Personas en el equipo')).toHaveValue(3);
-    expect(screen.getByRole('option', { name: 'Agroindustria / AgriTech' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('combobox', { name: '¿A qué sector económico pertenece tu iniciativa?' }),
+    ).toHaveValue('Agricultura, ganadería, caza, silvicultura y pesca');
+    expect(
+      screen.getByRole('combobox', { name: '¿En qué etapa está tu iniciativa?' }),
+    ).toHaveTextContent('Validación');
+    expect(screen.getByLabelText('¿Cuántas personas conforman el equipo?')).toHaveValue(3);
   });
 
   it('al guardar actualiza la iniciativa y vuelve al panel', async () => {

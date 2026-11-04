@@ -87,10 +87,10 @@ pnpm --filter @innlab/contracts dev   # optional, watch mode
 ### Backend
 
 ```bash
-cp apps/api/.env.example apps/api/.env.local
+cp apps/api/.env.example apps/api/.env
 ```
 
-Open `apps/api/.env.local` and review:
+Open `apps/api/.env` and review:
 
 | Variable                            | What to set                                                                 |
 | ----------------------------------- | --------------------------------------------------------------------------- |
@@ -106,10 +106,10 @@ Every variable is described in `apps/api/.env.example` and validated at boot by 
 ### Frontend
 
 ```bash
-cp apps/web/.env.example apps/web/.env.local
+cp apps/web/.env.example apps/web/.env
 ```
 
-Open `apps/web/.env.local`:
+Open `apps/web/.env`:
 
 | Variable                 | What to set                                             |
 | ------------------------ | ------------------------------------------------------- |
@@ -140,7 +140,7 @@ You should see `irl-postgres` with status `running` (and `healthy` after ~10s) a
 
 When a leader finishes the deep analysis, the API mails the full PDF. Locally that mail stays on this machine: open <http://localhost:8025>. It does not reach Gmail or INNLAB.
 
-`apps/api/.env.local` needs the catcher, or the API boots with mail disabled and sends nothing:
+`apps/api/.env` needs the catcher, or the API boots with mail disabled and sends nothing:
 
 ```dotenv
 REPORT_NOTIFY_TO=prueba@innlab.local
@@ -161,7 +161,7 @@ There is **no local identity provider to start**. Authentication runs against th
 **Amazon Cognito User Pool shared across the INNLAB ecosystem** — the same pool
 `innlab-core-api` validates against. Do not create a User Pool of your own and do
 not build the URLs from a region you picked: ask the Core team for the real
-values and paste them into `apps/api/.env.local`:
+values and paste them into `apps/api/.env`:
 
 ```dotenv
 COGNITO_JWKS_URI=https://cognito-idp.<region>.amazonaws.com/<userPoolId>/.well-known/jwks.json
@@ -179,17 +179,66 @@ Cognito, and it returns to `/auth/callback?code=…`, which the SPA exchanges fo
 tokens against `VITE_CORE_API_URL`. See the `auth` feature in
 [`apps/web/docs/MODULES.md`](../../apps/web/docs/MODULES.md).
 
-### 5c. InnLab Core mock — first-time only
+### 5c. Simulated sign-in — when Core and Cognito are not available
 
-The real InnLab Core API isn't accessible from local development. The repo includes a minimal mock server. From a separate terminal:
+For a demo, for CI, or whenever INNLAB Core or the Cognito pool cannot be
+reached, the repo ships a **sign-in simulator** (`tools/auth-simulator/`). It
+stands in for the four things this system uses from the ecosystem: the Hub
+page (`/auth/sso`), Core's code exchange, session check and logout
+(`/api/auth/*`), Core's user context (`/api/internal/users/:id/context`) and
+the public keys and issuer of the tokens (`/.well-known/jwks.json`).
 
-```bash
-cd tools/innlab-core-mock
-pnpm install
-pnpm start    # listens on :8081
-```
+It is not an identity provider: there are no passwords. Its page lists the
+test users of `tools/auth-simulator/users.json` and signs in as the one you
+pick. Its signing key is generated at start-up, so restarting it signs
+everyone out.
 
-The mock responds to `POST /oauth/token` (returns a fake service token) and `GET /users/:id` (returns canned user contexts). It's enough to exercise the local flow end-to-end.
+**Switching mode is done only with environment variables.** No code changes.
+
+1. Start the simulator. It is off by default (compose profile `simulated`)
+   and it refuses to start without the confirmation variable:
+
+   ```bash
+   AUTH_SIMULATOR_CONFIRM=simulated-sign-in-only pnpm auth:simulated:up
+   ```
+
+   If the SPA is served from an origin other than `http://localhost:5173`,
+   `:4173`, `:4174` (the full-stack browser tests) or `:8080` (the local deployment), add it to `AUTH_SIMULATOR_REDIRECT_ORIGINS`
+   (comma-separated): the simulator only sends the sign-in code back to
+   those origins.
+
+2. Create `apps/api/.env.local` with the simulated values. It is read
+   before `.env`, so it overrides the real ones:
+
+   ```dotenv
+   COGNITO_JWKS_URI=http://localhost:8090/.well-known/jwks.json
+   COGNITO_ISSUER=http://localhost:8090
+   INNLAB_API_BASE_URL=http://localhost:8090/api
+   CORE_INTERNAL_KEY=simulated-internal-key
+   ```
+
+3. Create `apps/web/.env.local`:
+
+   ```dotenv
+   VITE_CORE_URL=http://localhost:8090
+   VITE_CORE_API_URL=http://localhost:8090/api
+   ```
+
+4. Restart `pnpm dev`. «Iniciar diagnóstico» now opens the simulator's page.
+
+**Back to the real mode:** delete both `.env.local` files and restart
+`pnpm dev`. Stop the simulator with `docker compose --profile simulated stop auth-simulator`.
+
+Safeguards against turning it on by mistake in a real deployment:
+
+- It only starts with `--profile simulated` **and** `AUTH_SIMULATOR_CONFIRM=simulated-sign-in-only`.
+- Its tokens carry `simulated: true` and its issuer is its own address, so a
+  deployment configured with the real Cognito pool rejects them (401).
+- Its page says «Modo simulado» on top, so nobody mistakes it for the Hub.
+- The real values live in `.env`, the simulated ones only in `.env.local`:
+  deleting one file is the whole way back.
+
+The simulator's contract is covered by `pnpm test:simulator`.
 
 ## Step 6 — Apply database migrations and seeds
 
@@ -278,7 +327,7 @@ docker compose down -v   # -v also wipes the postgres volume
 
 ### "Port 5433 is already allocated"
 
-Something else listens on 5433. Either stop it, or change the published port in `docker-compose.yml` and update `DATABASE_URL` in `apps/api/.env.local` to match.
+Something else listens on 5433. Either stop it, or change the published port in `docker-compose.yml` and update `DATABASE_URL` in `apps/api/.env` to match.
 
 ### "Cannot find module '@innlab/contracts'" in api or web
 
@@ -286,7 +335,7 @@ You forgot Step 3. Run `pnpm --filter @innlab/contracts build`.
 
 ### "Invalid token signature" when the SPA calls the API
 
-Almost always `COGNITO_JWKS_URI` or `COGNITO_ISSUER` in `apps/api/.env.local` still holds the `<region>`/`<userPoolId>` placeholder from `.env.example`, so no key can be fetched and no signature verified. Get the real values from the Core team (Step 5b). If they are already set, check that the SPA is sending `accessToken` and not `token`: the guard requires `token_use === 'access'` and rejects the id_token.
+Almost always `COGNITO_JWKS_URI` or `COGNITO_ISSUER` in `apps/api/.env` still holds the `<region>`/`<userPoolId>` placeholder from `.env.example`, so no key can be fetched and no signature verified. Get the real values from the Core team (Step 5b). If they are already set, check that the SPA is sending `accessToken` and not `token`: the guard requires `token_use === 'access'` and rejects the id_token.
 
 ### "EACCES" on macOS/Linux when running `pnpm install`
 

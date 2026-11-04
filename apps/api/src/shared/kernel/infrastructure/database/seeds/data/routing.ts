@@ -302,6 +302,13 @@ export const SCORING_PARAMETERS = {
 // The band is the portfolio's; the stages and the intensities are
 // SIMULATED. Adjustment-only services keep their intensities and stages as
 // part of their profile even though the score does not read them.
+//
+// TRIAL — binary intensities: every `secondary` was raised to `primary` and
+// every `marginal` dropped to `not_applicable`, to measure how much the
+// graded scale changes the result. `secondary` and `marginal` stay in the
+// calibration scale; only these profiles stop using them. The comment on
+// each service still explains its original graded intensities, which are
+// recorded for reverting in the change report.
 
 export type OrdinalLabel =
   | 'primary'
@@ -328,10 +335,10 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     relevantStages: ['idea'],
     intensities: {
       TRL: 'not_applicable',
-      CRL: 'marginal',
-      BRL: 'marginal',
+      CRL: 'not_applicable',
+      BRL: 'not_applicable',
       IPRL: 'not_applicable',
-      TmRL: 'secondary',
+      TmRL: 'primary',
       FRL: 'not_applicable',
     },
   },
@@ -344,10 +351,10 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     relevantStages: ['idea', 'validacion'],
     intensities: {
       TRL: 'primary',
-      CRL: 'secondary',
-      BRL: 'marginal',
+      CRL: 'primary',
+      BRL: 'not_applicable',
       IPRL: 'not_applicable',
-      TmRL: 'marginal',
+      TmRL: 'not_applicable',
       FRL: 'not_applicable',
     },
   },
@@ -359,9 +366,9 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     maxLevel: null,
     relevantStages: ['idea', 'validacion', 'crecimiento'],
     intensities: {
-      TRL: 'marginal',
-      CRL: 'secondary',
-      BRL: 'secondary',
+      TRL: 'not_applicable',
+      CRL: 'primary',
+      BRL: 'primary',
       IPRL: 'not_applicable',
       TmRL: 'primary',
       FRL: 'not_applicable',
@@ -376,8 +383,8 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     relevantStages: ['validacion'],
     intensities: {
       TRL: 'primary',
-      CRL: 'secondary',
-      BRL: 'secondary',
+      CRL: 'primary',
+      BRL: 'primary',
       IPRL: 'not_applicable',
       TmRL: 'not_applicable',
       FRL: 'not_applicable',
@@ -392,10 +399,10 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     relevantStages: ['validacion', 'crecimiento'],
     intensities: {
       TRL: 'primary',
-      CRL: 'secondary',
-      BRL: 'marginal',
+      CRL: 'primary',
+      BRL: 'not_applicable',
       IPRL: 'not_applicable',
-      TmRL: 'secondary',
+      TmRL: 'primary',
       FRL: 'not_applicable',
     },
   },
@@ -408,9 +415,9 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     relevantStages: ['validacion', 'crecimiento'],
     intensities: {
       TRL: 'primary',
-      CRL: 'secondary',
-      BRL: 'marginal',
-      IPRL: 'marginal',
+      CRL: 'primary',
+      BRL: 'not_applicable',
+      IPRL: 'not_applicable',
       TmRL: 'not_applicable',
       FRL: 'not_applicable',
     },
@@ -423,12 +430,12 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     maxLevel: 5,
     relevantStages: ['idea', 'validacion'],
     intensities: {
-      TRL: 'marginal',
+      TRL: 'not_applicable',
       CRL: 'primary',
       BRL: 'primary',
       IPRL: 'not_applicable',
-      TmRL: 'secondary',
-      FRL: 'marginal',
+      TmRL: 'primary',
+      FRL: 'not_applicable',
     },
   },
   {
@@ -438,9 +445,9 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     maxLevel: null,
     relevantStages: ['validacion', 'crecimiento'],
     intensities: {
-      TRL: 'secondary',
-      CRL: 'marginal',
-      BRL: 'marginal',
+      TRL: 'primary',
+      CRL: 'not_applicable',
+      BRL: 'not_applicable',
       IPRL: 'not_applicable',
       TmRL: 'primary',
       FRL: 'not_applicable',
@@ -455,8 +462,8 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     relevantStages: ['crecimiento'],
     intensities: {
       TRL: 'primary',
-      CRL: 'secondary',
-      BRL: 'marginal',
+      CRL: 'primary',
+      BRL: 'not_applicable',
       IPRL: 'not_applicable',
       TmRL: 'primary',
       FRL: 'not_applicable',
@@ -471,10 +478,10 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     relevantStages: ['crecimiento'],
     intensities: {
       TRL: 'primary',
-      CRL: 'secondary',
-      BRL: 'secondary',
-      IPRL: 'marginal',
-      TmRL: 'marginal',
+      CRL: 'primary',
+      BRL: 'primary',
+      IPRL: 'not_applicable',
+      TmRL: 'not_applicable',
       FRL: 'not_applicable',
     },
   },
@@ -487,10 +494,10 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     relevantStages: ['crecimiento'],
     intensities: {
       TRL: 'primary',
-      CRL: 'secondary',
-      BRL: 'secondary',
-      IPRL: 'marginal',
-      TmRL: 'secondary',
+      CRL: 'primary',
+      BRL: 'primary',
+      IPRL: 'not_applicable',
+      TmRL: 'primary',
       FRL: 'not_applicable',
     },
   },
@@ -501,12 +508,12 @@ export const ORDINAL_PROFILES: readonly OrdinalProfileSeed[] = [
     maxLevel: 9,
     relevantStages: ['crecimiento'],
     intensities: {
-      TRL: 'secondary',
-      CRL: 'secondary',
-      BRL: 'secondary',
-      IPRL: 'marginal',
-      TmRL: 'secondary',
-      FRL: 'marginal',
+      TRL: 'primary',
+      CRL: 'primary',
+      BRL: 'primary',
+      IPRL: 'not_applicable',
+      TmRL: 'primary',
+      FRL: 'not_applicable',
     },
   },
 ];

@@ -151,9 +151,15 @@ export function ReportAnswers({ answers, dimensions }: Props): JSX.Element {
           </table>
         </div>
 
-        <ul aria-label="Escala de respuesta" className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+        <ul
+          aria-label="Escala de respuesta"
+          className="mt-4 flex flex-wrap gap-x-4 gap-y-2 lg:justify-between lg:gap-x-3"
+        >
           {VALUES.map((v) => (
-            <li key={v} className="text-muted-foreground flex items-center gap-2 text-sm">
+            <li
+              key={v}
+              className="text-muted-foreground flex items-center gap-1.5 whitespace-nowrap text-[0.8125rem]"
+            >
               <span
                 aria-hidden="true"
                 className={cn('flex size-6 items-center justify-center text-sm font-bold', CELL[v])}
