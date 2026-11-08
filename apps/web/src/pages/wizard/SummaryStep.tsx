@@ -25,12 +25,16 @@ interface Props {
   readonly frameworkVersion: string;
 }
 
-/** What processing the diagnostic calculates, in order (shown while it runs). */
+/**
+ * What processing the diagnostic calculates, in order (shown while it runs),
+ * in everyday words: what the user gets, not how it is computed (usability
+ * test P03).
+ */
 const DIAGNOSTIC_STEPS = [
-  'Promediamos tus respuestas en cada una de las seis dimensiones',
-  'Convertimos cada promedio en un nivel IRL de 1 a 9',
-  'Comparamos las dimensiones para encontrar desequilibrios',
-  'Identificamos tu cuello de botella y tus brechas',
+  'Revisamos tus respuestas de cada dimensión',
+  'Ubicamos tu iniciativa en un nivel del 1 al 9 en cada dimensión',
+  'Comparamos tus dimensiones entre sí',
+  'Buscamos lo que hoy más frena tu avance',
 ] as const;
 
 /**
@@ -64,7 +68,7 @@ export function SummaryStep({ diagnosticId, frameworkVersion }: Props): JSX.Elem
         description={
           process.isSuccess
             ? 'Tu perfil ya está listo. Te llevamos a verlo.'
-            : 'Convertimos tus 48 respuestas en el nivel de cada dimensión. En un momento verás el resultado.'
+            : 'Con tus 48 respuestas armamos tu perfil de madurez. En un momento lo verás.'
         }
         steps={DIAGNOSTIC_STEPS}
         done={process.isSuccess}

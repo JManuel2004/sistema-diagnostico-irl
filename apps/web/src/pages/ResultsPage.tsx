@@ -411,14 +411,15 @@ function DeepAnalysis({
 
 /**
  * The deep analysis while it is calculated: the same steps the backend
- * runs, from the recommendation to the plan by phases.
+ * runs, from the recommendation to the plan by phases, told by what the user
+ * gets and not by the calculation's names (usability test P03).
  */
 const DEEP_ANALYSIS_STEPS = [
-  'Revisamos qué servicios de INNLAB no aplican a tu iniciativa',
-  'Medimos la afinidad de cada servicio con tu perfil',
-  'Aplicamos los criterios del centro y elegimos tu servicio',
-  'Ordenamos las dimensiones según qué habilita qué',
-  'Asignamos a cada fase del plan un servicio que la atienda',
+  'Revisamos los servicios de INNLAB que pueden servirte',
+  'Vemos cuáles encajan mejor con tu perfil',
+  'Elegimos el servicio que más te conviene hoy',
+  'Decidimos qué dimensiones conviene trabajar primero',
+  'Armamos tu ruta por fases con los servicios de INNLAB',
 ] as const;
 
 function DeepAnalysisProcessing(): JSX.Element {
@@ -426,7 +427,7 @@ function DeepAnalysisProcessing(): JSX.Element {
     <ProcessingState
       overline="Análisis profundo"
       title="Estamos preparando tu análisis"
-      description="Cruzamos tus seis dimensiones para recomendarte un servicio de INNLAB y un plan de fortalecimiento."
+      description="Con tu perfil buscamos el servicio de INNLAB que más te ayuda y armamos tu ruta de escalamiento."
       steps={DEEP_ANALYSIS_STEPS}
     />
   );
