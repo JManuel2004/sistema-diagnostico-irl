@@ -818,6 +818,9 @@ export class PdfkitReportRenderer implements ReportRendererPort {
       doc.heightOfString(block.advice, { width: inner }) +
       (block.risk
         ? doc.heightOfString(`Riesgo: ${block.risk}`, { width: inner }) + 8
+        : 0) +
+      (block.action
+        ? doc.heightOfString(`Qué hacer: ${block.action}`, { width: inner }) + 3
         : 0);
     const height = 34 + 32 + textH + 14;
     this.ensureRoom(doc, height + 10);
@@ -907,6 +910,17 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         .font(BODY)
         .fillColor(TEXT)
         .text(block.risk);
+    }
+    if (block.action) {
+      doc
+        .font(BOLD)
+        .fillColor(TEXT)
+        .text('Qué hacer: ', left + pad, doc.y + 3, {
+          width: inner,
+          continued: true,
+        })
+        .font(BODY)
+        .text(block.action);
     }
     doc.x = left;
     doc.y = top + height + 10;

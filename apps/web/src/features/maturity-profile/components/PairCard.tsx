@@ -1,8 +1,7 @@
 import type { JSX } from 'react';
-import { CircleCheck, OctagonAlert, ShieldAlert, TriangleAlert } from 'lucide-react';
+import { ArrowRight, CircleCheck, OctagonAlert, ShieldAlert, TriangleAlert } from 'lucide-react';
 import {
-  bothInGapRisk,
-  imbalanceRisk,
+  imbalanceGuidance,
   type DimensionCode,
   type ImbalanceClassification,
   type ImbalancePairResult,
@@ -17,10 +16,10 @@ import type { HighlightHandler } from './MaturityProfileSummary';
  * apart they are. The severity (`classification`) is computed by the
  * backend with the framework's rules; here it is turned into color, icon
  * and a sentence anyone can understand, without codes or symbols. A pair
- * with an alert also says what the initiative risks while it stays apart
- * (`imbalanceRisk`), so the reader knows why closing it matters; when both
- * dimensions are in gap there is no one ahead, and the risk is of the two
- * being weak together (`bothInGapRisk`).
+ * with an alert also says what that distance means, what the initiative
+ * risks while it stays apart and what to do (`imbalanceGuidance`, usability
+ * test P01); when both dimensions are in gap there is no one ahead, and no
+ * guidance of the pair.
  */
 interface Props {
   readonly pair: ImbalancePairResult;
@@ -100,14 +99,12 @@ export function PairCard({ pair, names, levels, bothInGap, onHighlight }: Props)
   const rightLevel = levels.get(pair.right) ?? 0;
   const higher = leftLevel >= rightLevel ? left : right;
   const lower = leftLevel >= rightLevel ? right : left;
-  const risk =
-    pair.classification === 'acceptable' || pair.difference === 0
-      ? null
-      : bothInGap
-        ? bothInGapRisk(pair.left, pair.right)
-        : leftLevel >= rightLevel
-          ? imbalanceRisk(pair.left, pair.right)
-          : imbalanceRisk(pair.right, pair.left);
+  const guidance =
+    pair.classification !== 'acceptable' && !bothInGap && pair.difference > 0
+      ? leftLevel >= rightLevel
+        ? imbalanceGuidance(pair.left, pair.right)
+        : imbalanceGuidance(pair.right, pair.left)
+      : null;
 
   let headline: string;
   if (pair.difference === 0) headline = 'Van exactamente al mismo nivel.';
@@ -116,6 +113,8 @@ export function PairCard({ pair, names, levels, bothInGap, onHighlight }: Props)
   let advice: string;
   if (pair.classification === 'acceptable') {
     advice = 'Las dos avanzan a un ritmo parecido. No se requiere acción.';
+  } else if (guidance) {
+    advice = guidance.meaning;
   } else if (bothInGap) {
     advice = `Las dos están en la parte baja de la escala. Lo que toca es subir ${left} y ${right} en paralelo, no compararlas entre sí.`;
   } else if (pair.classification === 'critical') {
@@ -168,17 +167,26 @@ export function PairCard({ pair, names, levels, bothInGap, onHighlight }: Props)
         <p className="text-muted-foreground mt-1 text-base leading-relaxed">{advice}</p>
       </div>
 
-      {risk && (
-        <p className="border-border text-foreground flex items-start gap-2 border-t pt-3 text-base leading-relaxed">
-          <ShieldAlert
-            className={`${pair.classification === 'critical' ? 'text-critical' : 'text-moderate'} mt-1 size-4 shrink-0`}
-            aria-hidden="true"
-          />
-          <span>
-            <span className="font-bold">Riesgo: </span>
-            {risk}
-          </span>
-        </p>
+      {guidance && (
+        <div className="border-border flex flex-col gap-2 border-t pt-3">
+          <p className="text-foreground flex items-start gap-2 text-base leading-relaxed">
+            <ShieldAlert
+              className={`${pair.classification === 'critical' ? 'text-critical' : 'text-moderate'} mt-1 size-4 shrink-0`}
+              aria-hidden="true"
+            />
+            <span>
+              <span className="font-bold">Riesgo: </span>
+              {guidance.risk}
+            </span>
+          </p>
+          <p className="text-foreground flex items-start gap-2 text-base leading-relaxed">
+            <ArrowRight className="text-primary mt-1 size-4 shrink-0" aria-hidden="true" />
+            <span>
+              <span className="font-bold">Qué hacer: </span>
+              {guidance.action}
+            </span>
+          </p>
+        </div>
       )}
     </article>
   );

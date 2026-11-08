@@ -89,7 +89,7 @@ describe('ImbalanceInsights — pairs', () => {
       within(card).getByText('Tecnología va 4 niveles por delante de Negocio.'),
     ).toBeInTheDocument();
     expect(
-      within(card).getByText(/Conviene atender Negocio antes de seguir avanzando en Tecnología/),
+      within(card).getByText('Hay una solución avanzada sin claridad de cómo generará ingresos.'),
     ).toBeInTheDocument();
     expect(within(card).getByText('Desequilibrio crítico')).toBeInTheDocument();
   });
@@ -131,24 +131,32 @@ describe('ImbalanceInsights — pairs', () => {
     expect(moderate).toHaveTextContent(/una solución que el mercado todavía no ha validado/);
   });
 
-  it('gives no risk to a balanced pair', () => {
+  it('says what to do about a pair with an alert, in the direction it leans', () => {
     render(<ImbalanceInsights profile={profile()} />);
 
-    expect(
-      screen.getByRole('article', { name: /Negocio y Propiedad Intelectual/ }),
-    ).not.toHaveTextContent('Riesgo:');
+    const critical = screen.getByRole('article', { name: /Tecnología y Propiedad Intelectual/ });
+    expect(critical).toHaveTextContent(
+      'Qué hacer: Firma acuerdos sobre quién es dueño de lo creado y evalúa su protección.',
+    );
+    const moderate = screen.getByRole('article', { name: /Tecnología y Cliente/ });
+    expect(moderate).toHaveTextContent(
+      /Qué hacer: Antes de seguir desarrollando, valida el problema/,
+    );
   });
 
-  it('gives a pair with an alert whose two dimensions are in a gap the risk of both being weak', () => {
+  it('gives no risk to a balanced pair nor to two dimensions that are both in a gap', () => {
     render(
       <ImbalanceInsights
         profile={profile({ gaps: { dimensions: ['TmRL', 'FRL'], threshold: 3 } })}
       />,
     );
 
-    const card = screen.getByRole('article', { name: /Equipo y Financiación/ });
-    expect(card).toHaveTextContent('Riesgo:');
-    expect(card).toHaveTextContent(/Un equipo incompleto y sin recursos para sostenerse/);
+    expect(
+      screen.getByRole('article', { name: /Negocio y Propiedad Intelectual/ }),
+    ).not.toHaveTextContent(/Riesgo:|Qué hacer:/);
+    expect(screen.getByRole('article', { name: /Equipo y Financiación/ })).not.toHaveTextContent(
+      /Riesgo:|Qué hacer:/,
+    );
   });
 
   it('uses no arrows, deltas or codes: the texts say the same in plain words', () => {
@@ -307,7 +315,8 @@ describe('ImbalanceInsights — critical state (RF-13)', () => {
     await user.hover(screen.getByRole('button', { name: /críticas/i }));
 
     expect(
-      (await screen.findAllByText(/una dimensión clave del marco que está en la parte más baja/i)).length,
+      (await screen.findAllByText(/una dimensión clave del marco que está en la parte más baja/i))
+        .length,
     ).toBeGreaterThan(0);
   });
 
@@ -326,7 +335,9 @@ describe('ImbalanceInsights — tono de los pares sin alerta (A3)', () => {
   it('un par equilibrado dice que no se requiere acción, sin hablar de frenar', () => {
     render(<ImbalanceInsights profile={profile()} />);
 
-    expect(within(pairsSection()).getAllByText(/No se requiere acción\./).length).toBeGreaterThan(0);
+    expect(within(pairsSection()).getAllByText(/No se requiere acción\./).length).toBeGreaterThan(
+      0,
+    );
     expect(pairsSection()).not.toHaveTextContent(/frenar ninguna/);
   });
 });

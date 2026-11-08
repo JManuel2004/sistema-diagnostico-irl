@@ -5,7 +5,7 @@ import type {
   RoadmapDimensionTarget,
 } from '@innlab/contracts';
 import {
-  imbalanceRisk,
+  imbalanceGuidance,
   LIKERT_LABELS,
   type DiagnosticReport,
 } from '@innlab/contracts';
@@ -28,7 +28,8 @@ export type ReportBlock =
   | { readonly kind: 'alert'; readonly text: string }
   /**
    * An imbalanced pair, as on screen: its two dimensions with their level,
-   * how far apart they are, what to do and what the initiative risks.
+   * how far apart they are, what that distance means, what the initiative
+   * risks and what to do.
    */
   | {
       readonly kind: 'pair';
@@ -43,6 +44,7 @@ export type ReportBlock =
       readonly headline: string;
       readonly advice: string;
       readonly risk: string | null;
+      readonly action: string | null;
     }
   /** Each dimension today and at the end of the route, on the 1–9 scale. */
   | {
@@ -173,8 +175,9 @@ const LOCALE = 'es-CO';
 
 /**
  * An imbalanced pair as the results screen tells it (`PairCard`): which one
- * goes ahead and by how much, what to do and, unless both are in gap, what
- * the initiative risks (the same texts as the screen, from the contracts).
+ * goes ahead and by how much and, unless both are in gap, what the distance
+ * means, what the initiative risks and what to do (the same texts as the
+ * screen, from the contracts).
  */
 function pairBlock(
   pair: ImbalancePairResult,
@@ -188,11 +191,17 @@ function pairBlock(
     leftLevel >= rightLevel ? [pair.left, pair.right] : [pair.right, pair.left];
   const bothInGap = gapCodes.has(pair.left) && gapCodes.has(pair.right);
   const critical = pair.classification === 'critical';
-  const advice = bothInGap
-    ? `Las dos están en la parte baja de la escala. Lo que toca es subir ${nameOf(pair.left)} y ${nameOf(pair.right)} en paralelo, no compararlas entre sí.`
-    : critical
-      ? `La distancia es muy grande. Conviene atender ${nameOf(behind)} antes de seguir avanzando en ${nameOf(ahead)}.`
-      : `La distancia es importante. Vale la pena acercar ${nameOf(behind)} a ${nameOf(ahead)} pronto.`;
+  const guidance =
+    bothInGap || pair.difference === 0
+      ? null
+      : imbalanceGuidance(ahead, behind);
+  const advice = guidance
+    ? guidance.meaning
+    : bothInGap
+      ? `Las dos están en la parte baja de la escala. Lo que toca es subir ${nameOf(pair.left)} y ${nameOf(pair.right)} en paralelo, no compararlas entre sí.`
+      : critical
+        ? `La distancia es muy grande. Conviene atender ${nameOf(behind)} antes de seguir avanzando en ${nameOf(ahead)}.`
+        : `La distancia es importante. Vale la pena acercar ${nameOf(behind)} a ${nameOf(ahead)} pronto.`;
   return {
     kind: 'pair',
     title: listNames([nameOf(pair.left), nameOf(pair.right)]),
@@ -205,8 +214,8 @@ function pairBlock(
     })),
     headline: `${nameOf(ahead)} va ${levelWord(pair.difference)} por delante de ${nameOf(behind)}.`,
     advice,
-    risk:
-      bothInGap || pair.difference === 0 ? null : imbalanceRisk(ahead, behind),
+    risk: guidance?.risk ?? null,
+    action: guidance?.action ?? null,
   };
 }
 

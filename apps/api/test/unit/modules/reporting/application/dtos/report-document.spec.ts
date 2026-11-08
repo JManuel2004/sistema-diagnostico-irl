@@ -20,9 +20,14 @@ function textOf(blocks: readonly ReportBlock[]): string {
         return '';
       if (b.kind === 'answers') return b.rows.map((r) => r.text).join('\n');
       if (b.kind === 'pair')
-        return [b.title, b.severity, b.headline, b.advice, b.risk ?? ''].join(
-          '\n',
-        );
+        return [
+          b.title,
+          b.severity,
+          b.headline,
+          b.advice,
+          b.risk ?? '',
+          b.action ?? '',
+        ].join('\n');
       return b.text;
     })
     .join('\n');
@@ -342,7 +347,7 @@ describe('reportFileName', () => {
 });
 
 describe('buildReportDocument — imbalances as on screen', () => {
-  it('draws each pair with an alert with its levels, what to do and the risk', () => {
+  it('draws each pair with an alert with its levels, what it means, the risk and what to do', () => {
     const pairs = buildReportDocument(aReport()).blocks.filter(
       (b) => b.kind === 'pair',
     );
@@ -356,6 +361,18 @@ describe('buildReportDocument — imbalances as on screen', () => {
     expect(first.headline).toMatch(/va \d+ niveles? por delante de/);
     expect(first.advice).not.toBe('');
     expect(first.risk).not.toBeNull();
+    expect(first.action).not.toBeNull();
+  });
+
+  it('explains the distance of a pair in the direction it leans, as on screen', () => {
+    const text = textOf(buildReportDocument(aReport()).blocks);
+
+    expect(text).toContain(
+      'La tecnología avanza sin protección ni acuerdos de titularidad.',
+    );
+    expect(text).toContain(
+      'Firma acuerdos sobre quién es dueño de lo creado y evalúa su protección.',
+    );
   });
 
   it('colors the global level by its maturity band, and names the band', () => {
