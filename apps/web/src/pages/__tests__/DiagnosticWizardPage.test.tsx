@@ -701,7 +701,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
       );
 
       expect(
-        await screen.findByText(/Tus respuestas se guardaron a las/, {}, { timeout: 3000 }),
+        await screen.findByText(/Guardado automáticamente a las/, {}, { timeout: 3000 }),
       ).toBeInTheDocument();
       expect(api.savedDrafts.at(-1)).toEqual({
         entries: [{ statementId: '1', value: 3, justification: null }],
@@ -722,7 +722,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
       await user.click(within(first).getByRole('radio', { name: '2 — En desacuerdo' }));
 
       expect(
-        await screen.findByText(/No pudimos guardar tus respuestas/, {}, { timeout: 3000 }),
+        await screen.findByText(/Error al guardar/, {}, { timeout: 3000 }),
       ).toBeInTheDocument();
       expect(useQuestionnaireDraftStore.getState().answers).toEqual({ '1': 2 });
       expect(useQuestionnaireDraftStore.getState().unsynced).toBe(true);

@@ -1,13 +1,17 @@
-import { Suspense, useState, type JSX } from 'react';
+import { Suspense, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, ClipboardList } from 'lucide-react';
 import {
   DraftSaveStatus,
+  QuestionnaireProgress,
   QuestionnaireView,
+  selectAnswers,
+  selectSetActiveTab,
   useQuestionnaireCompletion,
+  useQuestionnaireDraftStore,
   type DraftSaveState,
 } from '@features/questionnaire';
 import { PageHeader } from '@/shared/ui/page-header';
-import { Alert } from '@/shared/ui/alert';
 import { Button, buttonVariants } from '@/shared/ui/button';
 import { QuestionnaireAutofill } from '@/dev/dev-autofill';
 import { wizardPath } from './wizard-steps';
@@ -24,12 +28,18 @@ interface Props {
  * Step 3 — the 48-statement questionnaire (HU-07 / HU-09 / RF-06).
  *
  * It blocks moving on to the summary if anything is missing (RF-06): each
- * statement needs **its answer**; the justification is optional. Trying to move on
- * incomplete lists which dimensions are missing (on top of the tabs' X/8
- * indicators) and the warning stays until nothing is missing. The answers
- * are saved on the server as a draft while the user answers, so they can
- * close the session and continue later; they are processed only with
- * «Procesar diagnóstico» (step 4).
+ * statement needs **its answer**; the justification is optional. «Revisar
+ * resumen» stays disabled until all 48 are answered, and next to it the step
+ * says how many are missing and in which dimensions, each one a button that
+ * opens it (usability tests P03, P05: the summary looked reachable halfway).
+ *
+ * Above the statements, a band that sticks while scrolling: the progress,
+ * whether the answers are saved (P02) and, with everything answered, «Volver
+ * al resumen» (P03: correcting one answer meant scrolling to the end). Before
+ * the first answer, a notice says the questionnaire has started, how long it
+ * is and that it saves itself (P03). The answers are saved on the server as a
+ * draft while the user answers, so they can close the session and continue
+ * later; they are processed only with «Procesar diagnóstico» (step 4).
  */
 export function QuestionnaireStep({
   diagnosticId,
@@ -39,20 +49,18 @@ export function QuestionnaireStep({
   const navigate = useNavigate();
   const { catalog, incompleteDimensions, completedIn, isComplete } =
     useQuestionnaireCompletion(frameworkVersion);
+  const answers = useQuestionnaireDraftStore(selectAnswers);
+  const setActiveTab = useQuestionnaireDraftStore(selectSetActiveTab);
 
-  /**
-   * The warning appears once the user tries to move on with missing
-   * answers and **stays while any is still missing**: the list is
-   * recomputed with each answer and the warning disappears only when none
-   * is left.
-   */
-  const [advanceAttempted, setAdvanceAttempted] = useState(false);
-
-  function handleAdvance(): void {
-    setAdvanceAttempted(true);
-    if (!isComplete) return;
+  const total = catalog?.dimensions.reduce((acc, d) => acc + d.statements.length, 0) ?? 48;
+  const missing = incompleteDimensions.reduce(
+    (acc, d) => acc + d.statements.length - completedIn(d),
+    0,
+  );
+  const started = Object.keys(answers).length > 0;
+  const toSummary = (): void => {
     void navigate(wizardPath(diagnosticId, 'resumen'));
-  }
+  };
 
   return (
     <>
@@ -62,6 +70,24 @@ export function QuestionnaireStep({
         description="Este paso mide qué tan madura está tu iniciativa en las seis dimensiones del marco IRL (Innovation Readiness Level) de KTH: tecnología, cliente, negocio, propiedad intelectual, equipo y financiación. Cada pestaña es una dimensión con afirmaciones sobre lo que tu iniciativa hace hoy: en cada una, elige qué tan de acuerdo estás con que la describe y, si quieres, cuenta por qué. Sé lo más objetivo posible; la honestidad en las respuestas garantiza un diagnóstico más preciso y útil."
       />
 
+      {!started && (
+        <section
+          aria-labelledby="questionnaire-start"
+          className="bg-azul-wash mb-6 flex items-start gap-4 rounded-2xl p-5 sm:p-6"
+        >
+          <ClipboardList className="text-azul-icesi mt-0.5 size-6 shrink-0" aria-hidden="true" />
+          <div>
+            <h2 id="questionnaire-start" className="text-foreground text-lg font-bold">
+              Empieza el cuestionario
+            </h2>
+            <p className="text-muted-foreground mt-1 max-w-prose text-base leading-relaxed">
+              Son {total} afirmaciones, 8 por cada una de las 6 dimensiones. Tus respuestas se
+              guardan solas: puedes salir y continuar después donde lo dejaste.
+            </p>
+          </div>
+        </section>
+      )}
+
       {QuestionnaireAutofill && catalog && (
         <Suspense fallback={null}>
           <div className="mb-4">
@@ -70,46 +96,81 @@ export function QuestionnaireStep({
         </Suspense>
       )}
 
-      <div className="mb-4">
-        <DraftSaveStatus status={saveStatus} />
-      </div>
+      {catalog ? (
+        <QuestionnaireProgress
+          dimensions={catalog.dimensions}
+          status={<DraftSaveStatus status={saveStatus} />}
+          action={
+            isComplete ? (
+              <Button size="sm" onClick={toSummary}>
+                Volver al resumen
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <div className="mb-4">
+          <DraftSaveStatus status={saveStatus} />
+        </div>
+      )}
 
       <QuestionnaireView frameworkVersion={frameworkVersion} />
 
-      {/* RF-06: completeness validation section */}
+      {/* RF-06: the summary opens only with every statement answered. */}
       <div className="border-border mt-8 border-t pt-6">
-        {advanceAttempted && !isComplete && (
-          <Alert
-            tone="critical"
-            className="mb-4"
-            title="Hay afirmaciones sin responder. Cada una necesita su respuesta antes de continuar; la justificación es opcional."
-          >
-            <ul className="list-disc pl-5">
-              {incompleteDimensions.map((dim) => (
-                <li key={dim.code}>
-                  {dim.code} — {dim.name} ({completedIn(dim)}/{dim.statements.length})
-                </li>
-              ))}
-            </ul>
-          </Alert>
-        )}
-
-        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-start sm:justify-between">
           <Link
             to={wizardPath(diagnosticId, 'iniciativa')}
             className={buttonVariants({ variant: 'ghost' })}
           >
             Atrás
           </Link>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <p className="text-muted-foreground text-sm">
-              {isComplete
-                ? 'Todas las afirmaciones completas — listo para revisar.'
-                : `Faltan respuestas en ${String(incompleteDimensions.length)} dimensión(es).`}
-            </p>
-            <Button size="lg" className="w-full sm:w-auto" onClick={handleAdvance}>
+          <div className="flex flex-col gap-3 sm:items-end">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto"
+              onClick={toSummary}
+              disabled={!isComplete}
+              aria-describedby="questionnaire-missing"
+            >
               Revisar resumen
             </Button>
+            <div
+              id="questionnaire-missing"
+              aria-live="polite"
+              className="text-muted-foreground text-sm sm:text-right"
+            >
+              {!catalog ? null : isComplete ? (
+                <p>Todas las afirmaciones completas — listo para revisar.</p>
+              ) : (
+                <>
+                  <p>
+                    {missing === 1
+                      ? 'Falta 1 afirmación por responder. La justificación es opcional.'
+                      : `Faltan ${String(missing)} afirmaciones por responder. La justificación es opcional.`}
+                  </p>
+                  <ul
+                    aria-label="Dimensiones con afirmaciones pendientes"
+                    className="mt-2 flex flex-wrap gap-2 sm:justify-end"
+                  >
+                    {incompleteDimensions.map((dim) => (
+                      <li key={dim.code}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab(dim.code);
+                          }}
+                          className="border-border text-foreground hover:border-primary rounded-control border px-2.5 py-1 text-sm font-semibold"
+                        >
+                          {dim.code} — {dim.name} ({completedIn(dim)}/{dim.statements.length})
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

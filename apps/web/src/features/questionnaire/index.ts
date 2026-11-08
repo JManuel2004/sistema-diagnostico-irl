@@ -3,12 +3,14 @@
 export { QuestionnaireView } from './components/QuestionnaireView';
 export { AnswersSummary } from './components/AnswersSummary';
 export { DraftSaveStatus } from './components/DraftSaveStatus';
+export { QuestionnaireProgress } from './components/QuestionnaireProgress';
 export {
   selectAnswers,
   selectClearDraft,
   selectDraftDiagnosticId,
   selectInitialize,
   selectJustifications,
+  selectSetActiveTab,
   useQuestionnaireDraftStore,
 } from './store/questionnaire-draft.store';
 export { useQuestionnaireCompletion } from './hooks/useQuestionnaireCompletion';

@@ -112,7 +112,7 @@ export default function DiagnosticWizardPage(): JSX.Element {
 
     return (
       <PageShell
-        width={step === 'consentimiento' ? 'reading' : 'standard'}
+        width={step === 'consentimiento' ? 'reading' : step === 'cuestionario' ? 'wide' : 'standard'}
         showAttribution
         headerActions={<WizardHeaderActions />}
       >

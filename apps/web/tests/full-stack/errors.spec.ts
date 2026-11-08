@@ -11,11 +11,11 @@ test('un cuestionario incompleto no avanza y dice qué falta', async ({ page }) 
   await consentAndInitiative(page, 'Incompleto E2E');
   await answer(page, AGROCONECTA, 2);
 
-  await page.getByRole('button', { name: 'Revisar resumen' }).click();
-
-  const alert = page.getByRole('alert');
-  await expect(alert).toContainText('Hay afirmaciones sin responder');
-  await expect(alert).toContainText('(0/8)');
+  await expect(page.getByRole('button', { name: 'Revisar resumen' })).toBeDisabled();
+  await expect(page.getByText(/Faltan \d+ afirmaciones por responder/)).toBeVisible();
+  await expect(
+    page.getByRole('list', { name: 'Dimensiones con afirmaciones pendientes' }),
+  ).toContainText('(0/8)');
   await expect(page).toHaveURL(/\/asistente\/cuestionario$/);
 });
 

@@ -4,7 +4,6 @@ import type { DimensionCode, QuestionnaireStructure } from '@innlab/contracts';
 import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { DimensionPanel } from './DimensionPanel';
 import { DimensionNav } from './DimensionNav';
-import { QuestionnaireProgress } from './QuestionnaireProgress';
 import {
   selectActiveTab,
   isStatementComplete,
@@ -29,7 +28,8 @@ import {
  * The active tab lives in the store (`activeTab`) instead of `useState` or
  * `defaultValue`, so an F5 keeps it.
  *
- * Also:
+ * The overall progress band is the wizard step's (`QuestionnaireProgress`),
+ * so it can carry the step's actions. Also:
  *  - A completion tick when the dimension's 8 statements are complete.
  *  - Auto-scroll on tab change: the user always lands at the top of the
  *    panel, not at the previous scroll height.
@@ -98,9 +98,7 @@ export function DimensionTabs({ dimensions }: Props) {
       onValueChange={(v) => setActiveTab(v as DimensionCode)}
       className="w-full"
     >
-      <QuestionnaireProgress dimensions={dimensions} />
-
-      <div ref={panelTopRef} className="scroll-mt-36">
+      <div ref={panelTopRef} className="scroll-mt-48">
         <TabsList
           aria-label="Dimensiones IRL"
           className="grid h-auto w-full grid-cols-3 gap-2 border-0 bg-transparent p-0 sm:grid-cols-6"

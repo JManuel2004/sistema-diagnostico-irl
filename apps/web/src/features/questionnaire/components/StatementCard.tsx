@@ -1,7 +1,8 @@
-import type { Statement } from '@innlab/contracts';
+import type { DimensionCode, Statement } from '@innlab/contracts';
 import { ANSWER_JUSTIFICATION_MAX } from '@innlab/contracts';
 import { Check } from 'lucide-react';
 import { Card } from '@/shared/ui/card';
+import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { Field, Textarea } from '@/shared/ui/field';
 import { LikertScale } from './LikertScale';
 import { useAnswerForStatement } from '../hooks/useAnswerForStatement';
@@ -11,31 +12,44 @@ import { useAnswerForStatement } from '../hooks/useAnswerForStatement';
  *
  * Visual specification:
  *  - Padding 16px on mobile and 32px from `sm`, straight corners.
- *  - Header: `Afirmación X de 8` in blue (required by tests and
- *    accessibility) and, on the right, whether it is complete or pending.
+ *  - Header: `Afirmación X de 8` in the dimension's `-ink` tone, after a
+ *    mark in its color (usability test P02: the questionnaire follows the
+ *    colors of the radar), and, on the right, whether it is complete or
+ *    pending.
  *  - Body: the statement at 18px on mobile and 20px from `sm` — tuned to
- *    read 48 statements comfortably, ~60 characters per line.
+ *    read 48 statements comfortably, ~60 characters per line. From `sm` it is
+ *    justified with Spanish hyphenation (P02 asked for it): the column is
+ *    wide enough there to leave no gaps between words; on a phone it stays
+ *    left-aligned.
  *  - The Likert selector (5 options) and, below, the justification: the
  *    reason for the chosen level, optional, saved with the answer when given.
  *
- * The accent color of the dimension code (TRL, CRL, ...) comes from the
- * parent (`DimensionPanel`) and never mixes with the answer input:
+ * The accent color of the dimension (`code`) comes from the parent
+ * (`DimensionPanel`) and never mixes with the answer input:
  * answering TRL must be mechanically identical to answering FRL (manual's
  * rule).
  */
 
 interface Props {
   statement: Statement;
+  /** The dimension it belongs to, for its color. */
+  code?: DimensionCode;
 }
 
-export function StatementCard({ statement }: Props) {
+export function StatementCard({ statement, code }: Props) {
+  const visual = code ? getDimensionVisual(code) : null;
   const { value, setAnswer, justification, setJustification } = useAnswerForStatement(statement.id);
   // The same rule as `isStatementComplete`: the answer is what completes it.
   const complete = value !== null;
   return (
     <Card className="rounded-2xl p-4 sm:p-8">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-primary text-sm font-bold">Afirmación {statement.sequence} de 8</p>
+        <p
+          className={`${visual?.textInk ?? 'text-primary'} flex items-center gap-2 text-sm font-bold`}
+        >
+          {visual && <span className={`${visual.bg} size-2.5 shrink-0`} aria-hidden="true" />}
+          Afirmación {statement.sequence} de 8
+        </p>
         {complete ? (
           <span className="text-acceptable inline-flex items-center gap-1.5 text-[0.8125rem] font-bold">
             <Check className="size-4" strokeWidth={3} aria-hidden="true" />
@@ -47,7 +61,7 @@ export function StatementCard({ statement }: Props) {
       </div>
       <p
         id={`statement-text-${statement.id}`}
-        className="text-foreground mt-3 text-lg font-medium leading-relaxed sm:text-xl"
+        className="text-foreground mt-3 max-w-[70ch] text-lg font-medium leading-relaxed sm:hyphens-auto sm:text-justify sm:text-xl"
       >
         {statement.text}
       </p>

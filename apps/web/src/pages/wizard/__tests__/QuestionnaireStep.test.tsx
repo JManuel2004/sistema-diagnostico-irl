@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http as mswHttp, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
@@ -77,90 +77,98 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
   });
 
   describe('Escenario: cuestionario incompleto', () => {
-    it('does not show the completeness alert before the user tries to advance', async () => {
+    it('«Revisar resumen» está deshabilitado y dice cuántas afirmaciones faltan', async () => {
+      populate(range(1, 4));
       renderStep();
 
-      await screen.findByRole('button', { name: ADVANCE });
-
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    });
-
-    it('blocks the summary: advancing with unanswered statements shows the alert and stays', async () => {
-      const user = userEvent.setup();
-      renderStep();
-
-      await user.click(await screen.findByRole('button', { name: ADVANCE }));
-
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'Hay afirmaciones sin responder. Cada una necesita su respuesta antes de continuar; la justificación es opcional.',
-      );
+      await screen.findByText(/Faltan 44 afirmaciones/);
+      const advance = screen.getByRole('button', { name: ADVANCE });
+      expect(advance).toBeDisabled();
+      expect(advance).toHaveAccessibleDescription(/Faltan 44 afirmaciones por responder/);
       expect(screen.queryByText('RESUMEN_STUB')).not.toBeInTheDocument();
     });
 
     it('lists every dimension that has gaps, with its progress', async () => {
-      const user = userEvent.setup();
       renderStep();
 
-      await user.click(await screen.findByRole('button', { name: ADVANCE }));
-
-      const alert = screen.getByRole('alert');
-      for (const code of DIMENSION_CODES) expect(alert).toHaveTextContent(code);
-      expect(alert).toHaveTextContent('(0/8)');
+      await screen.findByText(/Faltan \d+ afirmaciones/);
+      const pending = screen.getByRole('list', {
+        name: 'Dimensiones con afirmaciones pendientes',
+      });
+      for (const code of DIMENSION_CODES) expect(pending).toHaveTextContent(code);
+      expect(pending).toHaveTextContent('(0/8)');
     });
 
-    it('shows partial progress inside a dimension', async () => {
-      populate(range(1, 4));
-      const user = userEvent.setup();
+    it('shows partial progress inside a dimension and omits completed ones', async () => {
+      populate([...range(1, 8), ...range(9, 12)]);
       renderStep();
 
-      await user.click(await screen.findByRole('button', { name: ADVANCE }));
-
-      expect(screen.getByRole('alert')).toHaveTextContent('(4/8)');
+      await screen.findByText(/Faltan \d+ afirmaciones/);
+      const pending = screen.getByRole('list', {
+        name: 'Dimensiones con afirmaciones pendientes',
+      });
+      expect(pending).not.toHaveTextContent('TRL');
+      expect(pending).toHaveTextContent('(4/8)');
+      for (const code of ['CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'])
+        expect(pending).toHaveTextContent(code);
     });
 
-    it('omits completed dimensions from the list', async () => {
+    it('each pending dimension opens it', async () => {
       populate(range(1, 8));
       const user = userEvent.setup();
       renderStep();
 
-      await user.click(await screen.findByRole('button', { name: ADVANCE }));
+      await user.click(await screen.findByRole('button', { name: /^CRL — / }));
 
-      const alert = screen.getByRole('alert');
-      expect(alert).not.toHaveTextContent('TRL');
-      for (const code of ['CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'])
-        expect(alert).toHaveTextContent(code);
+      expect(useQuestionnaireDraftStore.getState().activeTab).toBe('CRL');
     });
 
-    // The warning used to disappear as soon as ANY answer changed.
-    it('keeps the alert while something is still missing, and clears it when nothing is', async () => {
-      const user = userEvent.setup();
-      // Everything answered except the 8 statements of TRL and the 8 of CRL.
+    it('updates while answering, and enables the summary when nothing is missing', async () => {
       populate(range(17, 48));
       renderStep();
 
-      await user.click(await screen.findByRole('button', { name: ADVANCE }));
-      expect(screen.getByRole('alert')).toHaveTextContent('TRL — Nombre');
-      expect(screen.getByRole('alert')).toHaveTextContent('CRL — Nombre');
-
+      expect(await screen.findByText(/Faltan 16 afirmaciones/)).toBeInTheDocument();
       act(() => {
         for (const id of range(1, 8)) complete(id);
       });
-      expect(screen.getByRole('alert')).not.toHaveTextContent('TRL — Nombre');
-      expect(screen.getByRole('alert')).toHaveTextContent('CRL — Nombre');
-
+      expect(screen.getByText(/Faltan 8 afirmaciones/)).toBeInTheDocument();
       act(() => {
         for (const id of range(9, 16)) complete(id);
       });
       await waitFor(() => {
-        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: ADVANCE })).toBeEnabled();
       });
     });
 
-    it('the footer says how many dimensions still have gaps', async () => {
+    it('before the first answer, says the questionnaire started, how long it is and that it saves itself', async () => {
+      renderStep();
+
+      expect(
+        await screen.findByRole('heading', { name: 'Empieza el cuestionario' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/Son 48 afirmaciones, 8 por cada una de las 6 dimensiones/),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/Tus respuestas se guardan solas/)).toBeInTheDocument();
+    });
+
+    it('with answers already given, the notice is gone', async () => {
+      populate(range(1, 2));
+      renderStep();
+
+      await screen.findByRole('button', { name: ADVANCE });
+      expect(
+        screen.queryByRole('heading', { name: 'Empieza el cuestionario' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('the band in view says the answers save themselves and offers no way back to the summary yet', async () => {
       populate(range(1, 8));
       renderStep();
 
-      await screen.findByText(/Faltan respuestas en 5 dimensión\(es\)/);
+      const band = await screen.findByRole('region', { name: 'Progreso del cuestionario' });
+      expect(band).toHaveTextContent('Se guarda automáticamente.');
+      expect(screen.queryByRole('button', { name: /Volver al resumen/ })).not.toBeInTheDocument();
     });
   });
 
@@ -172,12 +180,23 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
       await screen.findByText('Todas las afirmaciones completas — listo para revisar.');
     });
 
-    it('advancing opens the summary, without an alert', async () => {
+    it('advancing opens the summary', async () => {
       populate(range(1, 48));
       const user = userEvent.setup();
       renderStep();
 
       await user.click(await screen.findByRole('button', { name: ADVANCE }));
+
+      expect(await screen.findByText('RESUMEN_STUB')).toBeInTheDocument();
+    });
+
+    it('the band offers «Volver al resumen» from any statement', async () => {
+      populate(range(1, 48));
+      const user = userEvent.setup();
+      renderStep();
+
+      const band = await screen.findByRole('region', { name: 'Progreso del cuestionario' });
+      await user.click(within(band).getByRole('button', { name: /Volver al resumen/ }));
 
       expect(await screen.findByText('RESUMEN_STUB')).toBeInTheDocument();
     });
@@ -199,7 +218,6 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
       await user.click(await screen.findByRole('button', { name: ADVANCE }));
 
       expect(await screen.findByText('RESUMEN_STUB')).toBeInTheDocument();
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
   });
 

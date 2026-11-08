@@ -21,7 +21,7 @@ test('del inicio de sesión al reporte en PDF, con el análisis profundo', async
   await consentAndInitiative(page, 'AgroConecta E2E');
   await answer(page, AGROCONECTA);
   // The answers are saved on the server while answering.
-  await expect(page.getByText(/Tus respuestas se guardaron a las/)).toBeVisible();
+  await expect(page.getByText(/Guardado automáticamente a las/)).toBeVisible();
   const id = await processDiagnostic(page);
 
   // Phase 1: the profile computed by the backend (AgroConecta: IPRL 1).
