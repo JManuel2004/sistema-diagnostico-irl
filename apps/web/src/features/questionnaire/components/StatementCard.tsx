@@ -4,8 +4,10 @@ import { Check } from 'lucide-react';
 import { Card } from '@/shared/ui/card';
 import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { Field, Textarea } from '@/shared/ui/field';
+import { TermTooltip } from '@/shared/ui/glossary-term';
 import { LikertScale } from './LikertScale';
 import { useAnswerForStatement } from '../hooks/useAnswerForStatement';
+import { segmentStatement } from '../lib/statement-terms';
 
 /**
  * `StatementCard` — the central component of the IRL questionnaire.
@@ -20,7 +22,9 @@ import { useAnswerForStatement } from '../hooks/useAnswerForStatement';
  *    read 48 statements comfortably, ~60 characters per line. From `sm` it is
  *    justified with Spanish hyphenation (P02 asked for it): the column is
  *    wide enough there to leave no gaps between words; on a phone it stays
- *    left-aligned.
+ *    left-aligned. Its acronyms and technical terms carry their definition
+ *    in a tooltip, and an acronym its words the first time
+ *    (`segmentStatement`, usability tests P03, P05).
  *  - The Likert selector (5 options) and, below, the justification: the
  *    reason for the chosen level, optional, saved with the answer when given.
  *
@@ -63,7 +67,18 @@ export function StatementCard({ statement, code }: Props) {
         id={`statement-text-${statement.id}`}
         className="text-foreground mt-3 max-w-[70ch] text-lg font-medium leading-relaxed sm:hyphens-auto sm:text-justify sm:text-xl"
       >
-        {statement.text}
+        {segmentStatement(statement.text).map((segment, index) =>
+          segment.kind === 'text' ? (
+            segment.text
+          ) : (
+            <span key={index}>
+              <TermTooltip explanation={segment.definition} className="inline font-semibold">
+                {segment.text}
+              </TermTooltip>
+              {segment.expansion !== undefined && ` (${segment.expansion})`}
+            </span>
+          ),
+        )}
       </p>
 
       <LikertScale id={`statement-text-${statement.id}`} value={value} onChange={setAnswer} />

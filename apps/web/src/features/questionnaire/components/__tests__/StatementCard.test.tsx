@@ -52,3 +52,14 @@ describe('StatementCard', () => {
     expect(screen.getByRole('radio', { name: '4 — De acuerdo' })).toBeChecked();
   });
 });
+
+describe('StatementCard — siglas explicadas', () => {
+  it('muestra la definición de IPR al tocarla y escribe sus palabras al lado', async () => {
+    const user = userEvent.setup();
+    render(<StatementCard statement={{ ...statement, text: 'Podemos usar la IPR relevante.' }} />);
+
+    expect(screen.getByText(/\(derechos de propiedad intelectual\)/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'IPR' }));
+    expect((await screen.findAllByText(/Intellectual Property Rights/)).length).toBeGreaterThan(0);
+  });
+});
