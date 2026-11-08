@@ -15,7 +15,7 @@ test('un cuestionario incompleto no avanza y dice qué falta', async ({ page }) 
   await expect(page.getByText(/Faltan \d+ afirmaciones por responder/)).toBeVisible();
   await expect(
     page.getByRole('list', { name: 'Dimensiones con afirmaciones pendientes' }),
-  ).toContainText('(0/8)');
+  ).toContainText('0/8');
   await expect(page).toHaveURL(/\/asistente\/cuestionario$/);
 });
 

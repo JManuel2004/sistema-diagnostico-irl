@@ -94,7 +94,7 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
         name: 'Dimensiones con afirmaciones pendientes',
       });
       for (const code of DIMENSION_CODES) expect(pending).toHaveTextContent(code);
-      expect(pending).toHaveTextContent('(0/8)');
+      expect(pending).toHaveTextContent('0/8');
     });
 
     it('shows partial progress inside a dimension and omits completed ones', async () => {
@@ -106,7 +106,7 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
         name: 'Dimensiones con afirmaciones pendientes',
       });
       expect(pending).not.toHaveTextContent('TRL');
-      expect(pending).toHaveTextContent('(4/8)');
+      expect(pending).toHaveTextContent('4/8');
       for (const code of ['CRL', 'BRL', 'IPRL', 'TmRL', 'FRL'])
         expect(pending).toHaveTextContent(code);
     });

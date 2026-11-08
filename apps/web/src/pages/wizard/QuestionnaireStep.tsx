@@ -12,6 +12,7 @@ import {
   type DraftSaveState,
 } from '@features/questionnaire';
 import { PageHeader } from '@/shared/ui/page-header';
+import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { Button, buttonVariants } from '@/shared/ui/button';
 import { QuestionnaireAutofill } from '@/dev/dev-autofill';
 import { wizardPath } from './wizard-steps';
@@ -155,21 +156,35 @@ export function QuestionnaireStep({
                   </p>
                   <ul
                     aria-label="Dimensiones con afirmaciones pendientes"
-                    className="mt-2 flex flex-wrap gap-2 sm:justify-end"
+                    className="mt-2 flex flex-wrap gap-2 sm:flex-nowrap sm:justify-end"
                   >
-                    {incompleteDimensions.map((dim) => (
-                      <li key={dim.code}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveTab(dim.code);
-                          }}
-                          className="border-border text-foreground hover:border-primary rounded-control border px-2.5 py-1 text-sm font-semibold"
-                        >
-                          {dim.code} — {dim.name} ({completedIn(dim)}/{dim.statements.length})
-                        </button>
-                      </li>
-                    ))}
+                    {/* Short, so the six fit on one line: the full name is its label and tooltip. */}
+                    {incompleteDimensions.map((dim) => {
+                      const visual = getDimensionVisual(dim.code);
+                      const progress = `${String(completedIn(dim))}/${String(dim.statements.length)}`;
+                      return (
+                        <li key={dim.code}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTab(dim.code);
+                            }}
+                            title={dim.name}
+                            aria-label={`${dim.code} — ${dim.name}: ${String(completedIn(dim))} de ${String(dim.statements.length)} respondidas`}
+                            className="border-border text-foreground hover:border-primary rounded-control inline-flex items-center gap-1.5 whitespace-nowrap border px-2.5 py-1 text-sm font-semibold"
+                          >
+                            <visual.icon
+                              className={`${visual.textInk} size-4 shrink-0`}
+                              aria-hidden="true"
+                            />
+                            <span className={visual.textInk}>{dim.code}</span>
+                            <span className="text-muted-foreground font-medium tabular-nums">
+                              {progress}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </>
               )}
