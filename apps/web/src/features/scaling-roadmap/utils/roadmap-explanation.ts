@@ -37,7 +37,7 @@ export function targetSentence(d: RoadmapDimensionTarget): string {
     return `${d.targetDrivenBy.shortName} necesita que llegue al nivel ${final}, por eso esa es su meta.`;
   }
   if (d.targetReason === 'BALANCE' && d.targetDrivenBy) {
-    return `Su meta es el nivel ${final}, a un nivel de ${d.targetDrivenBy.shortName}, para que las dos avancen parejas.`;
+    return `Su meta es el nivel ${final}, a un nivel de ${d.targetDrivenBy.shortName}, para que las dos avancen de forma equilibrada.`;
   }
   return `La meta es el nivel que se espera de ella: ${final}.`;
 }

@@ -350,7 +350,7 @@ function DeepAnalysis({
           overline="Análisis profundo"
           icon={Scale}
           title="Desequilibrios y alertas"
-          description={`Dónde ${who} avanza de forma despareja y qué dimensiones clave necesitan atención primero.`}
+          description={`Dónde ${who} avanza de forma desequilibrada y qué atender primero.`}
         />
         <ImbalanceInsights
           profile={profile}
@@ -399,7 +399,7 @@ function DeepAnalysis({
           overline="Ruta de escalamiento"
           icon={Route}
           title={`La ruta de escalamiento de ${who}`}
-          description="Las dimensiones que todavía tienen que avanzar, ordenadas según qué habilita qué, y el servicio de INNLAB que podrías contratar en cada fase: de lo más liviano a lo más profundo, hasta dejar tus dimensiones parejas."
+          description="Las dimensiones que todavía tienen que avanzar, ordenadas según qué habilita qué, y el servicio de INNLAB que podrías contratar en cada fase: de lo más liviano a lo más profundo, hasta equilibrar tus dimensiones."
         >
           {roadmap.data && <ResultMeta savedAt={roadmap.data.generatedAt} />}
         </SectionHeader>

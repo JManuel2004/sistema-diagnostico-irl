@@ -368,7 +368,7 @@ describe('ResultsPage — con análisis profundo', () => {
       await screen.findByRole('heading', { name: 'Desequilibrios y alertas' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('region', { name: 'Qué tan parejo avanza AgroConecta' }),
+      screen.getByRole('region', { name: 'Qué tan equilibrado avanza AgroConecta' }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('article', { name: 'Negocio está en estado crítico' }),

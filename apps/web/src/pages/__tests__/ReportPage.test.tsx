@@ -135,7 +135,7 @@ describe('ReportPage — con el análisis profundo completo', () => {
 
     const section = await openSection('Brechas, alertas y desequilibrios');
     expect(
-      within(section).getByRole('region', { name: 'Qué tan parejo avanza AgroConecta' }),
+      within(section).getByRole('region', { name: 'Qué tan equilibrado avanza AgroConecta' }),
     ).toBeInTheDocument();
     expect(
       within(section).getByRole('article', { name: 'Negocio está en estado crítico' }),

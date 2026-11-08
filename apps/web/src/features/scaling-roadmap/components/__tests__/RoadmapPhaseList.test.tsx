@@ -131,7 +131,7 @@ describe('RoadmapPhaseList', () => {
       'Ya cumple lo que se espera, pero quedaría muy lejos de Tecnología: sube para que al final no quede un desequilibrio.',
     );
     expect(client).toHaveTextContent(
-      'Su meta es el nivel 5, a un nivel de Tecnología, para que las dos avancen parejas.',
+      'Su meta es el nivel 5, a un nivel de Tecnología, para que las dos avancen de forma equilibrada.',
     );
   });
 
@@ -221,10 +221,10 @@ describe('RoadmapPhaseList', () => {
     );
 
     const end = screen
-      .getByRole('heading', { name: 'AgroConecta avanza pareja' })
+      .getByRole('heading', { name: 'AgroConecta avanza de forma equilibrada' })
       .closest('section')!;
     expect(end).toHaveTextContent(
-      'ninguna pareja de dimensiones queda con un desequilibrio que genere alerta',
+      'Ningún par de dimensiones queda con un desequilibrio que genere alerta',
     );
     expect(
       within(end).getByRole('img', { name: 'Cliente: hoy nivel 4, al terminar nivel 5' }),

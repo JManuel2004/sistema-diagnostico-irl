@@ -114,7 +114,7 @@ export function PairCard({ pair, names, levels, bothInGap, onHighlight }: Props)
 
   let advice: string;
   if (pair.classification === 'acceptable') {
-    advice = 'Las dos avanzan a un ritmo parecido. No hace falta frenar ninguna.';
+    advice = 'Las dos avanzan a un ritmo parecido. No se requiere acción.';
   } else if (bothInGap) {
     advice = `Las dos están en la parte baja de la escala. Lo que toca es subir ${left} y ${right} en paralelo, no compararlas entre sí.`;
   } else if (pair.classification === 'critical') {

@@ -125,13 +125,13 @@ export function RoadmapEnding({
             className="text-foreground mt-2 text-2xl font-extrabold tracking-tight"
           >
             {roadmap.balanced
-              ? `${subject} avanza pareja`
-              : `${subject} avanza, pero no del todo pareja`}
+              ? `${subject} avanza de forma equilibrada`
+              : `${subject} avanza, pero sin equilibrio completo`}
           </h3>
           <p className="text-muted-foreground mt-2 max-w-prose text-base leading-relaxed">
             {roadmap.balanced
-              ? 'Tus dimensiones quedan parejas: ninguna pareja de dimensiones queda con un desequilibrio que genere alerta.'
-              : 'Algunas dimensiones siguen quedando lejos entre sí: la ruta no alcanza a equilibrarlas.'}
+              ? 'Ningún par de dimensiones queda con un desequilibrio que genere alerta.'
+              : 'Algunas dimensiones siguen lejos entre sí. La ruta no alcanza a equilibrarlas.'}
           </p>
         </div>
         <p className="text-muted-foreground flex gap-5 text-sm" aria-hidden="true">

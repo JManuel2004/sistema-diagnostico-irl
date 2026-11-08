@@ -80,12 +80,12 @@ export function ImbalanceInsights({
             id="imbalances-heading"
             className="text-foreground mt-2 text-[1.375rem] font-bold leading-tight tracking-tight sm:text-2xl"
           >
-            Qué tan parejo avanza {subject}
+            Qué tan equilibrado avanza {subject}
           </h3>
           <p className="text-muted-foreground mt-2 max-w-prose text-base leading-relaxed">
-            Un <GlossaryTerm term="imbalance">desequilibrio</GlossaryTerm> aparece cuando dos
-            dimensiones que deberían avanzar juntas van a ritmos muy distintos. Comparamos seis
-            pares. Con 2 o 3 niveles de diferencia es moderado; con más de 3, crítico.
+            Comparamos seis pares de dimensiones que deben avanzar juntas. Una diferencia de 2 o 3
+            niveles es un <GlossaryTerm term="imbalance">desequilibrio</GlossaryTerm> moderado. Una
+            de 4 o más es crítico.
           </p>
         </header>
 
@@ -144,8 +144,9 @@ export function ImbalanceInsights({
             Qué atender primero en {subject}
           </h3>
           <p className="text-muted-foreground mt-2 max-w-prose text-base leading-relaxed">
-            Algunas dimensiones son clave: cuando están en nivel {profile.gaps.threshold} o menos,
-            condicionan el avance de todo lo demás. Por eso son las primeras que se atienden.
+            Algunas dimensiones son clave para el marco. Si una está en nivel{' '}
+            {profile.gaps.threshold} o menos, frena el avance de lo demás. Por eso se atiende
+            primero.
           </p>
         </header>
 

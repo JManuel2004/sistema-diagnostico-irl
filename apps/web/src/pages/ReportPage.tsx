@@ -198,7 +198,7 @@ function FullReport({ report }: { readonly report: DiagnosticReport }): JSX.Elem
           id="report-alerts"
           icon={Scale}
           title="Brechas, alertas y desequilibrios"
-          description={`Dónde ${subject} avanza de forma despareja y qué dimensiones clave necesitan atención primero.`}
+          description={`Dónde ${subject} avanza de forma desequilibrada y qué atender primero.`}
         >
           <ImbalanceInsights
             profile={profile}

@@ -52,7 +52,7 @@ function profile(over: Partial<MaturityProfileResponse> = {}): MaturityProfileRe
   };
 }
 
-const pairsSection = () => screen.getByRole('region', { name: /Qué tan parejo avanza/ });
+const pairsSection = () => screen.getByRole('region', { name: /Qué tan equilibrado avanza/ });
 const alertsSection = () => screen.getByRole('region', { name: /Qué atender primero/ });
 
 describe('ImbalanceInsights — pairs', () => {
@@ -169,7 +169,7 @@ describe('ImbalanceInsights — pairs', () => {
     render(<ImbalanceInsights profile={profile()} subject="AgroConecta" />);
 
     expect(
-      screen.getByRole('heading', { name: 'Qué tan parejo avanza AgroConecta' }),
+      screen.getByRole('heading', { name: 'Qué tan equilibrado avanza AgroConecta' }),
     ).toBeInTheDocument();
   });
 
@@ -288,7 +288,7 @@ describe('ImbalanceInsights — critical state (RF-13)', () => {
     render(<ImbalanceInsights profile={critical()} />);
 
     const text = alertsSection().textContent ?? '';
-    expect(text).toContain('cuando están en nivel 3 o menos');
+    expect(text).toContain('Si una está en nivel 3 o menos, frena el avance de lo demás.');
     expect(text).not.toMatch(/[→≤≥]/);
   });
 
@@ -319,5 +319,14 @@ describe('ImbalanceInsights — critical state (RF-13)', () => {
     await user.hover(screen.getByRole('article', { name: 'Negocio está en estado crítico' }));
 
     expect(onHighlight).toHaveBeenLastCalledWith(['BRL']);
+  });
+});
+
+describe('ImbalanceInsights — tono de los pares sin alerta (A3)', () => {
+  it('un par equilibrado dice que no se requiere acción, sin hablar de frenar', () => {
+    render(<ImbalanceInsights profile={profile()} />);
+
+    expect(within(pairsSection()).getAllByText(/No se requiere acción\./).length).toBeGreaterThan(0);
+    expect(pairsSection()).not.toHaveTextContent(/frenar ninguna/);
   });
 });
