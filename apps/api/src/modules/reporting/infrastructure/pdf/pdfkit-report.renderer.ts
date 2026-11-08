@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import PDFDocument from 'pdfkit';
 import type { DimensionCode } from '@innlab/contracts';
 import type {
@@ -7,11 +8,27 @@ import type {
 import type { ReportRendererPort } from '../../application/ports/report-renderer.port.js';
 
 /**
- * Brand values of `DESIGN.md` the file needs. The PDF uses Helvetica, one of
- * the fourteen fonts every PDF reader has: Plus Jakarta Sans is not shipped
- * with the backend, and the manual names Arial (Helvetica's metric twin)
- * as the face of documents generated outside the product.
+ * The PDF is set in the application's face, Plus Jakarta Sans (SIL Open Font
+ * License), embedded from `@fontsource/plus-jakarta-sans`, so the report
+ * reads as part of the same product (usability test P02). If the files
+ * cannot be loaded it falls back to Helvetica, one of the fourteen fonts
+ * every PDF reader has; the manual names Arial, its metric twin, as the face
+ * of documents generated outside the product.
  */
+const BODY = 'Body';
+const BOLD = 'Body-Bold';
+
+/** The two weights the report uses, as files of the installed package. */
+function brandFontFiles(): { readonly regular: string; readonly bold: string } {
+  const require = createRequire(import.meta.url);
+  const file = (weight: number): string =>
+    require.resolve(
+      `@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-${String(weight)}-normal.woff`,
+    );
+  return { regular: file(400), bold: file(700) };
+}
+
+/** Brand values of `DESIGN.md` the file needs. */
 const AZUL_ICESI = '#5454E9';
 const AZUL_INK = '#3737BD';
 const WASH = '#F3F3FD';
@@ -60,6 +77,12 @@ const FOOTER_HEIGHT = 40;
 export interface PdfkitReportRendererOptions {
   /** Compress the page streams; off only to read the file in tests. */
   readonly compress?: boolean;
+  /**
+   * Embed the application's face (the default). Off, the standard
+   * Helvetica: its text stays readable in the raw file, for the tests that
+   * look for it.
+   */
+  readonly brandFont?: boolean;
 }
 
 /**
@@ -74,9 +97,29 @@ export interface PdfkitReportRendererOptions {
  */
 export class PdfkitReportRenderer implements ReportRendererPort {
   private readonly compress: boolean;
+  private readonly brandFont: boolean;
 
   constructor(options: PdfkitReportRendererOptions = {}) {
     this.compress = options.compress ?? true;
+    this.brandFont = options.brandFont ?? true;
+  }
+
+  /** `BODY` and `BOLD`: the brand face, or Helvetica when it is off or missing. */
+  private registerFonts(doc: PDFKit.PDFDocument): void {
+    if (this.brandFont) {
+      try {
+        const files = brandFontFiles();
+        doc.registerFont(BODY, files.regular);
+        doc.registerFont(BOLD, files.bold);
+        doc.font(BODY);
+        return;
+      } catch {
+        // The package is missing or unreadable: the standard face is enough.
+      }
+    }
+    doc.registerFont(BODY, 'Helvetica');
+    doc.registerFont(BOLD, 'Helvetica-Bold');
+    doc.font(BODY);
   }
 
   render(model: ReportDocumentModel): Promise<Uint8Array> {
@@ -108,6 +151,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
       doc.on('error', reject);
     });
 
+    this.registerFonts(doc);
     this.drawBanner(doc, model);
     for (const block of model.blocks) this.drawBlock(doc, block);
     this.drawFooters(doc, model.footer);
@@ -127,31 +171,34 @@ export class PdfkitReportRenderer implements ReportRendererPort {
   ): void {
     const left = doc.page.margins.left;
     const width = this.width(doc);
-    doc.font('Helvetica').fontSize(10.5);
+    doc.font(BODY).fontSize(10.5);
     const initiativeHeight = doc.heightOfString(model.banner.initiative, {
       width,
     });
-    const bandHeight = 104 + initiativeHeight;
+    const bandHeight = 120 + initiativeHeight;
     doc.rect(0, 0, doc.page.width, bandHeight).fill(AZUL_ICESI);
     doc
-      .font('Helvetica-Bold')
+      .font(BOLD)
       .fontSize(9)
       .fillColor('#FFFFFF')
       .text('INNLAB', left, 26, { continued: true })
-      .font('Helvetica')
+      .font(BODY)
       .text('   Centro de Innovación  |  Universidad Icesi');
+    doc.font(BOLD).fontSize(19).text(model.banner.heading, left, 46, { width });
     doc
-      .font('Helvetica-Bold')
-      .fontSize(19)
-      .text(model.banner.heading, left, 46, { width });
-    doc
-      .font('Helvetica')
+      .font(BODY)
       .fontSize(10.5)
       .text(model.banner.initiative, left, 72, { width });
     doc
+      .font(BOLD)
+      .fontSize(10.5)
+      .fillColor('#FFFFFF')
+      .text(model.banner.service, left, 78 + initiativeHeight, { width });
+    doc
+      .font(BODY)
       .fontSize(8.5)
       .fillColor(ON_BAND)
-      .text(model.banner.meta, left, 80 + initiativeHeight, { width });
+      .text(model.banner.meta, left, 96 + initiativeHeight, { width });
     doc.x = left;
     doc.y = bandHeight + 18;
   }
@@ -166,7 +213,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
           doc.addPage();
         }
         doc
-          .font('Helvetica-Bold')
+          .font(BOLD)
           .fontSize(15)
           .fillColor(AZUL_ICESI)
           .text(block.text, { width });
@@ -183,7 +230,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
       case 'subheading':
         doc.moveDown(0.4);
         doc
-          .font('Helvetica-Bold')
+          .font(BOLD)
           .fontSize(11.5)
           .fillColor(TEXT)
           .text(block.text, { width });
@@ -191,7 +238,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         return;
       case 'paragraph':
         doc
-          .font('Helvetica')
+          .font(BODY)
           .fontSize(10.5)
           .fillColor(TEXT)
           .text(block.text, { width, lineGap: 2 });
@@ -199,25 +246,21 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         return;
       case 'field':
         doc
-          .font('Helvetica-Bold')
+          .font(BOLD)
           .fontSize(10.5)
           .fillColor(TEXT)
           .text(`${block.label}: `, { width, continued: true, lineGap: 2 })
-          .font('Helvetica')
+          .font(BODY)
           .text(block.value, { lineGap: 2 });
         doc.moveDown(0.3);
         return;
       case 'bullet':
-        doc
-          .font('Helvetica')
-          .fontSize(10.5)
-          .fillColor(TEXT)
-          .list([block.text], {
-            width,
-            bulletRadius: 1.8,
-            textIndent: 12,
-            lineGap: 2,
-          });
+        doc.font(BODY).fontSize(10.5).fillColor(TEXT).list([block.text], {
+          width,
+          bulletRadius: 1.8,
+          textIndent: 12,
+          lineGap: 2,
+        });
         doc.moveDown(0.2);
         return;
       case 'route':
@@ -237,7 +280,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         return;
       case 'alert':
         doc
-          .font('Helvetica-Bold')
+          .font(BOLD)
           .fontSize(10.5)
           .fillColor(ATTENTION)
           .text('Atención prioritaria: ', {
@@ -246,7 +289,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
             lineGap: 2,
           })
           .fillColor(TEXT)
-          .font('Helvetica')
+          .font(BODY)
           .text(block.text, { lineGap: 2 });
         doc.moveDown(0.4);
         return;
@@ -262,7 +305,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
     min = 9,
   ): number {
     let size = max;
-    doc.font('Helvetica-Bold');
+    doc.font(BOLD);
     while (size > min && doc.fontSize(size).widthOfString(text) > width) {
       size -= 0.5;
     }
@@ -273,15 +316,17 @@ export class PdfkitReportRenderer implements ReportRendererPort {
   private attentionMark(doc: PDFKit.PDFDocument, x: number, y: number): void {
     doc.circle(x, y, 6).fill(ATTENTION);
     doc
-      .font('Helvetica-Bold')
+      .font(BOLD)
       .fontSize(8)
       .fillColor('#FFFFFF')
       .text('!', x - 1.6, y - 4, { lineBreak: false });
   }
 
   /**
-   * The first page after the band: four indicators, the profile as a radar
-   * beside level bars, the recommended service and the glossary.
+   * The first page after the band: four indicators (the service, the
+   * bottleneck and the critical dimensions first), the profile as a radar
+   * beside level bars, the recommended service and the map of the report's
+   * sections.
    */
   private drawSummary(
     doc: PDFKit.PDFDocument,
@@ -312,7 +357,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
       const labelW = cardW - (labelX - x) - 8;
       const label = c.label.toUpperCase();
       // One line always: the spacing goes before the size does.
-      doc.font('Helvetica-Bold').fontSize(7);
+      doc.font(BOLD).fontSize(7);
       const spacing =
         doc.widthOfString(label) + 0.4 * label.length <= labelW ? 0.4 : 0;
       doc
@@ -323,7 +368,8 @@ export class PdfkitReportRenderer implements ReportRendererPort {
           lineBreak: false,
           characterSpacing: spacing,
         });
-      const size = this.fitSize(doc, c.value, cardW - 20, 20);
+      // A long service name shrinks to fit one line instead of covering its caption.
+      const size = this.fitSize(doc, c.value, cardW - 20, 20, 7);
       doc
         .fontSize(size)
         .fillColor(tone)
@@ -332,7 +378,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
           lineBreak: false,
         });
       doc
-        .font('Helvetica')
+        .font(BODY)
         .fontSize(8.5)
         .fillColor(MUTED)
         .text(c.caption, x + 10, y + 50, {
@@ -345,12 +391,12 @@ export class PdfkitReportRenderer implements ReportRendererPort {
 
     // Profile: radar and level bars.
     doc
-      .font('Helvetica-Bold')
+      .font(BOLD)
       .fontSize(12)
       .fillColor(TEXT)
       .text('Perfil de seis dimensiones', left, y);
     doc
-      .font('Helvetica')
+      .font(BODY)
       .fontSize(8.5)
       .fillColor(MUTED)
       .text(
@@ -381,7 +427,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
     summary.levels.forEach((l, i) => {
       const rowY = y + 6 + i * 29;
       doc
-        .font('Helvetica-Bold')
+        .font(BOLD)
         .fontSize(8.5)
         .fillColor(TEXT)
         .text(l.label, barsLeft, rowY, {
@@ -390,7 +436,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         });
       if (l.tag) {
         doc
-          .font('Helvetica')
+          .font(BODY)
           .fontSize(7)
           .fillColor(l.attention ? ATTENTION : MUTED)
           .text(l.tag, barsLeft, rowY + 11, {
@@ -416,7 +462,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         }
       }
       doc
-        .font('Helvetica-Bold')
+        .font(BOLD)
         .fontSize(9)
         .fillColor(TEXT)
         .text(`${String(l.level)}/9`, sx + scaleW + 6, rowY + 2, {
@@ -431,7 +477,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
     doc.roundedRect(left, y, width, boxH, 8).fill(WASH);
     doc.rect(left, y, 5, boxH).fill(AZUL_ICESI);
     doc
-      .font('Helvetica-Bold')
+      .font(BOLD)
       .fontSize(7.5)
       .fillColor(AZUL_ICESI)
       .text('SERVICIO RECOMENDADO DEL PORTAFOLIO INNLAB', left + 18, y + 12, {
@@ -450,7 +496,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
           lineBreak: false,
         });
       doc
-        .font('Helvetica')
+        .font(BODY)
         .fontSize(8.5)
         .fillColor(MUTED)
         .text(rec.subtitle, left + 18, y + 46, {
@@ -461,7 +507,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         .roundedRect(left + width - pillW - 16, y + 14, pillW, 22, 11)
         .fill(AZUL_ICESI);
       doc
-        .font('Helvetica-Bold')
+        .font(BOLD)
         .fontSize(8.5)
         .fillColor('#FFFFFF')
         .text(`Nivel ${rec.tier}`, left + width - pillW - 16, y + 21, {
@@ -470,7 +516,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
           lineBreak: false,
         });
       doc
-        .font('Helvetica')
+        .font(BODY)
         .fontSize(8.5)
         .fillColor(TEXT)
         .text(`Alcance y entregables: ${rec.scope}`, left + 18, y + 62, {
@@ -493,7 +539,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
       }
     } else {
       doc
-        .font('Helvetica')
+        .font(BODY)
         .fontSize(10)
         .fillColor(TEXT)
         .text(summary.noRecommendation ?? '', left + 18, y + 30, {
@@ -502,29 +548,34 @@ export class PdfkitReportRenderer implements ReportRendererPort {
     }
     y += boxH + 18;
 
-    // Glossary.
+    // How the report is organized: its sections, in order.
     doc
-      .font('Helvetica-Bold')
+      .font(BOLD)
       .fontSize(9)
       .fillColor(TEXT)
       .text('Cómo leer este reporte', left, y);
     y += 14;
     const colGap = 16;
     const colW = (width - colGap) / 2;
-    summary.glossary.forEach((g, i) => {
-      const x = left + (i % 2) * (colW + colGap);
-      const rowY = y + Math.floor(i / 2) * 24;
+    const rows = Math.ceil(summary.sections.length / 2);
+    summary.sections.forEach((section, i) => {
+      // Down the first column, then the second: the reading order.
+      const x = left + Math.floor(i / rows) * (colW + colGap);
+      const rowY = y + (i % rows) * 21;
       doc
-        .font('Helvetica-Bold')
-        .fontSize(7.8)
+        .font(BOLD)
+        .fontSize(7.6)
         .fillColor(AZUL_INK)
-        .text(`${g.term}: `, x, rowY, { width: colW, continued: true })
-        .font('Helvetica')
+        .text(`${String(i + 1)}. ${section.title}: `, x, rowY, {
+          width: colW,
+          continued: true,
+        })
+        .font(BODY)
         .fillColor(TEXT)
-        .text(g.text);
+        .text(section.text);
     });
     doc.x = left;
-    doc.y = y + Math.ceil(summary.glossary.length / 2) * 24 + 6;
+    doc.y = y + rows * 21 + 6;
   }
 
   /**
@@ -559,7 +610,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         const colW = step - 12;
         doc.circle(x, nodeY, 13).fill(AZUL_ICESI);
         doc
-          .font('Helvetica-Bold')
+          .font(BOLD)
           .fontSize(11)
           .fillColor('#FFFFFF')
           .text(String(phase.order), x - 13, nodeY - 6, {
@@ -569,7 +620,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
           });
         let y = nodeY + 22;
         doc
-          .font('Helvetica-Bold')
+          .font(BOLD)
           .fontSize(9)
           .fillColor(TEXT)
           .text(`Fase ${String(phase.order)}`, colX, y, {
@@ -586,7 +637,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
             phase.approximate ? APPROXIMATE : AZUL_ICESI,
           );
         doc
-          .font('Helvetica-Bold')
+          .font(BOLD)
           .fontSize(8.5)
           .fillColor(TEXT)
           .text(
@@ -600,7 +651,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
             },
           );
         doc
-          .font('Helvetica')
+          .font(BODY)
           .fontSize(7.5)
           .fillColor(phase.approximate ? APPROXIMATE : MUTED)
           .text(
@@ -617,7 +668,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
             .circle(colX + 6, y + 4.5, 3)
             .fill(DIMENSION_FILL[s.dimensionCode]);
           doc
-            .font('Helvetica-Bold')
+            .font(BOLD)
             .fontSize(8)
             .fillColor(TEXT)
             .text(
@@ -708,7 +759,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
     });
 
     // Each point named outside the outer ring, in text ink.
-    doc.font('Helvetica').fontSize(labelSize).fillColor(TEXT);
+    doc.font(BODY).fontSize(labelSize).fillColor(TEXT);
     points.forEach((p, i) => {
       const [x, y] = at(i, 10.4);
       const label = `${p.label}: ${String(p.level)}`;
@@ -737,7 +788,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
       scaleLeft + ((level - 1) / 8) * scaleWidth;
     let y = doc.y + 4;
 
-    doc.font('Helvetica').fontSize(8).fillColor(MUTED);
+    doc.font(BODY).fontSize(8).fillColor(MUTED);
     for (let level = 1; level <= 9; level += 1) {
       doc.text(String(level), xOf(level) - 4, y, {
         width: 8,
@@ -751,7 +802,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
       const mid = y + rowHeight / 2;
       const moves = row.end !== row.today;
       doc
-        .font('Helvetica')
+        .font(BODY)
         .fontSize(9.5)
         .fillColor(TEXT)
         .text(
@@ -830,7 +881,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
     const titleTop = doc.y;
     doc.rect(left, titleTop + 1, 4, 12).fill(fill);
     doc
-      .font('Helvetica-Bold')
+      .font(BOLD)
       .fontSize(11.5)
       .fillColor(TEXT)
       .text(block.title, left + 10, titleTop, { width: width - 10 });
@@ -841,7 +892,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
       const note = row.justification
         ? `Justificación: ${row.justification}`
         : null;
-      doc.font('Helvetica').fontSize(9.5);
+      doc.font(BODY).fontSize(9.5);
       const textHeight = doc.heightOfString(statement, {
         width: textWidth,
         lineGap: 1.5,
@@ -861,7 +912,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         .strokeColor(HAIRLINE)
         .stroke();
       doc
-        .font('Helvetica')
+        .font(BODY)
         .fontSize(9.5)
         .fillColor(TEXT)
         .text(statement, left, top + 6, { width: textWidth, lineGap: 1.5 });
@@ -891,7 +942,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         }
       }
       doc
-        .font('Helvetica-Bold')
+        .font(BOLD)
         .fontSize(8.5)
         .fillColor(TEXT)
         .text(`${String(row.value)} de 5`, scaleLeft, top + 18, {
@@ -899,7 +950,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
           lineBreak: false,
         });
       doc
-        .font('Helvetica')
+        .font(BODY)
         .fontSize(8)
         .fillColor(MUTED)
         .text(row.valueLabel, scaleLeft, top + 29, { width: scaleWidth });
@@ -926,7 +977,7 @@ export class PdfkitReportRenderer implements ReportRendererPort {
         .strokeColor(HAIRLINE)
         .stroke();
       doc
-        .font('Helvetica')
+        .font(BODY)
         .fontSize(8.5)
         .fillColor(MUTED)
         .text(footer, MARGIN, y, { width, lineBreak: false })

@@ -39,6 +39,7 @@ describe('buildReportDocument', () => {
       'Recomendación del portafolio INNLAB',
       'Ruta de escalamiento',
       'Respuestas al cuestionario',
+      'Términos del reporte',
       'Marco de referencia',
     ]);
   });
@@ -209,7 +210,7 @@ describe('buildReportDocument', () => {
 });
 
 describe('buildReportDocument — the summary page', () => {
-  it('opens with a summary page of the key indicators, and the rest starts on the next page', () => {
+  it('opens with the service, the bottleneck and the critical dimensions, and the rest starts on the next page', () => {
     const blocks = buildReportDocument(aReport()).blocks;
 
     expect(blocks[0].kind).toBe('summary');
@@ -218,12 +219,19 @@ describe('buildReportDocument — the summary page', () => {
     expect(
       blocks[0].summary.indicators.map((i) => [i.label, i.value, i.caption]),
     ).toEqual([
-      ['Nivel IRL global', '3,5', 'de 9'],
-      ['Dimensión más fuerte', 'Tecnología', 'nivel 6'],
+      [
+        'Servicio recomendado',
+        'Célula de Grado · Posgrado',
+        'nivel Profundiza',
+      ],
       ['Cuello de botella', 'Propiedad intelectual', 'nivel 1'],
-      ['Atención prioritaria', 'Negocio', 'estado crítico'],
+      ['Dimensiones críticas', 'Negocio', 'estado crítico'],
+      ['Nivel IRL global', '3,5', 'de 9'],
     ]);
-    expect(blocks[0].summary.indicators[3].attention).toBe(true);
+    expect(blocks[0].summary.indicators[2].attention).toBe(true);
+    expect(blocks[0].summary.indicators[3].detail).toBe(
+      'Más fuerte: Tecnología',
+    );
   });
 
   it('tags each level bar with why it stands out, in words', () => {
@@ -235,14 +243,14 @@ describe('buildReportDocument — the summary page', () => {
     ).toEqual([
       ['TRL', 6, null],
       ['CRL', 4, null],
-      ['BRL', 3, 'atención prioritaria'],
+      ['BRL', 3, 'dimensión crítica'],
       ['IPRL', 1, 'cuello de botella'],
       ['TmRL', 5, null],
       ['FRL', 2, 'en brecha'],
     ]);
   });
 
-  it('highlights the recommended service with its alternatives, and explains the terms', () => {
+  it('highlights the recommended service, and maps the sections in the order they appear', () => {
     const summary = buildReportDocument(aReport()).blocks[0];
     if (summary.kind !== 'summary') throw new Error('expected the summary');
 
@@ -250,12 +258,43 @@ describe('buildReportDocument — the summary page', () => {
       'Célula de Grado · Posgrado',
     );
     expect(summary.summary.recommendation?.tier).toBe('Profundiza');
-    expect(summary.summary.glossary.map((g) => g.term)).toEqual([
+    const document = buildReportDocument(aReport());
+    const headings = document.blocks.flatMap((b) =>
+      b.kind === 'heading' ? [b.text] : [],
+    );
+    expect(summary.summary.sections.map((s) => s.title)).toEqual([
+      ...new Set(headings),
+    ]);
+    // Every section says what it holds: a new heading needs its line.
+    for (const section of summary.summary.sections) {
+      expect(section.text).not.toBe('');
+    }
+  });
+
+  it('names the recommended service in the band', () => {
+    const document = buildReportDocument(aReport());
+
+    expect(document.banner.service).toBe(
+      'Servicio recomendado: Célula de Grado · Posgrado',
+    );
+    expect(document.banner.meta).toMatch(/^Análisis profundo completado el/);
+  });
+
+  it('explains the technical terms in a section of their own', () => {
+    const blocks = buildReportDocument(aReport()).blocks;
+    const start = blocks.findIndex(
+      (b) => b.kind === 'heading' && b.text === 'Términos del reporte',
+    );
+    const terms = blocks
+      .slice(start + 1, start + 6)
+      .map((b) => (b.kind === 'paragraph' ? b.text.split(':')[0] : ''));
+
+    expect(terms).toEqual([
       'Nivel IRL',
       'Cuello de botella',
       'Brecha',
       'Desequilibrio',
-      'Atención prioritaria',
+      'Dimensión crítica',
     ]);
   });
 

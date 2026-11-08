@@ -3,11 +3,15 @@ import { buildReportDocument } from '../../../../../src/modules/reporting/applic
 import { PdfkitReportRenderer } from '../../../../../src/modules/reporting/infrastructure/pdf/pdfkit-report.renderer.js';
 import { aReport } from '../support/a-report.js';
 
-/** The raw file, readable because the streams are not compressed. */
-async function rendered(): Promise<string> {
-  const bytes = await new PdfkitReportRenderer({ compress: false }).render(
-    buildReportDocument(aReport()),
-  );
+/**
+ * The raw file, readable because the streams are not compressed and the text
+ * is in a standard font (an embedded face writes glyph numbers instead).
+ */
+async function rendered(brandFont = false): Promise<string> {
+  const bytes = await new PdfkitReportRenderer({
+    compress: false,
+    brandFont,
+  }).render(buildReportDocument(aReport()));
   return Buffer.from(bytes).toString('latin1');
 }
 
@@ -26,6 +30,13 @@ describe('PdfkitReportRenderer', () => {
 
     expect(pdf.startsWith('%PDF-')).toBe(true);
     expect(pdf.trimEnd().endsWith('%%EOF')).toBe(true);
+  });
+
+  it('embeds the application face, Plus Jakarta Sans, by default', async () => {
+    const pdf = await rendered(true);
+
+    expect(pdf).toMatch(/\/BaseFont \/[A-Z]{6}\+PlusJakartaSans/);
+    expect(pdf).not.toMatch(/\/BaseFont \/Helvetica/);
   });
 
   it('carries the title and the author as metadata', async () => {

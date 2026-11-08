@@ -32,8 +32,9 @@ export type ReportBlock =
       }[];
     }
   /**
-   * The first page: the key indicators, the profile as a radar and as level
-   * bars, the recommended service and what the technical terms mean.
+   * The first page: the key indicators (the service, the bottleneck and the
+   * critical dimensions first), the profile as a radar and as level bars, the
+   * recommended service and how the report is organized.
    */
   | { readonly kind: 'summary'; readonly summary: ReportSummary }
   /** The route as a line of phases: each with its service and its rises. */
@@ -83,8 +84,13 @@ export interface ReportSummary {
   } | null;
   /** Said when there is no recommendation. */
   readonly noRecommendation: string | null;
-  readonly glossary: readonly {
-    readonly term: string;
+  /**
+   * «Cómo leer este reporte»: the report's sections in the order they
+   * appear, one line each on what they hold (usability test P03). Built from
+   * the headings of the document itself, so none is missing or extra.
+   */
+  readonly sections: readonly {
+    readonly title: string;
     readonly text: string;
   }[];
 }
@@ -110,6 +116,8 @@ export interface ReportDocumentModel {
   readonly banner: {
     readonly heading: string;
     readonly initiative: string;
+    /** The recommended service, named in the band (usability test P02). */
+    readonly service: string;
     readonly meta: string;
   };
   readonly blocks: readonly ReportBlock[];
@@ -118,6 +126,29 @@ export interface ReportDocumentModel {
 }
 
 const LOCALE = 'es-CO';
+
+/**
+ * What each section of the report holds, in one line, for «Cómo leer este
+ * reporte». Keyed by the section's heading: a heading without a line here
+ * fails the unit test, so the map never drifts from the document.
+ */
+export const SECTION_TEXT: Readonly<Record<string, string>> = {
+  'Datos de la iniciativa':
+    'lo que registraste: sector, etapa, equipo, mercado y financiamiento.',
+  'Perfil de seis dimensiones':
+    'el nivel de cada dimensión, de 1 a 9, y qué significa.',
+  'Brechas, alertas y desequilibrios':
+    'las dimensiones más bajas, las críticas y los pares que avanzan a ritmos distintos.',
+  'Recomendación del portafolio INNLAB':
+    'el servicio que mejor encaja hoy y por qué.',
+  'Ruta de escalamiento':
+    'las fases, el servicio de cada una y hasta qué nivel sube cada dimensión.',
+  'Respuestas al cuestionario':
+    'tus 48 respuestas, con las justificaciones que escribiste.',
+  'Términos del reporte': 'qué significa cada término técnico.',
+  'Marco de referencia':
+    'el marco IRL en el que se basa el diagnóstico y su licencia.',
+};
 const TIME_ZONE = 'America/Bogota';
 
 const CLASSIFICATION_LABEL: Readonly<Record<ImbalanceClassification, string>> =
@@ -209,21 +240,25 @@ export function buildReportDocument(
     {
       kind: 'summary',
       summary: {
+        // The service, the bottleneck and the critical dimensions go first, with
+        // the names the application uses: a reader of the first page alone can
+        // tell them (usability test P02).
         indicators: [
-          {
-            label: 'Nivel IRL global',
-            value: oneDecimal(profile.globalAverage),
-            caption: 'de 9',
-            detail: 'Promedio de las seis dimensiones',
-            attention: false,
-          },
-          {
-            label: 'Dimensión más fuerte',
-            value: namesOf(profile.strength.dimensions),
-            caption: `nivel ${String(profile.strength.level)}`,
-            detail: 'Lo que más ha avanzado',
-            attention: false,
-          },
+          recommendation.primary
+            ? {
+                label: 'Servicio recomendado',
+                value: recommendation.primary.name,
+                caption: `nivel ${recommendation.primary.tier.name}`,
+                detail: 'Del portafolio de INNLAB',
+                attention: false,
+              }
+            : {
+                label: 'Servicio recomendado',
+                value: 'Sin recomendación',
+                caption: 'por ahora',
+                detail: 'La ruta propone un servicio por fase',
+                attention: false,
+              },
           {
             label: 'Cuello de botella',
             value: namesOf(profile.bottleneck.dimensions),
@@ -233,26 +268,33 @@ export function buildReportDocument(
           },
           critical.size > 0
             ? {
-                label: 'Atención prioritaria',
+                label: 'Dimensiones críticas',
                 value: namesOf([...critical]),
                 caption: 'estado crítico',
                 detail: `${String(gapCount)} ${gapCount === 1 ? 'dimensión' : 'dimensiones'} en brecha`,
                 attention: true,
               }
             : {
-                label: 'Atención prioritaria',
+                label: 'Dimensiones críticas',
                 value: 'Ninguna',
                 caption: 'sin estado crítico',
                 detail: `${String(gapCount)} ${gapCount === 1 ? 'dimensión' : 'dimensiones'} en brecha`,
                 attention: false,
               },
+          {
+            label: 'Nivel IRL global',
+            value: oneDecimal(profile.globalAverage),
+            caption: 'de 9',
+            detail: `Más fuerte: ${namesOf(profile.strength.dimensions)}`,
+            attention: false,
+          },
         ],
         levels: profile.dimensionResults.map((r) => ({
           dimensionCode: r.dimensionCode,
           label: r.shortName,
           level: r.irlLevel,
           tag: critical.has(r.dimensionCode)
-            ? 'atención prioritaria'
+            ? 'dimensión crítica'
             : bottleneck.has(r.dimensionCode)
               ? 'cuello de botella'
               : gaps.has(r.dimensionCode)
@@ -273,28 +315,7 @@ export function buildReportDocument(
           ? null
           : (recommendation.noRecommendationReason ??
             'Ningún servicio del portafolio corresponde a este perfil.'),
-        glossary: [
-          {
-            term: 'Nivel IRL',
-            text: 'madurez de 1 (idea) a 9 (lista para escalar) en cada dimensión.',
-          },
-          {
-            term: 'Cuello de botella',
-            text: 'la dimensión con el nivel más bajo: la que más frena.',
-          },
-          {
-            term: 'Brecha',
-            text: `una dimensión en nivel ${String(profile.gaps.threshold)} o menos.`,
-          },
-          {
-            term: 'Desequilibrio',
-            text: 'diferencia de niveles entre dos dimensiones que deberían avanzar juntas.',
-          },
-          {
-            term: 'Atención prioritaria',
-            text: 'una dimensión clave (cliente, negocio o equipo) en brecha: el estado crítico.',
-          },
-        ],
+        sections: [],
       },
     },
     { kind: 'pageBreak' },
@@ -530,6 +551,34 @@ export function buildReportDocument(
     }
   }
 
+  // The technical terms, for whoever reads the report without the application.
+  const GLOSSARY_TERMS: readonly { term: string; text: string }[] = [
+    {
+      term: 'Nivel IRL',
+      text: 'madurez de 1 (idea) a 9 (lista para escalar) en cada dimensión.',
+    },
+    {
+      term: 'Cuello de botella',
+      text: 'la dimensión con el nivel más bajo: la que más frena.',
+    },
+    {
+      term: 'Brecha',
+      text: `una dimensión en nivel ${String(profile.gaps.threshold)} o menos.`,
+    },
+    {
+      term: 'Desequilibrio',
+      text: 'diferencia de niveles entre dos dimensiones que deberían avanzar juntas.',
+    },
+    {
+      term: 'Dimensión crítica',
+      text: `una dimensión clave (cliente, negocio o equipo) en nivel ${String(profile.gaps.threshold)} o menos: el estado crítico.`,
+    },
+  ];
+  push({ kind: 'heading', text: 'Términos del reporte' });
+  for (const g of GLOSSARY_TERMS) {
+    push({ kind: 'paragraph', text: `${g.term}: ${g.text}` });
+  }
+
   // Attribution.
   push(
     { kind: 'heading', text: 'Marco de referencia' },
@@ -546,15 +595,30 @@ export function buildReportDocument(
     },
   );
 
+  const headings = [
+    ...new Set(blocks.flatMap((b) => (b.kind === 'heading' ? [b.text] : []))),
+  ];
+  const sections = headings.map((title) => ({
+    title,
+    text: SECTION_TEXT[title] ?? '',
+  }));
+  const withSections = blocks.map((b) =>
+    b.kind === 'summary' ? { ...b, summary: { ...b.summary, sections } } : b,
+  );
+  const service = recommendation.primary
+    ? `Servicio recomendado: ${recommendation.primary.name}`
+    : 'Sin servicio recomendado por ahora';
+
   return {
     title: `Reporte del diagnóstico IRL: ${initiative.name}`,
     subtitle: `Análisis profundo completado el ${formatReportDate(report.completedAt)}`,
     banner: {
       heading: 'Reporte del diagnóstico IRL',
       initiative: initiative.name,
+      service,
       meta: `Análisis profundo completado el ${formatReportDate(report.completedAt)}`,
     },
-    blocks,
+    blocks: withSections,
     footer: attribution.notice,
   };
 }
@@ -582,6 +646,7 @@ export function reportFileName(report: DiagnosticReport): string {
  */
 function sectorLabel(initiative: DiagnosticReport['initiative']): string {
   const { sector, customSector } = initiative;
-  if (sector.isOther) return `Otro sector: ${customSector ?? 'sin especificar'}`;
+  if (sector.isOther)
+    return `Otro sector: ${customSector ?? 'sin especificar'}`;
   return sector.code ? `${sector.code}. ${sector.name}` : sector.name;
 }
