@@ -105,4 +105,16 @@ describe('LandingPage — portada pública', () => {
     expect(screen.getByText(/puedes responder en una o en varias sesiones/)).toBeInTheDocument();
     expect(screen.queryByText(/minutos/)).not.toBeInTheDocument();
   });
+
+  it('separa lo que da el diagnóstico de lo que agrega el análisis profundo, marcado como opcional', () => {
+    renderPage();
+
+    expect(screen.getByText('Al terminar el cuestionario')).toBeInTheDocument();
+    const deep = screen.getByText('Si activas el análisis profundo');
+    expect(deep).toHaveTextContent('Opcional');
+    expect(screen.getByText(/Aparte del diagnóstico/)).toBeInTheDocument();
+    expect(
+      screen.getByText('El servicio de INNLAB que mejor te acompaña y tu ruta de escalamiento'),
+    ).toBeInTheDocument();
+  });
 });

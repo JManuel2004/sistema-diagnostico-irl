@@ -1,9 +1,10 @@
 import type { JSX } from 'react';
 import { paths } from '@/shared/lib/paths';
 import type { DimensionCode } from '@innlab/contracts';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { UserMenu } from '@features/auth';
+import { Badge } from '@/shared/ui/badge';
 import { buttonVariants } from '@/shared/ui/button';
 import { PageShell } from '@/shared/ui/page-shell';
 import { DIMENSION_ORDER, getDimensionVisual } from '@/shared/lib/dimensions';
@@ -27,8 +28,10 @@ import { hasStoredSession } from '@/shared/auth/session';
  *    (48 statements, 6 dimensions, levels 1 to 9). The time it takes is not
  *    shown: the answers are saved, so it can be done in several sessions,
  *    and that goes in the small print under the facts. Next to it, what is
- *    received at the end, with a schematic radar without values and what
- *    the levels mean.
+ *    received at the end, with a schematic radar without values, in two
+ *    groups: what the diagnostic gives on finishing the questionnaire, and
+ *    what the deep analysis adds, marked «Opcional» (usability test P05
+ *    read the deep analysis as part of the basic result).
  *  - A mosaic of the 6 dimensions, right after the hero: it is the
  *    vocabulary the rest of the product uses, so it comes before the
  *    process. A header in each one's color with its code and what the code
@@ -168,31 +171,42 @@ export default function LandingPage(): JSX.Element {
             Lo que recibes al terminar
           </p>
           <SchematicRadar />
-          <ul className="flex flex-col gap-3.5">
-            {[
-              {
-                text: 'Un perfil que ubica tu iniciativa en cada dimensión, del nivel 1 (una idea inicial) al 9 (una iniciativa madura y sostenible en su mercado), y te explica qué significa cada nivel',
-                ink: 'text-azul-icesi',
-              },
-              {
-                text: 'Tu dimensión más fuerte y la más débil, la que hoy más frena tu avance',
-                ink: 'text-azul-icesi',
-              },
-              {
-                text: 'Con el análisis profundo: los desequilibrios entre dimensiones, el servicio de INNLAB que mejor te acompaña y tu ruta de escalamiento',
-                ink: 'text-azul-icesi',
-              },
-            ].map((item) => (
-              <li key={item.text} className="text-foreground flex gap-3 text-base leading-normal">
-                <Check
-                  className={`${item.ink} mt-0.5 size-5 shrink-0`}
-                  strokeWidth={2.6}
-                  aria-hidden="true"
-                />
-                {item.text}
-              </li>
-            ))}
-          </ul>
+          <div className="flex flex-col gap-3">
+            <p className="text-foreground text-base font-bold">Al terminar el cuestionario</p>
+            <ul className="flex flex-col gap-3.5">
+              {BASIC_RESULT.map((text) => (
+                <li key={text} className="text-foreground flex gap-3 text-base leading-normal">
+                  <Check
+                    className="text-azul-icesi mt-0.5 size-5 shrink-0"
+                    strokeWidth={2.6}
+                    aria-hidden="true"
+                  />
+                  {text}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="border-border flex flex-col gap-3 border-t pt-5">
+            <p className="text-foreground flex flex-wrap items-center gap-2 text-base font-bold">
+              Si activas el análisis profundo
+              <Badge>Opcional</Badge>
+            </p>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Aparte del diagnóstico. Lo activas, si quieres, después de ver tu perfil.
+            </p>
+            <ul className="flex flex-col gap-3.5">
+              {DEEP_ANALYSIS_RESULT.map((text) => (
+                <li key={text} className="text-foreground flex gap-3 text-base leading-normal">
+                  <Plus
+                    className="text-azul-icesi mt-0.5 size-5 shrink-0"
+                    strokeWidth={2.6}
+                    aria-hidden="true"
+                  />
+                  {text}
+                </li>
+              ))}
+            </ul>
+          </div>
         </aside>
       </section>
 
@@ -276,6 +290,18 @@ export default function LandingPage(): JSX.Element {
     </PageShell>
   );
 }
+
+/** What the diagnostic gives as soon as the questionnaire is processed. */
+const BASIC_RESULT: readonly string[] = [
+  'Un perfil que ubica tu iniciativa en cada dimensión, del nivel 1 (una idea inicial) al 9 (una iniciativa madura y sostenible en su mercado), y te explica qué significa cada nivel',
+  'Tu dimensión más fuerte y la más débil, la que hoy más frena tu avance',
+];
+
+/** What the deep analysis adds, only if the user activates it. */
+const DEEP_ANALYSIS_RESULT: readonly string[] = [
+  'Los desequilibrios entre dimensiones que deberían avanzar juntas',
+  'El servicio de INNLAB que mejor te acompaña y tu ruta de escalamiento',
+];
 
 /**
  * Text of each dimension's colored header: white over the dark tones, ink
