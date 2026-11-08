@@ -1,14 +1,15 @@
 import type { JSX } from 'react';
 import { CircleCheck, OctagonAlert, ShieldAlert, TriangleAlert } from 'lucide-react';
-import type {
-  DimensionCode,
-  ImbalanceClassification,
-  ImbalancePairResult,
+import {
+  bothInGapRisk,
+  imbalanceRisk,
+  type DimensionCode,
+  type ImbalanceClassification,
+  type ImbalancePairResult,
 } from '@innlab/contracts';
 import { getDimensionVisual } from '@/shared/lib/dimensions';
 import { Badge } from '@/shared/ui/badge';
 import { LevelBar } from '@/shared/ui/level-bar';
-import { bothInGapRisk, imbalanceRisk } from '../utils/imbalance-risks';
 import type { HighlightHandler } from './MaturityProfileSummary';
 
 /**

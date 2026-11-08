@@ -1,9 +1,14 @@
 import type {
   DimensionCode,
   ImbalanceClassification,
+  ImbalancePairResult,
   RoadmapDimensionTarget,
 } from '@innlab/contracts';
-import { LIKERT_LABELS, type DiagnosticReport } from '@innlab/contracts';
+import {
+  imbalanceRisk,
+  LIKERT_LABELS,
+  type DiagnosticReport,
+} from '@innlab/contracts';
 
 /**
  * What the downloadable report says, block by block, before anyone draws
@@ -21,6 +26,24 @@ export type ReportBlock =
   | { readonly kind: 'field'; readonly label: string; readonly value: string }
   | { readonly kind: 'bullet'; readonly text: string }
   | { readonly kind: 'alert'; readonly text: string }
+  /**
+   * An imbalanced pair, as on screen: its two dimensions with their level,
+   * how far apart they are, what to do and what the initiative risks.
+   */
+  | {
+      readonly kind: 'pair';
+      readonly title: string;
+      readonly severity: string;
+      readonly critical: boolean;
+      readonly dimensions: readonly {
+        readonly dimensionCode: DimensionCode;
+        readonly label: string;
+        readonly level: number;
+      }[];
+      readonly headline: string;
+      readonly advice: string;
+      readonly risk: string | null;
+    }
   /** Each dimension today and at the end of the route, on the 1–9 scale. */
   | {
       readonly kind: 'route';
@@ -63,6 +86,27 @@ export interface ReportIndicator {
   readonly detail: string;
   /** Needs attention first: drawn with the attention tone and a mark. */
   readonly attention: boolean;
+  /** The maturity band that colors the value, as the global level on screen. */
+  readonly band?: MaturityBandKey;
+}
+
+/** The maturity band of a level, as the application reads it (1–3, 4–5, 6–7, 8–9). */
+export type MaturityBandKey = 'low' | 'developing' | 'advanced' | 'mature';
+
+const BAND_LABEL: Readonly<Record<MaturityBandKey, string>> = {
+  low: 'Madurez inicial',
+  developing: 'Madurez en desarrollo',
+  advanced: 'Madurez avanzada',
+  mature: 'Madurez alta',
+};
+
+/** A decimal average is read by its rounded level, as on screen. */
+function maturityBand(level: number): MaturityBandKey {
+  const whole = Math.round(level);
+  if (whole <= 3) return 'low';
+  if (whole <= 5) return 'developing';
+  if (whole <= 7) return 'advanced';
+  return 'mature';
 }
 
 export interface ReportSummary {
@@ -126,6 +170,45 @@ export interface ReportDocumentModel {
 }
 
 const LOCALE = 'es-CO';
+
+/**
+ * An imbalanced pair as the results screen tells it (`PairCard`): which one
+ * goes ahead and by how much, what to do and, unless both are in gap, what
+ * the initiative risks (the same texts as the screen, from the contracts).
+ */
+function pairBlock(
+  pair: ImbalancePairResult,
+  levelOf: ReadonlyMap<DimensionCode, number>,
+  nameOf: (code: DimensionCode) => string,
+  gapCodes: ReadonlySet<DimensionCode>,
+): Extract<ReportBlock, { kind: 'pair' }> {
+  const leftLevel = levelOf.get(pair.left) ?? 0;
+  const rightLevel = levelOf.get(pair.right) ?? 0;
+  const [ahead, behind] =
+    leftLevel >= rightLevel ? [pair.left, pair.right] : [pair.right, pair.left];
+  const bothInGap = gapCodes.has(pair.left) && gapCodes.has(pair.right);
+  const critical = pair.classification === 'critical';
+  const advice = bothInGap
+    ? `Las dos están en la parte baja de la escala. Lo que toca es subir ${nameOf(pair.left)} y ${nameOf(pair.right)} en paralelo, no compararlas entre sí.`
+    : critical
+      ? `La distancia es muy grande. Conviene atender ${nameOf(behind)} antes de seguir avanzando en ${nameOf(ahead)}.`
+      : `La distancia es importante. Vale la pena acercar ${nameOf(behind)} a ${nameOf(ahead)} pronto.`;
+  return {
+    kind: 'pair',
+    title: listNames([nameOf(pair.left), nameOf(pair.right)]),
+    severity: CLASSIFICATION_LABEL[pair.classification],
+    critical,
+    dimensions: [pair.left, pair.right].map((code) => ({
+      dimensionCode: code,
+      label: nameOf(code),
+      level: levelOf.get(code) ?? 0,
+    })),
+    headline: `${nameOf(ahead)} va ${levelWord(pair.difference)} por delante de ${nameOf(behind)}.`,
+    advice,
+    risk:
+      bothInGap || pair.difference === 0 ? null : imbalanceRisk(ahead, behind),
+  };
+}
 
 /**
  * What each section of the report holds, in one line, for «Cómo leer este
@@ -284,7 +367,8 @@ export function buildReportDocument(
           {
             label: 'Nivel IRL global',
             value: oneDecimal(profile.globalAverage),
-            caption: 'de 9',
+            caption: `de 9 · ${BAND_LABEL[maturityBand(profile.globalAverage)]}`,
+            band: maturityBand(profile.globalAverage),
             detail: `Más fuerte: ${namesOf(profile.strength.dimensions)}`,
             attention: false,
           },
@@ -410,11 +494,26 @@ export function buildReportDocument(
       SEVERITY_ORDER[a.classification] - SEVERITY_ORDER[b.classification],
   );
   if (pairs.length > 0) {
-    push({ kind: 'subheading', text: 'Desequilibrios entre dimensiones' });
-    for (const pair of pairs) {
+    push(
+      { kind: 'subheading', text: 'Desequilibrios entre dimensiones' },
+      {
+        kind: 'paragraph',
+        text: 'Seis pares de dimensiones deben avanzar juntas. Una diferencia de 2 o 3 niveles es un desequilibrio moderado; una de 4 o más, crítico.',
+      },
+    );
+    const levelOf = new Map(
+      profile.dimensionResults.map((r) => [r.dimensionCode, r.irlLevel]),
+    );
+    const gapCodes = new Set(profile.gaps.dimensions);
+    // Each pair with an alert as on screen; the balanced ones in one line.
+    for (const pair of pairs.filter((p) => p.classification !== 'acceptable')) {
+      push(pairBlock(pair, levelOf, nameOf, gapCodes));
+    }
+    const balanced = pairs.filter((p) => p.classification === 'acceptable');
+    if (balanced.length > 0) {
       push({
-        kind: 'bullet',
-        text: `${listNames([nameOf(pair.left), nameOf(pair.right)])}: ${levelWord(pair.difference)} de diferencia, ${CLASSIFICATION_LABEL[pair.classification]}.`,
+        kind: 'paragraph',
+        text: `Sin alerta, avanzan a un ritmo parecido: ${listNames(balanced.map((p) => `${listNames([nameOf(p.left), nameOf(p.right)])} (${levelWord(p.difference)})`))}.`,
       });
     }
   }

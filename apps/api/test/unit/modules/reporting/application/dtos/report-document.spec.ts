@@ -19,6 +19,10 @@ function textOf(blocks: readonly ReportBlock[]): string {
       )
         return '';
       if (b.kind === 'answers') return b.rows.map((r) => r.text).join('\n');
+      if (b.kind === 'pair')
+        return [b.title, b.severity, b.headline, b.advice, b.risk ?? ''].join(
+          '\n',
+        );
       return b.text;
     })
     .join('\n');
@@ -127,19 +131,23 @@ describe('buildReportDocument', () => {
     );
     expect(text).toContain('Negocio está en estado crítico');
     expect(text).toContain(
-      'Tecnología y Propiedad intelectual: 5 niveles de diferencia, desequilibrio crítico.',
+      'Tecnología y Propiedad intelectual\ndesequilibrio crítico',
+    );
+    expect(text).toContain(
+      'Tecnología va 5 niveles por delante de Propiedad intelectual.',
     );
     expect(text).not.toMatch(/\b(TRL|CRL|BRL|IPRL|TmRL|FRL)\b/);
   });
 
-  it('lists the most severe pair first', () => {
-    const bullets = buildReportDocument(aReport())
-      .blocks.filter((b) => b.kind === 'bullet')
-      .map((b) => (b.kind === 'bullet' ? b.text : ''))
-      .filter((t) => t.includes('de diferencia'));
+  it('lists the most severe pair first, and the balanced ones together at the end', () => {
+    const blocks = buildReportDocument(aReport()).blocks;
+    const pairs = blocks.flatMap((b) =>
+      b.kind === 'pair' ? [b.severity] : [],
+    );
 
-    expect(bullets[0]).toContain('desequilibrio crítico');
-    expect(bullets[bullets.length - 1]).toContain('equilibrado');
+    expect(pairs[0]).toBe('desequilibrio crítico');
+    expect(pairs).not.toContain('equilibrado');
+    expect(textOf(blocks)).toMatch(/Sin alerta, avanzan a un ritmo parecido: /);
   });
 
   it('includes the recommendation with its justification and the roadmap with each phase service', () => {
@@ -226,7 +234,7 @@ describe('buildReportDocument — the summary page', () => {
       ],
       ['Cuello de botella', 'Propiedad intelectual', 'nivel 1'],
       ['Dimensiones críticas', 'Negocio', 'estado crítico'],
-      ['Nivel IRL global', '3,5', 'de 9'],
+      ['Nivel IRL global', '3,5', 'de 9 · Madurez en desarrollo'],
     ]);
     expect(blocks[0].summary.indicators[2].attention).toBe(true);
     expect(blocks[0].summary.indicators[3].detail).toBe(
@@ -330,5 +338,32 @@ describe('reportFileName', () => {
         }),
       ),
     ).toBe('reporte-irl-cafe-nandu-fase-2-2026-01-02.pdf');
+  });
+});
+
+describe('buildReportDocument — imbalances as on screen', () => {
+  it('draws each pair with an alert with its levels, what to do and the risk', () => {
+    const pairs = buildReportDocument(aReport()).blocks.filter(
+      (b) => b.kind === 'pair',
+    );
+
+    expect(pairs.length).toBeGreaterThan(0);
+    const first = pairs[0];
+    if (first.kind !== 'pair') throw new Error('expected a pair');
+    expect(first.severity).toBe('desequilibrio crítico');
+    expect(first.critical).toBe(true);
+    expect(first.dimensions).toHaveLength(2);
+    expect(first.headline).toMatch(/va \d+ niveles? por delante de/);
+    expect(first.advice).not.toBe('');
+    expect(first.risk).not.toBeNull();
+  });
+
+  it('colors the global level by its maturity band, and names the band', () => {
+    const summary = buildReportDocument(aReport()).blocks[0];
+    if (summary.kind !== 'summary') throw new Error('expected the summary');
+    const global = summary.summary.indicators[3];
+
+    expect(global.band).toBe('developing');
+    expect(global.caption).toBe('de 9 · Madurez en desarrollo');
   });
 });

@@ -1,4 +1,4 @@
-import type { DimensionCode } from '@innlab/contracts';
+import type { DimensionCode } from '../irl-taxonomy/dimension.schema.js';
 
 /**
  * What an initiative risks when one dimension of an imbalanced pair runs
@@ -7,6 +7,7 @@ import type { DimensionCode } from '@innlab/contracts';
  * as `ahead→behind`, for the six pairs of the framework (TRL–CRL, TRL–BRL,
  * CRL–BRL, TmRL–FRL, BRL–IPRL, TRL–IPRL), in both directions.
  *
+ * Shared by the results screen and the PDF report, so both say the same.
  * Only codes live here: the names are the API's and are not repeated.
  */
 const RISKS: Readonly<Partial<Record<`${DimensionCode}→${DimensionCode}`, string>>> = {

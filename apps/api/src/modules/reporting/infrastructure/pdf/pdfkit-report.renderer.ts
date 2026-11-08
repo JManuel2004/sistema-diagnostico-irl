@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import PDFDocument from 'pdfkit';
 import type { DimensionCode } from '@innlab/contracts';
 import type {
+  MaturityBandKey,
   ReportBlock,
   ReportDocumentModel,
 } from '../../application/dtos/report-document.js';
@@ -44,6 +45,21 @@ const ON_BAND = '#E4E4FF';
  */
 const ATTENTION = '#B45309';
 const APPROXIMATE = '#8C7818';
+/** What goes up with the route, as on screen. */
+const ACCEPTABLE = '#1B7A48';
+
+/**
+ * The text tone of each maturity band, the same as the web's `maturity-*-ink`
+ * (`apps/web/src/shared/lib/palette.ts`): the global level reads in the color
+ * of its band, as on the results screen. The red of the low band is its ink,
+ * not the design system's critical red.
+ */
+const MATURITY_INK: Readonly<Record<MaturityBandKey, string>> = {
+  low: '#B03224',
+  developing: '#A8500B',
+  advanced: '#7A5C00',
+  mature: '#1B7A48',
+};
 
 /**
  * The fill tone of each dimension, the same as the web's
@@ -278,12 +294,15 @@ export class PdfkitReportRenderer implements ReportRendererPort {
       case 'pageBreak':
         doc.addPage();
         return;
+      case 'pair':
+        this.drawPair(doc, block);
+        return;
       case 'alert':
         doc
           .font(BOLD)
           .fontSize(10.5)
           .fillColor(ATTENTION)
-          .text('Atención prioritaria: ', {
+          .text('Dimensión crítica: ', {
             width,
             continued: true,
             lineGap: 2,
@@ -303,9 +322,10 @@ export class PdfkitReportRenderer implements ReportRendererPort {
     width: number,
     max: number,
     min = 9,
+    font = BOLD,
   ): number {
     let size = max;
-    doc.font(BOLD);
+    doc.font(font);
     while (size > min && doc.fontSize(size).widthOfString(text) > width) {
       size -= 0.5;
     }
@@ -341,10 +361,14 @@ export class PdfkitReportRenderer implements ReportRendererPort {
     const cardW =
       (width - gap * (summary.indicators.length - 1)) /
       summary.indicators.length;
-    const cardH = 86;
+    const cardH = 92;
     summary.indicators.forEach((c, i) => {
       const x = left + i * (cardW + gap);
-      const tone = c.attention ? ATTENTION : TEXT;
+      const tone = c.attention
+        ? ATTENTION
+        : c.band
+          ? MATURITY_INK[c.band]
+          : TEXT;
       doc
         .roundedRect(x, y, cardW, cardH, 6)
         .lineWidth(1)
@@ -378,14 +402,19 @@ export class PdfkitReportRenderer implements ReportRendererPort {
           lineBreak: false,
         });
       doc
-        .font(BODY)
-        .fontSize(8.5)
+        .fontSize(this.fitSize(doc, c.caption, cardW - 20, 8.5, 6.5, BODY))
         .fillColor(MUTED)
         .text(c.caption, x + 10, y + 50, {
           width: cardW - 20,
           lineBreak: false,
         });
-      doc.fontSize(7.5).text(c.detail, x + 10, y + 64, { width: cardW - 20 });
+      // One line, so no text is cut at the card's edge.
+      doc
+        .fontSize(this.fitSize(doc, c.detail, cardW - 20, 7.5, 6, BODY))
+        .text(c.detail, x + 10, y + 68, {
+          width: cardW - 20,
+          lineBreak: false,
+        });
     });
     y += cardH + 22;
 
@@ -770,92 +799,221 @@ export class PdfkitReportRenderer implements ReportRendererPort {
   }
 
   /**
-   * A dumbbell per dimension on the 1–9 scale: a ring where it is today, a
-   * filled dot where the route leaves it, joined by a line; the numbers are
-   * written next to the name, so nothing depends on reading the dots.
+   * An imbalanced pair as a card, as on screen: its name and severity, its two
+   * dimensions with their level as a 1–9 bar, how far apart they are, what to
+   * do and what the initiative risks. A critical pair carries the attention
+   * tone and mark: never the color alone.
+   */
+  private drawPair(
+    doc: PDFKit.PDFDocument,
+    block: Extract<ReportBlock, { kind: 'pair' }>,
+  ): void {
+    const left = doc.page.margins.left;
+    const width = this.width(doc);
+    const pad = 12;
+    const inner = width - 2 * pad;
+    doc.font(BODY).fontSize(9.5);
+    const textH =
+      doc.heightOfString(block.headline, { width: inner }) +
+      doc.heightOfString(block.advice, { width: inner }) +
+      (block.risk
+        ? doc.heightOfString(`Riesgo: ${block.risk}`, { width: inner }) + 8
+        : 0);
+    const height = 34 + 32 + textH + 14;
+    this.ensureRoom(doc, height + 10);
+    const top = doc.y;
+    const tone = block.critical ? ATTENTION : TEXT;
+
+    doc
+      .roundedRect(left, top, width, height, 6)
+      .lineWidth(1)
+      .strokeColor(block.critical ? ATTENTION : HAIRLINE)
+      .stroke();
+    let x = left + pad;
+    if (block.critical) {
+      this.attentionMark(doc, x + 6, top + 15);
+      x += 18;
+    }
+    doc
+      .font(BOLD)
+      .fontSize(7.5)
+      .fillColor(tone)
+      .text(block.severity.toUpperCase(), x, top + 10, {
+        characterSpacing: 0.4,
+        lineBreak: false,
+      });
+    doc
+      .fontSize(10.5)
+      .fillColor(TEXT)
+      .text(block.title, left + pad, top + 21, {
+        width: inner,
+        lineBreak: false,
+      });
+
+    // The two dimensions side by side, each with its 1–9 bar.
+    const colW = (inner - 16) / 2;
+    const barsY = top + 40;
+    block.dimensions.forEach((d, i) => {
+      const cx = left + pad + i * (colW + 16);
+      doc
+        .font(BOLD)
+        .fontSize(8.5)
+        .fillColor(DIMENSION_EDGE[d.dimensionCode])
+        .text(d.label, cx, barsY, { width: colW - 24, lineBreak: false });
+      doc.fillColor(TEXT).text(String(d.level), cx + colW - 20, barsY, {
+        width: 20,
+        align: 'right',
+        lineBreak: false,
+      });
+      const cell = colW / 9;
+      for (let level = 1; level <= 9; level += 1) {
+        const rx = cx + (level - 1) * cell;
+        doc
+          .rect(rx, barsY + 12, cell - 2, 6)
+          .fill(level <= d.level ? DIMENSION_FILL[d.dimensionCode] : TRACK);
+        if (d.dimensionCode === 'FRL' && level <= d.level) {
+          doc
+            .rect(rx, barsY + 12, cell - 2, 6)
+            .lineWidth(0.5)
+            .strokeColor(DIMENSION_EDGE.FRL)
+            .stroke();
+        }
+      }
+    });
+
+    let y = top + 34 + 32;
+    doc
+      .font(BOLD)
+      .fontSize(9.5)
+      .fillColor(TEXT)
+      .text(block.headline, left + pad, y, { width: inner });
+    y = doc.y;
+    doc
+      .font(BODY)
+      .fillColor(MUTED)
+      .text(block.advice, left + pad, y, { width: inner });
+    if (block.risk) {
+      y = doc.y + 4;
+      doc
+        .moveTo(left + pad, y)
+        .lineTo(left + width - pad, y)
+        .lineWidth(0.5)
+        .strokeColor(HAIRLINE)
+        .stroke();
+      doc
+        .font(BOLD)
+        .fillColor(tone)
+        .text('Riesgo: ', left + pad, y + 4, { width: inner, continued: true })
+        .font(BODY)
+        .fillColor(TEXT)
+        .text(block.risk);
+    }
+    doc.x = left;
+    doc.y = top + height + 10;
+  }
+
+  /**
+   * Where the route leaves each dimension, drawn as the summary page and the
+   * application draw it (usability test P02): a bar of nine segments, solid
+   * up to today's level and a soft tone up to where the route leaves it, with
+   * how much it goes up.
    */
   private drawRoute(
     doc: PDFKit.PDFDocument,
     block: Extract<ReportBlock, { kind: 'route' }>,
   ): void {
-    const rowHeight = 20;
-    const labelWidth = 160;
-    this.ensureRoom(doc, rowHeight * block.rows.length + 44);
+    const rowHeight = 22;
+    const labelWidth = 130;
+    const riseWidth = 44;
+    this.ensureRoom(doc, rowHeight * block.rows.length + 52);
     const left = doc.page.margins.left;
     const scaleLeft = left + labelWidth;
-    const scaleWidth = this.width(doc) - labelWidth - 8;
-    const xOf = (level: number): number =>
-      scaleLeft + ((level - 1) / 8) * scaleWidth;
+    const scaleWidth = this.width(doc) - labelWidth - riseWidth;
+    const cell = scaleWidth / 9;
     let y = doc.y + 4;
 
-    doc.font(BODY).fontSize(8).fillColor(MUTED);
-    for (let level = 1; level <= 9; level += 1) {
-      doc.text(String(level), xOf(level) - 4, y, {
-        width: 8,
-        align: 'center',
-        lineBreak: false,
-      });
-    }
-    y += 12;
+    doc.font(BOLD).fontSize(8).fillColor(MUTED);
+    doc.text('Dimensión', left, y, { width: labelWidth - 8, lineBreak: false });
+    doc.text('Nivel, de 1 a 9', scaleLeft, y, {
+      width: scaleWidth,
+      lineBreak: false,
+    });
+    doc.text('Sube', scaleLeft + scaleWidth, y, {
+      width: riseWidth,
+      align: 'right',
+      lineBreak: false,
+    });
+    y += 14;
 
     for (const row of block.rows) {
-      const mid = y + rowHeight / 2;
-      const moves = row.end !== row.today;
+      const rise = row.end - row.today;
       doc
-        .font(BODY)
-        .fontSize(9.5)
-        .fillColor(TEXT)
+        .font(BOLD)
+        .fontSize(9)
+        .fillColor(DIMENSION_EDGE[row.dimensionCode])
+        .text(row.label, left, y + 3, {
+          width: labelWidth - 8,
+          lineBreak: false,
+        });
+      for (let level = 1; level <= 9; level += 1) {
+        const x = scaleLeft + (level - 1) * cell;
+        if (level <= row.today) {
+          doc
+            .rect(x, y + 2, cell - 2, 11)
+            .fill(DIMENSION_FILL[row.dimensionCode]);
+        } else if (level <= row.end) {
+          doc
+            .rect(x, y + 2, cell - 2, 11)
+            .fillOpacity(0.35)
+            .fill(DIMENSION_FILL[row.dimensionCode])
+            .fillOpacity(1);
+        } else {
+          doc.rect(x, y + 2, cell - 2, 11).fill(TRACK);
+        }
+      }
+      if (row.dimensionCode === 'FRL') {
+        // The yellow is too light on white: its filled cells get an edge.
+        for (let level = 1; level <= Math.max(row.today, row.end); level += 1) {
+          doc
+            .rect(scaleLeft + (level - 1) * cell, y + 2, cell - 2, 11)
+            .lineWidth(0.5)
+            .strokeColor(DIMENSION_EDGE.FRL)
+            .stroke();
+        }
+      }
+      doc
+        .font(BOLD)
+        .fontSize(9)
+        .fillColor(rise > 0 ? ACCEPTABLE : MUTED)
         .text(
-          moves
-            ? `${row.label}: ${String(row.today)} a ${String(row.end)}`
-            : `${row.label}: ${String(row.today)}`,
-          left,
-          mid - 5,
-          { width: labelWidth - 8, lineBreak: false },
+          rise > 0 ? `+${String(rise)}` : 'igual',
+          scaleLeft + scaleWidth,
+          y + 3,
+          {
+            width: riseWidth,
+            align: 'right',
+            lineBreak: false,
+          },
         );
-      doc
-        .moveTo(scaleLeft, mid)
-        .lineTo(scaleLeft + scaleWidth, mid)
-        .lineWidth(0.5)
-        .strokeColor(HAIRLINE)
-        .stroke();
-      const edge = DIMENSION_EDGE[row.dimensionCode];
-      if (moves) {
-        doc
-          .moveTo(xOf(row.today), mid)
-          .lineTo(xOf(row.end), mid)
-          .lineWidth(2)
-          .strokeColor(edge)
-          .stroke();
-      }
-      doc
-        .circle(xOf(row.today), mid, 4)
-        .lineWidth(1.5)
-        .fillAndStroke('#FFFFFF', edge);
-      if (moves) {
-        doc
-          .circle(xOf(row.end), mid, 4.5)
-          .lineWidth(1)
-          .fillAndStroke(DIMENSION_FILL[row.dimensionCode], edge);
-      }
       y += rowHeight;
     }
 
-    // Legend: the two marks, drawn, with what they mean.
-    y += 6;
+    // Legend: the two tones, drawn, with what they mean.
+    y += 4;
+    doc.rect(scaleLeft, y + 1, 16, 7).fill(TEXT);
     doc
-      .circle(scaleLeft + 4, y + 4, 3.5)
-      .lineWidth(1.2)
-      .fillAndStroke('#FFFFFF', MUTED);
-    doc
+      .font(BODY)
       .fontSize(8.5)
       .fillColor(MUTED)
-      .text('Hoy', scaleLeft + 12, y, { lineBreak: false });
+      .text('Hoy', scaleLeft + 22, y, { lineBreak: false });
     doc
-      .circle(scaleLeft + 46, y + 4, 4)
-      .lineWidth(1)
-      .fillAndStroke(MUTED, MUTED);
-    doc.text('Al terminar la ruta', scaleLeft + 54, y, { lineBreak: false });
+      .rect(scaleLeft + 52, y + 1, 16, 7)
+      .fillOpacity(0.25)
+      .fill(TEXT)
+      .fillOpacity(1);
+    doc
+      .fillColor(MUTED)
+      .text('Lo que sube con la ruta', scaleLeft + 74, y, { lineBreak: false });
     doc.x = left;
     doc.y = y + 20;
   }
