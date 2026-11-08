@@ -160,7 +160,10 @@ export function RoadmapEnding({
                 </span>
               )}
               <span className="flex flex-col">
-                <span className="text-muted-foreground text-sm">Al terminar</span>
+                {/* «Al terminar» only next to a «Hoy»: alone it adds nothing (usability test P03). */}
+                {m.today !== undefined && (
+                  <span className="text-muted-foreground text-sm">Al terminar</span>
+                )}
                 <span
                   className={cn(
                     'text-3xl font-extrabold tabular-nums',

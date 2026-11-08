@@ -323,6 +323,7 @@ function DeepAnalysis({
     recommendation.error,
     'ROUTING_RECOMMENDATION_NOT_GENERATED',
   );
+  const noRecommendation = recommendation.data?.resultType === 'NO_RECOMMENDATION';
 
   const who = subject ?? FALLBACK_SUBJECT;
   const dimensionNames = Object.fromEntries(
@@ -361,70 +362,80 @@ function DeepAnalysis({
         />
       </section>
 
-      <section id="servicio" aria-labelledby="deep-recommendation" className="scroll-mt-40">
-        <SectionHeader
-          id="deep-recommendation"
-          overline="Portafolio INNLAB"
-          icon={Compass}
-          title={`El servicio de INNLAB para ${who}`}
-          description="A partir del perfil de madurez, el sistema identifica cuál de los servicios de INNLAB corresponde mejor al estado actual de la iniciativa."
-        >
-          {recommendation.data && <ResultMeta savedAt={recommendation.data.generatedAt} />}
-        </SectionHeader>
-        {recommendation.isPending && <LoadingState label="Cargando recomendación…" />}
-        {recommendationMissing && <MissingResult what="la recomendación" onRetry={onRetry} />}
-        {recommendation.isError && !recommendationMissing && (
-          <Alert tone="critical" title="No fue posible obtener la recomendación">
-            {isApiErrorWithCode(recommendation.error, 'ROUTING_CONFIGURATION_MISSING')
-              ? 'El motor de recomendación no tiene su configuración cargada. Contacta al equipo de INNLAB.'
-              : recommendation.error.message}
-          </Alert>
-        )}
-        {recommendation.data && (
-          <>
+      {/* The service and its route, one after the other (usability test P03): the route
+          says which dimensions go up, with which service and to which level. How the
+          service was chosen goes last, for whoever wants to check it. */}
+      <div className="flex flex-col gap-10 sm:gap-12">
+        <section id="servicio" aria-labelledby="deep-recommendation" className="scroll-mt-40">
+          <SectionHeader
+            id="deep-recommendation"
+            overline="Portafolio INNLAB"
+            icon={Compass}
+            title={`El servicio de INNLAB para ${who}`}
+            description={
+              noRecommendation
+                ? 'Cómo leerlo: el sistema compara los servicios de INNLAB con tu perfil y recomienda uno solo si encaja lo suficiente. Debajo está tu ruta por fases y, al final, cómo se llegó a este resultado.'
+                : 'Cómo leerlo: primero, el servicio de INNLAB que mejor encaja hoy con tu iniciativa; debajo, la ruta por fases que empieza con él; al final, cómo se llegó a esa elección.'
+            }
+          >
+            {recommendation.data && <ResultMeta savedAt={recommendation.data.generatedAt} />}
+          </SectionHeader>
+          {recommendation.isPending && <LoadingState label="Cargando recomendación…" />}
+          {recommendationMissing && <MissingResult what="la recomendación" onRetry={onRetry} />}
+          {recommendation.isError && !recommendationMissing && (
+            <Alert tone="critical" title="No fue posible obtener la recomendación">
+              {isApiErrorWithCode(recommendation.error, 'ROUTING_CONFIGURATION_MISSING')
+                ? 'El motor de recomendación no tiene su configuración cargada. Contacta al equipo de INNLAB.'
+                : recommendation.error.message}
+            </Alert>
+          )}
+          {recommendation.data && (
             <RecommendationSummary recommendation={recommendation.data} subject={subject} />
+          )}
+        </section>
+
+        <section id="roadmap" aria-labelledby="deep-roadmap" className="scroll-mt-40">
+          <SectionHeader
+            id="deep-roadmap"
+            overline="Ruta de escalamiento"
+            icon={Route}
+            title={`La ruta de escalamiento de ${who}`}
+            description="Las dimensiones que todavía tienen que avanzar, ordenadas según qué habilita qué, y el servicio de INNLAB que podrías contratar en cada fase: de lo más liviano a lo más profundo, hasta equilibrar tus dimensiones."
+          >
+            {roadmap.data && <ResultMeta savedAt={roadmap.data.generatedAt} />}
+          </SectionHeader>
+          {roadmap.isPending && <LoadingState label="Cargando la ruta de escalamiento…" />}
+          {roadmapMissing && <MissingResult what="la ruta de escalamiento" onRetry={onRetry} />}
+          {roadmap.isError && !roadmapMissing && (
+            <Alert tone="critical" title="No fue posible construir la ruta de escalamiento">
+              {isApiErrorWithCode(roadmap.error, 'ROADMAP_GRAPH_HAS_CYCLE')
+                ? 'El grafo de dependencias entre dimensiones está mal configurado. Contacta al equipo de INNLAB.'
+                : RETRY_LATER}
+            </Alert>
+          )}
+          {roadmap.data && (
+            <>
+              <RoadmapPhaseList
+                roadmap={roadmap.data}
+                profile={profile}
+                levelScale={profile.levelScale}
+                dimensionNames={dimensionNames}
+                subject={subject}
+              />
+              {roadmap.data.phases.length > 0 && <RoadmapExplanationPanel roadmap={roadmap.data} />}
+            </>
+          )}
+          {recommendation.data && (
             <LayerTracePanel
               trace={trace.data}
               isLoading={trace.isFetching}
               onOpen={onTraceOpen}
               dimensionNames={dimensionNames}
+              noRecommendation={noRecommendation}
             />
-          </>
-        )}
-      </section>
-
-      <section id="roadmap" aria-labelledby="deep-roadmap" className="scroll-mt-40">
-        <SectionHeader
-          id="deep-roadmap"
-          overline="Ruta de escalamiento"
-          icon={Route}
-          title={`La ruta de escalamiento de ${who}`}
-          description="Las dimensiones que todavía tienen que avanzar, ordenadas según qué habilita qué, y el servicio de INNLAB que podrías contratar en cada fase: de lo más liviano a lo más profundo, hasta equilibrar tus dimensiones."
-        >
-          {roadmap.data && <ResultMeta savedAt={roadmap.data.generatedAt} />}
-        </SectionHeader>
-        {roadmap.isPending && <LoadingState label="Cargando la ruta de escalamiento…" />}
-        {roadmapMissing && <MissingResult what="la ruta de escalamiento" onRetry={onRetry} />}
-        {roadmap.isError && !roadmapMissing && (
-          <Alert tone="critical" title="No fue posible construir la ruta de escalamiento">
-            {isApiErrorWithCode(roadmap.error, 'ROADMAP_GRAPH_HAS_CYCLE')
-              ? 'El grafo de dependencias entre dimensiones está mal configurado. Contacta al equipo de INNLAB.'
-              : RETRY_LATER}
-          </Alert>
-        )}
-        {roadmap.data && (
-          <>
-            <RoadmapPhaseList
-              roadmap={roadmap.data}
-              profile={profile}
-              levelScale={profile.levelScale}
-              dimensionNames={dimensionNames}
-              subject={subject}
-            />
-            {roadmap.data.phases.length > 0 && <RoadmapExplanationPanel roadmap={roadmap.data} />}
-          </>
-        )}
-      </section>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

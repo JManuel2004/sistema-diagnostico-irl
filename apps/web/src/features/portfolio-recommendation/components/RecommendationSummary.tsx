@@ -26,6 +26,10 @@ interface Props {
  * number instead of the recommendation. Whoever wants the breakdown has it
  * in the explanation of how it was reached.
  *
+ * Without a recommendation (`NO_RECOMMENDATION`) it says why, and that the
+ * route below still proposes a service per phase as a starting point, so the
+ * section and the route tell the same story (usability test P01).
+ *
  * An alternative an adjustment of the center put into the ranking says so,
  * with the reason of the adjustment: it did not come from the calculation.
  *
@@ -54,6 +58,11 @@ export function RecommendationSummary({
             </h2>
             <p className="text-muted-foreground mt-3 max-w-prose text-lg leading-relaxed">
               {recommendation.noRecommendationReason}
+            </p>
+            {/* The route below still proposes a service per phase: said here, so the two do not contradict each other. */}
+            <p className="text-foreground mt-3 max-w-prose text-base leading-relaxed">
+              Tu ruta de escalamiento, más abajo, sí propone un servicio para cada fase. Tómalo como
+              punto de partida para conversar con INNLAB, no como una recomendación del cálculo.
             </p>
           </CardContent>
         </Card>

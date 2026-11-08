@@ -487,6 +487,29 @@ describe('LayerTracePanel', () => {
   });
 });
 
+describe('LayerTracePanel — sin recomendación (S1)', () => {
+  it('no marca a ninguno como «Recomendado» y dice que ninguno alcanzó el mínimo', async () => {
+    render(
+      <LayerTracePanel
+        trace={trace()}
+        isLoading={false}
+        onOpen={vi.fn()}
+        dimensionNames={NAMES}
+        noRecommendation
+      />,
+    );
+    await userEvent.click(screen.getByRole('button'));
+
+    expect(screen.queryByText('Recomendado')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Ningún servicio alcanzó el puntaje mínimo para recomendarse\./),
+    ).toBeInTheDocument();
+    expect(
+      step(2).getByText(/Por eso ninguno aparece como recomendado/),
+    ).toBeInTheDocument();
+  });
+});
+
 describe('RecommendationSummary', () => {
   const base = {
     diagnosticId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
@@ -554,6 +577,25 @@ describe('RecommendationSummary', () => {
 
     expect(screen.getByRole('heading', { name: /Sin recomendación/ })).toBeInTheDocument();
     expect(screen.getByText(/pertinencia mínima/)).toBeInTheDocument();
+  });
+
+  it('sin recomendación, aclara que la ruta propone servicios como punto de partida', () => {
+    render(
+      <RecommendationSummary
+        recommendation={{
+          ...base,
+          resultType: 'NO_RECOMMENDATION',
+          primary: null,
+          justification: null,
+          noRecommendationReason: 'Ningún servicio alcanzó la pertinencia mínima para este perfil.',
+          alternatives: [],
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByText(/Tu ruta de escalamiento, más abajo, sí propone un servicio para cada fase/),
+    ).toBeInTheDocument();
   });
 
   it('una alternativa que incluyó el centro dice por qué, sin mostrar puntaje', () => {

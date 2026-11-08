@@ -26,6 +26,12 @@ interface Props {
    * explanation talks about «Negocio» and «Tecnología», never their acronyms.
    */
   readonly dimensionNames?: Readonly<Record<string, string>>;
+  /**
+   * No service cleared the minimum: the first of the order is not
+   * recommended, and the panel says so instead of marking it «Recomendado»
+   * (usability tests P01, P05).
+   */
+  readonly noRecommendation?: boolean;
 }
 
 /**
@@ -62,7 +68,13 @@ interface Props {
  *  4. No internal identifiers: adjustments are described by what they did
  *     and by the reason the center declared, not by their code.
  */
-export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Props): JSX.Element {
+export function LayerTracePanel({
+  trace,
+  isLoading,
+  onOpen,
+  dimensionNames,
+  noRecommendation = false,
+}: Props): JSX.Element {
   const nameOf = (code: string): string => dimensionNames?.[code] ?? code;
 
   return (
@@ -78,7 +90,7 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
         <div className="flex flex-col gap-6">
           <p className="bg-surface-muted border-primary text-foreground flex items-start gap-3 border-l-[3px] p-4 text-base leading-relaxed">
             <CircleCheck className="text-azul-icesi mt-0.5 size-5 shrink-0" aria-hidden="true" />
-            <span>{verdict(trace)}</span>
+            <span>{verdict(trace, noRecommendation)}</span>
           </p>
 
           {trace.adjustedByException && (
@@ -124,8 +136,14 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
               <Ranking
                 ranking={trace.rankingBeforeExceptions}
                 nameOf={nameOf}
-                recommendsFirst={!trace.adjustedByException}
+                recommendsFirst={!trace.adjustedByException && !noRecommendation}
               />
+              {noRecommendation && (
+                <p className="text-muted-foreground text-base leading-relaxed">
+                  Ninguno alcanzó el puntaje mínimo que el centro fija para recomendar un servicio.
+                  Por eso ninguno aparece como recomendado.
+                </p>
+              )}
             </Step>
 
             <Step number={3} title="Ajuste del centro">
@@ -165,6 +183,7 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
                   <Ranking
                     ranking={trace.rankingAfterExceptions}
                     nameOf={nameOf}
+                    recommendsFirst={!noRecommendation}
                     adjusted={adjustedServices(trace)}
                   />
                 </>
@@ -185,13 +204,19 @@ export function LayerTracePanel({ trace, isLoading, onOpen, dimensionNames }: Pr
   );
 }
 
-/** The sentence that answers, without reading the detail, why that service is recommended. */
-function verdict(trace: LayerTraceResponse): string {
+/**
+ * The sentence that answers, without reading the detail, why that service is
+ * recommended — or why none is.
+ */
+function verdict(trace: LayerTraceResponse, noRecommendation: boolean): string {
   const first = trace.rankingBeforeExceptions[0]?.name;
   const final = trace.rankingAfterExceptions[0]?.name ?? first;
   const adjustment = trace.appliedExceptions.find((e) => e.targetService === final);
 
   if (final === undefined) return 'Todavía no hay un orden de servicios para esta iniciativa.';
+  if (noRecommendation) {
+    return `Ningún servicio alcanzó el puntaje mínimo para recomendarse. ${final} fue el que más se acercó, pero no fue suficiente.`;
+  }
   if (trace.adjustedByException) {
     return `${final} es la recomendación porque el centro la eligió por encima del resultado del cálculo.`;
   }

@@ -239,9 +239,10 @@ describe('RoadmapPhaseList', () => {
     expect(within(end).getByText('Nivel IRL global').closest('div')).toHaveTextContent(
       'Hoy3,5Al terminar5',
     );
-    expect(within(end).getByText('Dimensiones que suben').closest('div')).toHaveTextContent(
-      '4 de 6',
-    );
+    const raised = within(end).getByText('Dimensiones que suben').closest('div');
+    expect(raised).toHaveTextContent('4 de 6');
+    // Without a «Hoy» next to it, «Al terminar» says nothing (S3).
+    expect(raised).not.toHaveTextContent('Al terminar');
   });
 
   it('al pasar por una pareja, deja encendidas solo sus dos dimensiones', async () => {
