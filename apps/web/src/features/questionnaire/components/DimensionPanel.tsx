@@ -76,7 +76,10 @@ export function DimensionPanel({ dimension }: Props) {
                 Indica qué tan de acuerdo estás con que esta afirmación describe la realidad actual
                 de tu iniciativa.
               </li>
-              <li>Es normal que los niveles más altos sean &quot;En desacuerdo&quot;.</li>
+              <li>
+                Las últimas afirmaciones de cada dimensión describen iniciativas muy avanzadas. Por
+                eso es normal responder «En desacuerdo» en ellas.
+              </li>
               {dependent !== undefined && <li>{dependent}</li>}
             </ul>
           </div>

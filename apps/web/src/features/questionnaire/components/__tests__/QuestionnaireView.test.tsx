@@ -35,11 +35,7 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 function withSuccessHandler(): void {
-  server.use(
-    http.get('*/api/v1/catalog/questionnaire', () =>
-      HttpResponse.json(buildFixture()),
-    ),
-  );
+  server.use(http.get('*/api/v1/catalog/questionnaire', () => HttpResponse.json(buildFixture())));
 }
 
 function withErrorHandler(): void {
@@ -60,9 +56,7 @@ describe('QuestionnaireView', () => {
   });
 
   it('renders the skeleton while the request is in flight', () => {
-    server.use(
-      http.get('*/api/v1/catalog/questionnaire', () => new Promise(() => undefined)),
-    );
+    server.use(http.get('*/api/v1/catalog/questionnaire', () => new Promise(() => undefined)));
     renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     expect(screen.getByRole('status')).toBeInTheDocument();
@@ -92,19 +86,34 @@ describe('QuestionnaireView', () => {
     expect(screen.getByText('Afirmación 8 de 8')).toBeInTheDocument();
   });
 
-  it('switches to the clicked dimension and shows its statements', { timeout: 10_000 }, async () => {
+  it('explains why the last statements of a dimension are usually «En desacuerdo»', async () => {
     withSuccessHandler();
-    const user = userEvent.setup();
     renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
     await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
-    await user.click(screen.getByRole('tab', { name: 'CRL' }));
-
-    await waitFor(() =>
-      expect(screen.getByRole('tabpanel')).toHaveTextContent('CRL — Nombre'),
-    );
+    expect(
+      screen.getByText(
+        /describen iniciativas muy avanzadas\. Por eso es normal responder «En desacuerdo»/,
+      ),
+    ).toBeInTheDocument();
   });
+
+  it(
+    'switches to the clicked dimension and shows its statements',
+    { timeout: 10_000 },
+    async () => {
+      withSuccessHandler();
+      const user = userEvent.setup();
+      renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
+
+      await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
+
+      await user.click(screen.getByRole('tab', { name: 'CRL' }));
+
+      await waitFor(() => expect(screen.getByRole('tabpanel')).toHaveTextContent('CRL — Nombre'));
+    },
+  );
 
   describe('scroll', () => {
     const scrollIntoView = vi.fn();
@@ -180,36 +189,40 @@ describe('QuestionnaireView', () => {
     await waitFor(() => expect(callCount).toBeGreaterThan(before));
   });
 
-  it('persists answers when switching dimension tabs and after remount', { timeout: 15_000 }, async () => {
-    withSuccessHandler();
-    const user = userEvent.setup();
-    const utils = renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
+  it(
+    'persists answers when switching dimension tabs and after remount',
+    { timeout: 15_000 },
+    async () => {
+      withSuccessHandler();
+      const user = userEvent.setup();
+      const utils = renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
 
-    await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
+      await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
-    // In the first (default) panel, select "De acuerdo" for the first statement
-    const rg = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });
-    const radio = within(rg).getByRole('radio', { name: '4 — De acuerdo' });
+      // In the first (default) panel, select "De acuerdo" for the first statement
+      const rg = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });
+      const radio = within(rg).getByRole('radio', { name: '4 — De acuerdo' });
 
-    await user.click(radio);
-    expect(radio).toBeChecked();
+      await user.click(radio);
+      expect(radio).toBeChecked();
 
-    // Switch to another dimension and back
-    await user.click(screen.getByRole('tab', { name: 'CRL' }));
-    await waitFor(() => screen.getByRole('tabpanel'));
-    await user.click(screen.getByRole('tab', { name: 'TRL' }));
-    await waitFor(() => screen.getByRole('tabpanel'));
+      // Switch to another dimension and back
+      await user.click(screen.getByRole('tab', { name: 'CRL' }));
+      await waitFor(() => screen.getByRole('tabpanel'));
+      await user.click(screen.getByRole('tab', { name: 'TRL' }));
+      await waitFor(() => screen.getByRole('tabpanel'));
 
-    // After returning, the previously selected radio should still be checked
-    const rg2 = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });
-    expect(within(rg2).getByRole('radio', { name: '4 — De acuerdo' })).toBeChecked();
+      // After returning, the previously selected radio should still be checked
+      const rg2 = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });
+      expect(within(rg2).getByRole('radio', { name: '4 — De acuerdo' })).toBeChecked();
 
-    // Unmount and remount the view (simulating navigation away and back)
-    utils.unmount();
-    renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
-    await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
+      // Unmount and remount the view (simulating navigation away and back)
+      utils.unmount();
+      renderWithClient(<QuestionnaireView frameworkVersion="KTH-IRL-1.0" />);
+      await waitFor(() => screen.getByRole('tablist', { name: 'Dimensiones IRL' }));
 
-    const remountedRg = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });
-    expect(within(remountedRg).getByRole('radio', { name: '4 — De acuerdo' })).toBeChecked();
-  });
+      const remountedRg = screen.getByRole('radiogroup', { name: 'Afirmación 1 de TRL' });
+      expect(within(remountedRg).getByRole('radio', { name: '4 — De acuerdo' })).toBeChecked();
+    },
+  );
 });
