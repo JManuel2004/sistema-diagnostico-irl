@@ -10,7 +10,6 @@ import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
 import { Badge } from '@/shared/ui/badge';
 import { Button, buttonVariants } from '@/shared/ui/button';
-import { Card, CardContent } from '@/shared/ui/card';
 import { LoadingState } from '@/shared/ui/loading-state';
 import { notify } from '@/shared/ui/notify';
 import { InProgressChoice } from '@/shared/ui/in-progress-choice';
@@ -25,28 +24,32 @@ import { maturityBand } from '@/shared/lib/maturity-scale';
 /**
  * `/panel` — where the user lands after signing in (DIAGIRL-26).
  *
- * It offers to consult a completed diagnostic or to start a new one:
+ * Its first block is always what to do now, so it is seen without
+ * scrolling (usability tests P01, P02, P05):
  *
- *  - **The initiative of the latest completed diagnostic**, with the links to
- *    correct it and to see its results.
- *  - **«Tus diagnósticos»:** every completed diagnostic, most recent first,
- *    each named by its initiative, the day its profile was computed and its
- *    global level. Opening one shows its saved results; from there the deep
- *    analysis can be accepted if it was not.
  *  - **A diagnostic in progress, from any session.** Its answers are saved
- *    on the server while the user answers, so «Continuar diagnóstico»
- *    appears whenever there is an unfinished one, on any device. Starting a
- *    new one asks first (`InProgressChoice`): continuing it, or discarding
- *    it with its saved answers, in a modal.
- *  - Without any completed diagnostic, starting one is the only action.
+ *    on the server while the user answers, so «Continuar diagnóstico en
+ *    curso» appears whenever there is an unfinished one, on any device. Next
+ *    to it, «Iniciar uno nuevo», and one line with what happens to the one in
+ *    progress: starting over discards it with its answers, and a modal asks
+ *    first (`InProgressChoice`).
+ *  - **Without one in progress**, «Iniciar un nuevo diagnóstico», saying that
+ *    the earlier ones are kept and that a diagnostic can be about another
+ *    initiative.
+ *  - Without any diagnostic, starting one is the only action.
+ *
+ * Below, compact so the list fits on one screen: **«Tus diagnósticos»**,
+ * every completed diagnostic, most recent first, each named by its
+ * initiative, the day its profile was computed and its global level; and
+ * **the initiative of the latest one**, with the links to correct it and to
+ * see its results.
  *
  * It greets the user by their first name, from the INNLAB profile; while
  * the profile has not arrived (or Core does not answer) the title is the
  * neutral «Tu iniciativa».
  *
- * Hierarchy: a single primary button per screen — «Continuar diagnóstico»
- * with one in progress, else «Ver resultados» of the latest, else
- * «Iniciar diagnóstico».
+ * Hierarchy: a single primary button per screen — «Continuar diagnóstico en
+ * curso» with one in progress, else the one that starts a diagnostic.
  */
 export default function DashboardPage(): JSX.Element {
   const diagnostics = useMyDiagnostics();
@@ -90,7 +93,7 @@ export default function DashboardPage(): JSX.Element {
       <PageHeader
         overline="Panel de iniciativa"
         title={firstName ? `Hola, ${firstName}` : 'Tu iniciativa'}
-        description="Te damos la bienvenida a tu panel. Aquí ves tu iniciativa, consultas tus diagnósticos anteriores o inicias uno nuevo."
+        description="Aquí inicias un diagnóstico o consultas los que ya hiciste."
       />
 
       <div className="flex flex-col gap-8">
@@ -107,7 +110,7 @@ export default function DashboardPage(): JSX.Element {
         {inProgress && (
           <section
             aria-labelledby="dashboard-in-progress"
-            className="bg-azul-wash flex flex-col gap-5 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:p-8"
+            className="bg-azul-wash flex flex-col gap-4 rounded-2xl p-5 sm:p-6"
           >
             <div>
               <h2
@@ -122,40 +125,86 @@ export default function DashboardPage(): JSX.Element {
                   : `Retómalo donde lo dejaste: llevas ${String(answered)} de 48 afirmaciones respondidas y se guardan automáticamente.`}
               </p>
             </div>
-            <Link
-              to={paths.wizard(inProgress.id)}
-              className={`${buttonVariants({ size: 'lg' })} w-full shrink-0 sm:w-auto`}
-            >
-              Continuar diagnóstico
-              <ArrowRight className="size-5" aria-hidden="true" />
-            </Link>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+              <Link
+                to={paths.wizard(inProgress.id)}
+                className={`${buttonVariants({ size: 'lg' })} w-full sm:w-auto`}
+              >
+                Continuar diagnóstico en curso
+                <ArrowRight className="size-5" aria-hidden="true" />
+              </Link>
+              <UserContextGate>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="w-full sm:w-auto"
+                  onClick={requestNew}
+                  disabled={start.isPending}
+                >
+                  {start.isPending ? startLabel : 'Iniciar uno nuevo'}
+                </Button>
+              </UserContextGate>
+            </div>
+            <p className="text-muted-foreground max-w-prose text-sm leading-relaxed">
+              Si inicias uno nuevo, el diagnóstico en curso y sus respuestas se descartan. Antes de
+              hacerlo te lo preguntamos.
+            </p>
           </section>
         )}
 
-        {diagnostics.data && inProgressQuery.isSuccess && completed.length === 0 && !inProgress && (
-          <Card className="rounded-2xl">
-            <CardContent className="p-5 sm:p-8">
-              <h2 className="text-foreground text-xl font-bold">Aún no tienes un diagnóstico</h2>
-              <p className="text-muted-foreground mt-2 max-w-prose text-base leading-relaxed">
-                Inicia uno para registrar tu iniciativa y responder el cuestionario IRL.
+        {diagnostics.data && inProgressQuery.isSuccess && !inProgress && (
+          <section
+            aria-labelledby="dashboard-new"
+            className="bg-azul-wash flex flex-col gap-4 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:p-6"
+          >
+            <div>
+              <h2
+                id="dashboard-new"
+                className="text-foreground text-xl font-bold sm:text-[1.375rem]"
+              >
+                {completed.length === 0 ? 'Aún no tienes un diagnóstico' : 'Haz un nuevo diagnóstico'}
+              </h2>
+              <p className="text-muted-foreground mt-1.5 max-w-prose text-base leading-relaxed">
+                {completed.length === 0
+                  ? 'Inicia uno para registrar tu iniciativa y responder el cuestionario IRL. Puedes registrar más de una iniciativa: cada diagnóstico es sobre la que elijas.'
+                  : 'Empieza desde el comienzo y los anteriores se conservan. Puede ser sobre la misma iniciativa o sobre otra: puedes registrar más de una.'}
               </p>
-              {/* A diagnostic belongs to whoever starts it: without the user's context it is not offered. */}
-              <div className="mt-5">
-                <UserContextGate>
-                  <Button
-                    size="lg"
-                    className="w-full sm:w-auto"
-                    onClick={() => {
-                      startNew();
-                    }}
-                    disabled={start.isPending}
-                  >
-                    {startLabel}
-                  </Button>
-                </UserContextGate>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+            {/* A diagnostic belongs to whoever starts it: without the user's context it is not offered. */}
+            <UserContextGate>
+              <Button
+                size="lg"
+                className="w-full shrink-0 sm:w-auto"
+                onClick={() => {
+                  startNew();
+                }}
+                disabled={start.isPending}
+              >
+                {start.isPending
+                  ? startLabel
+                  : completed.length === 0
+                    ? 'Iniciar diagnóstico'
+                    : 'Iniciar un nuevo diagnóstico'}
+              </Button>
+            </UserContextGate>
+          </section>
+        )}
+
+        {completed.length > 0 && (
+          <section aria-labelledby="dashboard-history" className="flex flex-col gap-2">
+            <h2 id="dashboard-history" className="text-foreground text-xl font-bold">
+              Tus diagnósticos
+            </h2>
+            <p className="text-muted-foreground max-w-prose text-base leading-relaxed">
+              Abre uno para ver sus resultados sin responder de nuevo. «Con análisis profundo» incluye
+              además el servicio recomendado y la ruta de escalamiento.
+            </p>
+            <ul className="border-border flex flex-col border-t">
+              {completed.map((d) => (
+                <DiagnosticRow key={d.id} diagnostic={d} />
+              ))}
+            </ul>
+          </section>
         )}
 
         {latest && initiative.isPending && <LoadingState label="Cargando tu iniciativa…" />}
@@ -171,9 +220,11 @@ export default function DashboardPage(): JSX.Element {
         )}
 
         {latest && initiative.data && (
-          <>
-            <InitiativeSummary initiative={initiative.data} />
-            {/* A single primary button per screen: with a diagnostic in progress, it is «Continuar». */}
+          <section aria-labelledby="dashboard-latest" className="flex flex-col gap-3">
+            <h2 id="dashboard-latest" className="text-foreground text-xl font-bold">
+              Tu última iniciativa
+            </h2>
+            <InitiativeSummary initiative={initiative.data} compact />
             <nav
               aria-label="Accesos del diagnóstico"
               className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:gap-3"
@@ -189,29 +240,11 @@ export default function DashboardPage(): JSX.Element {
               )}
               <Link
                 to={paths.results(latest.id)}
-                className={`${buttonVariants({ variant: inProgress ? 'secondary' : 'default' })} w-full sm:order-first sm:w-auto`}
+                className={`${buttonVariants({ variant: 'secondary' })} w-full sm:order-first sm:w-auto`}
               >
-                Ver resultados
+                Ver resultados de la última iniciativa
               </Link>
             </nav>
-          </>
-        )}
-
-        {completed.length > 0 && (
-          <section aria-labelledby="dashboard-history" className="flex flex-col gap-3">
-            <h2 id="dashboard-history" className="text-foreground text-xl font-bold">
-              Tus diagnósticos
-            </h2>
-            <p className="text-muted-foreground max-w-prose text-base leading-relaxed">
-              Abre uno para revisar sus resultados sin responder de nuevo el cuestionario. Los
-              marcados «Con análisis profundo» incluyen además los desequilibrios, el servicio de
-              INNLAB recomendado y la ruta de escalamiento.
-            </p>
-            <ul className="border-border flex flex-col border-t">
-              {completed.map((d) => (
-                <DiagnosticRow key={d.id} diagnostic={d} />
-              ))}
-            </ul>
           </section>
         )}
 
@@ -229,34 +262,6 @@ export default function DashboardPage(): JSX.Element {
             }}
           />
         )}
-
-        {(completed.length > 0 || inProgress) && (
-          <section
-            aria-labelledby="dashboard-new"
-            className="border-border flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <h2 id="dashboard-new" className="text-foreground text-base font-bold">
-                ¿Quieres diagnosticar de nuevo?
-              </h2>
-              <p className="text-muted-foreground mt-1 max-w-prose text-base leading-relaxed">
-                {inProgress
-                  ? 'Un diagnóstico nuevo empieza desde el comienzo. Antes te preguntaremos qué hacer con el que tienes en curso.'
-                  : 'Un diagnóstico nuevo empieza desde el comienzo; los anteriores se conservan.'}
-              </p>
-            </div>
-            <UserContextGate>
-              <Button
-                variant="secondary"
-                className="w-full shrink-0 sm:w-auto"
-                onClick={requestNew}
-                disabled={start.isPending}
-              >
-                {start.isPending ? startLabel : 'Iniciar un diagnóstico nuevo'}
-              </Button>
-            </UserContextGate>
-          </section>
-        )}
       </div>
     </PageShell>
   );
@@ -268,7 +273,7 @@ function DiagnosticRow({ diagnostic }: { readonly diagnostic: DiagnosticSummary 
   const when = diagnostic.profileComputedAt ?? diagnostic.createdAt;
   const band = diagnostic.globalAverage === null ? null : maturityBand(diagnostic.globalAverage);
   return (
-    <li className="border-border flex flex-col gap-3 border-b py-4 sm:flex-row sm:items-center sm:justify-between">
+    <li className="border-border flex flex-col gap-2 border-b py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 flex-col gap-1.5">
         <p className="text-foreground text-base font-bold">{name}</p>
         <p className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-base">

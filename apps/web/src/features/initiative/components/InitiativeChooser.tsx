@@ -16,7 +16,8 @@ interface Props {
 /**
  * Which initiative a diagnostic is about: one the user already has — its
  * latest profile fills the form — or a new one. Each option names the
- * initiative by its latest profile.
+ * initiative by its latest profile, and a line says that more than one can
+ * be registered (usability test P02).
  */
 export function InitiativeChooser({ initiatives, value, onChange }: Props): JSX.Element {
   const labelId = useId();
@@ -26,6 +27,9 @@ export function InitiativeChooser({ initiatives, value, onChange }: Props): JSX.
       <legend id={labelId} className="text-foreground mb-3 text-base font-semibold">
         ¿Sobre qué iniciativa es este diagnóstico?
       </legend>
+      <p className="text-muted-foreground -mt-2 mb-1 text-sm leading-relaxed">
+        Puedes registrar más de una iniciativa: elige una que ya tienes o crea una nueva.
+      </p>
       <RadioGroup aria-labelledby={labelId} value={value} onValueChange={onChange}>
         {initiatives.map((initiative) => {
           const optionId = `${labelId}-${initiative.id}`;

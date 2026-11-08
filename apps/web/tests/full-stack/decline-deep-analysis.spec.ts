@@ -31,7 +31,7 @@ test('el líder no continúa con el análisis profundo', async ({ page }) => {
     .filter({ hasText: 'Sin análisis profundo E2E' })
     .first();
   await expect(row).toContainText('Solo perfil de madurez');
-  await expect(page.getByRole('link', { name: 'Continuar diagnóstico' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Continuar diagnóstico en curso' })).toHaveCount(0);
 
   // Its results still offer the analysis, and there is no report yet.
   await row.getByRole('link', { name: /Ver resultados/ }).click();

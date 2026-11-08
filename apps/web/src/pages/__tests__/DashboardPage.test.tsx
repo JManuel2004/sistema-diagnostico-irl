@@ -91,7 +91,10 @@ describe('DashboardPage — panel de iniciativa', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: 'AgroConecta' })).toBeInTheDocument();
+    const latest = (
+      await screen.findByRole('heading', { name: 'Tu última iniciativa' })
+    ).closest('section')!;
+    expect(await within(latest).findByText('AgroConecta')).toBeInTheDocument();
     expect(
       screen.getByText('A. Agricultura, ganadería, caza, silvicultura y pesca', { exact: false }),
     ).toBeInTheDocument();
@@ -112,7 +115,7 @@ describe('DashboardPage — panel de iniciativa', () => {
       'href',
       `/diagnosticos/${NEWEST}/iniciativa`,
     );
-    expect(within(access).getByRole('link', { name: 'Ver resultados' })).toHaveAttribute(
+    expect(within(access).getByRole('link', { name: 'Ver resultados de la última iniciativa' })).toHaveAttribute(
       'href',
       `/diagnosticos/${NEWEST}/resultados`,
     );
@@ -173,7 +176,8 @@ describe('DashboardPage — panel de iniciativa', () => {
       renderPage();
 
       expect(await screen.findByText(/los anteriores se conservan/)).toBeInTheDocument();
-      await user.click(await screen.findByRole('button', { name: 'Iniciar un diagnóstico nuevo' }));
+      expect(screen.getByText(/puedes registrar más de una/)).toBeInTheDocument();
+      await user.click(await screen.findByRole('button', { name: 'Iniciar un nuevo diagnóstico' }));
       expect(await screen.findByText('ASISTENTE_STUB')).toBeInTheDocument();
     });
   });
@@ -209,13 +213,15 @@ describe('DashboardPage — panel de iniciativa', () => {
       expect(
         await screen.findByRole('heading', { name: 'Tienes un diagnóstico en curso' }),
       ).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Continuar diagnóstico' })).toHaveAttribute(
+      expect(screen.getByRole('link', { name: 'Continuar diagnóstico en curso' })).toHaveAttribute(
         'href',
         `/diagnosticos/${UNFINISHED}/asistente`,
       );
       expect(
         await screen.findByText(/llevas 2 de 48 afirmaciones respondidas/),
       ).toBeInTheDocument();
+      // What happens to it if a new one starts, before pressing anything.
+      expect(screen.getByText(/el diagnóstico en curso y sus respuestas se descartan/)).toBeInTheDocument();
     });
 
     it('iniciar uno nuevo pregunta antes, y continuar lleva al que tiene', async () => {
@@ -230,7 +236,7 @@ describe('DashboardPage — panel de iniciativa', () => {
       const user = userEvent.setup();
 
       renderPage();
-      await user.click(await screen.findByRole('button', { name: 'Iniciar un diagnóstico nuevo' }));
+      await user.click(await screen.findByRole('button', { name: 'Iniciar uno nuevo' }));
 
       // A modal confirmation: the safe choice has the focus.
       const dialog = await screen.findByRole('alertdialog', {
@@ -259,7 +265,7 @@ describe('DashboardPage — panel de iniciativa', () => {
       const user = userEvent.setup();
 
       renderPage();
-      await user.click(await screen.findByRole('button', { name: 'Iniciar un diagnóstico nuevo' }));
+      await user.click(await screen.findByRole('button', { name: 'Iniciar uno nuevo' }));
       await user.click(
         await screen.findByRole('button', { name: 'Descartarlo y empezar uno nuevo' }),
       );
@@ -280,7 +286,7 @@ describe('DashboardPage — panel de iniciativa', () => {
       const user = userEvent.setup();
 
       renderPage();
-      await user.click(await screen.findByRole('button', { name: 'Iniciar un diagnóstico nuevo' }));
+      await user.click(await screen.findByRole('button', { name: 'Iniciar uno nuevo' }));
       await user.click(await screen.findByRole('button', { name: 'Cancelar' }));
 
       expect(
@@ -334,7 +340,7 @@ describe('DashboardPage — panel de iniciativa', () => {
       expect(
         await screen.findByRole('heading', { name: 'Aún no tienes un diagnóstico' }),
       ).toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: 'Continuar diagnóstico' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Continuar diagnóstico en curso' })).not.toBeInTheDocument();
     });
   });
 
