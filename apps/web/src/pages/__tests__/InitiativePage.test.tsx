@@ -93,7 +93,7 @@ describe('InitiativePage — corregir la iniciativa ya registrada (HU-06)', () =
     expect(
       screen.getByRole('combobox', { name: '¿En qué etapa está tu iniciativa?' }),
     ).toHaveTextContent('Validación');
-    expect(screen.getByLabelText('¿Cuántas personas conforman el equipo?')).toHaveValue(3);
+    expect(screen.getByLabelText('Número de personas del equipo')).toHaveValue('3');
   });
 
   it('al guardar actualiza la iniciativa y vuelve al panel', async () => {

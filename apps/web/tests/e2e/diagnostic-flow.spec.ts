@@ -203,7 +203,7 @@ test('from the landing to the results through the four wizard steps', async ({ p
   await page
     .getByLabel('Cuéntanos con tus palabras en qué punto está')
     .fill('Piloto con tres productores');
-  await page.getByLabel('¿Cuántas personas conforman el equipo?').fill('3');
+  await page.getByLabel('Número de personas del equipo').fill('3');
   await page.getByLabel('¿Qué hace cada persona del equipo?').fill('Fundadora y dos ingenieros');
   await page
     .getByLabel('¿Cuál es el mercado objetivo de tu iniciativa?')

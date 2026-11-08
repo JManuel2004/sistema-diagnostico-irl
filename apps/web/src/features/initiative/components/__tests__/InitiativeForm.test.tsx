@@ -134,20 +134,16 @@ describe('InitiativeForm — ayudas y validación', () => {
     );
   });
 
-  it('un equipo con decimales se explica en español', async () => {
+  it('el número de personas es un campo numérico con un ejemplo, que no acepta letras', async () => {
     const user = userEvent.setup();
-    const onSubmit = renderForm();
-    await pick(user, /^Agricultura/);
-    const team = screen.getByLabelText('¿Cuántas personas conforman el equipo?');
-    await user.clear(team);
-    await user.type(team, '0.1');
+    renderForm();
+    const field = screen.getByLabelText('Número de personas del equipo');
 
-    await user.click(screen.getByRole('button', { name: 'Guardar y continuar' }));
-
-    expect(
-      await screen.findByText('Escribe un número entero de personas, sin decimales'),
-    ).toBeInTheDocument();
-    expect(onSubmit).not.toHaveBeenCalled();
+    expect(field).toHaveAttribute('inputmode', 'numeric');
+    expect(field).toHaveAttribute('placeholder', 'Ej. 4');
+    await user.clear(field);
+    await user.type(field, '1a2');
+    expect(field).toHaveValue('12');
   });
 
   it('enviar con errores lo avisa en una notificación', async () => {

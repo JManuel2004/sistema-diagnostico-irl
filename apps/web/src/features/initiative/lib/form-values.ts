@@ -16,7 +16,7 @@ export type InitiativeProfileFields = Omit<RegisterInitiativeCommand, 'initiativ
 /**
  * The form's validation: the contract's `registerInitiativeSchema` without
  * `initiativeId`, with the differences the form needs — the fields hold text, so the team size
- * is read from a string, and an empty selection gets a message of its own
+ * is read from a string of digits, and an empty selection gets a message of its own
  * instead of the contract's generic one. An empty own sector is sent as
  * `null`.
  *
@@ -35,12 +35,9 @@ export const initiativeFormSchema = registerInitiativeSchema.omit({ initiativeId
   teamSize: z
     .string()
     .trim()
-    .min(1, 'El tamaño del equipo es obligatorio')
-    .pipe(
-      z.coerce
-        .number({ invalid_type_error: 'Escribe el número de personas en cifras' })
-        .pipe(registerInitiativeSchema.shape.teamSize),
-    ),
+    .min(1, 'Escribe cuántas personas conforman el equipo, por ejemplo 4')
+    .regex(/^\d+$/, 'Escribe solo números, por ejemplo 4')
+    .pipe(z.coerce.number().pipe(registerInitiativeSchema.shape.teamSize)),
 });
 
 /**

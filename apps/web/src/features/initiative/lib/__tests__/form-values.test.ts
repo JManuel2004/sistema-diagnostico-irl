@@ -84,3 +84,33 @@ describe('validación del sector con «Otro sector» (id 23)', () => {
     expect(parsed.customSector).toBeNull();
   });
 });
+
+describe('validación del número de personas del equipo', () => {
+  const schema = initiativeFormSchemaFor(new Set());
+  const filled: InitiativeFormValues = {
+    name: 'AgroConecta',
+    sectorId: '1',
+    customSector: '',
+    productType: 'App web',
+    stageId: '2',
+    declaredStage: 'Piloto',
+    teamSize: '3',
+    teamDescription: 'Equipo',
+    targetMarket: 'Café',
+    currentFunding: 'Ahorros',
+  };
+  const messageFor = (teamSize: string): string | undefined =>
+    schema.safeParse({ ...filled, teamSize }).error?.issues[0]?.message;
+
+  it('con texto dice que se esperan números, con un ejemplo', () => {
+    expect(messageFor('tres')).toBe('Escribe solo números, por ejemplo 4');
+  });
+
+  it('vacío pide cuántas personas son', () => {
+    expect(messageFor(' ')).toBe('Escribe cuántas personas conforman el equipo, por ejemplo 4');
+  });
+
+  it('con dígitos lo envía como número', () => {
+    expect(schema.parse(filled).teamSize).toBe(3);
+  });
+});

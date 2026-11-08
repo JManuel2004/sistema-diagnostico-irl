@@ -59,10 +59,11 @@ export interface InitiativeFormProps {
  * The stage is a list whose options say what each stage means
  * (`StageSelect`). Each label is the question the field answers, so the
  * answer is precise (client validation of RF-04): the team is asked as how
- * many people and what role each one plays. Every free text says what to
- * write and gives an example in its grey placeholder; under it, only how
- * many characters it has of the maximum. Submitting with errors announces
- * it in a toast and moves the focus to the first field to correct.
+ * many people (digits only, with an example) and what role each one plays.
+ * Every free text says what to write and gives an example in its grey
+ * placeholder; under it, only how many characters it has of the maximum.
+ * Submitting with errors announces it in a toast and moves the focus to the
+ * first field to correct.
  */
 export function InitiativeForm({
   sectors,
@@ -241,10 +242,11 @@ export function InitiativeForm({
         <TextField
           control={control}
           name="teamSize"
-          label="¿Cuántas personas conforman el equipo?"
-          placeholder="Por ejemplo: 3"
+          label="Número de personas del equipo"
+          hint="Solo números."
+          placeholder="Ej. 4"
           error={errors.teamSize?.message}
-          type="number"
+          digitsOnly
           className="sm:max-w-sm"
         />
         <TextField
@@ -321,20 +323,25 @@ function TextField({
   className,
   placeholder,
   multiline = false,
-  type,
+  digitsOnly = false,
+  hint,
   maxLength = INITIATIVE_TEXT_MAX,
 }: FieldBaseProps & {
   /** An example answer, in grey while the field is empty. */
   readonly placeholder?: string;
   readonly multiline?: boolean;
-  readonly type?: 'number';
+  /** Digits only: letters are dropped as they are typed, and there is no character count. */
+  readonly digitsOnly?: boolean;
+  /** Replaces the character count when the field is not free text. */
+  readonly hint?: string;
   readonly maxLength?: number;
 }): JSX.Element {
   const value = useWatch<Values, FieldPath<Values>, InitiativeProfileFields>({ control, name });
-  const counter =
-    type === 'number' ? undefined : `${String(value.length)} de ${String(maxLength)} caracteres`;
+  const counter = digitsOnly
+    ? undefined
+    : `${String(value.length)} de ${String(maxLength)} caracteres`;
   return (
-    <Field label={label} hint={counter} error={error} className={className}>
+    <Field label={label} hint={hint ?? counter} error={error} className={className}>
       {(c) => (
         <Controller<Values, FieldPath<Values>, InitiativeProfileFields>
           control={control}
@@ -348,15 +355,17 @@ function TextField({
                 maxLength={maxLength}
                 placeholder={placeholder}
               />
-            ) : type === 'number' ? (
+            ) : digitsOnly ? (
               <Input
                 {...c}
                 {...field}
-                type="number"
-                min={1}
-                step={1}
                 inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={5}
                 placeholder={placeholder}
+                onChange={(event) => {
+                  field.onChange(event.target.value.replace(/\D/g, ''));
+                }}
               />
             ) : (
               <Input {...c} {...field} maxLength={maxLength} placeholder={placeholder} />

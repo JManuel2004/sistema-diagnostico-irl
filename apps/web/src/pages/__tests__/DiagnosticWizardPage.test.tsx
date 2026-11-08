@@ -204,7 +204,7 @@ async function fillInitiative(user: ReturnType<typeof userEvent.setup>) {
     screen.getByLabelText('Cuéntanos con tus palabras en qué punto está'),
     'Piloto completado',
   );
-  await user.type(screen.getByLabelText('¿Cuántas personas conforman el equipo?'), '3');
+  await user.type(screen.getByLabelText('Número de personas del equipo'), '3');
   await user.type(
     screen.getByLabelText('¿Qué hace cada persona del equipo?'),
     'Fundadora y equipo',
@@ -420,7 +420,7 @@ describe('DiagnosticWizardPage — el asistente', () => {
       expect(
         screen.getByRole('combobox', { name: '¿A qué sector económico pertenece tu iniciativa?' }),
       ).toHaveValue('Agricultura, ganadería, caza, silvicultura y pesca');
-      expect(screen.getByLabelText('¿Cuántas personas conforman el equipo?')).toHaveValue(3);
+      expect(screen.getByLabelText('Número de personas del equipo')).toHaveValue('3');
     });
 
     it('recargar la página en la iniciativa no pierde el formulario ni la aceptación', async () => {
