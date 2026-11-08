@@ -93,6 +93,14 @@ describe('InitiativeForm — el sector', () => {
       screen.getByRole('dialog', { name: 'Cómo elegir el sector si tu iniciativa usa tecnología' }),
     ).toBeInTheDocument();
   });
+
+  it('aclara que las letras de los sectores son las secciones CIIU del DANE, no un orden alfabético', () => {
+    renderForm();
+
+    expect(
+      screen.getByText(/no son un orden alfabético: son las secciones .*\(CIIU\) del DANE/),
+    ).toBeInTheDocument();
+  });
 });
 
 describe('InitiativeForm — ayudas y validación', () => {

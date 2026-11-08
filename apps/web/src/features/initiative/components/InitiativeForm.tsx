@@ -150,7 +150,7 @@ export function InitiativeForm({
         <div className="flex flex-col gap-3">
           <Field
             label="¿A qué sector económico pertenece tu iniciativa?"
-            hint="Elige el sector económico de la actividad principal de tu iniciativa."
+            hint="Selecciona el sector económico que mejor represente la actividad principal de tu iniciativa. Las letras de la A a la V no son un orden alfabético: son las secciones de la clasificación de actividades económicas (CIIU) del DANE."
             error={errors.sectorId?.message}
           >
             {(c) => (
