@@ -30,8 +30,9 @@ import { hasStoredSession } from '@/shared/auth/session';
  *    and that goes in the small print under the facts. Next to it, what is
  *    received at the end, with a schematic radar without values, in two
  *    groups: what the diagnostic gives on finishing the questionnaire, and
- *    what the deep analysis adds, marked «Opcional» (usability test P05
- *    read the deep analysis as part of the basic result).
+ *    what the deep analysis adds, marked «De pago» as on the results screen
+ *    (usability test P05 read the deep analysis as part of the basic
+ *    result).
  *  - A mosaic of the 6 dimensions, right after the hero: it is the
  *    vocabulary the rest of the product uses, so it comes before the
  *    process. A header in each one's color with its code and what the code
@@ -188,11 +189,8 @@ export default function LandingPage(): JSX.Element {
           </div>
           <div className="border-border flex flex-col gap-3 border-t pt-5">
             <p className="text-foreground flex flex-wrap items-center gap-2 text-base font-bold">
-              Si activas el análisis profundo
-              <Badge>Opcional</Badge>
-            </p>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Aparte del diagnóstico. Lo activas, si quieres, después de ver tu perfil.
+              Con el análisis profundo
+              <Badge>De pago</Badge>
             </p>
             <ul className="flex flex-col gap-3.5">
               {DEEP_ANALYSIS_RESULT.map((text) => (

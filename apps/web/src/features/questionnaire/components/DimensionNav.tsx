@@ -7,20 +7,27 @@ import { Button } from '@/shared/ui/button';
  *
  * After answering the 8 statements of a dimension the user wants to go on
  * linearly; jumping back to the tab bar adds needless friction. The next
- * one is the primary button and names where it goes («Continuar con Nivel de
- * Madurez del Cliente»), so finishing a dimension is not read as the moment
- * to review the summary (usability tests P03, P05).
+ * one names where it goes («Continuar con Nivel de Madurez del Cliente») and,
+ * while statements are missing, it is the screen's only primary button, so
+ * finishing a dimension is not read as the moment to review the summary
+ * (usability tests P03, P05). With everything answered it steps down to
+ * secondary: the primary is then «Revisar resumen».
  *
  * At the ends:
  *  - No previous dimension: the left button is hidden.
- *  - No next dimension: the right button is hidden; moving on to the
- *    summary is the wizard step's own action.
+ *  - No next dimension: the right button leads to the first dimension with
+ *    statements missing (`pendingDimension`), if any; otherwise it is
+ *    hidden, and moving on to the summary is the wizard step's own action.
  */
 type DimensionItem = QuestionnaireStructure['dimensions'][number];
 
 interface Props {
   previousDimension: DimensionItem | null;
   nextDimension: DimensionItem | null;
+  /** The first other dimension with statements missing, for the last tab. */
+  pendingDimension?: DimensionItem | null;
+  /** All 48 answered: «Continuar» is no longer the primary action. */
+  allComplete?: boolean;
   onNavigate: (code: DimensionCode) => void;
 }
 
@@ -62,8 +69,15 @@ function ArrowRightIcon() {
   );
 }
 
-export function DimensionNav({ previousDimension, nextDimension, onNavigate }: Props) {
-  if (!previousDimension && !nextDimension) return null;
+export function DimensionNav({
+  previousDimension,
+  nextDimension,
+  pendingDimension = null,
+  allComplete = false,
+  onNavigate,
+}: Props) {
+  const forward = nextDimension ?? pendingDimension;
+  if (!previousDimension && !forward) return null;
 
   return (
     <nav
@@ -87,12 +101,13 @@ export function DimensionNav({ previousDimension, nextDimension, onNavigate }: P
         <span />
       )}
 
-      {nextDimension ? (
+      {forward ? (
         <Button
+          variant={allComplete ? 'secondary' : 'default'}
           className="h-auto min-h-12 whitespace-normal py-2 text-left"
-          onClick={() => onNavigate(nextDimension.code)}
+          onClick={() => onNavigate(forward.code)}
         >
-          <span>Continuar con {nextDimension.name}</span>
+          <span>Continuar con {forward.name}</span>
           <ArrowRightIcon />
         </Button>
       ) : (

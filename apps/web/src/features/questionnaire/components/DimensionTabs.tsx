@@ -91,6 +91,11 @@ export function DimensionTabs({ dimensions }: Props) {
   const prevDimension = safeActiveIndex > 0 ? dimensions[safeActiveIndex - 1] : null;
   const nextDimension =
     safeActiveIndex < dimensions.length - 1 ? dimensions[safeActiveIndex + 1] : null;
+  const dimensionComplete = (d: (typeof dimensions)[number]): boolean =>
+    d.statements.every((st) => isStatementComplete(answers, st.id));
+  const allComplete = dimensions.every(dimensionComplete);
+  const pendingDimension =
+    dimensions.find((d, i) => i !== safeActiveIndex && !dimensionComplete(d)) ?? null;
 
   return (
     <Tabs
@@ -158,6 +163,8 @@ export function DimensionTabs({ dimensions }: Props) {
       <DimensionNav
         previousDimension={prevDimension ?? null}
         nextDimension={nextDimension ?? null}
+        pendingDimension={pendingDimension}
+        allComplete={allComplete}
         onNavigate={(code: DimensionCode) => setActiveTab(code)}
       />
     </Tabs>

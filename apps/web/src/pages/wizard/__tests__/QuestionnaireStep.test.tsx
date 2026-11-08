@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http as mswHttp, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
@@ -77,14 +77,12 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
   });
 
   describe('Escenario: cuestionario incompleto', () => {
-    it('«Revisar resumen» está deshabilitado y dice cuántas afirmaciones faltan', async () => {
+    it('no ofrece «Revisar resumen» y dice cuántas afirmaciones faltan', async () => {
       populate(range(1, 4));
       renderStep();
 
-      await screen.findByText(/Faltan 44 afirmaciones/);
-      const advance = screen.getByRole('button', { name: ADVANCE });
-      expect(advance).toBeDisabled();
-      expect(advance).toHaveAccessibleDescription(/Faltan 44 afirmaciones por responder/);
+      await screen.findByText(/Faltan 44 afirmaciones por responder/);
+      expect(screen.queryByRole('button', { name: ADVANCE })).not.toBeInTheDocument();
       expect(screen.queryByText('RESUMEN_STUB')).not.toBeInTheDocument();
     });
 
@@ -135,9 +133,7 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
       act(() => {
         for (const id of range(9, 16)) complete(id);
       });
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: ADVANCE })).toBeEnabled();
-      });
+      expect(await screen.findByRole('button', { name: ADVANCE })).toBeEnabled();
     });
 
     it('before the first answer, says the questionnaire started, how long it is and that it saves itself', async () => {
@@ -156,7 +152,7 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
       populate(range(1, 2));
       renderStep();
 
-      await screen.findByRole('button', { name: ADVANCE });
+      await screen.findByText(/Faltan 46 afirmaciones/);
       expect(
         screen.queryByRole('heading', { name: 'Empieza el cuestionario' }),
       ).not.toBeInTheDocument();
@@ -177,7 +173,9 @@ describe('QuestionnaireStep — completeness validation (RF-06)', () => {
       populate(range(1, 48));
       renderStep();
 
-      await screen.findByText('Todas las afirmaciones completas — listo para revisar.');
+      await screen.findByText(
+        'Todas las afirmaciones están completas. Ya puedes revisar el resumen.',
+      );
     });
 
     it('advancing opens the summary', async () => {

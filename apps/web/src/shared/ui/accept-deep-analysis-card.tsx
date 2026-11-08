@@ -113,7 +113,7 @@ export function AcceptDeepAnalysisCard({
               ))}
             </ul>
 
-            <div>
+            <div className="flex justify-center">
               <Button
                 variant="secondary"
                 size="lg"

@@ -28,10 +28,12 @@ interface Props {
  * Step 3 — the 48-statement questionnaire (HU-07 / HU-09 / RF-06).
  *
  * It blocks moving on to the summary if anything is missing (RF-06): each
- * statement needs **its answer**; the justification is optional. «Revisar
- * resumen» stays disabled until all 48 are answered, and next to it the step
- * says how many are missing and in which dimensions, each one a button that
- * opens it (usability tests P03, P05: the summary looked reachable halfway).
+ * statement needs **its answer**; the justification is optional. While any
+ * is missing there is no «Revisar resumen»: the footer says how many are
+ * missing and in which dimensions, each one a button that opens it, and the
+ * screen's primary button is «Continuar con…» at the end of each dimension
+ * (usability tests P03, P05: the summary looked reachable halfway). With all
+ * 48 answered, «Revisar resumen» appears as the primary action.
  *
  * Above the statements, a band that sticks while scrolling: the progress,
  * whether the answers are saved (P02) and, with everything answered, «Volver
@@ -102,7 +104,7 @@ export function QuestionnaireStep({
           status={<DraftSaveStatus status={saveStatus} />}
           action={
             isComplete ? (
-              <Button size="sm" onClick={toSummary}>
+              <Button size="sm" variant="secondary" onClick={toSummary}>
                 Volver al resumen
                 <ArrowRight className="size-4" aria-hidden="true" />
               </Button>
@@ -117,7 +119,7 @@ export function QuestionnaireStep({
 
       <QuestionnaireView frameworkVersion={frameworkVersion} />
 
-      {/* RF-06: the summary opens only with every statement answered. */}
+      {/* RF-06: the summary is offered only with every statement answered. */}
       <div className="border-border mt-8 border-t pt-6">
         <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-start sm:justify-between">
           <Link
@@ -127,22 +129,23 @@ export function QuestionnaireStep({
             Atrás
           </Link>
           <div className="flex flex-col gap-3 sm:items-end">
-            <Button
-              size="lg"
-              className="w-full sm:w-auto"
-              onClick={toSummary}
-              disabled={!isComplete}
-              aria-describedby="questionnaire-missing"
-            >
-              Revisar resumen
-            </Button>
+            {isComplete && (
+              <Button
+                size="lg"
+                className="w-full sm:w-auto"
+                onClick={toSummary}
+                aria-describedby="questionnaire-missing"
+              >
+                Revisar resumen
+              </Button>
+            )}
             <div
               id="questionnaire-missing"
               aria-live="polite"
               className="text-muted-foreground text-sm sm:text-right"
             >
               {!catalog ? null : isComplete ? (
-                <p>Todas las afirmaciones completas — listo para revisar.</p>
+                <p>Todas las afirmaciones están completas. Ya puedes revisar el resumen.</p>
               ) : (
                 <>
                   <p>

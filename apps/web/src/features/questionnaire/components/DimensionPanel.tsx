@@ -39,9 +39,12 @@ export function DimensionPanel({ dimension }: Props) {
       aria-labelledby={`dim-${dimension.code}-heading`}
       className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start xl:gap-10"
     >
-      {/* Sidebar — context of the dimension. It sits under the sticky progress band. */}
+      {/* Sticky under the progress band; a guide longer than the screen scrolls inside it,
+          so it is read whole without reaching the last statement. */}
       <aside className="lg:sticky lg:top-48">
-        <div className={`bg-surface-muted border-t-[3px] ${visual.border} rounded-2xl p-5 sm:p-6`}>
+        <div
+          className={`bg-surface-muted border-t-[3px] ${visual.border} rounded-2xl p-5 sm:p-6 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:overscroll-contain`}
+        >
           <span
             aria-hidden="true"
             className={`border-border bg-background ${visual.textInk} mb-4 flex size-12 items-center justify-center border`}
