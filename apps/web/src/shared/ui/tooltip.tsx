@@ -16,12 +16,21 @@ interface TooltipProps {
   readonly content: ReactNode;
   readonly children: ReactNode;
   readonly className?: string;
+  /** Controlled: whoever opens it on a click too (a tap has no hover). */
+  readonly open?: boolean;
+  readonly onOpenChange?: (open: boolean) => void;
 }
 
-export function Tooltip({ content, children, className }: TooltipProps): JSX.Element {
+export function Tooltip({
+  content,
+  children,
+  className,
+  open,
+  onOpenChange,
+}: TooltipProps): JSX.Element {
   return (
     <TooltipPrimitive.Provider delayDuration={150}>
-      <TooltipPrimitive.Root>
+      <TooltipPrimitive.Root open={open} onOpenChange={onOpenChange}>
         <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Content

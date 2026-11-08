@@ -88,7 +88,7 @@ describe('MaturityProfileSummary — bottleneck card (RF-08)', () => {
       }
     });
 
-    it('does not show a name list inside the bottleneck card when there is only one dimension', () => {
+    it('names a single bottleneck with its chip too, like the other cards', () => {
       render(
         <MaturityProfileSummary
           dimensionResults={PAYFLOW}
@@ -98,7 +98,7 @@ describe('MaturityProfileSummary — bottleneck card (RF-08)', () => {
       const card = screen.getByRole('group', {
         name: 'Cuello de botella: Propiedad Intelectual — nivel 2',
       });
-      expect(within(card).queryByText('Propiedad Intelectual')).toBeNull();
+      expect(within(card).getByText('Propiedad Intelectual')).toBeInTheDocument();
     });
   });
 
@@ -204,7 +204,7 @@ describe('Asymmetry card', () => {
       />,
     );
     const card = screen.getByRole('group', { name: /Asimetría/i });
-    expect(within(card).getByText(/avanza de forma pareja/i)).toBeInTheDocument();
+    expect(within(card).getByText(/avanza de forma equilibrada/i)).toBeInTheDocument();
   });
 
   it('says the gap is very large for a critical asymmetry', () => {
@@ -245,7 +245,7 @@ describe('Asymmetry card', () => {
       />,
     );
     const card = screen.getByRole('group', { name: /Asimetría/i });
-    expect(within(card).getByText(/1 nivel entre/i)).toBeInTheDocument();
+    expect(within(card).getByText(/Hay 1 nivel de diferencia/i)).toBeInTheDocument();
   });
 });
 
@@ -317,7 +317,7 @@ describe('glossary tooltips', () => {
   it.each([
     ['Cuello de botella', /la dimensión donde tu iniciativa está menos avanzada/i],
     ['Brecha', /parte más baja de la escala/i],
-    ['Asimetría', /la distancia entre tu dimensión más avanzada y la menos avanzada/i],
+    ['Asimetría', /la diferencia entre la calificación de tu dimensión más alta/i],
   ])('explains "%s" in one plain sentence on hover', async (term, explanation) => {
     const user = userEvent.setup();
     render(
@@ -414,5 +414,60 @@ describe('cards highlight their dimensions in the radar', () => {
     );
 
     expect(screen.getByRole('group', { name: /Fortaleza/i })).not.toHaveAttribute('tabindex');
+  });
+});
+
+// ── What each signal means for the initiative (M4) ─────────
+
+describe('the details of a signal', () => {
+  it('a click on the card opens what it means for the initiative, with its levels', async () => {
+    const user = userEvent.setup();
+    render(
+      <MaturityProfileSummary
+        dimensionResults={PAYFLOW}
+        bottleneck={{ dimensions: ['IPRL'], level: 2 }}
+      />,
+    );
+
+    await user.click(screen.getByRole('group', { name: /Cuello de botella/i }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Cuello de botella' });
+    expect(dialog).toHaveTextContent(
+      'Propiedad Intelectual está en nivel 2, lo más bajo de tu iniciativa.',
+    );
+    expect(within(dialog).getByText('Nivel 2')).toBeInTheDocument();
+  });
+
+  it('opens with the keyboard and closes with its button', async () => {
+    const user = userEvent.setup();
+    render(
+      <MaturityProfileSummary
+        dimensionResults={PAYFLOW}
+        gaps={{ dimensions: ['CRL', 'IPRL'], threshold: 3 }}
+      />,
+    );
+
+    screen.getByRole('button', { name: 'Qué significa para tu iniciativa' }).focus();
+    await user.keyboard('{Enter}');
+    const dialog = await screen.findByRole('dialog', { name: 'Brecha' });
+    expect(dialog).toHaveTextContent('Cliente y Propiedad Intelectual están en nivel 3 o menos');
+
+    await user.click(within(dialog).getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('a click on the glossary term opens its explanation, not the details', async () => {
+    const user = userEvent.setup();
+    render(
+      <MaturityProfileSummary
+        dimensionResults={PAYFLOW}
+        bottleneck={{ dimensions: ['IPRL'], level: 2 }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /^Cuello de botella/ }));
+
+    expect((await screen.findAllByText(/Es la primera que conviene fortalecer/)).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

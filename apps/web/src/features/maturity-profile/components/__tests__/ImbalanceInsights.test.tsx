@@ -307,7 +307,7 @@ describe('ImbalanceInsights — critical state (RF-13)', () => {
     await user.hover(screen.getByRole('button', { name: /críticas/i }));
 
     expect(
-      (await screen.findAllByText(/una brecha en una dimensión clave/i)).length,
+      (await screen.findAllByText(/una dimensión clave del marco que está en la parte más baja/i)).length,
     ).toBeGreaterThan(0);
   });
 

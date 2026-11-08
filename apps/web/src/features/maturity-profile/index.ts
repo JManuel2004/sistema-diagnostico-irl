@@ -4,3 +4,4 @@ export { ProfileHero } from './components/ProfileHero';
 export { ProfileOverview } from './components/ProfileOverview';
 export { ProfileContext } from './components/ProfileContext';
 export { ImbalanceInsights } from './components/ImbalanceInsights';
+export { LowLevelAlert } from './components/LowLevelAlert';

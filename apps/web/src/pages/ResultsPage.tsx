@@ -4,6 +4,7 @@ import { Navigate, useParams } from 'react-router-dom';
 import { UserMenu } from '@features/auth';
 import {
   ImbalanceInsights,
+  LowLevelAlert,
   ProfileContext,
   ProfileHero,
   ProfileOverview,
@@ -158,6 +159,25 @@ export default function ResultsPage(): JSX.Element {
             />
           </div>
 
+          {diagnostic.data && (
+            <LowLevelAlert
+              profile={profile.data}
+              nextStep={
+                accepted
+                  ? {
+                      href: '#servicio',
+                      label: 'Ver el servicio recomendado',
+                      text: 'Revisa el servicio de INNLAB recomendado y tu ruta para empezar por ellas.',
+                    }
+                  : {
+                      href: '#analisis-profundo',
+                      label: 'Ir al análisis profundo',
+                      text: 'El análisis profundo te dice qué servicio de INNLAB te ayuda y en qué orden avanzar.',
+                    }
+              }
+            />
+          )}
+
           {diagnostic.isError && (
             <Alert tone="critical" title="No fue posible saber si aceptaste el análisis profundo">
               {RETRY_LATER}
@@ -165,7 +185,7 @@ export default function ResultsPage(): JSX.Element {
           )}
 
           {diagnostic.data && !accepted && (
-            <>
+            <div id="analisis-profundo" className="scroll-mt-24">
               {accept.isPending ? (
                 <DeepAnalysisProcessing />
               ) : (
@@ -184,7 +204,7 @@ export default function ResultsPage(): JSX.Element {
                   subject={subject}
                 />
               )}
-            </>
+            </div>
           )}
 
           {diagnostic.data && accepted && (
