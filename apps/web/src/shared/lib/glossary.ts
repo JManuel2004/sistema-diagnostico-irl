@@ -18,7 +18,7 @@ export const GLOSSARY = {
     forYou: 'Es la primera que conviene fortalecer.',
   },
   gap: {
-    term: 'Brecha',
+    term: 'Dimensión de cuidado',
     explanation:
       'Una dimensión que está en la parte más baja de la escala: todavía es muy incipiente y conviene atenderla primero.',
     forYou: 'Mientras siga así, limita lo que puedes lograr en las demás.',

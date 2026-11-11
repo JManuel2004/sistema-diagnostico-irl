@@ -332,7 +332,7 @@ export function MaturityProfileSummary({
         <SummaryCard
           icon={TrendingDown}
           tone="moderate"
-          eyebrow="Brecha"
+          eyebrow="Dimensiones de cuidado"
           glossary="gap"
           codes={gaps?.dimensions ?? []}
           highlighted={highlighted}

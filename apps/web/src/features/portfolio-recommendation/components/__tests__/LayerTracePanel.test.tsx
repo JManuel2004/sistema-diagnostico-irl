@@ -169,7 +169,7 @@ describe('LayerTracePanel', () => {
       const panel = await openPanel();
 
       expect(panel.textContent).toContain('Cuello de botella: Propiedad Intelectual');
-      expect(panel.textContent).toContain('1 brecha');
+      expect(panel.textContent).toContain('1 dimensión de cuidado');
       expect(panel.textContent).toContain('1 desequilibrio');
       expect(panel.textContent).toContain('Encaja con tu etapa');
       expect(panel.textContent).not.toMatch(/\b(TRL|BRL|IPRL|FRL)\b/);
@@ -182,7 +182,7 @@ describe('LayerTracePanel', () => {
     it('dice cuáles son las brechas y los desequilibrios que resume', async () => {
       const panel = await openPanel();
 
-      expect(panel.textContent).toContain('Ayuda a cerrar las brechas en Negocio.');
+      expect(panel.textContent).toContain('Ayuda a fortalecer Negocio, que necesita cuidado.');
       expect(panel.textContent).toContain(
         'Ayuda con el desequilibrio entre Tecnología y Propiedad Intelectual.',
       );
@@ -195,10 +195,10 @@ describe('LayerTracePanel', () => {
       const user = userEvent.setup();
       await openPanel();
 
-      await user.hover(screen.getByRole('button', { name: /1 brecha/ }));
+      await user.hover(screen.getByRole('button', { name: /1 dimensión de cuidado/ }));
 
       expect(await screen.findByRole('tooltip')).toHaveTextContent(
-        'Ayuda a cerrar las brechas en Negocio.',
+        'Ayuda a fortalecer Negocio, que necesita cuidado.',
       );
     });
 
@@ -504,9 +504,7 @@ describe('LayerTracePanel — sin recomendación (S1)', () => {
     expect(
       screen.getByText(/Ningún servicio alcanzó el puntaje mínimo para recomendarse\./),
     ).toBeInTheDocument();
-    expect(
-      step(2).getByText(/Por eso ninguno aparece como recomendado/),
-    ).toBeInTheDocument();
+    expect(step(2).getByText(/Por eso ninguno aparece como recomendado/)).toBeInTheDocument();
   });
 });
 

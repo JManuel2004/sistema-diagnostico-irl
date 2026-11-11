@@ -50,7 +50,7 @@ export function TermTooltip({ explanation, children, className }: TermTooltipPro
  */
 interface GlossaryTermProps {
   readonly term: GlossaryKey;
-  /** Visible text, if it must differ from the glossary term (e.g. «brechas»). */
+  /** Visible text, if it must differ from the glossary term (e.g. «dimensiones de cuidado»). */
   readonly children?: string;
   readonly className?: string;
 }

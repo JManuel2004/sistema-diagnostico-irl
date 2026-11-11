@@ -133,7 +133,7 @@ describe('ReportPage — con el análisis profundo completo', () => {
 
     renderPage();
 
-    const section = await openSection('Brechas, alertas y desequilibrios');
+    const section = await openSection('Dimensiones de cuidado, alertas y desequilibrios');
     expect(
       within(section).getByRole('region', { name: 'Qué tan equilibrado avanza AgroConecta' }),
     ).toBeInTheDocument();
@@ -247,7 +247,7 @@ describe('ReportPage — secciones plegables', () => {
   const TITLES = [
     'Datos de la iniciativa',
     'Perfil de seis dimensiones',
-    'Brechas, alertas y desequilibrios',
+    'Dimensiones de cuidado, alertas y desequilibrios',
     'Recomendación del portafolio INNLAB',
     'Ruta de escalamiento',
     'Respuestas al cuestionario',

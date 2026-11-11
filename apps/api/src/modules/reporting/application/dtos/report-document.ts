@@ -229,7 +229,7 @@ export const SECTION_TEXT: Readonly<Record<string, string>> = {
     'lo que registraste: sector, etapa, equipo, mercado y financiamiento.',
   'Perfil de seis dimensiones':
     'el nivel de cada dimensión, de 1 a 9, y qué significa.',
-  'Brechas, alertas y desequilibrios':
+  'Dimensiones de cuidado, alertas y desequilibrios':
     'las dimensiones más bajas, las críticas y los pares que avanzan a ritmos distintos.',
   'Recomendación del portafolio INNLAB':
     'el servicio que mejor encaja hoy y por qué.',
@@ -363,14 +363,14 @@ export function buildReportDocument(
                 label: 'Dimensiones críticas',
                 value: namesOf([...critical]),
                 caption: 'estado crítico',
-                detail: `${String(gapCount)} ${gapCount === 1 ? 'dimensión' : 'dimensiones'} en brecha`,
+                detail: `${String(gapCount)} ${gapCount === 1 ? 'dimensión' : 'dimensiones'} de cuidado`,
                 attention: true,
               }
             : {
                 label: 'Dimensiones críticas',
                 value: 'Ninguna',
                 caption: 'sin estado crítico',
-                detail: `${String(gapCount)} ${gapCount === 1 ? 'dimensión' : 'dimensiones'} en brecha`,
+                detail: `${String(gapCount)} ${gapCount === 1 ? 'dimensión' : 'dimensiones'} de cuidado`,
                 attention: false,
               },
           {
@@ -391,7 +391,7 @@ export function buildReportDocument(
             : bottleneck.has(r.dimensionCode)
               ? 'cuello de botella'
               : gaps.has(r.dimensionCode)
-                ? 'en brecha'
+                ? 'de cuidado'
                 : null,
           attention: critical.has(r.dimensionCode),
         })),
@@ -474,14 +474,17 @@ export function buildReportDocument(
 
   // Gaps, alerts and imbalances.
   push(
-    { kind: 'heading', text: 'Brechas, alertas y desequilibrios' },
-    { kind: 'subheading', text: 'Brechas' },
+    {
+      kind: 'heading',
+      text: 'Dimensiones de cuidado, alertas y desequilibrios',
+    },
+    { kind: 'subheading', text: 'Dimensiones de cuidado' },
     {
       kind: 'paragraph',
       text:
         profile.gaps.dimensions.length === 0
-          ? `Ninguna dimensión está en brecha (nivel ${String(profile.gaps.threshold)} o menos).`
-          : `${namesOf(profile.gaps.dimensions)} ${profile.gaps.dimensions.length === 1 ? 'está' : 'están'} en brecha: nivel ${String(profile.gaps.threshold)} o menos.`,
+          ? `Ninguna dimensión necesita cuidado: ninguna está en nivel ${String(profile.gaps.threshold)} o menos.`
+          : `${namesOf(profile.gaps.dimensions)} ${profile.gaps.dimensions.length === 1 ? 'necesita' : 'necesitan'} cuidado: nivel ${String(profile.gaps.threshold)} o menos.`,
     },
     { kind: 'subheading', text: 'Alertas de estado crítico' },
   );
@@ -494,7 +497,7 @@ export function buildReportDocument(
     for (const code of profile.criticalState.dimensions) {
       push({
         kind: 'alert',
-        text: `${nameOf(code)} está en estado crítico. Es una dimensión clave y está en brecha: necesita atención primero.`,
+        text: `${nameOf(code)} está en estado crítico. Es una dimensión clave y necesita cuidado (nivel ${String(profile.gaps.threshold)} o menos): conviene atenderla primero.`,
       });
     }
   }
@@ -670,7 +673,7 @@ export function buildReportDocument(
       text: 'la dimensión con el nivel más bajo: la que más frena.',
     },
     {
-      term: 'Brecha',
+      term: 'Dimensión de cuidado',
       text: `una dimensión en nivel ${String(profile.gaps.threshold)} o menos.`,
     },
     {

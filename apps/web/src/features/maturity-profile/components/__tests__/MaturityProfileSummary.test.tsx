@@ -259,14 +259,14 @@ describe('Gap card (server-provided gaps)', () => {
 
   it('appears when the server reports at least one gap dimension', () => {
     render(<MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />);
-    expect(screen.getByRole('group', { name: /Brecha/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /Dimensiones de cuidado/i })).toBeInTheDocument();
   });
 
   // A gap is negative but not an emergency: the brick red is kept for the
   // critical state and critical imbalances.
   it('uses the moderate tone, not the critical red', () => {
     render(<MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />);
-    const card = screen.getByRole('group', { name: /Brecha/i });
+    const card = screen.getByRole('group', { name: /Dimensiones de cuidado/i });
     expect(card.innerHTML).toContain('text-moderate');
     expect(card.innerHTML).not.toContain('text-critical');
   });
@@ -275,17 +275,21 @@ describe('Gap card (server-provided gaps)', () => {
     render(
       <MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ dimensions: [], threshold: 3 }} />,
     );
-    expect(screen.queryByRole('group', { name: /Brecha/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('group', { name: /Dimensiones de cuidado/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('does not derive gaps from dimensionResults when the server field is absent', () => {
     render(<MaturityProfileSummary dimensionResults={PAYFLOW} />);
-    expect(screen.queryByRole('group', { name: /Brecha/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('group', { name: /Dimensiones de cuidado/i }),
+    ).not.toBeInTheDocument();
   });
 
   it('lists the Spanish names of gap dimensions from the server list', () => {
     render(<MaturityProfileSummary dimensionResults={PAYFLOW} gaps={{ ...PAYFLOW_GAPS }} />);
-    const card = screen.getByRole('group', { name: /Brecha/i });
+    const card = screen.getByRole('group', { name: /Dimensiones de cuidado/i });
     expect(within(card).getByText('Propiedad Intelectual')).toBeInTheDocument();
   });
 
@@ -316,7 +320,7 @@ describe('what the summary no longer shows (deep analysis only)', () => {
 describe('glossary tooltips', () => {
   it.each([
     ['Cuello de botella', /la dimensión donde tu iniciativa está menos avanzada/i],
-    ['Brecha', /parte más baja de la escala/i],
+    ['Dimensiones de cuidado', /parte más baja de la escala/i],
     ['Asimetría', /la diferencia entre la calificación de tu dimensión más alta/i],
   ])('explains "%s" in one plain sentence on hover', async (term, explanation) => {
     const user = userEvent.setup();
@@ -384,7 +388,7 @@ describe('cards highlight their dimensions in the radar', () => {
       />,
     );
 
-    await user.hover(screen.getByRole('group', { name: /Brecha/i }));
+    await user.hover(screen.getByRole('group', { name: /Dimensiones de cuidado/i }));
 
     expect(onHighlight).toHaveBeenLastCalledWith(['CRL', 'BRL', 'IPRL', 'FRL']);
   });
@@ -449,7 +453,7 @@ describe('the details of a signal', () => {
 
     screen.getByRole('button', { name: 'Qué significa para tu iniciativa' }).focus();
     await user.keyboard('{Enter}');
-    const dialog = await screen.findByRole('dialog', { name: 'Brecha' });
+    const dialog = await screen.findByRole('dialog', { name: 'Dimensiones de cuidado' });
     expect(dialog).toHaveTextContent('Cliente y Propiedad Intelectual están en nivel 3 o menos');
 
     await user.click(within(dialog).getByRole('button', { name: 'Cerrar' }));
@@ -467,7 +471,9 @@ describe('the details of a signal', () => {
 
     await user.click(screen.getByRole('button', { name: /^Cuello de botella/ }));
 
-    expect((await screen.findAllByText(/Es la primera que conviene fortalecer/)).length).toBeGreaterThan(0);
+    expect(
+      (await screen.findAllByText(/Es la primera que conviene fortalecer/)).length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

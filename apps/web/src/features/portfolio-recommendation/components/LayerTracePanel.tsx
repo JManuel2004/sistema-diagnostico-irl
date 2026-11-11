@@ -55,7 +55,7 @@ interface Props {
  *     calibration; exposing it would move the conversation from "is this
  *     the right service?" to "why 1.50 and not 1.60?". The ones that group
  *     several dimensions are summed up in a label with their count
- *     («3 brechas»), but **which ones can always be known**: the label
+ *     («3 dimensiones de cuidado»), but **which ones can always be known**: the label
  *     names them in its tooltip and repeats them in a text only screen
  *     readers read.
  *
@@ -365,7 +365,7 @@ function Reasons({
 }
 
 /**
- * A reason label. When it sums up several dimensions («3 brechas»), saying
+ * A reason label. When it sums up several dimensions («3 dimensiones de cuidado»), saying
  * which ones is not optional: the tooltip names them on hover or keyboard
  * focus, and the same text travels in an `sr-only` for whoever uses a
  * screen reader or has no pointer.
@@ -442,8 +442,11 @@ function contributionReasons(
     const names = gaps.map((d) => nameOf(d.dimension));
     reasons.push({
       icon: TrendingDown,
-      label: gaps.length === 1 ? '1 brecha' : `${String(gaps.length)} brechas`,
-      detail: `Ayuda a cerrar las brechas en ${joinNames(names)}.`,
+      label:
+        gaps.length === 1
+          ? '1 dimensión de cuidado'
+          : `${String(gaps.length)} dimensiones de cuidado`,
+      detail: `Ayuda a fortalecer ${joinNames(names)}, ${gaps.length === 1 ? 'que necesita' : 'que necesitan'} cuidado.`,
     });
   }
 

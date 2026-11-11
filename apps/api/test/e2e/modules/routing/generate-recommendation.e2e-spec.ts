@@ -164,7 +164,7 @@ describe('Enrutamiento de portafolio (e2e) — AgroConecta', () => {
       ['Reto Express', 3, 2.8],
     ]);
     expect(dto.alternatives[0].adjustmentReason).toContain(
-      'brechas en tres o más dimensiones',
+      'tres o más dimensiones de cuidado',
     );
   });
 

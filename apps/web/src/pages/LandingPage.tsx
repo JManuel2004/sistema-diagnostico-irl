@@ -121,7 +121,7 @@ export default function LandingPage(): JSX.Element {
             ¿Quieres sacar adelante tu idea de innovación? Te ofrecemos un diagnóstico de su
             madurez: respondes un formulario y descubres{' '}
             <mark className="bg-dimension-frl text-foreground px-1 font-bold">
-              las brechas que necesitas superar
+              las dimensiones que necesitan más cuidado
             </mark>{' '}
             para hacerla realidad.
           </p>

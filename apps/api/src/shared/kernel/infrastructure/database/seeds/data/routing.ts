@@ -640,8 +640,8 @@ export const EXCEPTION_RULES: readonly ExceptionRuleSeed[] = [
     targetService: 'Academia a la Medida',
     positions: 2,
     declaredReason:
-      'Con brechas en tres o más dimensiones, formar al propio equipo deja capacidades ' +
-      'instaladas para cerrarlas más allá de un proyecto puntual.',
+      'Con tres o más dimensiones de cuidado, formar al propio equipo deja capacidades ' +
+      'instaladas para fortalecerlas más allá de un proyecto puntual.',
   },
   {
     code: 'INC-03',

@@ -44,7 +44,7 @@ describe('buildReportDocument', () => {
     expect(headings(document.blocks)).toEqual([
       'Datos de la iniciativa',
       'Perfil de seis dimensiones',
-      'Brechas, alertas y desequilibrios',
+      'Dimensiones de cuidado, alertas y desequilibrios',
       'Recomendación del portafolio INNLAB',
       'Ruta de escalamiento',
       'Respuestas al cuestionario',
@@ -259,7 +259,7 @@ describe('buildReportDocument — the summary page', () => {
       ['BRL', 3, 'dimensión crítica'],
       ['IPRL', 1, 'cuello de botella'],
       ['TmRL', 5, null],
-      ['FRL', 2, 'en brecha'],
+      ['FRL', 2, 'de cuidado'],
     ]);
   });
 
@@ -305,7 +305,7 @@ describe('buildReportDocument — the summary page', () => {
     expect(terms).toEqual([
       'Nivel IRL',
       'Cuello de botella',
-      'Brecha',
+      'Dimensión de cuidado',
       'Desequilibrio',
       'Dimensión crítica',
     ]);

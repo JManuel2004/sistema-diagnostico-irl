@@ -225,7 +225,7 @@ describe('ResultsPage — sin análisis profundo', () => {
       await screen.findByRole('heading', { level: 1, name: 'AgroConecta' }),
     ).toBeInTheDocument();
     expect(await screen.findByRole('group', { name: /Cuello de botella/ })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /Brecha/ })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /Dimensiones de cuidado/ })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Perfil IRL — gráfico radar' })).toBeInTheDocument();
   });
 
@@ -541,7 +541,7 @@ describe('ResultsPage — explicabilidad para quien no conoce el marco', () => {
     await user.hover(screen.getByRole('button', { name: 'Cuello de botella' }));
     expect((await screen.findAllByText(/menos avanzada/)).length).toBeGreaterThan(0);
 
-    await user.hover(screen.getByRole('button', { name: /^Brecha/ }));
+    await user.hover(screen.getByRole('button', { name: /^Dimensiones de cuidado/ }));
     expect((await screen.findAllByText(/parte más baja de la escala/)).length).toBeGreaterThan(0);
 
     await user.hover(screen.getByRole('button', { name: /desequilibrio/i }));
