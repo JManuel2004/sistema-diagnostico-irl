@@ -65,15 +65,19 @@ export const PALETTE = {
     'mature-ink': '#1B7A48',
   },
 
-  // How much the user agreed with a statement, 1 to 5: one hue (Azul
-  // Icesi), light to dark, each step visibly apart and the lightest still
-  // clear of white (checked as an ordinal ramp). A cell always shows its
-  // number too, so the shade is never the only signal.
+  // How much the user agreed with a statement, 1 to 5: a sequential ramp of
+  // one cool hue (blue, OKLCH h 250), from a pale blue to a very dark one,
+  // as the usability tests recommended (P05: a warm-to-cold heat map was
+  // asked for; the advice was a sequential blue ramp, which does not saturate).
+  // Checked as an ordinal ramp: monotone lightness, ΔL ≥ 0.06 between steps,
+  // the lightest at 2.06:1 on white so it still reads as a cell. Its number
+  // goes in dark text on 1–2 (≥4.6:1) and in white on 3–5 (≥4.7:1), and it
+  // is always written, so the shade is never the only signal.
   likert: {
-    1: '#ADADF5',
-    2: '#8888F0',
-    3: '#5454E9',
-    4: '#3B3BC4',
-    5: '#25258A',
+    1: '#98B8DA',
+    2: '#71A1D3',
+    3: '#2B76BB',
+    4: '#015595',
+    5: '#01355F',
   },
 } as const;
