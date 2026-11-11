@@ -315,6 +315,17 @@ describe('DiagnosticWizardPage — el asistente', () => {
       expect(where()).toBe(step('consentimiento'));
     });
 
+    it('el consentimiento lleva a los canales de atención de INNLAB en una pestaña nueva', async () => {
+      backend();
+
+      renderWizard();
+
+      const link = await screen.findByRole('link', { name: /Canales de atención de INNLAB/ });
+      expect(link).toHaveAttribute('href', 'https://www.icesi.edu.co/innlab/');
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAccessibleName(/se abre en una pestaña nueva/);
+    });
+
     it.each(['iniciativa', 'cuestionario', 'resumen'])(
       'no se puede saltar al paso «%s» sin haber completado los anteriores',
       async (target) => {

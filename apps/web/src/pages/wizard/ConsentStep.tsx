@@ -1,4 +1,5 @@
 import { useState, type JSX } from 'react';
+import { ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Initiative, InitiativeSummary } from '@innlab/contracts';
 import { ConsentTerms, useConsentTerms } from '@features/consent';
@@ -6,8 +7,8 @@ import { selectAcceptTerms, useInitiativeDraftStore } from '@features/initiative
 import { PageHeader } from '@/shared/ui/page-header';
 import { Alert } from '@/shared/ui/alert';
 import { LoadingState } from '@/shared/ui/loading-state';
-import { Button } from '@/shared/ui/button';
-import { RETRY_LATER } from '@/shared/lib/copy';
+import { Button, buttonVariants } from '@/shared/ui/button';
+import { INNLAB_SUPPORT_URL, RETRY_LATER } from '@/shared/lib/copy';
 import { formatDateTime } from '@/shared/lib/format';
 import { wizardPath } from './wizard-steps';
 
@@ -29,6 +30,8 @@ interface Props {
  * The acceptance is stored on the server only when that form continues,
  * because the consent belongs to the initiative and the user has not chosen
  * one yet. An initiative that is already registered already has its consent.
+ * Under the text, a link to INNLAB's support channels for whoever has a
+ * question about the processing of their data (usability test P05).
  */
 export function ConsentStep({
   diagnosticId,
@@ -71,6 +74,23 @@ export function ConsentStep({
       {terms.data && (
         <div className="flex flex-col gap-6">
           <ConsentTerms terms={terms.data} />
+
+          <div className="border-border bg-surface-muted rounded-control flex flex-col gap-3 border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              ¿Tienes dudas sobre el tratamiento de tus datos? Escríbele a INNLAB por sus canales de
+              atención.
+            </p>
+            <a
+              href={INNLAB_SUPPORT_URL}
+              target="_blank"
+              rel="noreferrer"
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            >
+              Canales de atención de INNLAB
+              <ExternalLink className="ml-1.5 size-4" aria-hidden="true" />
+              <span className="sr-only"> (se abre en una pestaña nueva)</span>
+            </a>
+          </div>
 
           {alreadyAccepted ? (
             <Alert tone="acceptable" title="Ya aceptaste este texto">
