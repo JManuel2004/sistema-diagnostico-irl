@@ -63,7 +63,7 @@ export class CoreSessionController {
 }
 
 function bearerToken(header: string | undefined): string | undefined {
-  if (header === undefined || !header.startsWith('Bearer ')) return undefined;
+  if (!header?.startsWith('Bearer ')) return undefined;
   const token = header.slice('Bearer '.length).trim();
   return token === '' ? undefined : token;
 }
