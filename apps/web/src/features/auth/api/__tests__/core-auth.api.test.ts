@@ -6,7 +6,6 @@ import { exchangeSsoCode, isSessionAlive, logoutFromCore } from '../core-auth.ap
 // Set in `.env.test`, which takes precedence over `.env.local`. Without that
 // file the tests would inherit the real Core URL of whoever runs them and
 // would go out to the internet.
-const CORE = 'https://core-api.test';
 const API = 'http://localhost:3000/api/v1';
 
 const server = setupServer();
@@ -96,7 +95,7 @@ describe('exchangeSsoCode', () => {
 describe('isSessionAlive', () => {
   it('manda el accessToken como Bearer y acepta la sesión viva', async () => {
     server.use(
-      http.get(`${CORE}/auth/introspect`, ({ request }) => {
+      http.get(`${API}/auth/introspect`, ({ request }) => {
         expect(request.headers.get('authorization')).toBe('Bearer access-token');
         return HttpResponse.json({ active: true });
       }),
@@ -107,7 +106,7 @@ describe('isSessionAlive', () => {
 
   it('da la sesión por muerta solo ante un 401', async () => {
     server.use(
-      http.get(`${CORE}/auth/introspect`, () => new HttpResponse(null, { status: 401 })),
+      http.get(`${API}/auth/introspect`, () => new HttpResponse(null, { status: 401 })),
     );
 
     await expect(isSessionAlive('access-token')).resolves.toBe(false);
@@ -115,7 +114,7 @@ describe('isSessionAlive', () => {
 
   it('no expulsa al usuario cuando Core falla por otra razón', async () => {
     server.use(
-      http.get(`${CORE}/auth/introspect`, () => new HttpResponse(null, { status: 503 })),
+      http.get(`${API}/auth/introspect`, () => new HttpResponse(null, { status: 503 })),
     );
 
     // A Core outage is not an invalid session: logging out here would kick
@@ -127,7 +126,7 @@ describe('isSessionAlive', () => {
 describe('logoutFromCore', () => {
   it('cierra la sesión centralizada con el accessToken', async () => {
     server.use(
-      http.post(`${CORE}/auth/logout`, ({ request }) => {
+      http.post(`${API}/auth/logout`, ({ request }) => {
         expect(request.headers.get('authorization')).toBe('Bearer access-token');
         return new HttpResponse(null, { status: 204 });
       }),

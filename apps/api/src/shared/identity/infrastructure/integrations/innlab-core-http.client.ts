@@ -4,6 +4,7 @@ import { coreSessionSchema, type CoreSession } from '@innlab/contracts';
 import { appConfig } from '../../../../config/configuration.js';
 import { NotFoundError } from '../../../../shared/kernel/domain/errors/index.js';
 import type { AuthProbePort } from '../../application/ports/auth-probe.port.js';
+import type { CoreSessionPort } from '../../application/ports/core-session.port.js';
 import type { SsoExchangePort } from '../../application/ports/sso-exchange.port.js';
 import type { UserContext } from '../../domain/entities/user-context.vo.js';
 import type { UserContextPort } from '../../domain/repositories/user-context.repository.port.js';
@@ -34,7 +35,7 @@ const PROMPT_TIMEOUT_MS = 2_000;
  */
 @Injectable()
 export class InnlabCoreHttpClient
-  implements UserContextPort, SsoExchangePort, AuthProbePort
+  implements UserContextPort, SsoExchangePort, CoreSessionPort, AuthProbePort
 {
   private readonly logger = new Logger(InnlabCoreHttpClient.name);
 
@@ -92,6 +93,69 @@ export class InnlabCoreHttpClient
     }
 
     return session.data;
+  }
+
+  /**
+   * `true` alive, `false` revoked, `null` when Core did not answer with
+   * either. No internal key: the access token is the credential.
+   */
+  async introspect(accessToken: string): Promise<boolean | null> {
+    let response: Response;
+    try {
+      response = await fetch(`${this.config.innlabCore.baseUrl}/auth/introspect`, {
+        method: 'GET',
+        headers: {
+          accept: 'application/json',
+          authorization: `Bearer ${accessToken}`,
+        },
+        signal: AbortSignal.timeout(this.config.innlabCore.timeoutMs),
+      });
+    } catch (cause) {
+      this.logger.warn(
+        `INNLAB Core unreachable during introspect: ${cause instanceof Error ? cause.message : 'unknown'}`,
+      );
+      return null;
+    }
+
+    if (response.status === 401) return false;
+    if (response.ok) return true;
+
+    this.logger.error(
+      `INNLAB Core answered ${String(response.status)} for the session introspect`,
+    );
+    return null;
+  }
+
+  /** Ends the ecosystem session. A 401 means Core already dropped it. */
+  async logout(accessToken: string): Promise<void> {
+    const url = `${this.config.innlabCore.baseUrl}/auth/logout`;
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          authorization: `Bearer ${accessToken}`,
+        },
+        signal: AbortSignal.timeout(this.config.innlabCore.timeoutMs),
+      });
+    } catch (cause) {
+      this.logger.error('INNLAB Core unreachable while ending a session');
+      throw new HttpException('INNLAB Core no respondio al cierre de sesion', 502, {
+        cause,
+      });
+    }
+
+    if (response.status === 401 || response.ok) return;
+
+    this.logger.error(
+      `INNLAB Core answered ${String(response.status)} for the session logout`,
+    );
+    throw new HttpException(
+      `INNLAB Core respondio ${String(response.status)} al cierre de sesion`,
+      502,
+    );
   }
 
   /**

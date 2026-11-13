@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
 import { appConfig } from '../../config/configuration.js';
 import { AuthBypassPolicy } from './application/auth-bypass.policy.js';
+import { CORE_SESSION_PORT } from './application/ports/core-session.port.js';
 import { SSO_EXCHANGE_PORT } from './application/ports/sso-exchange.port.js';
 import type { SsoExchangePort } from './application/ports/sso-exchange.port.js';
 import { ExchangeSsoCodeUseCase } from './application/use-cases/exchange-sso-code.use-case.js';
@@ -17,6 +18,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard.js';
 import { InnlabCoreHttpClient } from './infrastructure/integrations/innlab-core-http.client.js';
 import { CognitoJwtStrategy } from './infrastructure/strategies/cognito-jwt.strategy.js';
 import { AuthBypassController } from './presentation/controllers/auth-bypass.controller.js';
+import { CoreSessionController } from './presentation/controllers/core-session.controller.js';
 import { MeController } from './presentation/controllers/me.controller.js';
 import { SsoExchangeController } from './presentation/controllers/sso-exchange.controller.js';
 
@@ -42,6 +44,7 @@ import { SsoExchangeController } from './presentation/controllers/sso-exchange.c
     InnlabCoreHttpClient,
     { provide: USER_CONTEXT_PORT, useExisting: InnlabCoreHttpClient },
     { provide: SSO_EXCHANGE_PORT, useExisting: InnlabCoreHttpClient },
+    { provide: CORE_SESSION_PORT, useExisting: InnlabCoreHttpClient },
     {
       provide: ExchangeSsoCodeUseCase,
       useFactory: (core: SsoExchangePort) => new ExchangeSsoCodeUseCase(core),
@@ -62,6 +65,6 @@ import { SsoExchangeController } from './presentation/controllers/sso-exchange.c
       inject: [appConfig.KEY],
     },
   ],
-  controllers: [MeController, SsoExchangeController, AuthBypassController],
+  controllers: [MeController, SsoExchangeController, CoreSessionController, AuthBypassController],
 })
 export class IdentityModule {}

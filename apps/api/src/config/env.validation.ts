@@ -37,9 +37,8 @@ export const envValidationSchema = Joi.object({
   SMTP_PASS: Joi.string().allow('').optional(),
   SMTP_FROM: Joi.string().allow('').optional(),
 
-  // Five-person entry without INNLAB. Unset in production turns it on.
-  // `false` keeps the Hub. The secret only signs that session; leave it
-  // empty to use the built-in one.
+  // Accepted so an existing deploy env still boots. The value is ignored:
+  // sign-in is the INNLAB Hub.
   AUTH_BYPASS: Joi.string().valid('true', 'false').optional(),
   AUTH_BYPASS_SECRET: Joi.string().allow('').optional(),
 });

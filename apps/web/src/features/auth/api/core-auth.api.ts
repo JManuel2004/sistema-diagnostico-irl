@@ -3,18 +3,16 @@ import { coreSessionSchema, type CoreSession } from '@innlab/contracts';
 import { ApiError, http } from '@/shared/api/http';
 
 /**
- * Client for the INNLAB Core API (`innlab-core-api`).
+ * INNLAB session calls.
  *
- * Introspection and logout still go straight to Core. The code exchange
- * does not: Core refuses the deployed site's origin, so the SPA asks our
- * API and the API calls Core from the server.
- *
- * This instance stays free of the 401 interceptor. The exchange uses
- * `http` but treats every failure itself, before a dead session could
- * send the callback screen back to the Hub.
+ * The code exchange, the session check and the logout go through our API.
+ * Core refuses the deployed site's origin, so the API calls Core from the
+ * server. Introspect and logout use their own client, without the 401
+ * interceptor. The exchange uses `http` but treats every failure itself,
+ * before a dead session could send the callback screen back to the Hub.
  */
-const coreApi = axios.create({
-  baseURL: String(import.meta.env.VITE_CORE_API_URL ?? ''),
+const api = axios.create({
+  baseURL: String(import.meta.env.VITE_API_BASE_URL ?? '/api/v1'),
   timeout: 15_000,
 });
 
@@ -66,7 +64,7 @@ export async function exchangeSsoCode(code: string): Promise<CoreSession> {
 }
 
 /**
- * Asks Core whether the access token is still alive.
+ * Asks our API, which asks Core, whether the access token is still alive.
  *
  * `false` means the session ended (401), not a network error: an
  * unreachable Core must not kick out a user whose session is still valid,
@@ -74,7 +72,7 @@ export async function exchangeSsoCode(code: string): Promise<CoreSession> {
  */
 export async function isSessionAlive(accessToken: string): Promise<boolean> {
   try {
-    await coreApi.get('/auth/introspect', {
+    await api.get('/auth/introspect', {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     return true;
@@ -93,5 +91,5 @@ export async function isSessionAlive(accessToken: string): Promise<boolean> {
  * side, so this is not a local logout: it affects every INNLAB product.
  */
 export async function logoutFromCore(accessToken: string): Promise<void> {
-  await coreApi.post('/auth/logout', {}, { headers: { Authorization: `Bearer ${accessToken}` } });
+  await api.post('/auth/logout', {}, { headers: { Authorization: `Bearer ${accessToken}` } });
 }

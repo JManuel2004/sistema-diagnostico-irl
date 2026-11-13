@@ -23,11 +23,6 @@ vi.mock('@features/auth', () => ({
   UserMenu: () => null,
   UserContextGate: ({ children }: { children: React.ReactNode }) => children,
 }));
-vi.mock('@features/auth/api/auth-mode.api', () => ({
-  fetchSimulatedSignIn: () => Promise.resolve(null),
-  enterAsSimulatedUser: () => Promise.resolve('closed'),
-}));
-
 const ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
 function Where(): React.JSX.Element {

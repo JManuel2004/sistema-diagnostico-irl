@@ -104,4 +104,37 @@ describe('InnlabCoreHttpClient', () => {
 
     await expect(client.exchange('spent')).rejects.toThrow(NotFoundError);
   });
+
+  it('reads a live session from Core without the internal key', async () => {
+    const fetchMock = mockFetch({ ok: true, status: 200, json: () => Promise.resolve({}) });
+
+    await expect(client.introspect('access-token')).resolves.toBe(true);
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://core.innlab.test/auth/introspect');
+    expect(init.headers).toEqual({
+      accept: 'application/json',
+      authorization: 'Bearer access-token',
+    });
+  });
+
+  it('treats a 401 from introspect as a dead session and silence as unknown', async () => {
+    mockFetch({ ok: false, status: 401 });
+    await expect(client.introspect('access-token')).resolves.toBe(false);
+
+    const rejected = jest.fn().mockRejectedValue(new Error('timeout') as never);
+    globalThis.fetch = rejected as unknown as typeof fetch;
+    await expect(client.introspect('access-token')).resolves.toBeNull();
+  });
+
+  it('ends the session with the access token and ignores an already closed one', async () => {
+    const fetchMock = mockFetch({ ok: false, status: 401 });
+
+    await expect(client.logout('access-token')).resolves.toBeUndefined();
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://core.innlab.test/auth/logout');
+    expect(init.method).toBe('POST');
+    expect((init.headers as Record<string, string>).authorization).toBe('Bearer access-token');
+  });
 });
